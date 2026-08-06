@@ -2,7 +2,7 @@
 <html lang="en" id="htmlRoot" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Remal Hotel & Villas - Front Desk & Laundry Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
             --color-green-bg: rgba(40, 167, 69, 0.15);
             --color-green-text: #5cb85c;
         }
-        body { font-family: var(--font-family); background-color: var(--bg-dark); color: #f5f5f5; }
+        body { font-family: var(--font-family); background-color: var(--bg-dark); color: #f5f5f5; -webkit-tap-highlight-color: transparent; }
         .font-serif-luxury { font-family: 'Playfair Display', serif; }
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -37,17 +37,29 @@
         .laundry-row { background-color: var(--color-green-bg) !important; }
         .badge-green { color: var(--color-green-text); font-weight: bold; background-color: rgba(40, 167, 69, 0.2); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(92, 184, 92, 0.3); display: inline-block; }
         .badge-chargeable { color: #f87171; font-weight: bold; background-color: rgba(248, 113, 113, 0.15); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(248, 113, 113, 0.3); display: inline-block; }
+        
+        button, input, select { touch-action: manipulation; }
+        @media (min-width: 768px) {
+            .max-w-2xl { max-width: 48rem !important; }
+        }
+
         input[type="date"]::-webkit-calendar-picker-indicator,
         input[type="time"]::-webkit-calendar-picker-indicator {
             filter: invert(0.8) sepia(1) saturate(3) hue-rotate(340deg);
             cursor: pointer;
+        }
+
+        @media print {
+            body { background-color: #ffffff !important; color: #000000 !important; }
+            .no-print { display: none !important; }
+            .printable-page { background-color: #ffffff !important; color: #000000 !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
         }
     </style>
 </head>
 <body class="min-h-screen pb-20">
 
     <!-- HEADER LUXUEUX SOMBRE -->
-    <header class="bg-[#12100e] sticky top-0 z-50 border-b border-[#382d24] shadow-md">
+    <header class="bg-[#12100e] sticky top-0 z-50 border-b border-[#382d24] shadow-md no-print">
         <div class="max-w-3xl mx-auto px-5 py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div>
@@ -69,7 +81,7 @@
     <div class="max-w-2xl mx-auto px-4 py-4 space-y-4">
 
         <!-- NAVIGATION PRINCIPALE -->
-        <div class="flex bg-[#191512] p-1.5 rounded-2xl border border-[#382d24] text-[11px] font-bold gap-1 text-stone-400">
+        <div class="flex bg-[#191512] p-1.5 rounded-2xl border border-[#382d24] text-[11px] font-bold gap-1 text-stone-400 no-print">
             <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 shadow-md transition text-center">Active Rooms</button>
             <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">SPA</button>
             <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">Archives & Search</button>
@@ -78,7 +90,7 @@
         </div>
 
         <!-- BOUTONS D'ACTION RAPIDE (VISIBLE UNIQUEMENT DANS ACTIVE ROOMS) -->
-        <div id="quickActionButtons" class="grid grid-cols-2 gap-3">
+        <div id="quickActionButtons" class="grid grid-cols-2 gap-3 no-print">
             <button onclick="switchMainSection('newRecord')" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition">
                 <span class="text-base font-bold">+</span> <span id="txtBtnNewRecord">New Record</span>
             </button>
@@ -88,7 +100,7 @@
         </div>
 
         <!-- SECTION 1: FORMULAIRE NEW RECORD -->
-        <div id="sectionNewRecord" class="hidden space-y-4">
+        <div id="sectionNewRecord" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 rounded-3xl space-y-5 relative">
                 
                 <div class="flex justify-between items-center border-b border-[#382d24] pb-3">
@@ -180,7 +192,7 @@
         </div>
 
         <!-- SECTION 1.5: MASS ENTRY / PDF PARSER -->
-        <div id="sectionMassEntry" class="hidden space-y-4">
+        <div id="sectionMassEntry" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 rounded-3xl space-y-4">
                 <div class="flex justify-between items-center border-b border-[#382d24] pb-3">
                     <h2 class="text-sm font-serif-luxury font-bold text-[#DCA773] uppercase tracking-wider">PMS Mass Entry & PDF Parser</h2>
@@ -222,7 +234,7 @@
         </div>
 
         <!-- SECTION 2: ACTIVE ROOMS / LIVE LAUNDRY -->
-        <div id="sectionLiveRecord" class="space-y-4">
+        <div id="sectionLiveRecord" class="space-y-4 no-print">
             <div class="flex justify-between items-center px-1">
                 <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms</span>
                 <span id="activeRoomsCountBadge" class="text-[10px] bg-[#191512] border border-[#382d24] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
@@ -232,7 +244,7 @@
         </div>
 
         <!-- SECTION SPA LAUNDRY DAILY RECORD SHEET -->
-        <section id="spa-laundry-section" class="hidden remal-card p-6 rounded-3xl space-y-6 relative max-w-4xl mx-auto text-stone-200">
+        <section id="spa-laundry-section" class="hidden remal-card p-6 rounded-3xl space-y-6 relative max-w-4xl mx-auto text-stone-200 printable-page">
             
             <div class="border-b border-[#382d24] pb-6 flex justify-between items-center">
                 <div class="space-y-2">
@@ -257,7 +269,7 @@
                 </div>
                 <div class="flex items-center gap-2 border-b border-[#382d24] py-1.5 justify-end">
                     <span class="text-xs font-bold text-stone-400 uppercase">SERIAL NO:</span>
-                    <span id="spa-serial-no" class="text-base font-black text-rose-400 ml-2">--</span>
+                    <input type="text" id="spa-serial-no" class="w-32 text-right text-base font-black text-rose-400 ml-2 remal-input rounded-lg px-2 py-1" placeholder="Enter Serial">
                 </div>
             </div>
 
@@ -355,7 +367,7 @@
                 <div class="text-right">Downloaded: <span id="pdf-footer-download-time" class="font-semibold"></span></div>
             </div>
 
-            <div id="spa-action-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div id="spa-action-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 no-print">
                 <button onclick="validateAndSaveSpaReceipt()" class="w-full py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
                     <i class="fas fa-check-circle"></i> Validate & Save SPA Receipt
                 </button>
@@ -366,7 +378,7 @@
         </section>
 
         <!-- SECTION 3: PDF LIST & ARCHIVES & SEARCH -->
-        <div id="sectionPdfList" class="hidden space-y-4">
+        <div id="sectionPdfList" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 rounded-3xl space-y-4">
                 <div class="flex justify-between items-center border-b border-[#382d24] pb-3">
                     <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773]" id="lblArchiveTitle">Archives & Search</h3>
@@ -388,7 +400,7 @@
         </div>
 
         <!-- SECTION 4: MANAGEMENT BUSINESS CHART & ANALYTICS -->
-        <div id="sectionDashboard" class="hidden space-y-4">
+        <div id="sectionDashboard" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 rounded-3xl space-y-5">
                 <div class="flex justify-between items-center border-b border-[#382d24] pb-3">
                     <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773]">📈 Reception & Management Analytics</h3>
@@ -433,58 +445,58 @@
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#191512] w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-[#382d24] relative text-stone-200">
             
-            <div id="pdfExportArea" class="p-2 space-y-4 bg-[#191512]">
-                <div class="text-center border-b border-[#382d24] pb-3 relative">
-                    <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-400 text-xl font-bold hover:text-stone-100">✕</button>
-                    <h2 class="text-lg font-serif-luxury font-bold text-[#DCA773] tracking-wider">REMAL HOTEL</h2>
-                    <p class="text-[9px] text-stone-400 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <p class="text-xs font-bold text-[#DCA773] mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
+            <div id="pdfExportArea" class="p-2 space-y-4 bg-white text-stone-900 rounded-2xl p-6 printable-page">
+                <div class="text-center border-b border-stone-300 pb-3 relative">
+                    <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-500 text-xl font-bold hover:text-stone-900 no-print">✕</button>
+                    <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL</h2>
+                    <p class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
+                    <p class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
                 </div>
 
-                <div class="bg-[#12100e] p-3.5 rounded-2xl border border-[#382d24] space-y-2">
+                <div class="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
                     <div class="flex justify-between items-center">
                         <div>
-                            <span class="text-xs text-stone-400 font-semibold" id="modalIdentifierLabel">Room:</span>
-                            <span id="modalRoomNumDisplay" class="text-xl font-serif-luxury font-bold text-stone-100 ml-1">223</span>
+                            <span class="text-xs text-stone-500 font-semibold" id="modalIdentifierLabel">Room:</span>
+                            <span id="modalRoomNumDisplay" class="text-xl font-serif-luxury font-bold text-stone-900 ml-1">223</span>
                         </div>
                         <div class="text-right">
-                            <p id="modalDate" class="text-[10px] text-stone-400 font-bold"></p>
-                            <span id="modalTypeBadgeInline" class="text-[9px] bg-amber-950 text-amber-200 font-bold px-2 py-0.5 rounded-full border border-amber-800">Hotel Count (Free)</span>
+                            <p id="modalDate" class="text-[10px] text-stone-500 font-bold"></p>
+                            <span id="modalTypeBadgeInline" class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-300">Hotel Count (Free)</span>
                         </div>
                     </div>
-                    <div id="modalAgencyQuotaBox" class="hidden pt-2 border-t border-[#382d24] text-xs space-y-1 text-stone-300 font-bold">
-                        <div class="flex justify-between"><span>Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-100">---</span></div>
-                        <div class="flex justify-between"><span>Room Typ:</span> <span id="modalTypDisplay" class="text-stone-100">---</span></div>
-                        <div class="flex justify-between"><span>Agency:</span> <span id="modalAgencyDisplay" class="text-stone-100">---</span></div>
-                        <div class="flex justify-between"><span>Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-400">---</span></div>
+                    <div id="modalAgencyQuotaBox" class="hidden pt-2 border-t border-stone-200 text-xs space-y-1 text-stone-700 font-bold">
+                        <div class="flex justify-between"><span>Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
+                        <div class="flex justify-between"><span>Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
+                        <div class="flex justify-between"><span>Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
+                        <div class="flex justify-between"><span>Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
                     </div>
                 </div>
 
-                <div class="bg-[#12100e] p-3 rounded-2xl border border-[#382d24] text-xs font-bold text-stone-300 flex justify-between">
+                <div class="bg-stone-50 p-3 rounded-2xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
                     <span>Packaging:</span>
-                    <span id="modalPackagingStyle" class="text-[#DCA773]">F — Folding</span>
+                    <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
                 </div>
 
                 <table class="w-full text-xs text-left border-collapse">
                     <thead>
-                        <tr class="bg-[#DCA773] text-stone-950 font-bold text-[11px]">
-                            <th class="p-2.5 rounded-l-xl">Item</th>
+                        <tr class="bg-stone-100 text-stone-900 font-bold text-[11px] border-b border-stone-300">
+                            <th class="p-2.5">Item</th>
                             <th class="p-2.5 text-center">Qty</th>
-                            <th class="p-2.5 text-right rounded-r-xl">Total</th>
+                            <th class="p-2.5 text-right">Total</th>
                         </tr>
                     </thead>
-                    <tbody id="modalTableBody" class="divide-y divide-[#382d24]"></tbody>
+                    <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800"></tbody>
                 </table>
 
-                <div class="bg-[#12100e] p-3.5 rounded-2xl text-xs space-y-1.5 font-medium text-stone-300 border border-[#382d24]">
-                    <div class="flex justify-between font-bold text-stone-100 border-b border-[#382d24] pb-1.5"><span>Total Pieces:</span><span id="modalClothesCount">3 pieces</span></div>
-                    <div class="flex justify-between font-bold text-sm text-stone-100 border-t border-[#382d24] pt-2 mt-1"><span>Grand Total:</span><span id="modalTotal" class="text-[#DCA773] font-serif-luxury text-base">0.00 AED</span></div>
+                <div class="bg-stone-50 p-3.5 rounded-2xl text-xs space-y-1.5 font-medium text-stone-700 border border-stone-200">
+                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1.5"><span>Total Pieces:</span><span id="modalClothesCount">3 pieces</span></div>
+                    <div class="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-200 pt-2 mt-1"><span>Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-base">0.00 AED</span></div>
                 </div>
 
                 <div id="modalPhotoContainer" class="pt-2"></div>
             </div>
 
-            <div class="space-y-2 pt-2">
+            <div class="space-y-2 pt-2 no-print">
                 <div class="grid grid-cols-2 gap-2">
                     <button onclick="genererPDF()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📥 Download PDF</button>
                     <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">💬 Share WhatsApp</a>
@@ -605,7 +617,7 @@
             const spaDateEl = document.getElementById('spa-current-date');
             if(spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
             const serialEl = document.getElementById('spa-serial-no');
-            if(serialEl) serialEl.innerText = String(23).padStart(4, '0');
+            if(serialEl) serialEl.value = String(23).padStart(4, '0');
 
             const now = new Date();
             const todayIso = now.toISOString().split('T')[0];
@@ -1164,7 +1176,6 @@
             const searchDateVal = document.getElementById('searchDate').value;
 
             let filtered = cachedSlips.filter(entry => {
-                // Recherche optimisée : Vérifie le numéro de chambre, le nom, ou le numéro de série SPA (#...)
                 const matchRoom = !searchVal || 
                     String(entry.room).toLowerCase().includes(searchVal) || 
                     String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
@@ -1308,7 +1319,7 @@
         }
 
         function validateAndSaveSpaReceipt() {
-            const serialNo = document.getElementById('spa-serial-no').innerText;
+            const serialNo = document.getElementById('spa-serial-no').value.trim();
             const grandTotalText = document.getElementById('spa-grand-total').innerText;
             const grandTotalValue = parseFloat(grandTotalText) || 0;
             const collectedBy = document.getElementById('spa-collected-by').value.trim();
@@ -1320,8 +1331,8 @@
             const delDate = document.getElementById('spa-delivery-date').value;
             const delTime = document.getElementById('spa-delivery-time').value;
 
-            if (serialNo === "--" || !serialNo) {
-                alert("⚠️ Erreur : Numéro de série manquant.");
+            if (!serialNo) {
+                alert("⚠️ Erreur : Veuillez entrer un numéro de série (Serial No).");
                 return false;
             }
             if (grandTotalValue <= 0) {
@@ -1387,7 +1398,7 @@
             if (!isValid) return;
 
             const element = document.getElementById('spa-laundry-section');
-            const serialNo = document.getElementById('spa-serial-no').innerText;
+            const serialNo = document.getElementById('spa-serial-no').value.trim();
             
             const pdfContent = element.cloneNode(true);
             const actionButtons = pdfContent.querySelector('#spa-action-buttons');
@@ -1442,8 +1453,8 @@
             const tbody = document.getElementById('modalTableBody'); tbody.innerHTML = '';
             Object.values(entry.items || {}).forEach(item => {
                 const tr = document.createElement('tr');
-                tr.className = "py-1 border-b border-[#382d24]";
-                tr.innerHTML = `<td class="font-bold py-2 p-2.5 text-stone-200">${item.name}</td><td class="text-center font-bold p-2.5 text-stone-200">${item.qty}</td><td class="text-right font-bold p-2.5 text-stone-200">${(entry.is_spa || !isHotel) ? (item.qty * item.price).toFixed(2) : '0.00'}</td>`;
+                tr.className = "py-1 border-b border-stone-200";
+                tr.innerHTML = `<td class="font-bold py-2 p-2.5 text-stone-900">${item.name}</td><td class="text-center font-bold p-2.5 text-stone-900">${item.qty}</td><td class="text-right font-bold p-2.5 text-stone-900">${(entry.is_spa || !isHotel) ? (item.qty * item.price).toFixed(2) : '0.00'}</td>`;
                 tbody.appendChild(tr);
             });
 
@@ -1452,7 +1463,7 @@
 
             const pContainer = document.getElementById('modalPhotoContainer');
             if (entry.photo) {
-                pContainer.innerHTML = `<div class="border-t border-[#382d24] pt-3 mt-2"><p class="font-bold text-xs mb-1 text-stone-300">Proof Photo:</p><img src="${entry.photo}" class="w-full max-h-48 object-cover rounded-2xl border border-[#382d24]"></div>`;
+                pContainer.innerHTML = `<div class="border-t border-stone-200 pt-3 mt-2"><p class="font-bold text-xs mb-1 text-stone-700">Proof Photo:</p><img src="${entry.photo}" class="w-full max-h-48 object-cover rounded-2xl border border-stone-300"></div>`;
             } else {
                 pContainer.innerHTML = '';
             }
