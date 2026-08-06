@@ -38,7 +38,7 @@
         .badge-green { color: var(--color-green-text); font-weight: bold; background-color: rgba(40, 167, 69, 0.2); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(92, 184, 92, 0.3); display: inline-block; }
         .badge-chargeable { color: #f87171; font-weight: bold; background-color: rgba(248, 113, 113, 0.15); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(248, 113, 113, 0.3); display: inline-block; }
         
-        button, input, select { touch-action: manipulation; }
+        button, input, select, textarea { touch-action: manipulation; }
         @media (min-width: 768px) {
             .max-w-2xl { max-width: 48rem !important; }
         }
@@ -179,6 +179,12 @@
                     <div class="flex justify-between"><span id="lblSubTotal">Subtotal:</span><span id="subTotal">0.00 AED</span></div>
                     <div class="flex justify-between"><span id="lblVat">VAT (5%):</span><span id="vatAmount">0.00 AED</span></div>
                     <div class="flex justify-between font-bold text-sm text-stone-100 border-t border-[#382d24] pt-2 mt-1"><span id="lblGrandTotal">Grand Total:</span><span id="grandTotal" class="text-[#DCA773] font-serif-luxury text-base">0.00 AED</span></div>
+                </div>
+
+                <!-- NOTE OPTIONNELLE (PETITS BOBO / DÉFAUTS SUR LES HABITS) -->
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Garment Notes / Defects (Optional)</label>
+                    <textarea id="recordOptionalNote" placeholder="e.g., Stain on collar, small tear on left sleeve, missing button..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none"></textarea>
                 </div>
 
                 <button onclick="document.getElementById('photoInput').click()" class="w-full bg-[#12100e] hover:bg-[#221d18] text-stone-300 font-bold p-3.5 rounded-xl text-xs border border-dashed border-[#382d24] transition flex items-center justify-center gap-2" id="btnPhotoProof">
@@ -387,6 +393,17 @@
                     <span class="text-[10px] bg-[#12100e] border border-[#382d24] text-stone-400 font-bold px-2.5 py-1 rounded-full" id="lblAutoArchive">Auto-Archive 00:00</span>
                 </div>
 
+                <!-- OUTILS DE SAUVEGARDE My Files -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportDatabaseBackup()" class="bg-[#191512] hover:bg-[#221d18] text-[#DCA773] border border-[#382d24] font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                        📥 Export Backup
+                    </button>
+                    <button onclick="document.getElementById('importFileJson').click()" class="bg-[#191512] hover:bg-[#221d18] text-stone-200 border border-[#382d24] font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                        📤 Import Backup
+                    </button>
+                    <input type="file" id="importFileJson" accept=".json" class="hidden" onchange="importDatabaseBackup(event)">
+                </div>
+
                 <div class="space-y-3 bg-[#12100e] p-3.5 rounded-2xl border border-[#382d24]">
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-stone-400">🔍</span>
@@ -493,6 +510,12 @@
                 <div class="bg-stone-50 p-3.5 rounded-2xl text-xs space-y-1.5 font-medium text-stone-700 border border-stone-200">
                     <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1.5"><span>Total Pieces:</span><span id="modalClothesCount">3 pieces</span></div>
                     <div class="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-200 pt-2 mt-1"><span>Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-base">0.00 AED</span></div>
+                </div>
+
+                <!-- NOTE AFFICHÉE DANS LE REÇU / PDF SI REMPLIE -->
+                <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-2xl text-xs space-y-1 text-stone-800">
+                    <p class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
+                    <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
                 </div>
 
                 <div id="modalPhotoContainer" class="pt-2"></div>
@@ -870,6 +893,7 @@
             const roomInput = document.getElementById('roomNumber');
             const roomNum = roomInput.value.trim();
             const editingId = document.getElementById('editingRecordId').value;
+            const optionalNote = document.getElementById('recordOptionalNote').value.trim();
 
             if (!roomNum) {
                 alert('Please enter a room number.');
@@ -904,6 +928,7 @@
                         subtotal: subtotal,
                         vat: vat,
                         total: grandTotal,
+                        note: optionalNote,
                         photo: currentImageData || cachedSlips[index].photo,
                         guest_name: pmsData.guestName,
                         room_typ: pmsData.roomTyp,
@@ -923,6 +948,7 @@
                     subtotal: subtotal,
                     vat: vat,
                     total: grandTotal,
+                    note: optionalNote,
                     photo: currentImageData,
                     guest_name: pmsData.guestName,
                     room_typ: pmsData.roomTyp,
@@ -943,6 +969,7 @@
         function reinitialiserFormulaire() {
             document.getElementById('roomNumber').value = ''; 
             document.getElementById('editingRecordId').value = '';
+            document.getElementById('recordOptionalNote').value = '';
             document.getElementById('roomPmsInfoBox').classList.add('hidden');
             validateRoomNumber();
             cart = {}; currentImageData = null;
@@ -1225,6 +1252,49 @@
             });
         }
 
+        // FONCTIONS DE SAUVEGARDE & RESTAURATION My Files
+        function exportDatabaseBackup() {
+            chargerDonneesLocalStorage();
+            if (cachedSlips.length === 0) {
+                alert("⚠️ Aucun enregistrement à sauvegarder.");
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cachedSlips, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadAnchor.setAttribute("download", `Remal_Laundry_Backup_${dateStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importDatabaseBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        if (confirm(`⚠️ Attention : Importer ce fichier va fusionner ou remplacer l'historique par ${importedData.length} enregistrements. Voulez-vous continuer ?`)) {
+                            cachedSlips = importedData;
+                            sauvegarderDonneesLocalStorage();
+                            alert("✅ Base de données restaurée avec succès !");
+                            afficherListeBordereauxLocal();
+                            chargerLiveOrders();
+                        }
+                    } else {
+                        alert("⚠️ Format de fichier de sauvegarde invalide.");
+                    }
+                } catch (err) {
+                    alert("⚠️ Erreur lors de la lecture du fichier de sauvegarde.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
         function renderManagementDashboard() {
             chargerDonneesLocalStorage();
 
@@ -1495,6 +1565,16 @@
             document.getElementById('modalClothesCount').innerText = `${entry.total_clothes} pieces`;
             document.getElementById('modalTotal').innerText = `${entry.total.toFixed(2)} AED`;
 
+            // Gestion de l'affichage de la note dans le reçu modal/PDF
+            const noteBox = document.getElementById('modalNoteBox');
+            const noteText = document.getElementById('modalNoteText');
+            if (entry.note && entry.note.trim() !== '') {
+                noteText.innerText = entry.note;
+                noteBox.classList.remove('hidden');
+            } else {
+                noteBox.classList.add('hidden');
+            }
+
             const pContainer = document.getElementById('modalPhotoContainer');
             if (entry.photo) {
                 pContainer.innerHTML = `<div class="border-t border-stone-200 pt-3 mt-2"><p class="font-bold text-xs mb-1 text-stone-700">Proof Photo:</p><img src="${entry.photo}" class="w-full max-h-48 object-cover rounded-2xl border border-stone-300"></div>`;
@@ -1502,7 +1582,7 @@
                 pContainer.innerHTML = '';
             }
 
-            const whatsappMsg = encodeURIComponent(`*REMAL HOTEL - LAUNDRY SLIP*\n*Identifier:* ${entry.room}\n*Guest/Staff:* ${entry.guest_name || 'Guest'}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${entry.total.toFixed(2)} AED`);
+            const whatsappMsg = encodeURIComponent(`*REMAL HOTEL - LAUNDRY SLIP*\n*Identifier:* ${entry.room}\n*Guest/Staff:* ${entry.guest_name || 'Guest'}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${entry.total.toFixed(2)} AED${entry.note ? `\n*Note:* ${entry.note}` : ''}`);
             document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
             document.getElementById('detailModal').classList.remove('hidden');
@@ -1517,7 +1597,6 @@
             fermerModal();
 
             if (entry.is_spa) {
-                // Remplir le formulaire SPA pour modification
                 switchMainSection('spa');
                 document.getElementById('editingSpaId').value = entry.id;
                 document.getElementById('spaFormTitleLabel').innerText = `✏️ Edit SPA Receipt #${entry.spa_serial}`;
@@ -1532,7 +1611,6 @@
                 if(entry.options?.delivery_date) document.getElementById('spa-delivery-date').value = entry.options.delivery_date;
                 if(entry.options?.delivery_time) document.getElementById('spa-delivery-time').value = entry.options.delivery_time;
 
-                // Réinitialiser puis injecter les quantités du SPA
                 const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#191512\\])');
                 rows.forEach(row => {
                     const input = row.querySelector('.spa-qty-input');
@@ -1546,7 +1624,6 @@
                 calculateSpaTotal();
 
             } else {
-                // Remplir le formulaire Room/Laundry pour modification
                 switchMainSection('newRecord');
                 document.getElementById('editingRecordId').value = entry.id;
                 document.getElementById('lblFormTitle').innerText = `✏️ Edit Record for Room ${entry.room}`;
@@ -1555,14 +1632,15 @@
 
                 selectCountType(entry.count_type || 'hotel');
 
-                // Sélectionner le style de pliage
                 const styleVal = entry.options?.service_style;
                 if (styleVal) {
                     const radio = document.querySelector(`input[name="foldingOption"][value="${styleVal}"]`);
                     if (radio) radio.checked = true;
                 }
 
-                // Injecter le panier d'articles
+                // Remplir la note optionnelle
+                document.getElementById('recordOptionalNote').value = entry.note || '';
+
                 cart = {};
                 if (entry.items) {
                     for (const [k, v] of Object.entries(entry.items)) {
