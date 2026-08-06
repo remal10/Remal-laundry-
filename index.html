@@ -246,9 +246,11 @@
         <!-- SECTION SPA LAUNDRY DAILY RECORD SHEET -->
         <section id="spa-laundry-section" class="hidden remal-card p-6 rounded-3xl space-y-6 relative max-w-4xl mx-auto text-stone-200 printable-page">
             
+            <input type="hidden" id="editingSpaId" value="">
+
             <div class="border-b border-[#382d24] pb-6 flex justify-between items-center">
                 <div class="space-y-2">
-                    <h2 class="text-xl font-serif-luxury font-bold text-[#DCA773] tracking-wide">V Element SPA Laundry Daily Record Sheet</h2>
+                    <h2 class="text-xl font-serif-luxury font-bold text-[#DCA773] tracking-wide" id="spaFormTitleLabel">V Element SPA Laundry Daily Record Sheet</h2>
                     <div class="flex items-center gap-1.5 text-xs text-stone-400">
                         <span class="font-bold uppercase tracking-wider">Date :</span>
                         <span id="spa-current-date" class="font-semibold text-stone-200"></span>
@@ -368,7 +370,7 @@
             </div>
 
             <div id="spa-action-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 no-print">
-                <button onclick="validateAndSaveSpaReceipt()" class="w-full py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                <button onclick="validateAndSaveSpaReceipt()" id="btnSaveSpa" class="w-full py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
                     <i class="fas fa-check-circle"></i> Validate & Save SPA Receipt
                 </button>
                 <button onclick="exportSpaToPDF()" class="w-full py-3 bg-[#191512] hover:bg-[#221d18] text-[#DCA773] border border-[#382d24] font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
@@ -501,8 +503,9 @@
                     <button onclick="genererPDF()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📥 Download PDF</button>
                     <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">💬 Share WhatsApp</a>
                 </div>
-                <div class="grid grid-cols-1 gap-2">
-                    <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1">🗑️ Delete Record</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1">✏️ Edit Record</button>
+                    <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1">🗑️ Delete</button>
                 </div>
             </div>
         </div>
@@ -617,7 +620,7 @@
             const spaDateEl = document.getElementById('spa-current-date');
             if(spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
             const serialEl = document.getElementById('spa-serial-no');
-            if(serialEl) serialEl.value = String(23).padStart(4, '0');
+            if(serialEl && !serialEl.value) serialEl.value = String(23).padStart(4, '0');
 
             const now = new Date();
             const todayIso = now.toISOString().split('T')[0];
@@ -1325,6 +1328,7 @@
             const collectedBy = document.getElementById('spa-collected-by').value.trim();
             const deliveredBy = document.getElementById('spa-delivered-by').value.trim();
             const givenBy = document.getElementById('spa-given-by').value.trim();
+            const editingSpaId = document.getElementById('editingSpaId').value;
             
             const colDate = document.getElementById('spa-collection-date').value;
             const colTime = document.getElementById('spa-collection-time').value;
@@ -1359,37 +1363,67 @@
             });
 
             chargerDonneesLocalStorage();
-            const spaRecord = {
-                id: Date.now(),
-                is_spa: true,
-                spa_serial: serialNo,
-                room: `SPA #${serialNo}`,
-                guest_name: givenBy,
-                room_typ: 'SPA',
-                agency: 'V Element SPA',
-                count_type: 'guest',
-                options: { 
-                    service_style: 'SPA Daily Sheet', 
-                    collection_date: colDate, 
-                    collection_time: colTime, 
-                    delivery_date: delDate, 
-                    delivery_time: delTime, 
-                    collected_by: collectedBy, 
-                    delivered_by: deliveredBy 
-                },
-                items: spaItems,
-                total_clothes: totalClothes,
-                subtotal: grandTotalValue,
-                vat: 0,
-                total: grandTotalValue,
-                status: 'Collected',
-                created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
-            };
 
-            cachedSlips.push(spaRecord);
+            if (editingSpaId) {
+                const index = cachedSlips.findIndex(s => s.id == editingSpaId);
+                if (index !== -1) {
+                    cachedSlips[index] = {
+                        ...cachedSlips[index],
+                        spa_serial: serialNo,
+                        room: `SPA #${serialNo}`,
+                        guest_name: givenBy,
+                        options: { 
+                            ...cachedSlips[index].options,
+                            collection_date: colDate, 
+                            collection_time: colTime, 
+                            delivery_date: delDate, 
+                            delivery_time: delTime, 
+                            collected_by: collectedBy, 
+                            delivered_by: deliveredBy 
+                        },
+                        items: spaItems,
+                        total_clothes: totalClothes,
+                        subtotal: grandTotalValue,
+                        total: grandTotalValue
+                    };
+                }
+                alert(`✅ SPA Receipt #${serialNo} updated successfully!`);
+                document.getElementById('editingSpaId').value = '';
+                document.getElementById('spaFormTitleLabel').innerText = "V Element SPA Laundry Daily Record Sheet";
+                document.getElementById('btnSaveSpa').innerHTML = `<i class="fas fa-check-circle"></i> Validate & Save SPA Receipt`;
+            } else {
+                const spaRecord = {
+                    id: Date.now(),
+                    is_spa: true,
+                    spa_serial: serialNo,
+                    room: `SPA #${serialNo}`,
+                    guest_name: givenBy,
+                    room_typ: 'SPA',
+                    agency: 'V Element SPA',
+                    count_type: 'guest',
+                    options: { 
+                        service_style: 'SPA Daily Sheet', 
+                        collection_date: colDate, 
+                        collection_time: colTime, 
+                        delivery_date: delDate, 
+                        delivery_time: delTime, 
+                        collected_by: collectedBy, 
+                        delivered_by: deliveredBy 
+                    },
+                    items: spaItems,
+                    total_clothes: totalClothes,
+                    subtotal: grandTotalValue,
+                    vat: 0,
+                    total: grandTotalValue,
+                    status: 'Collected',
+                    created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
+                };
+                cachedSlips.push(spaRecord);
+                alert(`✅ Reçu SPA validé et archivé !\nNuméro de Série : #${serialNo}\nTotal : ${grandTotalText}`);
+            }
+
             sauvegarderDonneesLocalStorage();
-
-            alert(`✅ Reçu SPA validé et archivé !\nNuméro de Série : #${serialNo}\nTotal : ${grandTotalText}`);
+            switchMainSection('liveRecord');
             return true;
         }
 
@@ -1472,6 +1506,72 @@
             document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
             document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function modifierBordereauActuel() {
+            if (!selectedIdForModal) return;
+            chargerDonneesLocalStorage();
+            const entry = cachedSlips.find(e => e.id == selectedIdForModal);
+            if (!entry) return;
+
+            fermerModal();
+
+            if (entry.is_spa) {
+                // Remplir le formulaire SPA pour modification
+                switchMainSection('spa');
+                document.getElementById('editingSpaId').value = entry.id;
+                document.getElementById('spaFormTitleLabel').innerText = `✏️ Edit SPA Receipt #${entry.spa_serial}`;
+                document.getElementById('btnSaveSpa').innerHTML = `<i class="fas fa-save"></i> Update SPA Receipt`;
+
+                document.getElementById('spa-serial-no').value = entry.spa_serial || '';
+                document.getElementById('spa-given-by').value = entry.guest_name || '';
+                document.getElementById('spa-collected-by').value = entry.options?.collected_by || '';
+                document.getElementById('spa-delivered-by').value = entry.options?.delivered_by || '';
+                if(entry.options?.collection_date) document.getElementById('spa-collection-date').value = entry.options.collection_date;
+                if(entry.options?.collection_time) document.getElementById('spa-collection-time').value = entry.options.collection_time;
+                if(entry.options?.delivery_date) document.getElementById('spa-delivery-date').value = entry.options.delivery_date;
+                if(entry.options?.delivery_time) document.getElementById('spa-delivery-time').value = entry.options.delivery_time;
+
+                // Réinitialiser puis injecter les quantités du SPA
+                const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#191512\\])');
+                rows.forEach(row => {
+                    const input = row.querySelector('.spa-qty-input');
+                    const itemName = row.querySelector('td').innerText;
+                    if (input && entry.items[itemName]) {
+                        input.value = entry.items[itemName].qty;
+                    } else if (input) {
+                        input.value = '';
+                    }
+                });
+                calculateSpaTotal();
+
+            } else {
+                // Remplir le formulaire Room/Laundry pour modification
+                switchMainSection('newRecord');
+                document.getElementById('editingRecordId').value = entry.id;
+                document.getElementById('lblFormTitle').innerText = `✏️ Edit Record for Room ${entry.room}`;
+                document.getElementById('roomNumber').value = entry.room;
+                onRoomNumberInput();
+
+                selectCountType(entry.count_type || 'hotel');
+
+                // Sélectionner le style de pliage
+                const styleVal = entry.options?.service_style;
+                if (styleVal) {
+                    const radio = document.querySelector(`input[name="foldingOption"][value="${styleVal}"]`);
+                    if (radio) radio.checked = true;
+                }
+
+                // Injecter le panier d'articles
+                cart = {};
+                if (entry.items) {
+                    for (const [k, v] of Object.entries(entry.items)) {
+                        cart[k] = { ...v };
+                    }
+                }
+                renderItems();
+                calculateGlobalTotals();
+            }
         }
 
         function genererPDF() {
