@@ -6,7 +6,7 @@
     <title>Remal Hotel & Villas - Laundry OS</title>
     
     <!-- PWA META TAGS -->
-    <meta name="theme-color" content="#12100e">
+    <meta name="theme-color" content="#0f0e0c">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Remal Laundry">
@@ -19,8 +19,8 @@
         "description": "Front Desk & Laundry Management System",
         "start_url": "./",
         "display": "standalone",
-        "background_color": "#12100e",
-        "theme_color": "#12100e",
+        "background_color": "#0f0e0c",
+        "theme_color": "#0f0e0c",
         "orientation": "portrait",
         "icons": [
             { "src": "https://cdn-icons-png.flaticon.com/512/3003/3003984.png", "sizes": "192x192", "type": "image/png" },
@@ -99,42 +99,33 @@
 </head>
 <body class="min-h-screen pb-16">
 
-    <!-- OVERLAY CONNEXION PIN (FRONT DESK ET LAUNDRY PLANT SEULEMENT) -->
-    <div id="pinLoginModal" class="fixed inset-0 bg-[#0f0e0c] z-[200] flex items-center justify-center p-4">
-        <div class="remal-card w-full max-w-sm rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl">
+    <!-- OVERLAY CONNEXION PIN (DESIGN OFFICIEL IDENTIQUE À LA CAPTURE) -->
+    <div id="pinLoginModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+        <div class="remal-card w-full max-w-sm rounded-2xl p-6 sm:p-8 text-center space-y-6 shadow-2xl border border-[#382C1E]">
             <div>
-                <h1 class="text-xl font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em]">R E M A L</h1>
-                <p class="text-[10px] text-stone-400 uppercase tracking-widest mt-1">Laundry Management System</p>
+                <h2 class="text-lg font-serif-luxury text-[#DCA773] font-bold tracking-[0.2em] uppercase">SELECT ROLE</h2>
+                <div class="w-full h-px bg-[#2f2820] my-2"></div>
+                <p class="text-xs text-stone-400">Please identify your terminal.</p>
             </div>
 
-            <div class="space-y-2 text-left">
-                <label class="block text-xs font-bold text-stone-300">Select Role / Terminal</label>
-                <select id="userRoleSelect" class="w-full bg-[#0f0e0c] text-[#DCA773] font-bold border border-[#2f2820] rounded-xl p-3 text-xs outline-none">
-                    <option value="Front Desk">🚪 Front Desk (PMS Entry Only - PIN: 1234)</option>
-                    <option value="Laundry Plant">🧺 Laundry Plant (Full Access - PIN: 5678)</option>
-                </select>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-stone-300 mb-1.5">Terminal Role</label>
+                    <select id="userRoleSelect" class="w-full bg-[#0f0e0c] text-stone-200 border border-[#2f2820] rounded-xl p-3 text-xs outline-none focus:border-[#DCA773]">
+                        <option value="Front Desk">Front Desk (PMS Entry Only - PIN: 1234)</option>
+                        <option value="Laundry Plant">Laundry Plant (Full Access - PIN: 5678)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-stone-300 mb-1.5">Security PIN</label>
+                    <input type="password" id="pinInputDisplay" placeholder="Enter PIN" maxlength="4" class="w-full text-center text-base font-bold bg-[#0f0e0c] border border-[#2f2820] text-[#DCA773] rounded-xl p-3 tracking-[0.3em] outline-none focus:border-[#DCA773]">
+                </div>
             </div>
 
-            <div class="space-y-2">
-                <label class="block text-xs font-bold text-stone-400">Enter 4-Digit Security PIN</label>
-                <input type="password" id="pinInputDisplay" readonly maxlength="4" placeholder="••••" class="w-full text-center text-2xl font-black bg-[#0f0e0c] border border-[#2f2820] text-[#DCA773] rounded-xl p-3 tracking-[0.5em] outline-none">
-            </div>
-
-            <!-- PAVÉ NUMÉRIQUE TACTILE -->
-            <div class="grid grid-cols-3 gap-2 pt-1">
-                <button onclick="appendPin('1')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">1</button>
-                <button onclick="appendPin('2')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">2</button>
-                <button onclick="appendPin('3')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">3</button>
-                <button onclick="appendPin('4')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">4</button>
-                <button onclick="appendPin('5')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">5</button>
-                <button onclick="appendPin('6')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">6</button>
-                <button onclick="appendPin('7')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">7</button>
-                <button onclick="appendPin('8')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">8</button>
-                <button onclick="appendPin('9')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">9</button>
-                <button onclick="clearPin()" class="py-3 bg-rose-950/40 text-rose-300 font-bold text-xs rounded-xl border border-rose-900/50">C</button>
-                <button onclick="appendPin('0')" class="py-3 bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-200 font-bold text-lg rounded-xl border border-[#2f2820]">0</button>
-                <button onclick="submitPinLogin()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold text-sm rounded-xl">OK</button>
-            </div>
+            <button onclick="submitPinLogin()" class="w-full bg-[#8C6A3F] hover:bg-[#a37c4c] text-stone-100 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg">
+                VERIFY
+            </button>
         </div>
     </div>
 
@@ -153,36 +144,40 @@
         </div>
     </div>
 
-    <!-- HEADER SOMBRE PRO -->
-    <header class="bg-[#0f0e0c] sticky top-0 z-50 border-b border-[#2f2820] shadow-md no-print">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+    <!-- HEADER DE LUXE AVEC IMAGE DE L'HÔTEL -->
+    <header class="relative bg-[#0b0a08] border-b border-[#2f2820] no-print overflow-hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none" style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-[#0b0a08]/60 via-[#0b0a08]/80 to-[#0f0e0c]"></div>
+
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-lg bg-[#DCA773]/10 border border-[#DCA773]/30 flex items-center justify-center text-[#DCA773] font-bold text-sm">
-                    R
-                </div>
-                <div>
-                    <h1 class="text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.2em] uppercase">R E M A L</h1>
-                    <p class="text-[9px] text-stone-400 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
+                <div class="space-y-0.5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl sm:text-2xl font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">R E M A L</span>
+                        <span class="text-xs text-[#DCA773]/70 font-serif-luxury hidden sm:inline">رمال</span>
+                    </div>
+                    <p class="text-[9px] text-stone-400 uppercase tracking-widest">فندق وفيلا · HOTEL & VILLAS</p>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3">
-                <button onclick="logoutUser()" title="Switch User" class="text-[10px] font-bold px-3 py-1.5 rounded-xl border border-[#2f2820] bg-[#181614] text-[#DCA773] flex items-center gap-1.5 hover:border-[#DCA773] transition">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span id="activeUserLabel">Front Desk</span> 🔓
-                </button>
-
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614] text-stone-300 text-xs border border-[#2f2820] rounded-xl px-2.5 py-1.5 outline-none font-semibold cursor-pointer">
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                    <option value="hi">हिन्दी</option>
+                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614]/90 text-stone-300 text-xs border border-[#2f2820] rounded-xl px-2.5 py-1.5 outline-none font-semibold cursor-pointer">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="ar">🇦🇪 العربية</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
                 </select>
+
+                <button onclick="logoutUser()" title="Switch Role" class="text-xs font-bold px-3.5 py-2 rounded-xl border border-[#2f2820] bg-[#181614]/90 text-[#DCA773] flex items-center gap-2 hover:border-[#DCA773] transition shadow-md">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="activeUserLabel">SELECT ROLE</span>
+                </button>
             </div>
         </div>
     </header>
 
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5">
 
-        <!-- NAVIGATION PRINCIPALE (ADAPTÉE ET FILTRÉE PAR RÔLE) -->
+        <!-- NAVIGATION PRINCIPALE -->
         <div id="mainNavContainer" class="flex bg-[#181614] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400 no-print">
             <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">Active Rooms</button>
             <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">SPA</button>
@@ -216,7 +211,7 @@
                     <label class="block text-xs font-bold text-stone-400 mb-1 tracking-wide" id="lblRoomNum">Room Number</label>
                     <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-xl p-3 text-sm font-bold">
                     
-                    <p class="text-[10px] text-stone-400 mt-1" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520</p>
+                    <p class="text-[10px] text-stone-400 mt-1" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
                     
                     <div id="roomPmsInfoBox" class="hidden mt-2 p-3 bg-[#211e1a] border border-[#2f2820] rounded-2xl text-xs space-y-1.5 shadow-sm">
                         <div class="flex justify-between font-bold text-stone-200">
@@ -273,7 +268,6 @@
 
                 <div id="itemsContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1 scrollbar-none"></div>
 
-                <!-- MANUAL CUSTOM ITEMS -->
                 <details id="detailsCustomItems" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
                     <summary class="p-3 cursor-pointer font-bold text-[#DCA773] text-xs uppercase tracking-wider flex justify-between items-center select-none">
                         <span>➕ Other / Custom Items (Manual Entry)</span>
@@ -337,7 +331,10 @@
                         <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] uppercase tracking-wider">PMS Mass Entry & PDF Parser</h2>
                         <p class="text-xs text-stone-400 mt-0.5">Front Desk Morning Setup Terminal</p>
                     </div>
-                    <span class="text-[10px] bg-amber-950 text-amber-200 font-bold px-3 py-1 rounded-full border border-amber-800">Accurate Guest Mapping</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="effacerRapportPmsAujourdhui()" class="text-[10px] bg-rose-950/60 text-rose-300 hover:bg-rose-900 border border-rose-800 font-bold px-2.5 py-1 rounded-full transition">🗑 Clear Today's PMS</button>
+                        <span class="text-[10px] bg-amber-950 text-amber-200 font-bold px-3 py-1 rounded-full border border-amber-800">Accurate Guest Mapping</span>
+                    </div>
                 </div>
                 
                 <p class="text-xs text-stone-300">Upload your PMS multi-page PDF report directly or paste the text content below.</p>
@@ -680,41 +677,29 @@
         };
 
         let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
-        let enteredPin = '';
-
-        function appendPin(digit) {
-            if (enteredPin.length < 4) {
-                enteredPin += digit;
-                document.getElementById('pinInputDisplay').value = enteredPin;
-            }
-        }
-
-        function clearPin() {
-            enteredPin = '';
-            document.getElementById('pinInputDisplay').value = '';
-        }
 
         function submitPinLogin() {
             const selectedRole = document.getElementById('userRoleSelect').value;
             const validPin = USER_PINS[selectedRole];
+            const pinVal = document.getElementById('pinInputDisplay').value.trim();
 
-            if (enteredPin === validPin) {
+            if (pinVal === validPin) {
                 currentActiveUser = selectedRole;
                 sessionStorage.setItem('remal_auth_user', currentActiveUser);
                 document.getElementById('pinLoginModal').classList.add('hidden');
                 document.getElementById('activeUserLabel').innerText = currentActiveUser;
-                clearPin();
+                document.getElementById('pinInputDisplay').value = '';
                 applyRolePermissions();
             } else {
                 alert('⚠️ Invalid Security PIN! Please try again.');
-                clearPin();
+                document.getElementById('pinInputDisplay').value = '';
             }
         }
 
         function logoutUser() {
             sessionStorage.removeItem('remal_auth_user');
             currentActiveUser = null;
-            clearPin();
+            document.getElementById('pinInputDisplay').value = '';
             document.getElementById('pinLoginModal').classList.remove('hidden');
         }
 
@@ -926,7 +911,7 @@
                 }
 
                 const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
-                if (!guestsErr && guests) {
+                if (!guestsErr && guests && guests.length > 0) {
                     guests.forEach(g => {
                         pmsDatabase[g.room] = {
                             guestName: g.guest_name,
@@ -974,10 +959,48 @@
         function chargerDonneesLocalStorage() {
             const data = localStorage.getItem('remal_laundry_slips');
             cachedSlips = data ? JSON.parse(data) : [];
+
+            // RETENTION DU RAPPORT PMS DU JOUR EN MEMOIRE LOCALSTORAGE
+            const pmsCache = localStorage.getItem('remal_pms_cache');
+            if (pmsCache) {
+                try {
+                    const parsedPms = JSON.parse(pmsCache);
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    if (parsedPms.date === todayStr) {
+                        pmsDatabase = parsedPms.database || {};
+                        
+                        const resultsCard = document.getElementById('massResultsCard');
+                        const container = document.getElementById('massPreviewContainer');
+                        const counterContainer = document.getElementById('massRecordCounter');
+                        
+                        if (resultsCard && container && counterContainer && parsedPms.previewHtml) {
+                            container.innerHTML = parsedPms.previewHtml;
+                            counterContainer.innerHTML = `✅ ${parsedPms.count} PMS record(s) loaded from today's saved report.`;
+                            resultsCard.classList.remove('hidden');
+                        }
+                    } else {
+                        localStorage.removeItem('remal_pms_cache');
+                    }
+                } catch(e) {
+                    console.warn("Erreur lecture du cache PMS local:", e);
+                }
+            }
         }
 
         function sauvegarderDonneesLocalStorage() {
             localStorage.setItem('remal_laundry_slips', JSON.stringify(cachedSlips));
+        }
+
+        function effacerRapportPmsAujourdhui() {
+            if (confirm("Clear today's saved PMS report?")) {
+                localStorage.removeItem('remal_pms_cache');
+                pmsDatabase = {};
+                document.getElementById('massResultsCard').classList.add('hidden');
+                document.getElementById('massPreviewContainer').innerHTML = '';
+                document.getElementById('massRecordCounter').innerHTML = '';
+                document.getElementById('pmsPasteArea').value = '';
+                alert("Today's PMS cache cleared.");
+            }
         }
 
         function isRoomNumberValid(val) {
@@ -1527,7 +1550,7 @@
             }
 
             if (parsedData.length > 0) {
-                counterContainer.innerHTML = `✅ ${parsedData.length} PMS record(s) synced to Cloud!`;
+                counterContainer.innerHTML = `✅ ${parsedData.length} PMS record(s) synced & saved locally!`;
                 resultsCard.classList.remove('hidden');
 
                 let html = ``;
@@ -1593,10 +1616,20 @@
 
                 container.innerHTML = html;
 
+                // PERSISTENCE LOCALSTORAGE POUR EVITER DE REMETTRE LE RAPPORT MEME APRES REFRESH
+                const todayStr = new Date().toISOString().split('T')[0];
+                const pmsCachePayload = {
+                    date: todayStr,
+                    database: pmsDatabase,
+                    previewHtml: html,
+                    count: parsedData.length
+                };
+                localStorage.setItem('remal_pms_cache', JSON.stringify(pmsCachePayload));
+
                 if (supabaseClient && cloudGuestsPayload.length > 0) {
                     try {
                         await supabaseClient.from('pms_guests').upsert(cloudGuestsPayload);
-                        alert(`✅ PMS Report for ${parsedData.length} rooms updated in Cloud!`);
+                        alert(`✅ PMS Report for ${parsedData.length} rooms saved locally & updated in Cloud!`);
                     } catch(e) {
                         console.warn("Erreur sauvegarde Cloud PMS Guests:", e);
                     }
