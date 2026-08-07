@@ -1,113 +1,68 @@
-/* REMAL LAUNDRY CLOUD - LOGIQUE PRINCIPALE */
+:root {
+    --bg-dark: #0f0e0c;
+    --bg-card: #181614;
+    --bg-card-hover: #211e1a;
+    --text-gold: #DCA773;
+    --border-gold: #2f2820;
+    --font-family: 'Plus Jakarta Sans', sans-serif;
+    --font-serif: 'Playfair Display', serif;
+}
+body { 
+    font-family: var(--font-family); 
+    background-color: var(--bg-dark); 
+    color: #f3f4f6; 
+    -webkit-tap-highlight-color: transparent; 
+}
+.font-serif-luxury { font-family: var(--font-serif); }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
-const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
-let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
-let cachedSlips = [];
-let pmsDatabase = {}; 
-let cart = {};
-let currentImageData = null;
-let selectedIdForModal = null;
-let currentService = 'laundry';
-let currentCountType = 'hotel';
+.remal-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-gold); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+}
+.remal-input { 
+    background: #0f0e0c; 
+    border: 1px solid var(--border-gold); 
+    color: #f3f4f6; 
+    transition: border-color 0.2s;
+}
+.remal-input:focus { 
+    border-color: #DCA773; 
+    outline: none; 
+}
+.laundry-row { background-color: rgba(40, 167, 69, 0.12) !important; }
+.badge-green { color: #5cb85c; font-weight: bold; background-color: rgba(40, 167, 69, 0.2); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(92, 184, 92, 0.3); display: inline-block; }
+.badge-chargeable { color: #f87171; font-weight: bold; background-color: rgba(248, 113, 113, 0.15); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(248, 113, 113, 0.3); display: inline-block; }
 
-/* --- INITIALISATION --- */
-document.addEventListener('DOMContentLoaded', async () => {
-    if (!currentActiveUser) {
-        document.getElementById('pinLoginModal').classList.remove('hidden');
-    } else {
-        document.getElementById('pinLoginModal').classList.add('hidden');
-        document.getElementById('activeUserLabel').innerText = currentActiveUser;
-        applyRolePermissions();
+button, input, select, textarea { touch-action: manipulation; }
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8) sepia(1) saturate(3) hue-rotate(340deg);
+    cursor: pointer;
+}
+
+details summary::-webkit-details-marker { display: none; }
+details summary { list-style: none; }
+
+.printable-page {
+    box-sizing: border-box !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+}
+
+@media print {
+    body { background-color: #ffffff !important; color: #000000 !important; margin: 0 !important; padding: 0 !important; }
+    .no-print { display: none !important; }
+    .printable-page { 
+        background-color: #ffffff !important; 
+        color: #000000 !important; 
+        border: none !important; 
+        box-shadow: none !important; 
+        padding: 10mm !important; 
+        width: 100% !important;
+        max-width: 100% !important;
     }
-    
-    setLang('en');
-    selectCountType('hotel');
-    renderItems();
-    await chargerDonneesEtAbonnementCloud();
-    initSignaturePads();
-});
-
-/* --- GESTION DES RÔLES & AUTH --- */
-function submitPinLogin() {
-    const selectedRole = document.getElementById('userRoleSelect').value;
-    currentActiveUser = selectedRole;
-    sessionStorage.setItem('remal_auth_user', currentActiveUser);
-    document.getElementById('pinLoginModal').style.display = 'none';
-    document.getElementById('activeUserLabel').innerText = currentActiveUser;
-    applyRolePermissions();
 }
-
-function logoutUser() {
-    sessionStorage.removeItem('remal_auth_user');
-    window.location.reload();
-}
-
-function applyRolePermissions() {
-    const isFrontDesk = (currentActiveUser === 'Front Desk');
-    document.getElementById('navBtnSpa').style.display = isFrontDesk ? 'none' : 'block';
-    document.getElementById('navBtnPdfList').style.display = isFrontDesk ? 'none' : 'block';
-    document.getElementById('navBtnDashboard').style.display = isFrontDesk ? 'none' : 'block';
-    switchMainSection('liveRecord');
-}
-
-/* --- LOGIQUE D'AFFICHAGE ET ACTIONS --- */
-function switchMainSection(section) {
-    ['newRecord', 'massEntry', 'liveRecord', 'spa', 'pdfList', 'dashboard'].forEach(sec => {
-        const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
-        if(el) el.classList.add('hidden');
-    });
-    
-    const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
-    if(targetSection) targetSection.classList.remove('hidden');
-    
-    if (section === 'pdfList') afficherListeBordereauxLocal();
-    if (section === 'liveRecord') chargerLiveOrders();
-}
-
-/* --- LE CORRECTIF MODAL (Items Display) --- */
-function ouvrirModalDetails(id) {
-    selectedIdForModal = id;
-    const entry = cachedSlips.find(e => e.id == id);
-    if (!entry) return;
-
-    // Mise à jour des infos texte du modal...
-    // (Ajoute ici le remplissage des champs de texte comme dans ton code original)
-
-    const tbody = document.getElementById('modalTableBody'); 
-    tbody.innerHTML = '';
-    
-    const itemsObj = entry.items || {};
-    Object.keys(itemsObj).forEach(k => {
-        const item = itemsObj[k];
-        if (!item || !item.name) return;
-
-        let qty = item.qty || 0;
-        let freeQty = item.freeQty || 0;
-        let chargeableQty = entry.count_type === 'quota_extra' ? (qty - freeQty) : (entry.count_type === 'hotel' ? 0 : qty);
-        if(chargeableQty < 0) chargeableQty = 0;
-
-        if (freeQty > 0) {
-            const trFree = document.createElement('tr');
-            trFree.className = "py-1 border-b border-stone-200 text-emerald-700";
-            trFree.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} (Free Quota)</td><td class="text-center font-bold p-1.5">${freeQty}</td><td class="text-right font-bold p-1.5">0.00</td>`;
-            tbody.appendChild(trFree);
-        }
-        
-        const effectiveQty = (entry.count_type === 'hotel') ? qty : chargeableQty;
-        if (effectiveQty > 0 || entry.count_type === 'guest' || entry.is_spa) {
-            const displayQty = (entry.count_type === 'quota_extra') ? chargeableQty : qty;
-            const trChg = document.createElement('tr');
-            trChg.className = "py-1 border-b border-stone-200 text-stone-900";
-            trChg.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name}</td><td class="text-center font-bold p-1.5">${displayQty}</td><td class="text-right font-bold p-1.5">${(displayQty * (item.price || 0)).toFixed(2)}</td>`;
-            tbody.appendChild(trChg);
-        }
-    });
-    
-    document.getElementById('detailModal').classList.remove('hidden');
-}
-
-/* --- AJOUTE ICI LE RESTE DE TES FONCTIONS --- */
-// (Copie ici toutes les autres fonctions de ton ancien script : 
-// sauvegarderBordereauLocal, chargerDonneesEtAbonnementCloud, etc.)
-
-// Fin du fichier app.js
