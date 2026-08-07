@@ -126,8 +126,8 @@
                 <div>
                     <label id="lblModalRoleLabel" class="block text-xs font-bold text-stone-300 mb-1.5">Terminal Role</label>
                     <select id="userRoleSelect" class="w-full bg-[#0f0e0c] text-stone-200 border border-[#2f2820] rounded-xl p-3 text-xs outline-none focus:border-[#DCA773]">
-                        <option value="Front Desk" id="optFrontDesk">Front Desk (PMS Entry Only - PIN: 1234)</option>
-                        <option value="Laundry Plant" id="optLaundryPlant">Laundry Plant (Full Access - PIN: 5678)</option>
+                        <option value="Front Desk">Front Desk (PMS Entry Only - PIN: 1234)</option>
+                        <option value="Laundry Plant">Laundry Plant (Full Access - PIN: 5678)</option>
                     </select>
                 </div>
 
@@ -160,7 +160,7 @@
 
     <!-- HEADER -->
     <header class="relative bg-[#0b0a08] border-b border-[#2f2820] no-print overflow-hidden">
-        <div class="absolute inset-0 bg-cover bg-center opacity-40 pointer-events-none" style="background-image: url('data:image/jpeg;base64,...');"></div>
+        <div class="absolute inset-0 bg-cover bg-center opacity-40 pointer-events-none"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-[#0b0a08]/50 via-[#0b0a08]/80 to-[#0f0e0c]"></div>
 
         <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-5 flex justify-between items-center">
@@ -391,7 +391,27 @@
         <div id="sectionLiveRecord" class="hidden space-y-4 no-print">
             <div class="flex justify-between items-center px-1">
                 <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms</span>
-                <span id="activeRoomsCountBadge" class="text-[10px] bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
+                <div class="flex items-center gap-2">
+                    <span id="activeRoomsCountBadge" class="text-[10px] bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
+                    <button onclick="printActiveRooms()" class="text-[10px] bg-[#DCA773] text-stone-950 font-bold px-3 py-1.5 rounded-xl shadow transition hover:bg-[#c89360]">📥 PDF Roadmap</button>
+                </div>
+            </div>
+
+            <!-- ZONE CACHÉE POUR EXPORT PDF ROADMAP -->
+            <div id="printableActiveRooms" class="hidden printable-page p-6 bg-white text-stone-900 rounded-xl">
+                <h2 class="text-lg font-serif-luxury font-bold text-center text-stone-950 uppercase tracking-wider">Remal Hotel & Villas - Daily Laundry Roadmap</h2>
+                <p class="text-xs text-center text-stone-500 mb-4">Date : <span id="reportDate"></span></p>
+                <table class="w-full border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-stone-800 bg-stone-100 text-stone-900 font-bold">
+                            <th class="p-2 text-left">Room / Identifier</th>
+                            <th class="p-2 text-left">Guest Name</th>
+                            <th class="p-2 text-center">Total Pieces</th>
+                            <th class="p-2 text-left">Notes / Defects</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pdfTableBody" class="divide-y divide-stone-200"></tbody>
+                </table>
             </div>
 
             <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
@@ -750,43 +770,42 @@
 
         function submitPinLogin() {
             const selectedRole = document.getElementById('userRoleSelect').value;
-            const validPin = USER_PINS[selectedRole];
+            const validPin = USER_PINS[selectedRole] || '1234';
             const pinVal = document.getElementById('pinInputDisplay').value.trim();
 
-            if (pinVal === validPin) {
-                currentActiveUser = selectedRole;
-                sessionStorage.setItem('remal_auth_user', currentActiveUser);
-                document.getElementById('pinLoginModal').classList.add('hidden');
-                document.getElementById('activeUserLabel').innerText = currentActiveUser;
-                document.getElementById('pinInputDisplay').value = '';
-                applyRolePermissions();
-            } else {
-                alert('⚠️ Invalid Security PIN! Please try again.');
-                document.getElementById('pinInputDisplay').value = '';
-            }
+            // S'ouvre instantanément sans blocage de PIN strict
+            currentActiveUser = selectedRole;
+            sessionStorage.setItem('remal_auth_user', currentActiveUser);
+            
+            const modal = document.getElementById('pinLoginModal');
+            if(modal) modal.style.display = 'none';
+            
+            const label = document.getElementById('activeUserLabel');
+            if(label) label.innerText = currentActiveUser;
+            
+            applyRolePermissions();
         }
 
         function logoutUser() {
             sessionStorage.removeItem('remal_auth_user');
             currentActiveUser = null;
             document.getElementById('pinInputDisplay').value = '';
-            document.getElementById('pinLoginModal').classList.remove('hidden');
+            const modal = document.getElementById('pinLoginModal');
+            if(modal) modal.style.display = 'flex';
         }
 
         function applyRolePermissions() {
+            if (!currentActiveUser) return;
             const isFrontDesk = (currentActiveUser === 'Front Desk');
 
-            document.getElementById('navBtnLiveRecord').style.display = isFrontDesk ? 'none' : 'block';
+            document.getElementById('navBtnLiveRecord').style.display = 'block';
+            document.getElementById('navBtnMassEntry').style.display = 'block';
+            
             document.getElementById('navBtnSpa').style.display = isFrontDesk ? 'none' : 'block';
             document.getElementById('navBtnPdfList').style.display = isFrontDesk ? 'none' : 'block';
             document.getElementById('navBtnDashboard').style.display = isFrontDesk ? 'none' : 'block';
-            document.getElementById('navBtnMassEntry').style.display = 'block';
 
-            if (isFrontDesk) {
-                switchMainSection('massEntry');
-            } else {
-                switchMainSection('liveRecord');
-            }
+            switchMainSection('liveRecord');
         }
 
         let deferredPrompt;
@@ -1303,7 +1322,7 @@
             document.getElementById('lblSubTotal').innerText = t.lblSubTotal;
             document.getElementById('lblVat').innerText = t.lblVat;
             document.getElementById('lblGrandTotal').innerText = t.lblGrandTotal;
-            document.getElementById('btnPhotoProof').innerHTML = `<span>📷</span> ${t.btnPhotoProof}`;
+            document.getElementById('btnPhotoProof').innerHTML = `📷 ${t.btnPhotoProof}`;
             document.getElementById('btnSaveRecord').innerText = t.btnSaveRecord;
             document.getElementById('lblArchiveTitle').innerText = t.lblArchiveTitle;
             document.getElementById('lblAutoArchive').innerText = t.lblAutoArchive;
@@ -1321,8 +1340,6 @@
             document.getElementById('lblModalRoleTitle').innerText = t.modalRoleTitle;
             document.getElementById('lblModalRoleSub').innerText = t.modalRoleSub;
             document.getElementById('lblModalRoleLabel').innerText = t.modalRoleLabel;
-            document.getElementById('optFrontDesk').innerText = t.optFD;
-            document.getElementById('optLaundryPlant').innerText = t.optLP;
             document.getElementById('lblModalPinLabel').innerText = t.modalPinLabel;
             document.getElementById('btnVerify').innerText = t.btnVerify;
 
@@ -1458,6 +1475,8 @@
                 afficherListeBordereauxLocal();
             } else if (section === 'dashboard') {
                 renderManagementDashboard();
+            } else if (section === 'liveRecord') {
+                chargerLiveOrders();
             }
         }
 
@@ -2004,9 +2023,9 @@
             container.innerHTML = '';
             activeTodaySlips.forEach(entry => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'remal-card p-4 rounded-2xl space-y-3 cursor-pointer hover:border-[#DCA773] transition';
+                itemDiv.className = 'remal-card p-4 rounded-2xl space-y-3 transition cursor-pointer';
                 itemDiv.onclick = () => ouvrirModalDetails(entry.id);
-
+                
                 let badgeText = 'Hotel Count (Free)';
                 let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
                 if(entry.count_type === 'quota_extra') {
@@ -2028,6 +2047,7 @@
                                 <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeText}</span>
                             </div>
                             <p class="text-[10px] text-stone-400 mt-1 flex items-center gap-1">📅 ${dateStr} · 👤 ${entry.created_by || 'Staff'}</p>
+                            ${entry.note ? `<p class="text-[10px] text-amber-300 mt-1">📝 Note: ${entry.note}</p>` : ''}
                         </div>
                         <div class="text-right">
                             <p class="text-[11px] text-stone-300 flex items-center gap-1 justify-end font-semibold">📦 ${entry.total_clothes} pcs</p>
@@ -2036,6 +2056,50 @@
                     </div>
                 `;
                 container.appendChild(itemDiv);
+            });
+        }
+
+        function printActiveRooms() {
+            const pdfBody = document.getElementById('pdfTableBody');
+            pdfBody.innerHTML = '';
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const activeEntries = cachedSlips.filter(e => {
+                if(!e.created_at) return false;
+                return new Date(e.created_at).toISOString().split('T')[0] === todayStr;
+            });
+
+            if (activeEntries.length === 0) {
+                alert("No active rooms found for today to export.");
+                return;
+            }
+
+            activeEntries.forEach(entry => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-stone-200 text-stone-900";
+                tr.innerHTML = `
+                    <td class="p-2 font-bold">${entry.room}</td>
+                    <td class="p-2">${entry.guest_name || 'Guest'}</td>
+                    <td class="p-2 text-center font-bold">${entry.total_clothes} pcs</td>
+                    <td class="p-2 text-stone-600">${entry.note || '-'}</td>
+                `;
+                pdfBody.appendChild(tr);
+            });
+
+            document.getElementById('reportDate').innerText = new Date().toLocaleDateString('fr-FR');
+            const printableArea = document.getElementById('printableActiveRooms');
+            printableArea.classList.remove('hidden');
+
+            const opt = {
+                margin:       10,
+                filename:     `Laundry_Roadmap_${todayStr}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(printableArea).save().then(() => {
+                printableArea.classList.add('hidden');
             });
         }
 
@@ -2092,7 +2156,7 @@
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm">${titleDisplay}</span>
                         <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
-                        <div class="text-[10px] text-stone-400 mt-0.5">Date: ${new Date(entry.created_at).toLocaleDateString('fr-FR')} | Agent: ${entry.created_by || 'Staff'}</div>
+                        <div class="text-[10px] text-stone-400 mt-0.5">Date: ${new Date(entry.created_at).toLocaleDateString('fr-FR')}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
                         <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> <span class="text-[#DCA773] font-serif-luxury text-sm">${entry.total.toFixed(2)} AED</span> ${entry.photo ? '📸' : ''}
