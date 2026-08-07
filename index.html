@@ -773,7 +773,6 @@
             const validPin = USER_PINS[selectedRole] || '1234';
             const pinVal = document.getElementById('pinInputDisplay').value.trim();
 
-            // S'ouvre instantanément sans blocage de PIN strict
             currentActiveUser = selectedRole;
             sessionStorage.setItem('remal_auth_user', currentActiveUser);
             
@@ -2497,9 +2496,14 @@
                 spaDetailsBox.classList.add('hidden');
             }
 
-            const tbody = document.getElementById('modalTableBody'); tbody.innerHTML = '';
+            const tbody = document.getElementById('modalTableBody'); 
+            tbody.innerHTML = '';
             
-            Object.values(entry.items || {}).forEach(item => {
+            const itemsObj = entry.items || {};
+            Object.keys(itemsObj).forEach(k => {
+                const item = itemsObj[k];
+                if (!item || !item.name) return;
+
                 let qty = item.qty || 0;
                 let freeQty = item.freeQty || 0;
                 let chargeableQty = entry.count_type === 'quota_extra' ? (qty - freeQty) : (entry.count_type === 'hotel' ? 0 : qty);
@@ -2511,11 +2515,22 @@
                     trFree.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} (Free Quota)</td><td class="text-center font-bold p-1.5">${freeQty}</td><td class="text-right font-bold p-1.5">0.00</td>`;
                     tbody.appendChild(trFree);
                 }
-                if (chargeableQty > 0 || entry.count_type === 'guest' || entry.is_spa) {
-                    const trChg = document.createElement('tr');
-                    trChg.className = "py-1 border-b border-stone-200 text-stone-900";
-                    trChg.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} ${entry.count_type === 'quota_extra' ? '(Extra)' : ''}</td><td class="text-center font-bold p-1.5">${qty}</td><td class="text-right font-bold p-1.5">${(qty * item.price).toFixed(2)}</td>`;
-                    tbody.appendChild(trChg);
+                if (chargeableQty > 0 || entry.count_type === 'guest' || entry.is_spa || k.startsWith('custom_') || item.price > 0) {
+                    const effectiveQty = (entry.count_type === 'hotel') ? qty : chargeableQty;
+                    if (entry.count_type === 'hotel' && qty > 0) {
+                        const trH = document.createElement('tr');
+                        trH.className = "py-1 border-b border-stone-200 text-stone-900";
+                        trH.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name}</td><td class="text-center font-bold p-1.5">${qty}</td><td class="text-right font-bold p-1.5">0.00</td>`;
+                        tbody.appendChild(trH);
+                    } else if (effectiveQty > 0 || entry.count_type === 'guest' || entry.is_spa) {
+                        const displayQty = (entry.count_type === 'quota_extra') ? chargeableQty : qty;
+                        if (displayQty > 0 || entry.is_spa) {
+                            const trChg = document.createElement('tr');
+                            trChg.className = "py-1 border-b border-stone-200 text-stone-900";
+                            trChg.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} ${entry.count_type === 'quota_extra' ? '(Extra)' : ''}</td><td class="text-center font-bold p-1.5">${displayQty}</td><td class="text-right font-bold p-1.5">${(displayQty * (item.price || 0)).toFixed(2)}</td>`;
+                            tbody.appendChild(trChg);
+                        }
+                    }
                 }
             });
 
