@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - VERSION FINALE SYNCHRONISÉE & DEBUG */
+/* REMAL LAUNDRY CLOUD - VERSION FINALE PROPRE & SÉPARÉE */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -34,7 +34,7 @@ const i18n = {
         lblAutoArchive: "Auto-Archive at 00:00", lblLoadingRecords: "Loading records...", noRecords: "No laundry records found.",
         lblRoomError: "Invalid room number! Allowed ranges: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.",
         lblActiveRoomsHeader: "Active Rooms",
-        navActiveRooms: "Active Rooms", navSpa: "SPA", navArchives: "Archives & Search", navMass: "Mass PDF", navChart: "Chart",
+        navActiveRooms: "Active Rooms", navNewRecord: "Laundry Slip", navSpa: "SPA Sheet", navArchives: "Archives", navMass: "Mass PDF", navChart: "Chart",
         headerSub: "Al Ruwais City, Abu Dhabi – UAE",
         modalRoleTitle: "SELECT ROLE", modalRoleSub: "Please identify your terminal.", modalRoleLabel: "Terminal Role",
         modalPinLabel: "Security PIN", btnVerify: "VERIFY",
@@ -71,7 +71,7 @@ const i18n = {
         lblAutoArchive: "أرشفة تلقائية ٠٠:٠٠", lblLoadingRecords: "جاري تحميل السجلات...", noRecords: "لا توجد سجلات.",
         lblRoomError: "رقم الغرفة غير صحيح! النطاقات المسموحة: 103-144، 201-246، 301-348، 401-448، 501-520، 601-608.",
         lblActiveRoomsHeader: "الغرف النشطة",
-        navActiveRooms: "الغرف النشطة", navSpa: "السبا", navArchives: "الأرشيف والبحث", navMass: "إدخال مجمع", navChart: "الرسوم البيانية",
+        navActiveRooms: "الغرف النشطة", navNewRecord: "سجل الغسيل", navSpa: "ورقة السبا", navArchives: "الأرشيف", navMass: "إدخال مجمع", navChart: "الرسوم البيانية",
         headerSub: "مدينة الرويس، أبوظبي – الإمارات",
         modalRoleTitle: "اختيار الدور", modalRoleSub: "يرجى تحديد المحطة الخاصة بك.", modalRoleLabel: "دور المحطة",
         modalPinLabel: "رمز الحماية PIN", btnVerify: "تحقق",
@@ -108,7 +108,7 @@ const i18n = {
         lblAutoArchive: "00:00 बजे ऑटो-संग्रह", lblLoadingRecords: "रिकॉर्ड लोड हो रहे हैं...", noRecords: "कोई रिकॉर्ड नहीं मिला।",
         lblRoomError: "अमान्य कमरा नंबर! केवल ये नंबर मान्य हैं: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.",
         lblActiveRoomsHeader: "सक्रिय कमरे",
-        navActiveRooms: "सक्रिय कमरे", navSpa: "स्पा", navArchives: "अभिलेख और खोज", navMass: "मास पीडीएफ", navChart: "चार्ट",
+        navActiveRooms: "सक्रिय कमरे", navNewRecord: "लॉन्ड्री पर्ची", navSpa: "स्पा शीट", navArchives: "अभिलेख", navMass: "मास पीडीएफ", navChart: "चार्ट",
         headerSub: "अल रुवाइस सिटी, अबू धाबी – यूएई",
         modalRoleTitle: "भूमिका चुनें", modalRoleSub: "कृपया अपने टर्मिनल की पहचान करें।", modalRoleLabel: "टर्मिनल भूमिका",
         modalPinLabel: "सुरक्षा पिन", btnVerify: "सत्यापित करें",
@@ -257,20 +257,12 @@ function applyRolePermissions() {
     const isFrontDesk = (currentActiveUser === 'Front Desk');
 
     document.getElementById('navBtnLiveRecord').style.display = 'block';
+    document.getElementById('navBtnNewRecord').style.display = 'block';
     document.getElementById('navBtnMassEntry').style.display = 'block';
     
     document.getElementById('navBtnSpa').style.display = isFrontDesk ? 'none' : 'block';
     document.getElementById('navBtnPdfList').style.display = isFrontDesk ? 'none' : 'block';
     document.getElementById('navBtnDashboard').style.display = isFrontDesk ? 'none' : 'block';
-
-    const quickActionButtons = document.getElementById('quickActionButtons');
-    if (quickActionButtons) {
-        if (isFrontDesk) {
-            quickActionButtons.classList.add('hidden');
-        } else {
-            quickActionButtons.classList.remove('hidden');
-        }
-    }
 
     switchMainSection('liveRecord');
 }
@@ -533,10 +525,11 @@ function setLang(lang) {
     document.getElementById('lblArchiveTitle').innerText = t.lblArchiveTitle;
     document.getElementById('lblAutoArchive').innerText = t.lblAutoArchive;
     document.getElementById('lblLoadingRecords').innerText = t.lblLoadingRecords;
-    document.getElementById('lblRoomError').innerText = t.lblRoomError;
+    document.getElementById('lblRoomError').innerText = t.roomError || t.lblRoomError;
     document.getElementById('lblActiveRoomsHeader').innerText = t.lblActiveRoomsHeader;
 
     document.getElementById('navBtnLiveRecord').innerText = t.navActiveRooms;
+    document.getElementById('navBtnNewRecord').innerText = t.navNewRecord;
     document.getElementById('navBtnSpa').innerText = t.navSpa;
     document.getElementById('navBtnPdfList').innerText = t.navArchives;
     document.getElementById('navBtnMassEntry').innerText = t.navMass;
@@ -651,7 +644,7 @@ function switchMainSection(section) {
         if(el) el.classList.add('hidden');
     });
     
-    ['liveRecord', 'spa', 'pdfList', 'massEntry', 'dashboard'].forEach(sec => {
+    ['liveRecord', 'newRecord', 'spa', 'pdfList', 'massEntry', 'dashboard'].forEach(sec => {
         const btn = document.getElementById(`navBtn${sec.charAt(0).toUpperCase() + sec.slice(1)}`);
         if(btn) btn.className = "flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200";
     });
@@ -891,6 +884,7 @@ async function sauvegarderBordereauLocal() {
         if (index !== -1) {
             cachedSlips[index] = {
                 ...cachedSlips[index],
+                is_spa: false, // Laundry standard
                 room: roomNum,
                 count_type: currentCountType,
                 options: { service_style: selectedOption },
@@ -913,7 +907,7 @@ async function sauvegarderBordereauLocal() {
     } else {
         targetRecord = {
             id: Date.now(),
-            is_spa: false,
+            is_spa: false, // Laundry standard (séparé du SPA)
             spa_serial: null,
             room: roomNum,
             count_type: currentCountType,
@@ -1471,6 +1465,7 @@ async function validateAndSaveSpaReceipt() {
         if (index !== -1) {
             cachedSlips[index] = {
                 ...cachedSlips[index],
+                is_spa: true, // SPA Sheet
                 spa_serial: serialNo, room: `SPA #${serialNo}`, guest_name: givenBy,
                 options: { 
                     ...cachedSlips[index].options, collection_date: colDate, collection_time: colTime, 
@@ -1486,8 +1481,14 @@ async function validateAndSaveSpaReceipt() {
         document.getElementById('editingSpaId').value = '';
     } else {
         targetRecord = {
-            id: Date.now(), is_spa: true, spa_serial: serialNo, room: `SPA #${serialNo}`,
-            guest_name: givenBy, room_typ: 'SPA', agency: 'V Element SPA', count_type: 'guest',
+            id: Date.now(), 
+            is_spa: true, // SPA Sheet (séparé du linge standard)
+            spa_serial: serialNo, 
+            room: `SPA #${serialNo}`,
+            guest_name: givenBy, 
+            room_typ: 'SPA', 
+            agency: 'V Element SPA', 
+            count_type: 'guest',
             options: { 
                 service_style: 'SPA Daily Sheet', collection_date: colDate, collection_time: colTime, 
                 delivery_date: delDate, delivery_time: delTime, collected_by: collectedBy, 
