@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE COMPLETE */
+/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE COMPLETE & REALTIME CORRIGÉ */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -367,6 +367,10 @@ async function chargerDonneesEtAbonnementCloud() {
         if (!slipsErr && slips) {
             cachedSlips = slips;
             sauvegarderDonneesLocalStorage();
+            chargerLiveOrders();
+            if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+                afficherListeBordereauxLocal();
+            }
         }
 
         const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
@@ -382,33 +386,36 @@ async function chargerDonneesEtAbonnementCloud() {
             });
         }
 
-        supabaseClient.channel('realtime_laundry')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
-                const { data } = await supabaseClient.from('laundry_slips').select('*');
-                if (data) {
-                    cachedSlips = data;
-                    sauvegarderDonneesLocalStorage();
-                    chargerLiveOrders();
-                    if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-                        afficherListeBordereauxLocal();
+        // Écoute Realtime corrigée pour forcer la mise à jour immédiate de l'interface
+        if (!supabaseClient.getChannels().find(c => c.topic === 'realtime:public:laundry_slips')) {
+            supabaseClient.channel('realtime_laundry')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
+                    const { data } = await supabaseClient.from('laundry_slips').select('*');
+                    if (data) {
+                        cachedSlips = data;
+                        sauvegarderDonneesLocalStorage();
+                        chargerLiveOrders();
+                        if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+                            afficherListeBordereauxLocal();
+                        }
                     }
-                }
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, async () => {
-                const { data } = await supabaseClient.from('pms_guests').select('*');
-                if (data) {
-                    data.forEach(g => {
-                        pmsDatabase[g.room] = {
-                            guestName: g.guest_name,
-                            roomTyp: g.room_typ,
-                            agency: g.agency,
-                            quotaText: g.quota_text,
-                            isChargeable: g.is_chargeable
-                        };
-                    });
-                }
-            })
-            .subscribe();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, async () => {
+                    const { data } = await supabaseClient.from('pms_guests').select('*');
+                    if (data) {
+                        data.forEach(g => {
+                            pmsDatabase[g.room] = {
+                                guestName: g.guest_name,
+                                roomTyp: g.room_typ,
+                                agency: g.agency,
+                                quotaText: g.quota_text,
+                                isChargeable: g.is_chargeable
+                            };
+                        });
+                    }
+                })
+                .subscribe();
+        }
     } catch (e) { console.warn("Erreur Cloud:", e); }
 }
 
@@ -1152,8 +1159,10 @@ function chargerLiveOrders() {
     });
 
     activeTodaySlips.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
-    document.getElementById('activeRoomsCountBadge').innerText = activeTodaySlips.length;
+    const badgeEl = document.getElementById('activeRoomsCountBadge');
+    if (badgeEl) badgeEl.innerText = activeTodaySlips.length;
 
+    if (!container) return;
     if (activeTodaySlips.length === 0) {
         container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room records for today.</p>`;
         return;
@@ -1255,6 +1264,7 @@ function afficherListeBordereauxLocal() {
 
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const container = document.getElementById('laundryList');
+    if (!container) return;
     
     if (filtered.length === 0) { container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">No records found.</p>`; return; }
 
