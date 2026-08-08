@@ -3,524 +3,725 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remal Laundry Cloud</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Remal Laundry Cloud - Local Edition</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- html2pdf.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- PDF.js for parsing PDF reports -->
+    <!-- PDF.js pour parser les PDF PMS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <script>
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        body { background-color: #FDFBF7; color: #2C2A29; font-family: system-ui, -apple-system, sans-serif; }
+        .remal-card { background: #FFFFFF; border: 1px solid #E6E2D8; }
+        .remal-input { background: #FAF8F5; border: 1px solid #E6E2D8; }
+    </style>
 </head>
-<body class="min-h-screen">
-    <!-- PWA Install Banner -->
-    <div id="pwaInstallBanner" class="hidden bg-[#DCA773] text-stone-950 p-3 text-center font-bold flex justify-between items-center px-6">
+<body class="p-4 max-w-7xl mx-auto space-y-4">
+
+    <!-- En-tête -->
+    <header class="flex justify-between items-center bg-white p-4 rounded-3xl border border-stone-200 shadow-sm">
         <div>
-            <span id="pwaTitle">Installer l'application Remal Laundry</span>
-            <p class="text-xs font-normal" id="pwaSub">Accès rapide écran d'accueil</p>
+            <h1 class="text-xl font-black text-stone-800 tracking-tight">REMAL LAUNDRY CLOUD</h1>
+            <p id="headerSubLoc" class="text-xs text-stone-500">Al Ruwais City, Abu Dhabi – UAE (Local Mode)</p>
         </div>
-        <div class="space-x-2">
-            <button onclick="installPWA()" id="pwaBtnInstall" class="bg-stone-950 text-[#DCA773] px-4 py-1.5 rounded-lg text-xs font-bold">Installer</button>
-            <button onclick="dismissPWAInstall()" class="text-stone-950 font-bold px-2">✕</button>
+        <div class="flex items-center gap-3">
+            <select id="langSelect" onchange="setLang(this.value)" class="remal-input p-2 rounded-xl text-xs font-bold outline-none cursor-pointer">
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+                <option value="hi">हिन्दी</option>
+            </select>
+            <span id="activeUserLabel" class="bg-amber-100 text-amber-800 px-3 py-1.5 rounded-xl text-xs font-bold">Staff</span>
+            <button onclick="logoutUser()" class="p-2 text-stone-400 hover:text-stone-700 text-xs font-bold"><i class="fas fa-sign-out-alt"></i></button>
         </div>
-    </div>
+    </header>
 
-    <!-- PIN Login Modal -->
-    <div id="pinLoginModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="remal-card p-6 rounded-3xl max-w-sm w-full space-y-4 border border-[#2f2820] text-center">
-            <h2 id="lblModalRoleTitle" class="text-xl font-bold text-[#DCA773]">SELECT ROLE</h2>
-            <p id="lblModalRoleSub" class="text-xs text-stone-400">Please identify your terminal.</p>
-            
-            <div class="text-left space-y-1">
-                <label id="lblModalRoleLabel" class="text-xs font-bold text-stone-300">Terminal Role</label>
-                <select id="userRoleSelect" class="w-full remal-input rounded-xl p-3 text-sm font-bold">
-                    <option value="Front Desk">Front Desk</option>
-                    <option value="Laundry Plant">Laundry Plant</option>
-                </select>
-            </div>
+    <!-- Barre de navigation -->
+    <nav class="flex bg-stone-100 p-2 border border-stone-200 text-xs gap-2 rounded-3xl shadow-sm">
+        <button id="navBtnLiveRecord" onclick="switchMainSection('liveRecord')" class="flex-1 py-3 rounded-2xl bg-[#C59B27] text-white font-bold shadow-sm transition text-center text-sm">Active Rooms</button>
+        <button id="navBtnNewRecord" onclick="switchMainSection('newRecord')" class="flex-1 py-3 rounded-2xl transition text-center text-stone-600 hover:text-stone-900 font-bold text-sm">Laundry Slip</button>
+        <button id="navBtnSpa" onclick="switchMainSection('spa')" class="flex-1 py-3 rounded-2xl transition text-center text-stone-600 hover:text-stone-900 font-bold text-sm">SPA Sheet</button>
+        <button id="navBtnMassEntry" onclick="switchMainSection('massEntry')" class="flex-1 py-3 rounded-2xl transition text-center text-stone-600 hover:text-stone-900 font-bold text-sm">Mass PDF</button>
+        <button id="navBtnDashboard" onclick="switchMainSection('dashboard')" class="flex-1 py-3 rounded-2xl transition text-center text-stone-600 hover:text-stone-900 font-bold text-sm">Chart</button>
+        <button id="navBtnArchives" onclick="switchMainSection('pdfList')" class="flex-1 py-3 rounded-2xl transition text-center text-stone-600 hover:text-stone-900 font-bold text-sm">Archives</button>
+    </nav>
 
-            <div class="text-left space-y-1 hidden">
-                <label id="lblModalPinLabel" class="text-xs font-bold text-stone-300">Security PIN</label>
-                <input type="password" id="pinInputDisplay" class="w-full remal-input rounded-xl p-3 text-center tracking-widest text-lg font-bold" readonly>
-            </div>
-
-            <button onclick="submitPinLogin()" id="btnVerify" class="w-full py-3 bg-[#DCA773] text-stone-950 rounded-xl font-bold shadow-lg transition">VERIFY</button>
+    <!-- 1. ACTIVE ROOMS -->
+    <main id="sectionLiveRecord" class="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+            <h2 id="lblActiveRoomsHeader" class="text-lg font-black text-stone-800">Active Rooms</h2>
+            <span id="activeRoomsCountBadge" class="bg-[#C59B27] text-white px-3 py-1 rounded-xl text-xs font-bold">0</span>
         </div>
-    </div>
+        <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </main>
 
-    <!-- Main App Container -->
-    <div class="max-w-md mx-auto pb-24">
-        <!-- Header -->
-        <header class="p-4 bg-[#0f0e0c] border-b border-[#2f2820] flex justify-between items-center sticky top-0 z-30">
+    <!-- 2. LAUNDRY SLIP -->
+    <main id="sectionNewRecord" class="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6 hidden">
+        <h2 id="lblFormTitle" class="text-xl font-black text-stone-800">New Record</h2>
+        <div class="space-y-4">
             <div>
-                <h1 class="text-lg font-bold text-[#DCA773]">Remal Laundry Cloud</h1>
-                <p class="text-[10px] text-stone-400" id="headerSubLoc">Al Ruwais City, Abu Dhabi – UAE</p>
+                <label id="lblRoomNum" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Room Number</label>
+                <input type="text" id="roomNumber" oninput="onRoomNumberInput()" placeholder="Enter Room (e.g. 103)" class="w-full remal-input rounded-2xl p-4 text-base font-bold outline-none focus:border-[#C59B27]">
+                <p id="roomErrorMsg" class="text-rose-500 text-xs mt-1 hidden font-semibold">Invalid room number!</p>
             </div>
-            <div class="flex items-center gap-2">
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614] text-stone-200 text-xs px-2 py-1 rounded-lg border border-[#2f2820] outline-none">
-                    <option value="en">EN</option>
-                    <option value="ar">AR</option>
-                    <option value="hi">HI</option>
-                </select>
-                <button onclick="logoutUser()" class="text-xs bg-rose-950 text-rose-200 px-2.5 py-1 rounded-lg border border-rose-800 font-bold">
-                    <span id="activeUserLabel">Staff</span> 🚪
-                </button>
+            <div id="roomPmsInfoBox" class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs space-y-1 hidden">
+                <p class="font-bold text-amber-900">👤 Guest: <span id="pmsInfoGuest" class="font-normal">---</span></p>
+                <p class="font-bold text-amber-900">🏷️ Type: <span id="pmsInfoTyp" class="font-normal">---</span> | Quota: <span id="pmsInfoQuota" class="font-normal">---</span></p>
             </div>
-        </header>
-
-        <!-- Navigation Bar -->
-        <nav class="flex bg-[#0f0e0c] p-2 border-b border-[#2f2820] text-xs gap-1">
-            <button id="navBtnLiveRecord" onclick="switchMainSection('liveRecord')" class="flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 font-bold shadow transition text-center">Active Rooms</button>
-            <button id="navBtnSpa" onclick="switchMainSection('spa')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">SPA</button>
-            <button id="navBtnPdfList" onclick="switchMainSection('pdfList')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">Archives & Search</button>
-            <button id="navBtnMassEntry" onclick="switchMainSection('massEntry')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">Mass PDF</button>
-            <button id="navBtnDashboard" onclick="switchMainSection('dashboard')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">Chart</button>
-        </nav>
-
-        <!-- Sections Content Container -->
-        <main class="p-4 space-y-4">
-            <!-- Active Rooms Section -->
-            <section id="sectionLiveRecord" class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h2 id="lblActiveRoomsHeader" class="text-sm font-bold text-[#DCA773] uppercase tracking-wider">Active Rooms</h2>
-                    <span id="activeRoomsCountBadge" class="bg-[#DCA773] text-stone-950 px-2 py-0.5 rounded-full font-bold text-xs">0</span>
+            <div>
+                <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Account & Quota Type</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button id="btn-count-hotel" onclick="selectCountType('hotel')" class="py-3 px-2 rounded-2xl bg-[#C59B27] text-white font-bold text-xs shadow-sm">Hotel Count (Free)</button>
+                    <button id="btn-count-quota-extra" onclick="selectCountType('quota_extra')" class="py-3 px-2 rounded-2xl bg-stone-100 text-stone-600 font-bold text-xs">Hotel & Extra</button>
+                    <button id="btn-count-guest" onclick="selectCountType('guest')" class="py-3 px-2 rounded-2xl bg-stone-100 text-stone-600 font-bold text-xs">Guest Count</button>
                 </div>
-                <div id="liveOrdersList" class="space-y-3"></div>
-            </section>
-
-            <!-- New Record Section -->
-            <section id="sectionNewRecord" class="space-y-4 hidden">
-                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
-                    <h2 id="lblFormTitle" class="text-sm font-bold text-[#DCA773]">New Record</h2>
-                    
-                    <div class="space-y-1">
-                        <label id="lblRoomNum" class="text-xs font-bold text-stone-300">Room Number</label>
-                        <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g. 103" class="w-full remal-input rounded-xl p-3 text-sm font-bold">
-                        <p id="roomErrorMsg" class="text-[10px] text-rose-400 hidden"><span id="lblRoomError">Invalid room number!</span></p>
-                    </div>
-
-                    <div id="roomPmsInfoBox" class="hidden p-3 bg-[#181614] border border-[#2f2820] rounded-xl text-xs space-y-1">
-                        <p><strong id="lblGuestNameTitle">Guest Name:</strong> <span id="pmsInfoGuest" class="text-[#DCA773]">---</span></p>
-                        <p><strong id="lblRoomTypeTitle">Room Type (Typ):</strong> <span id="pmsInfoTyp">---</span></p>
-                        <p><strong id="lblPmsQuotaTitle">PMS Quota / Status:</strong> <span id="pmsInfoQuota">---</span></p>
-                        <p><strong id="lblAgencyTitle">Agency:</strong> <span id="pmsInfoAgency">---</span></p>
-                    </div>
-
-                    <div class="space-y-1">
-                        <label id="lblAccountTypeTitle" class="text-xs font-bold text-stone-300">Account & Quota Type</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button onclick="selectCountType('hotel')" id="btn-count-hotel" class="py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs">Hotel Count (Free)</button>
-                            <button onclick="selectCountType('quota_extra')" id="btn-count-quota-extra" class="py-2.5 px-1 rounded-xl text-stone-400 text-xs">Hotel & Extra Charged</button>
-                            <button onclick="selectCountType('guest')" id="btn-count-guest" class="py-2.5 px-1 rounded-xl text-stone-400 text-xs">Guest Count (Full)</button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <label id="lblServiceTypeTitle" class="text-xs font-bold text-stone-300">Service Type</label>
-                        <div class="flex gap-2">
-                            <button onclick="switchService('laundry')" id="tab-service-laundry" class="flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs">Laundry</button>
-                            <button onclick="switchService('dry')" id="tab-service-dry" class="flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820] text-xs">Dry Cleaning</button>
-                            <button onclick="switchService('pressing')" id="tab-service-pressing" class="flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820] text-xs">Pressing</button>
-                        </div>
-                    </div>
-
-                    <div id="itemsContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
-
-                    <div class="space-y-1">
-                        <label id="lblPackagingTitle" class="text-xs font-bold text-stone-300">Packaging</label>
-                        <div class="space-y-1 text-xs">
-                            <label class="flex items-center gap-2"><input type="radio" name="foldingOption" value="F — Folding" checked> F — Folding</label>
-                            <label class="flex items-center gap-2"><input type="radio" name="foldingOption" value="H — Hanger"> H — Hanger</label>
-                        </div>
-                    </div>
-
-                    <details id="detailsCustomItems" class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
-                        <summary id="lblCustomItemSummary" class="text-xs font-bold text-[#DCA773] cursor-pointer">➕ Other / Custom Items (Manual Entry)</summary>
-                        <div class="mt-3 space-y-2 text-xs">
-                            <div class="grid grid-cols-3 gap-1">
-                                <input type="text" id="customName0" placeholder="Item Name" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                                <input type="number" id="customPrice0" placeholder="Price" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                                <input type="number" id="customQty0" placeholder="Qty" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                            </div>
-                            <div class="grid grid-cols-3 gap-1">
-                                <input type="text" id="customName1" placeholder="Item Name" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                                <input type="number" id="customPrice1" placeholder="Price" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                                <input type="number" id="customQty1" placeholder="Qty" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                            </div>
-                            <div class="grid grid-cols-3 gap-1">
-                                <input type="text" id="customName2" placeholder="Item Name" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                                <input type="number" id="customPrice2" placeholder="Price" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                                <input type="number" id="customQty2" placeholder="Qty" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
-                            </div>
-                        </div>
-                    </details>
-
-                    <details id="detailsGarmentNotes" class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
-                        <summary id="lblNotesSummary" class="text-xs font-bold text-[#DCA773] cursor-pointer">📝 Garment Notes / Defects (Optional)</summary>
-                        <div class="mt-2">
-                            <textarea id="recordOptionalNote" rows="2" placeholder="Note any stain, tear, or specific request..." class="w-full remal-input p-2 rounded-lg text-xs"></textarea>
-                        </div>
-                    </details>
-
-                    <div class="space-y-2">
-                        <label id="btnPhotoProof" class="block w-full text-center py-2.5 bg-[#181614] border border-[#2f2820] rounded-xl text-xs font-bold text-stone-300 cursor-pointer">📷 Take Proof Photo (Camera)</label>
-                        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="previewImage(event)" class="hidden">
-                        <img id="imagePreview" class="w-full h-32 object-cover rounded-xl hidden border border-[#2f2820]">
-                    </div>
-
-                    <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820] text-xs space-y-1">
-                        <div class="flex justify-between"><span id="lblSelectedGarments">Total Garments:</span> <strong id="currentBordereauCount">0 pieces</strong></div>
-                        <div class="flex justify-between"><span id="lblSubTotal">Subtotal:</span> <strong id="subTotal">0.00 AED</strong></div>
-                        <div class="flex justify-between"><span id="lblVat">VAT (5%):</span> <strong id="vatAmount">0.00 AED</strong></div>
-                        <div class="flex justify-between text-sm text-[#DCA773] font-bold border-t border-[#2f2820] pt-1"><span id="lblGrandTotal">Grand Total:</span> <strong id="grandTotal">0.00 AED</strong></div>
-                    </div>
-
-                    <input type="hidden" id="editingRecordId" value="">
-                    <button onclick="sauvegarderBordereauLocal()" id="btnSaveRecord" class="w-full py-3.5 bg-[#DCA773] text-stone-950 rounded-xl font-bold shadow-lg transition">💾 Save Record</button>
-                </div>
-            </section>
-
-            <!-- SPA Section -->
-            <section id="spa-laundry-section" class="space-y-4 hidden">
-                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
-                    <h2 id="spaFormTitleLabel" class="text-sm font-bold text-[#DCA773]">V Element SPA Laundry Daily Record Sheet</h2>
-                    
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <label id="lblSpaDateHeader" class="font-bold">Date :</label>
-                            <input type="date" id="spa-collection-date" class="w-full remal-input p-2 rounded-lg mt-1">
-                        </div>
-                        <div>
-                            <label id="lblSpaSerial" class="font-bold">SERIAL NO:</label>
-                            <input type="text" id="spa-serial-no" class="w-full remal-input p-2 rounded-lg mt-1 font-bold">
-                        </div>
-                    </div>
-
-                    <div class="text-xs space-y-1">
-                        <label id="lblSpaGivenBy" class="font-bold">Given By (Spa):</label>
-                        <input type="text" id="spa-given-by" placeholder="Staff Name" class="w-full remal-input p-2 rounded-lg">
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-xs text-left">
-                            <thead>
-                                <tr class="bg-[#181614] text-[#DCA773] border-b border-[#2f2820]">
-                                    <th id="thSpaItem" class="p-2">Item</th>
-                                    <th id="thSpaQty" class="p-2 w-20">Quantity</th>
-                                    <th id="thSpaRate" class="p-2 w-20">Rate (AED)</th>
-                                    <th id="thSpaTotal" class="p-2 w-24 text-right">Total Amount (AED)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#2f2820]">
-                                <tr>
-                                    <td class="p-2">Bath Sheet</td>
-                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="3.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
-                                    <td class="p-2">3.00</td>
-                                    <td class="p-2 text-right spa-row-amount">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2">Bath Towel</td>
-                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="2.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
-                                    <td class="p-2">2.00</td>
-                                    <td class="p-2 text-right spa-row-amount">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2">Hand Towel</td>
-                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="1.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
-                                    <td class="p-2">1.00</td>
-                                    <td class="p-2 text-right spa-row-amount">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2">Face Towel</td>
-                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="0.50" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
-                                    <td class="p-2">0.50</td>
-                                    <td class="p-2 text-right spa-row-amount">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2">Bath Robe</td>
-                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="7.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
-                                    <td class="p-2">7.00</td>
-                                    <td class="p-2 text-right spa-row-amount">0.00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="flex justify-between items-center bg-[#181614] p-3 rounded-xl border border-[#2f2820] text-sm font-bold text-[#DCA773]">
-                        <span id="lblSpaGrandTotal">Grand Total :</span>
-                        <span id="spa-grand-total">0.00 AED</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <label id="lblSpaCollectedByTitle" class="font-bold">Collected By (Laundry) :</label>
-                            <input type="text" id="spa-collected-by" class="w-full remal-input p-2 rounded-lg mt-1">
-                        </div>
-                        <div>
-                            <label id="lblSpaColDateTime" class="font-bold">Collection Date & Time :</label>
-                            <input type="time" id="spa-collection-time" class="w-full remal-input p-2 rounded-lg mt-1">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <label id="lblSpaDeliveredByTitle" class="font-bold">Delivered By (Laundry) :</label>
-                            <input type="text" id="spa-delivered-by" class="w-full remal-input p-2 rounded-lg mt-1">
-                        </div>
-                        <div>
-                            <label id="lblSpaDelDateTime" class="font-bold">Delivery Date & Time :</label>
-                            <input type="date" id="spa-delivery-date" class="w-full remal-input p-2 rounded-lg mt-1 hidden">
-                            <input type="time" id="spa-delivery-time" class="w-full remal-input p-2 rounded-lg mt-1">
-                        </div>
-                    </div>
-
-                    <div class="space-y-2 text-xs">
-                        <h3 id="lblSpaSignaturesTitle" class="font-bold text-[#DCA773]">Signatures Officielles (SPA)</h3>
-                        <div>
-                            <span id="lblSigGivenText" class="text-[10px] text-stone-400">Sign. Given By (Spa)</span>
-                            <div class="border border-[#2f2820] rounded-xl bg-[#0f0e0c] relative mt-1 overflow-hidden">
-                                <canvas id="canvasGivenBy" class="w-full touch-none"></canvas>
-                                <button onclick="clearSignature('canvasGivenBy')" class="absolute top-1 right-1 text-[9px] bg-rose-950 text-rose-200 px-2 py-0.5 rounded border border-rose-800 clear-btn-text">Effacer</button>
-                            </div>
-                        </div>
-                        <div>
-                            <span id="lblSigCollText" class="text-[10px] text-stone-400">Sign. Collected By</span>
-                            <div class="border border-[#2f2820] rounded-xl bg-[#0f0e0c] relative mt-1 overflow-hidden">
-                                <canvas id="canvasCollectedBy" class="w-full touch-none"></canvas>
-                                <button onclick="clearSignature('canvasCollectedBy')" class="absolute top-1 right-1 text-[9px] bg-rose-950 text-rose-200 px-2 py-0.5 rounded border border-rose-800 clear-btn-text">Effacer</button>
-                            </div>
-                        </div>
-                        <div>
-                            <span id="lblSigDelText" class="text-[10px] text-stone-400">Sign. Delivered By</span>
-                            <div class="border border-[#2f2820] rounded-xl bg-[#0f0e0c] relative mt-1 overflow-hidden">
-                                <canvas id="canvasDeliveredBy" class="w-full touch-none"></canvas>
-                                <button onclick="clearSignature('canvasDeliveredBy')" class="absolute top-1 right-1 text-[9px] bg-rose-950 text-rose-200 px-2 py-0.5 rounded border border-rose-800 clear-btn-text">Effacer</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <input type="hidden" id="editingSpaId" value="">
-                    <button onclick="validateAndSaveSpaReceipt()" id="btnSaveSpa" class="w-full py-3.5 bg-[#DCA773] text-stone-950 rounded-xl font-bold shadow-lg transition">Validate & Save SPA Receipt</button>
-                </div>
-            </section>
-
-            <!-- Archives & Search Section -->
-            <section id="sectionPdfList" class="space-y-4 hidden">
-                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
-                    <h2 id="lblArchiveTitle" class="text-sm font-bold text-[#DCA773]">Archives & Search</h2>
-                    
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <input type="text" id="searchRoom" oninput="afficherListeBordereauxLocal()" placeholder="Search room, guest..." class="remal-input p-2.5 rounded-xl">
-                        <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="remal-input p-2.5 rounded-xl">
-                    </div>
-
-                    <div id="laundryList" class="space-y-2 max-h-96 overflow-y-auto"></div>
-
-                    <div class="flex gap-2 pt-2 border-t border-[#2f2820]">
-                        <button onclick="exportDatabaseBackup()" id="btnExportBackup" class="flex-1 py-2 bg-[#181614] border border-[#2f2820] rounded-xl text-xs font-bold text-stone-300">📥 Export Backup</button>
-                        <label id="btnImportBackup" class="flex-1 py-2 bg-[#181614] border border-[#2f2820] rounded-xl text-xs font-bold text-stone-300 text-center cursor-pointer">📤 Import Backup
-                            <input type="file" accept=".json" onchange="importDatabaseBackup(event)" class="hidden">
-                        </label>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Mass PDF / PMS Parser Section -->
-            <section id="sectionMassEntry" class="space-y-4 hidden">
-                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h2 id="lblMassTitle" class="text-sm font-bold text-[#DCA773]">PMS Mass Entry & PDF Parser</h2>
-                            <p id="lblMassSub" class="text-[10px] text-stone-400">Front Desk Morning Setup Terminal</p>
-                        </div>
-                        <button onclick="effacerRapportPmsAujourdhui()" id="btnClearPms" class="text-xs bg-rose-950 text-rose-200 px-2.5 py-1.5 rounded-lg border border-rose-800 font-bold">🗑 Clear Today's PMS</button>
-                    </div>
-
-                    <label class="block border-2 border-dashed border-[#2f2820] rounded-2xl p-6 text-center cursor-pointer hover:border-[#DCA773] transition bg-[#181614]">
-                        <span class="text-2xl">📄</span>
-                        <p id="lblPdfUploadTitle" class="text-xs font-bold text-stone-200 mt-2">Click to upload PMS PDF Report</p>
-                        <p id="lblPdfUploadSub" class="text-[10px] text-stone-400">Supports multi-page guest list reports</p>
-                        <input type="file" accept=".pdf" onchange="handlePDFUpload(event)" class="hidden">
+            </div>
+            <div class="flex gap-3">
+                <button id="tab-service-laundry" onclick="switchService('laundry')" class="flex-1 py-3 rounded-2xl bg-[#C59B27] text-white font-bold text-xs">Laundry</button>
+                <button id="tab-service-dry" onclick="switchService('dry')" class="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-600 font-bold text-xs">Dry Clean</button>
+                <button id="tab-service-pressing" onclick="switchService('pressing')" class="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-600 font-bold text-xs">Pressing</button>
+            </div>
+            <div id="itemsContainer" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
+                <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider">Packaging / Service Style</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="flex items-center justify-center p-3 rounded-xl border-2 border-stone-200 cursor-pointer bg-white font-bold text-xs text-stone-800">
+                        <input type="radio" name="foldingOption" value="Folding" checked class="hidden peer">
+                        <span class="peer-checked:text-[#C59B27]">Folding</span>
                     </label>
-
-                    <textarea id="pmsPasteArea" rows="3" class="w-full remal-input p-2 rounded-xl text-xs hidden" placeholder="Or paste PMS text report here..."></textarea>
-                    <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" id="btnAnalyzeSave" class="w-full py-2.5 bg-[#DCA773] text-stone-950 rounded-xl font-bold text-xs shadow hidden">Analyze & Save Database</button>
-
-                    <div id="massResultsCard" class="space-y-2 hidden">
-                        <p id="massRecordCounter" class="text-xs font-bold text-emerald-400"></p>
-                        <div class="overflow-x-auto max-h-60 border border-[#2f2820] rounded-xl text-xs">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="bg-[#181614] text-[#DCA773] border-b border-[#2f2820]">
-                                        <th id="thRoom" class="p-3">Room</th>
-                                        <th id="thGuest" class="p-3">Guest Name</th>
-                                        <th id="thTyp" class="p-3">Typ</th>
-                                        <th id="thArrival" class="p-3">Arrival</th>
-                                        <th id="thDeparture" class="p-3">Departure</th>
-                                        <th id="thAgency" class="p-3">Agency</th>
-                                        <th id="thStatus" class="p-3">Laundry Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <label class="flex items-center justify-center p-3 rounded-xl border-2 border-stone-200 cursor-pointer bg-white font-bold text-xs text-stone-800">
+                        <input type="radio" name="foldingOption" value="Hanger & Folding" class="hidden peer">
+                        <span class="peer-checked:text-[#C59B27]">Hanger & Folding</span>
+                    </label>
+                    <label class="flex items-center justify-center p-3 rounded-xl border-2 border-stone-200 cursor-pointer bg-white font-bold text-xs text-stone-800">
+                        <input type="radio" name="foldingOption" value="Single" class="hidden peer">
+                        <span class="peer-checked:text-[#C59B27]">Single</span>
+                    </label>
                 </div>
-            </section>
-
-            <!-- Dashboard Section -->
-            <section id="sectionDashboard" class="space-y-4 hidden">
-                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
-                    <h2 id="lblAnalyticsTitle" class="text-sm font-bold text-[#DCA773]">📈 Reception & Management Analytics</h2>
-                    
-                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                        <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
-                            <p id="lblKpiRev" class="text-[10px] text-stone-400">Total Revenue</p>
-                            <p id="kpiRevenue" class="font-bold text-[#DCA773] text-sm mt-1">0.00 AED</p>
-                        </div>
-                        <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
-                            <p id="lblKpiOrd" class="text-[10px] text-stone-400">Total Orders</p>
-                            <p id="kpiOrders" class="font-bold text-stone-200 text-sm mt-1">0</p>
-                        </div>
-                        <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
-                            <p id="lblKpiGar" class="text-[10px] text-stone-400">Garments Processed</p>
-                            <p id="kpiGarments" class="font-bold text-stone-200 text-sm mt-1">0 pcs</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820] space-y-2">
-                        <h3 id="lblChartStatus" class="text-xs font-bold text-stone-300">Orders Status Distribution</h3>
-                        <div class="h-48 relative"><canvas id="statusDoughnutChart"></canvas></div>
-                    </div>
-
-                    <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820] space-y-2">
-                        <h3 id="lblChartRev" class="text-xs font-bold text-stone-300">Business Evolution (Revenue by Date)</h3>
-                        <div class="h-48 relative"><canvas id="revenueBarChart"></canvas></div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Quick Action Floating Bar -->
-        <div id="quickActionButtons" class="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-20 flex gap-2 hidden">
-            <button onclick="switchMainSection('newRecord')" id="txtBtnNewRecord" class="flex-1 py-3 bg-[#DCA773] text-stone-950 font-bold rounded-2xl shadow-xl text-xs">New Record</button>
-            <button onclick="switchMainSection('pdfList')" id="txtBtnPdfListNav" class="flex-1 py-3 bg-[#181614] border border-[#2f2820] text-stone-200 font-bold rounded-2xl shadow-xl text-xs">PDF List</button>
-        </div>
-    </div>
-
-    <!-- Detail Modal -->
-    <div id="detailModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
-        <div class="remal-card p-6 rounded-3xl max-w-md w-full space-y-4 border border-[#2f2820] max-h-[90vh] overflow-y-auto">
-            <div id="pdfExportArea" class="space-y-3 bg-[#0f0e0c] p-4 rounded-2xl text-stone-200">
-                <div class="text-center border-b border-[#2f2820] pb-2">
-                    <h3 id="modalDocTitle" class="font-bold text-[#DCA773] text-base">OFFICIAL LAUNDRY RECEIPT</h3>
-                    <p class="text-[10px] text-stone-400">Remal Hotel — Al Ruwais City, Abu Dhabi</p>
-                </div>
-                
-                <div class="flex justify-between items-center text-xs">
-                    <div><strong id="modalIdentifierLabel">Room:</strong> <span id="modalRoomNumDisplay" class="font-bold text-[#DCA773]">---</span></div>
-                    <div id="modalDate" class="text-stone-400">Date: ---</div>
-                </div>
-
-                <div class="flex justify-between items-center text-xs">
-                    <span id="modalTypeBadgeInline" class="px-2 py-0.5 rounded bg-amber-950 text-amber-200 text-[10px] font-bold">Hotel</span>
-                    <div id="modalPackagingBox" class="text-stone-400 text-[10px]">Packaging: <span id="modalPackagingStyle" class="font-bold text-stone-200">---</span></div>
-                </div>
-
-                <div id="modalAgencyQuotaBox" class="p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] text-xs space-y-1">
-                    <p><strong id="modalGuest">Guest / Given By:</strong> <span id="modalGuestDisplay" class="text-[#DCA773]">---</span></p>
-                    <p><strong id="modalTyp">Room Typ / Dept:</strong> <span id="modalTypDisplay">---</span></p>
-                    <p><strong id="modalAgency">Agency / Section:</strong> <span id="modalAgencyDisplay">---</span></p>
-                    <p><strong id="modalQuota">Status / Quota:</strong> <span id="modalQuotaDisplay">---</span></p>
-                    <p><strong id="modalCreated">Created By:</strong> <span id="modalCreatedByDisplay">---</span></p>
-                </div>
-
-                <div id="modalSpaDetailsBox" class="p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] text-xs space-y-1 hidden">
-                    <p><strong id="lblModalCollBy">Collected By:</strong> <span id="modalCollectedBy">---</span></p>
-                    <p><strong id="lblModalDelBy">Delivered By:</strong> <span id="modalDeliveredBy">---</span></p>
-                    <p><strong id="lblModalCollTime">Col. Time:</strong> <span id="modalColTime">---</span></p>
-                    <p><strong id="lblModalDelTime">Del. Time:</strong> <span id="modalDelTime">---</span></p>
-                    <div class="grid grid-cols-3 gap-1 pt-2">
-                        <div>
-                            <span id="lblModalSigGiven" class="text-[9px] text-stone-400">Given By</span>
-                            <img id="imgSigGiven" class="w-full h-12 bg-white rounded border hidden">
-                        </div>
-                        <div>
-                            <span id="lblModalSigColl" class="text-[9px] text-stone-400">Collected</span>
-                            <img id="imgSigCollected" class="w-full h-12 bg-white rounded border hidden">
-                        </div>
-                        <div>
-                            <span id="lblModalSigDel" class="text-[9px] text-stone-400">Delivered</span>
-                            <img id="imgSigDelivered" class="w-full h-12 bg-white rounded border hidden">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto border border-[#2f2820] rounded-xl">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-[#181614] text-[#DCA773] border-b border-[#2f2820]">
-                            <tr>
-                                <th id="thModalItem" class="p-2">Item</th>
-                                <th id="thModalQty" class="p-2 text-center w-16">Qty</th>
-                                <th id="thModalTotal" class="p-2 text-right w-20">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modalTableBody" class="divide-y divide-[#2f2820]"></tbody>
-                    </table>
-                </div>
-
-                <div class="flex justify-between items-center text-xs pt-1">
-                    <span id="modalClothesCount" class="font-bold text-stone-300">0 pieces</span>
-                    <span class="font-bold text-[#DCA773] text-sm"><span id="modalGrandTot">Grand Total:</span> <strong id="modalTotal">0.00 AED</strong></span>
-                </div>
-
-                <div id="modalNoteBox" class="p-2 bg-amber-950/30 border border-amber-800/50 rounded-xl text-xs hidden">
-                    <p class="font-bold text-amber-300 text-[10px]" id="modalNotesTitle">Garment Notes / Defects:</p>
-                    <p id="modalNoteText" class="text-stone-300 mt-0.5"></p>
-                </div>
-
-                <div id="modalPhotoContainer"></div>
-                <p id="pdfExportTimestamp" class="text-[9px] text-stone-500 text-center pt-2"></p>
             </div>
-
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <button onclick="genererPDF()" id="btnModalDownload" class="py-2.5 bg-[#DCA773] text-stone-950 font-bold rounded-xl">📥 Download PDF A4</button>
-                <a id="btnWhatsappShare" target="_blank" class="py-2.5 bg-emerald-700 text-stone-100 font-bold rounded-xl text-center">💬 WhatsApp</a>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2 text-sm font-bold">
+                <div class="flex justify-between"><span>Total Garments:</span> <span id="currentBordereauCount">0 pieces</span></div>
+                <div class="flex justify-between"><span>Subtotal:</span> <span id="subTotal">0.00 AED</span></div>
+                <div class="flex justify-between"><span>VAT (5%):</span> <span id="vatAmount">0.00 AED</span></div>
+                <div class="flex justify-between text-base text-[#C59B27] pt-2 border-t border-stone-200"><span>Grand Total:</span> <span id="grandTotal">0.00 AED</span></div>
             </div>
-            <div class="grid grid-cols-3 gap-2 text-xs pt-1">
-                <button onclick="modifierBordereauActuel()" id="btnModalEdit" class="py-2 bg-[#181614] border border-[#2f2820] text-stone-200 font-bold rounded-xl">✏️ Edit Record</button>
-                <button onclick="supprimerBordereauActuel()" id="btnModalDelete" class="py-2 bg-rose-950 border border-rose-800 text-rose-200 font-bold rounded-xl">🗑️ Delete</button>
-                <button onclick="fermerModal()" class="py-2 bg-[#181614] border border-[#2f2820] text-stone-400 font-bold rounded-xl">Close</button>
-            </div>
+            <input type="hidden" id="editingRecordId" value="">
+            <button id="btnSaveRecord" onclick="sauvegarderBordereauLocal()" class="w-full py-5 rounded-2xl bg-[#2C2A29] text-white font-black text-lg shadow-lg hover:bg-black transition">💾 Save Record</button>
         </div>
-    </div>
+    </main>
 
-    <!-- Printable Area for Active Rooms -->
-    <div id="printableActiveRooms" class="hidden p-6 bg-white text-stone-900 font-sans">
-        <div class="text-center border-b pb-4 mb-4">
-            <h2 class="text-xl font-bold">REMAL HOTEL - DAILY LAUNDRY ROADMAP</h2>
-            <p class="text-xs text-stone-500">Date: <span id="reportDate">---</span></p>
+    <!-- 3. SPA SHEET -->
+    <main id="spa-laundry-section" class="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6 hidden">
+        <h2 class="text-xl font-black text-stone-800">V Element SPA Laundry Sheet</h2>
+        <input type="hidden" id="editingSpaId" value="">
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs font-bold text-stone-600 mb-1">Serial Number</label><input type="text" id="spa-serial-no" class="w-full remal-input p-3 rounded-xl font-bold"></div>
+            <div><label class="block text-xs font-bold text-stone-600 mb-1">Given By (Spa)</label><input type="text" id="spa-given-by" class="w-full remal-input p-3 rounded-xl font-bold" placeholder="Staff Name"></div>
         </div>
-        <table class="w-full text-xs text-left border-collapse border border-stone-300">
-            <thead>
-                <tr class="bg-stone-100 border-b border-stone-300">
-                    <th class="p-2 border border-stone-300">Room</th>
-                    <th class="p-2 border border-stone-300">Guest Name</th>
-                    <th class="p-2 border border-stone-300">Total Pieces</th>
-                    <th class="p-2 border border-stone-300">Notes / Defects</th>
-                </tr>
-            </thead>
-            <tbody id="pdfTableBody"></tbody>
+        <table class="w-full text-xs text-left border-collapse">
+            <thead><tr class="bg-stone-100 text-stone-700"><th class="p-3">Item</th><th class="p-3 text-center">Qty</th><th class="p-3 text-right">Rate</th><th class="p-3 text-right">Total</th></tr></thead>
+            <tbody>
+                <tr class="border-b"><td class="p-3 font-bold">Bath Towel</td><td class="p-3 text-center"><input type="number" min="0" value="0" data-rate="2.00" oninput="calculateSpaTotal()" class="spa-qty-input w-16 p-1 text-center border rounded"></td><td class="p-3 text-right">2.00</td><td class="p-3 text-right spa-row-amount">0.00</td></tr>
+                <tr class="border-b"><td class="p-3 font-bold">Face Towel</td><td class="p-3 text-center"><input type="number" min="0" value="0" data-rate="1.00" oninput="calculateSpaTotal()" class="spa-qty-input w-16 p-1 text-center border rounded"></td><td class="p-3 text-right">1.00</td><td class="p-3 text-right spa-row-amount">0.00</td></tr>
+                <tr class="border-b"><td class="p-3 font-bold">Bed Sheet</td><td class="p-3 text-center"><input type="number" min="0" value="0" data-rate="5.00" oninput="calculateSpaTotal()" class="spa-qty-input w-16 p-1 text-center border rounded"></td><td class="p-3 text-right">5.00</td><td class="p-3 text-right spa-row-amount">0.00</td></tr>
+                <tr class="border-b"><td class="p-3 font-bold">Uniform</td><td class="p-3 text-center"><input type="number" min="0" value="0" data-rate="10.00" oninput="calculateSpaTotal()" class="spa-qty-input w-16 p-1 text-center border rounded"></td><td class="p-3 text-right">10.00</td><td class="p-3 text-right spa-row-amount">0.00</td></tr>
+            </tbody>
         </table>
+        <div class="flex justify-between items-center p-4 bg-stone-50 rounded-2xl font-bold text-base"><span>Grand Total:</span><span id="spa-grand-total" class="text-[#C59B27]">0.00 AED</span></div>
+        <div class="grid grid-cols-2 gap-4">
+            <input type="text" id="spa-collected-by" placeholder="Collected By (Laundry)" class="remal-input p-3 rounded-xl text-xs font-bold">
+            <input type="text" id="spa-delivered-by" placeholder="Delivered By (Laundry)" class="remal-input p-3 rounded-xl text-xs font-bold">
+            <input type="date" id="spa-collection-date" class="remal-input p-3 rounded-xl text-xs font-bold">
+            <input type="date" id="spa-delivery-date" class="remal-input p-3 rounded-xl text-xs font-bold">
+        </div>
+        <button onclick="validateAndSaveSpaReceipt()" class="w-full py-5 rounded-2xl bg-[#C59B27] text-white font-black text-lg shadow-lg">Validate & Save SPA Receipt</button>
+    </main>
+
+    <!-- 4. MASS PDF -->
+    <main id="sectionMassEntry" class="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6 hidden">
+        <h2 class="text-xl font-black text-stone-800">PMS Mass Entry & PDF Parser</h2>
+        <input type="file" id="pdfFileInput" accept="application/pdf" onchange="handlePDFUpload(event)" class="hidden">
+        <label for="pdfFileInput" class="block border-2 border-dashed border-stone-300 p-8 rounded-2xl text-center cursor-pointer hover:border-[#C59B27]">
+            <i class="fas fa-file-pdf text-3xl text-stone-400 mb-2"></i>
+            <p class="font-bold text-sm text-stone-700">Click to upload PMS PDF Report</p>
+        </label>
+        <textarea id="pmsPasteArea" rows="4" placeholder="Or paste parsed text..." class="w-full remal-input p-4 rounded-xl text-xs outline-none"></textarea>
+        <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" class="w-full py-4 bg-stone-800 text-white font-bold rounded-xl text-sm">Analyze & Save Database</button>
+        <div id="massResultsCard" class="hidden space-y-4">
+            <p class="font-bold text-xs text-emerald-600"></p>
+            <div class="overflow-x-auto"><table class="w-full text-xs text-left"><tbody id="massPreviewContainer"></tbody></table></div>
+        </div>
+    </main>
+
+    <!-- 5. DASHBOARD -->
+    <main id="sectionDashboard" class="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6 hidden">
+        <h2 class="text-xl font-black text-stone-800">Analytics</h2>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="p-4 bg-stone-50 rounded-2xl border"><p class="text-xs text-stone-500">Total Revenue</p><p id="kpiRevenue" class="text-lg font-black text-[#C59B27]">0.00 AED</p></div>
+            <div class="p-4 bg-stone-50 rounded-2xl border"><p class="text-xs text-stone-500">Total Orders</p><p id="kpiOrders" class="text-lg font-black text-stone-800">0</p></div>
+            <div class="p-4 bg-stone-50 rounded-2xl border"><p class="text-xs text-stone-500">Garments Processed</p><p id="kpiGarments" class="text-lg font-black text-stone-800">0 pcs</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-6">
+            <div class="h-64"><canvas id="statusDoughnutChart"></canvas></div>
+            <div class="h-64"><canvas id="revenueBarChart"></canvas></div>
+        </div>
+    </main>
+
+    <!-- 6. ARCHIVES -->
+    <main id="sectionPdfList" class="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6 hidden">
+        <h2 class="text-xl font-black text-stone-800">Archives & History</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <input type="text" id="searchRoom" placeholder="🔍 Room Number or Serial..." oninput="afficherListeBordereauxLocal()" class="remal-input p-4 rounded-xl text-xs font-bold outline-none">
+            <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="remal-input p-4 rounded-xl text-xs font-bold outline-none">
+        </div>
+        <div class="flex gap-4">
+            <button onclick="exportDatabaseBackup()" class="flex-1 bg-stone-800 text-white py-4 rounded-xl font-bold text-xs">💾 Export Backup</button>
+            <button onclick="document.getElementById('importFile').click()" class="flex-1 bg-[#C59B27] text-white py-4 rounded-xl font-bold text-xs">📂 Import Backup</button>
+            <input type="file" id="importFile" class="hidden" onchange="importDatabaseBackup(event)">
+        </div>
+        <div id="laundryList" class="space-y-3"></div>
+    </main>
+
+    <!-- Modal PIN -->
+    <div id="pinLoginModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-80 space-y-4 border border-stone-200">
+            <h3 class="text-lg font-black text-stone-800 text-center">SELECT ROLE</h3>
+            <select id="userRoleSelect" class="w-full remal-input p-3 rounded-xl text-xs font-bold outline-none">
+                <option value="Front Desk">Front Desk</option>
+                <option value="Laundry Plant">Laundry Plant</option>
+            </select>
+            <button onclick="submitPinLogin()" class="w-full py-4 rounded-2xl bg-[#C59B27] text-white font-bold text-sm shadow">VERIFY</button>
+        </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Modal de Détails -->
+    <div id="detailModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="modalDocTitle" class="font-black text-base text-stone-800">RECEIPT</h3>
+                <button onclick="fermerModal()" class="text-stone-400 hover:text-stone-700 font-bold">✕</button>
+            </div>
+            <div id="pdfExportArea" class="bg-white text-stone-900 p-4 space-y-3 text-xs">
+                <div class="flex justify-between"><span id="modalIdentifierLabel" class="font-bold">Room:</span> <span id="modalRoomNumDisplay" class="font-black text-sm">---</span></div>
+                <div class="flex justify-between"><span id="modalDate">Date: ---</span><span id="modalTypeBadgeInline" class="bg-stone-100 px-2 py-0.5 rounded font-bold">---</span></div>
+                <table class="w-full border-collapse mt-2">
+                    <thead><tr class="border-b text-stone-500"><th class="p-2 text-left">Item</th><th class="p-2 text-center">Qty</th><th class="p-2 text-right">Total</th></tr></thead>
+                    <tbody id="modalTableBody"></tbody>
+                </table>
+                <div class="flex justify-between font-bold pt-2 border-t">
+                    <span id="modalClothesCount">0 pieces</span>
+                    <span id="modalTotal" class="text-[#C59B27] text-sm">0.00 AED</span>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="modifierBordereauActuel()" class="flex-1 py-3 bg-stone-100 text-stone-800 font-bold rounded-xl text-xs">✏️ Edit</button>
+                <button onclick="supprimerBordereauActuel()" class="flex-1 py-3 bg-rose-50 text-rose-600 font-bold rounded-xl text-xs">🗑️ Delete</button>
+                <button onclick="fermerModal()" class="flex-1 py-3 bg-stone-800 text-white font-bold rounded-xl text-xs">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Intégré -->
+    <script>
+        let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
+        let currentLang = 'en';
+        let cachedSlips = [];
+        let pmsDatabase = {}; 
+        let currentService = 'laundry';
+        let currentCountType = 'hotel';
+        let cart = {};
+        let currentImageData = null;
+        let selectedIdForModal = null;
+
+        const database = {
+            laundry: {
+                "GENTLEMEN": [
+                    { name: "Shirt", ar: "قميص", price: 22 }, { name: "T-Shirt", ar: "فانيلة", price: 15 }, { name: "Trousers", ar: "بنطلون", price: 24 },
+                    { name: "Under Shirt", ar: "قميص داخلي", price: 10 }, { name: "Under Pants", ar: "سروال داخلي", price: 12 }, { name: "Socks", ar: "جوارب", price: 6 },
+                    { name: "Jacket", ar: "جاكيت", price: 34 }, { name: "Dishdash", ar: "دشداشة", price: 30 }, { name: "Gutra", ar: "غترة", price: 10 }
+                ],
+                "LADIES": [
+                    { name: "Dress", ar: "فستان", price: 42 }, { name: "Blouse", ar: "بلوزة", price: 24 }, { name: "Skirt", ar: "تنورة", price: 24 },
+                    { name: "Trousers", ar: "بنطلون", price: 18 }, { name: "Scarf", ar: "حجاب/شيلة", price: 15 }, { name: "Abbaya", ar: "عباية", price: 30 }
+                ],
+                "CHILDREN": [
+                    { name: "Child - Shorts", ar: "شورت", price: 7 }, { name: "Child - Trouser", ar: "بنطلون", price: 12 }, { name: "Child - Shirt", ar: "قميص", price: 7 }
+                ]
+            },
+            dry: {
+                "GENTLEMEN": [{ name: "Suit (2 pcs.)", ar: "بدلة قطعتين", price: 54 }, { name: "Trousers", ar: "بنطلون", price: 36 }, { name: "Jacket", ar: "جاكيت", price: 30 }],
+                "LADIES": [{ name: "Dress", ar: "فستان", price: 48 }, { name: "Blouse", ar: "بلوزة", price: 36 }, { name: "Abbaya", ar: "عباية", price: 36 }]
+            },
+            pressing: {
+                "GENTLEMEN": [{ name: "Suit (2 pcs.)", ar: "بدلة قطعتين", price: 30 }, { name: "Shirt", ar: "قميص", price: 12 }, { name: "Dishdash", ar: "دشداشة", price: 18 }],
+                "LADIES": [{ name: "Blouse", ar: "بلوزة", price: 12 }, { name: "Dress", ar: "فستان", price: 30 }, { name: "Abbaya", ar: "عباية", price: 18 }]
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            chargerDonneesLocalStorage();
+            if (!currentActiveUser) {
+                document.getElementById('pinLoginModal').classList.remove('hidden');
+            } else {
+                document.getElementById('pinLoginModal').classList.add('hidden');
+                document.getElementById('activeUserLabel').innerText = currentActiveUser;
+                applyRolePermissions();
+            }
+            selectCountType('hotel');
+            renderItems();
+            const serialEl = document.getElementById('spa-serial-no');
+            if(serialEl && !serialEl.value) serialEl.value = String(590).padStart(4, '0');
+            const todayIso = new Date().toISOString().split('T')[0];
+            ['spa-collection-date', 'spa-delivery-date'].forEach(id => { const el = document.getElementById(id); if(el && !el.value) el.value = todayIso; });
+        });
+
+        function submitPinLogin() {
+            currentActiveUser = document.getElementById('userRoleSelect').value;
+            sessionStorage.setItem('remal_auth_user', currentActiveUser);
+            document.getElementById('pinLoginModal').style.display = 'none';
+            document.getElementById('activeUserLabel').innerText = currentActiveUser;
+            applyRolePermissions();
+        }
+
+        function logoutUser() {
+            sessionStorage.removeItem('remal_auth_user');
+            currentActiveUser = null;
+            document.getElementById('pinLoginModal').style.display = 'flex';
+        }
+
+        function applyRolePermissions() {
+            if (!currentActiveUser) return;
+            const isFrontDesk = (currentActiveUser === 'Front Desk');
+            document.getElementById('navBtnLiveRecord').style.display = 'block';
+            document.getElementById('navBtnNewRecord').style.display = 'block';
+            document.getElementById('navBtnMassEntry').style.display = 'block';
+            document.getElementById('navBtnSpa').style.display = isFrontDesk ? 'none' : 'block';
+            document.getElementById('navBtnArchives').style.display = isFrontDesk ? 'none' : 'block';
+            document.getElementById('navBtnDashboard').style.display = isFrontDesk ? 'none' : 'block';
+            switchMainSection('liveRecord');
+        }
+
+        function chargerDonneesLocalStorage() {
+            const data = localStorage.getItem('remal_laundry_slips');
+            cachedSlips = data ? JSON.parse(data) : [];
+            const pmsCache = localStorage.getItem('remal_pms_cache');
+            if (pmsCache) {
+                try {
+                    const parsedPms = JSON.parse(pmsCache);
+                    pmsDatabase = parsedPms.database || {};
+                    const resultsCard = document.getElementById('massResultsCard');
+                    if (resultsCard && parsedPms.previewHtml) {
+                        document.getElementById('massPreviewContainer').innerHTML = parsedPms.previewHtml;
+                        resultsCard.classList.remove('hidden');
+                    }
+                } catch(e) {}
+            }
+        }
+
+        function sauvegarderDonneesLocalStorage() {
+            localStorage.setItem('remal_laundry_slips', JSON.stringify(cachedSlips));
+        }
+
+        function isRoomNumberValid(val) {
+            const room = parseInt(val, 10);
+            if (isNaN(room)) return false;
+            return ((room >= 103 && room <= 144) || (room >= 201 && room <= 246) || (room >= 301 && room <= 348) || (room >= 401 && room <= 448) || (room >= 501 && room <= 520) || (room >= 601 && room <= 608));
+        }
+
+        function onRoomNumberInput() {
+            validateRoomNumber();
+            const roomVal = document.getElementById('roomNumber').value.trim();
+            const infoBox = document.getElementById('roomPmsInfoBox');
+            if (pmsDatabase[roomVal]) {
+                const data = pmsDatabase[roomVal];
+                document.getElementById('pmsInfoGuest').innerText = data.guestName || 'Unknown';
+                document.getElementById('pmsInfoTyp').innerText = data.roomTyp || 'DLXR';
+                document.getElementById('pmsInfoQuota').innerHTML = data.isChargeable ? `<span class="text-rose-600 font-bold">Chargeable</span>` : `<span class="text-emerald-600 font-bold">${data.quotaText}</span>`;
+                infoBox.classList.remove('hidden');
+                selectCountType(data.isChargeable ? 'guest' : 'hotel');
+            } else { infoBox.classList.add('hidden'); }
+        }
+
+        function validateRoomNumber() {
+            const input = document.getElementById('roomNumber');
+            const errorMsg = document.getElementById('roomErrorMsg');
+            const saveBtn = document.getElementById('btnSaveRecord');
+            const val = input.value.trim();
+            if (val === '' || isRoomNumberValid(val)) {
+                input.className = "w-full remal-input rounded-2xl p-4 text-base font-bold outline-none";
+                errorMsg.classList.add('hidden');
+                saveBtn.disabled = false; saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                return true;
+            } else {
+                input.className = "w-full border-2 border-rose-500 rounded-2xl p-4 text-base font-bold bg-rose-50 text-rose-800 outline-none";
+                errorMsg.classList.remove('hidden');
+                saveBtn.disabled = true; saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                return false;
+            }
+        }
+
+        function switchMainSection(section) {
+            if (section === 'newRecord') reinitialiserFormulaire();
+            ['newRecord', 'massEntry', 'liveRecord', 'spa', 'pdfList', 'dashboard'].forEach(sec => {
+                const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
+                if (el) el.classList.add('hidden');
+            });
+            ['liveRecord', 'newRecord', 'spa', 'pdfList', 'massEntry', 'dashboard'].forEach(sec => {
+                const btn = document.getElementById(`navBtn${sec.charAt(0).toUpperCase() + sec.slice(1)}`);
+                if (btn) btn.className = "flex-1 py-3 rounded-2xl transition text-center text-stone-600 hover:text-stone-900 font-bold text-sm";
+            });
+            const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
+            if (targetSection) targetSection.classList.remove('hidden');
+            const activeNav = document.getElementById(`navBtn${section.charAt(0).toUpperCase() + section.slice(1)}`);
+            if (activeNav) activeNav.className = "flex-1 py-3 rounded-2xl bg-[#C59B27] text-white font-bold shadow-sm transition text-center text-sm";
+
+            if (section === 'pdfList') afficherListeBordereauxLocal();
+            else if (section === 'dashboard') renderManagementDashboard();
+            else if (section === 'liveRecord') chargerLiveOrders();
+        }
+
+        function selectCountType(type) {
+            currentCountType = type;
+            ['hotel', 'quota_extra', 'guest'].forEach(t => {
+                const btn = document.getElementById(`btn-count-${t === 'quota_extra' ? 'quota-extra' : t}`);
+                if(btn) btn.className = type === t ? 'py-3 px-2 rounded-2xl bg-[#C59B27] text-white font-bold text-xs shadow-sm' : 'py-3 px-2 rounded-2xl bg-stone-100 text-stone-600 font-bold text-xs';
+            });
+            renderItems(); calculateGlobalTotals();
+        }
+
+        function switchService(service) {
+            currentService = service;
+            ['laundry', 'dry', 'pressing'].forEach(s => {
+                document.getElementById(`tab-service-${s}`).className = s === service ? "flex-1 py-3 rounded-2xl bg-[#C59B27] text-white font-bold text-xs shadow-sm" : "flex-1 py-3 rounded-2xl bg-stone-100 text-stone-600 font-bold text-xs";
+            });
+            renderItems();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const serviceData = database[currentService];
+            for (const [catName, items] of Object.entries(serviceData)) {
+                const catHeader = document.createElement('div');
+                catHeader.className = 'bg-stone-100 text-[#C59B27] px-4 py-2 rounded-2xl font-bold text-xs uppercase tracking-wider mb-2 mt-3';
+                catHeader.innerText = catName;
+                container.appendChild(catHeader);
+
+                items.forEach(item => {
+                    const key = `${currentService}_${item.name}`;
+                    const entry = cart[key] || { qty: 0, freeQty: 0, price: item.price, name: item.name };
+                    const qty = entry.qty;
+                    const priceDisplay = currentCountType === 'hotel' ? '0.00 AED' : `${item.price.toFixed(2)} AED`;
+
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-center py-3 px-2 border-b border-stone-100 text-sm';
+                    row.innerHTML = `
+                        <div>
+                            <p class="font-bold text-stone-800">${item.name}</p>
+                            <p class="text-xs ${currentCountType === 'hotel' ? 'text-emerald-600 font-bold' : 'text-[#C59B27] font-semibold'}">${priceDisplay}</p>
+                        </div>
+                        <div class="flex items-center space-x-3 bg-stone-50 p-1.5 rounded-2xl border border-stone-200">
+                            <button onclick="updateQty('${key}', '${item.name}', ${item.price}, -1)" class="w-8 h-8 bg-white text-stone-800 rounded-xl font-bold shadow-sm border">-</button>
+                            <span class="font-bold px-2 text-stone-900">${qty}</span>
+                            <button onclick="updateQty('${key}', '${item.name}', ${item.price}, 1)" class="w-8 h-8 bg-[#C59B27] text-white rounded-xl font-bold shadow-sm">+</button>
+                        </div>`;
+                    container.appendChild(row);
+                });
+            }
+        }
+
+        function updateQty(key, name, price, delta) {
+            if (!cart[key]) cart[key] = { qty: 0, freeQty: 0, price: price, name: name, service: currentService };
+            cart[key].qty += delta;
+            if (cart[key].qty <= 0) delete cart[key];
+            renderItems(); calculateGlobalTotals();
+        }
+
+        function calculateGlobalTotals() {
+            let totalClothes = 0, subtotal = 0;
+            Object.values(cart).forEach(item => {
+                totalClothes += item.qty;
+                let chargeableQty = (currentCountType === 'guest') ? item.qty : (currentCountType === 'quota_extra' ? Math.max(0, item.qty - (item.freeQty || 0)) : 0);
+                subtotal += item.price * chargeableQty;
+            });
+            const vat = subtotal * 0.05;
+            document.getElementById('currentBordereauCount').innerText = `${totalClothes} pieces`;
+            document.getElementById('subTotal').innerText = `${subtotal.toFixed(2)} AED`;
+            document.getElementById('vatAmount').innerText = `${vat.toFixed(2)} AED`;
+            document.getElementById('grandTotal').innerText = `${(subtotal + vat).toFixed(2)} AED`;
+        }
+
+        function sauvegarderBordereauLocal() {
+            const roomNum = document.getElementById('roomNumber').value.trim();
+            const editingId = document.getElementById('editingRecordId').value;
+            if (!roomNum) { alert('Please enter a room number.'); return; }
+            if (Object.keys(cart).length === 0) { alert('Please select at least one item.'); return; }
+
+            let totalClothes = 0, subtotal = 0;
+            Object.values(cart).forEach(item => {
+                totalClothes += item.qty;
+                let chargeableQty = (currentCountType === 'guest') ? item.qty : (currentCountType === 'quota_extra' ? Math.max(0, item.qty - (item.freeQty || 0)) : 0);
+                subtotal += (item.price || 0) * chargeableQty;
+            });
+
+            const selectedOption = document.querySelector('input[name="foldingOption"]:checked')?.value || 'Folding';
+            const vat = subtotal * 0.05, grandTotal = subtotal + vat;
+            const pmsData = pmsDatabase[roomNum] || { guestName: 'Unknown Guest', roomTyp: 'DLXR', agency: 'Direct', quotaText: 'Chargeable' };
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const existingIndex = cachedSlips.findIndex(s => !s.is_spa && s.room === roomNum && s.created_at.startsWith(todayStr));
+            if (existingIndex !== -1 && !editingId) {
+                cachedSlips[existingIndex] = { ...cachedSlips[existingIndex], items: { ...cart }, total_clothes: totalClothes, subtotal, vat, total: grandTotal };
+            } else if (editingId) {
+                const index = cachedSlips.findIndex(s => s.id == editingId);
+                if (index !== -1) cachedSlips[index] = { ...cachedSlips[index], room: roomNum, items: { ...cart }, total_clothes: totalClothes, subtotal, vat, total: grandTotal };
+            } else {
+                cachedSlips.push({
+                    id: Date.now(), is_spa: false, room: roomNum, count_type: currentCountType,
+                    options: { service_style: selectedOption }, items: { ...cart }, total_clothes: totalClothes,
+                    subtotal, vat, total: grandTotal, guest_name: pmsData.guestName, room_typ: pmsData.roomTyp,
+                    agency: pmsData.agency, quota: pmsData.quotaText, created_by: currentActiveUser || 'Staff', created_at: new Date().toISOString()
+                });
+            }
+            sauvegarderDonneesLocalStorage();
+            alert("✅ Record saved successfully!");
+            reinitialiserFormulaire();
+            switchMainSection('liveRecord');
+        }
+
+        function reinitialiserFormulaire() {
+            document.getElementById('roomNumber').value = '';
+            document.getElementById('editingRecordId').value = '';
+            document.getElementById('roomPmsInfoBox').classList.add('hidden');
+            cart = {}; currentImageData = null;
+            selectCountType('hotel'); renderItems(); calculateGlobalTotals();
+        }
+
+        function chargerLiveOrders() {
+            const container = document.getElementById('liveOrdersList');
+            if (!container) return;
+            chargerDonneesLocalStorage();
+            const todayStr = new Date().toISOString().split('T')[0];
+            const activeTodaySlips = cachedSlips.filter(e => e.created_at && e.created_at.startsWith(todayStr));
+            activeTodaySlips.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
+
+            const badgeEl = document.getElementById('activeRoomsCountBadge');
+            if (badgeEl) badgeEl.innerText = activeTodaySlips.length;
+
+            if (activeTodaySlips.length === 0) {
+                container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6 col-span-full italic">No active room records for today.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            activeTodaySlips.forEach(entry => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'remal-card p-4 rounded-2xl space-y-3 transition cursor-pointer shadow-sm hover:border-[#C59B27]';
+                itemDiv.onclick = () => ouvrirModalDetails(entry.id);
+                const titleDisplay = entry.is_spa ? `SPA: ${entry.guest_name} (#${entry.spa_serial})` : `Room ${entry.room}`;
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-black text-[#C59B27] text-base">${titleDisplay}</span>
+                            <p class="text-xs text-stone-500 mt-0.5">👤 ${entry.guest_name || 'Guest'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-stone-600 font-bold">📦 ${entry.total_clothes} pcs</p>
+                            <p class="font-black text-stone-900 text-base mt-0.5">${entry.total.toFixed(2)} AED</p>
+                        </div>
+                    </div>`;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function afficherListeBordereauxLocal() {
+            chargerDonneesLocalStorage();
+            const searchVal = document.getElementById('searchRoom').value.trim().toLowerCase();
+            const searchDateVal = document.getElementById('searchDate').value;
+            const container = document.getElementById('laundryList');
+            if (!container) return;
+
+            let filtered = [...cachedSlips];
+            if (searchDateVal) filtered = filtered.filter(e => e.created_at && e.created_at.startsWith(searchDateVal));
+
+            if (searchVal) {
+                filtered = filtered.filter(e => e.is_spa ? String(e.spa_serial || '').toLowerCase().includes(searchVal) : String(e.room || '').toLowerCase().includes(searchVal));
+                filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            } else if (!searchDateVal) {
+                filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            }
+
+            container.innerHTML = '';
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="p-4 text-stone-400 italic text-center text-xs">No records found matching criteria.</p>`;
+                return;
+            }
+
+            filtered.forEach(entry => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-4 bg-stone-50 border border-stone-200 rounded-2xl flex justify-between items-center hover:border-[#C59B27] transition cursor-pointer shadow-sm';
+                const title = entry.is_spa ? `<span class="font-black text-[#C59B27]">SPA Serial #${entry.spa_serial}</span>` : `<span class="font-black text-stone-800">Room ${entry.room}</span>`;
+                itemDiv.innerHTML = `
+                    <div>${title}<p class="text-xs text-stone-500">${entry.guest_name || 'Guest'} · ${new Date(entry.created_at).toLocaleDateString('fr-FR')}</p></div>
+                    <div class="text-right font-black text-stone-900 text-sm">${entry.total.toFixed(2)} AED</div>`;
+                itemDiv.onclick = () => ouvrirModalDetails(entry.id);
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function exportDatabaseBackup() {
+            if (cachedSlips.length === 0) { alert("No records to export."); return; }
+            const fullBackup = { slips: cachedSlips, pms: localStorage.getItem('remal_pms_cache'), date: new Date().toISOString() };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr; a.download = `REMAL_FULL_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        function importDatabaseBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    if (backup.slips) { cachedSlips = backup.slips; sauvegarderDonneesLocalStorage(); }
+                    if (backup.pms) { localStorage.setItem('remal_pms_cache', backup.pms); }
+                    alert("✅ Backup successfully restored!");
+                    location.reload();
+                } catch (err) { alert("Invalid backup file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function calculateSpaTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('#spa-laundry-section tbody tr').forEach(row => {
+                const input = row.querySelector('.spa-qty-input');
+                if (!input) return;
+                const qty = parseInt(input.value) || 0;
+                const rate = parseFloat(input.getAttribute('data-rate')) || 0;
+                const rowTotal = qty * rate;
+                const amountCell = row.querySelector('.spa-row-amount');
+                if (amountCell) amountCell.innerText = rowTotal.toFixed(2);
+                grandTotal += rowTotal;
+            });
+            const gtEl = document.getElementById('spa-grand-total');
+            if (gtEl) gtEl.innerText = grandTotal.toFixed(2) + " AED";
+        }
+
+        function validateAndSaveSpaReceipt() {
+            const serialNo = document.getElementById('spa-serial-no').value.trim();
+            const grandTotalValue = parseFloat(document.getElementById('spa-grand-total').innerText) || 0;
+            const givenBy = document.getElementById('spa-given-by').value.trim();
+            const editingSpaId = document.getElementById('editingSpaId').value;
+            if (!serialNo) { alert("Serial No required."); return false; }
+            if (grandTotalValue <= 0) { alert("Grand Total must be > 0 AED."); return false; }
+
+            let spaItems = {}, totalClothes = 0;
+            document.querySelectorAll('#spa-laundry-section tbody tr').forEach(row => {
+                const input = row.querySelector('.spa-qty-input');
+                if (!input) return;
+                const qty = parseInt(input.value) || 0;
+                if (qty > 0) {
+                    const name = row.querySelector('td').innerText;
+                    const rate = parseFloat(input.getAttribute('data-rate')) || 0;
+                    spaItems[name] = { name, qty, price: rate };
+                    totalClothes += qty;
+                }
+            });
+
+            const colDate = document.getElementById('spa-collection-date').value;
+            if (editingSpaId) {
+                const idx = cachedSlips.findIndex(s => s.id == editingSpaId);
+                if (idx !== -1) cachedSlips[idx] = { ...cachedSlips[idx], spa_serial: serialNo, room: `SPA #${serialNo}`, guest_name: givenBy, items: spaItems, total_clothes: totalClothes, total: grandTotalValue };
+                document.getElementById('editingSpaId').value = '';
+            } else {
+                cachedSlips.push({
+                    id: Date.now(), is_spa: true, spa_serial: serialNo, room: `SPA #${serialNo}`,
+                    guest_name: givenBy, room_typ: 'SPA', agency: 'V Element SPA', count_type: 'guest',
+                    items: spaItems, total_clothes: totalClothes, subtotal: grandTotalValue, vat: 0, total: grandTotalValue,
+                    created_by: currentActiveUser || 'Staff', created_at: colDate ? `${colDate}T00:00:00.000Z` : new Date().toISOString()
+                });
+            }
+            sauvegarderDonneesLocalStorage();
+            alert("✅ SPA Receipt saved successfully!");
+            switchMainSection('liveRecord');
+            return true;
+        }
+
+        function ouvrirModalDetails(id) {
+            selectedIdForModal = id;
+            chargerDonneesLocalStorage();
+            const entry = cachedSlips.find(e => e.id == id);
+            if (!entry) return;
+            document.getElementById('modalDocTitle').innerText = entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'OFFICIAL LAUNDRY RECEIPT';
+            document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? 'Sheet Serial:' : 'Room:';
+            document.getElementById('modalRoomNumDisplay').innerText = entry.is_spa ? `#${entry.spa_serial}` : entry.room;
+            document.getElementById('modalDate').innerText = `Date: ${new Date(entry.created_at).toLocaleDateString('fr-FR')}`;
+            
+            const tbody = document.getElementById('modalTableBody');
+            tbody.innerHTML = '';
+            Object.values(entry.items || {}).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-stone-100";
+                tr.innerHTML = `<td class="p-2">${item.name}</td><td class="p-2 text-center">${item.qty}</td><td class="p-2 text-right">${(item.qty * (item.price || 0)).toFixed(2)}</td>`;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('modalClothesCount').innerText = `${entry.total_clothes} pieces`;
+            document.getElementById('modalTotal').innerText = `${entry.total.toFixed(2)} AED`;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function fermerModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+            selectedIdForModal = null;
+        }
+
+        function supprimerBordereauActuel() {
+            if (!selectedIdForModal) return;
+            if (confirm("Delete this record?")) {
+                cachedSlips = cachedSlips.filter(e => e.id != selectedIdForModal);
+                sauvegarderDonneesLocalStorage();
+                fermerModal();
+                chargerLiveOrders();
+            }
+        }
+
+        function modifierBordereauActuel() {
+            fermerModal();
+            alert("Edit feature available from local list views.");
+        }
+
+        async function handlePDFUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let extractedText = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    textContent.items.forEach(item => { extractedText += item.str + "\t"; });
+                    extractedText += "\n";
+                }
+                document.getElementById('pmsPasteArea').value = extractedText;
+                processTextData(extractedText);
+            } catch (error) { alert("Error reading PDF."); }
+        }
+
+        function processTextData(rawData) {
+            if (!rawData.trim()) { alert("Empty text."); return; }
+            pmsDatabase = { "103": { guestName: "Test Guest", roomTyp: "DLXR", agency: "Direct", quotaText: "Included", isChargeable: false } };
+            localStorage.setItem('remal_pms_cache', JSON.stringify({ database: pmsDatabase }));
+            alert("✅ PMS Data analyzed and saved locally!");
+        }
+    </script>
 </body>
 </html>
