@@ -4,7 +4,7 @@ const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
 
 const SUPABASE_URL = 'https://fwtfeklctflgehueuuik.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_hd8_Fq5md2W4E6rVKvnriw_jG_rjhmU';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3dGZla2xjdGZsZ2VodWV1dWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzEyNTEsImV4cCI6MjEwMTYwNzI1MX0.vNmrYb4bmFgRcrlGKZ-KlTvCOJLt-GYJMXpRBRD5WDM';
 
 let supabaseClient = null;
 try {
