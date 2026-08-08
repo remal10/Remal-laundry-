@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - VERSION FINALE SYNCHRONISÉE */
+/* REMAL LAUNDRY CLOUD - VERSION FINALE SYNCHRONISÉE & DEBUG */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -382,6 +382,8 @@ async function chargerDonneesEtAbonnementCloud() {
             if (!slipsErr && slips) {
                 cachedSlips = slips;
                 sauvegarderDonneesLocalStorage();
+            } else if (slipsErr) {
+                console.warn("Erreur chargement slips Supabase:", slipsErr);
             }
 
             if (!guestsErr && guests && guests.length > 0) {
@@ -583,7 +585,6 @@ function setLang(lang) {
     document.getElementById('thDeparture').innerText = t.thDeparture;
     document.getElementById('thAgency').innerText = t.thAgency;
     document.getElementById('thStatus').innerText = t.thStatus;
-    document.getElementById('lblLoadingActive').innerText = t.loadingActive;
 
     document.getElementById('lblSpaDateHeader').innerText = t.spaDateHeader;
     document.getElementById('lblSpaGivenBy').innerText = t.spaGivenBy;
@@ -625,8 +626,8 @@ function setLang(lang) {
     document.getElementById('thModalItem').innerText = t.thModalItem;
     document.getElementById('thModalQty').innerText = t.thModalQty;
     document.getElementById('thModalTotal').innerText = t.thModalTotal;
-    document.getElementById('lblModalTotPieces').innerText = t.modalTotPieces;
-    document.getElementById('lblModalGrandTot').innerText = t.modalGrandTot;
+    document.getElementById('modalClothesCount').innerText = t.modalTotPieces;
+    document.getElementById('modalGrandTot').innerText = t.modalGrandTot;
     document.getElementById('lblModalCollBy').innerText = t.modalCollBy;
     document.getElementById('lblModalDelBy').innerText = t.modalDelBy;
     document.getElementById('lblModalCollTime').innerText = t.modalCollTime;
@@ -634,7 +635,7 @@ function setLang(lang) {
     document.getElementById('lblModalSigGiven').innerText = t.modalSigGiven;
     document.getElementById('lblModalSigColl').innerText = t.modalSigColl;
     document.getElementById('lblModalSigDel').innerText = t.modalSigDel;
-    document.getElementById('lblModalNotesTitle').innerText = t.modalNotesTitle;
+    document.getElementById('modalNotesTitle').innerText = t.modalNotesTitle;
     document.getElementById('btnModalDownload').innerText = t.btnModalDownload;
     document.getElementById('btnModalEdit').innerText = t.btnModalEdit;
     document.getElementById('btnModalDelete').innerText = t.btnModalDelete;
@@ -677,9 +678,9 @@ function switchMainSection(section) {
 function selectCountType(type) {
     currentCountType = type;
     const t = i18n[currentLang] || i18n.en;
-    document.getElementById('btn-count-hotel').className = type === 'hotel' ? 'py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold leading-tight' : 'py-2.5 px-1 rounded-xl text-stone-400 leading-tight';
-    document.getElementById('btn-count-quota-extra').className = type === 'quota_extra' ? 'py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold leading-tight' : 'py-2.5 px-1 rounded-xl text-stone-400 leading-tight';
-    document.getElementById('btn-count-guest').className = type === 'guest' ? 'py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold leading-tight' : 'py-2.5 px-1 rounded-xl text-stone-400 leading-tight';
+    document.getElementById('btn-count-hotel').className = type === 'hotel' ? 'py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs' : 'py-2.5 px-1 rounded-xl text-stone-400 text-xs';
+    document.getElementById('btn-count-quota-extra').className = type === 'quota_extra' ? 'py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs' : 'py-2.5 px-1 rounded-xl text-stone-400 text-xs';
+    document.getElementById('btn-count-guest').className = type === 'guest' ? 'py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs' : 'py-2.5 px-1 rounded-xl text-stone-400 text-xs';
 
     document.getElementById('btn-count-hotel').innerText = t.btnHotelCount;
     document.getElementById('btn-count-quota-extra').innerText = t.btnHotelExtra;
@@ -692,7 +693,7 @@ function selectCountType(type) {
 function switchService(service) {
     currentService = service;
     ['laundry', 'dry', 'pressing'].forEach(s => {
-        document.getElementById(`tab-service-${s}`).className = s === service ? "flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold" : "flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]";
+        document.getElementById(`tab-service-${s}`).className = s === service ? "flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs" : "flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820] text-xs";
     });
     renderItems();
 }
@@ -939,8 +940,13 @@ async function sauvegarderBordereauLocal() {
     sauvegarderDonneesLocalStorage();
 
     if (supabaseClient && targetRecord) {
-        try { await supabaseClient.from('laundry_slips').upsert(targetRecord); } 
-        catch(e) { console.warn("Erreur Supabase:", e); }
+        const { error } = await supabaseClient.from('laundry_slips').upsert(targetRecord);
+        if (error) {
+            console.error("Erreur Supabase détaillée :", error);
+            alert("⚠️ Erreur de synchronisation Supabase : " + error.message);
+        } else {
+            console.log("Synchronisé avec succès dans Supabase !");
+        }
     }
 
     reinitialiserFormulaire();
@@ -1137,8 +1143,11 @@ async function processTextData(rawData) {
         localStorage.setItem('remal_pms_cache', JSON.stringify({ date: todayStr, database: pmsDatabase, previewHtml: html, count: parsedData.length }));
 
         if (supabaseClient) {
-            try { await supabaseClient.from('pms_guests').upsert(cloudGuestsPayload); } 
-            catch(e) { console.warn("Cloud sync error:", e); }
+            const { error: guestErr } = await supabaseClient.from('pms_guests').upsert(cloudGuestsPayload);
+            if (guestErr) {
+                console.error("Erreur sync PMS guests Supabase:", guestErr);
+                alert("⚠️ Erreur sync PMS guests : " + guestErr.message);
+            }
         }
     } else { alert("⚠️ Format error."); }
 }
@@ -1185,7 +1194,7 @@ function chargerLiveOrders() {
             <div class="flex justify-between items-start">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="font-serif-luxury font-bold text-[#DCA773] text-base">${identifierDisplay}</span>
+                        <span class="font-bold text-[#DCA773] text-sm">${identifierDisplay}</span>
                         <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeText}</span>
                     </div>
                     <p class="text-[10px] text-stone-400 mt-1 flex items-center gap-1">📅 ${dateStr} · 👤 ${entry.created_by || 'Staff'}</p>
@@ -1193,7 +1202,7 @@ function chargerLiveOrders() {
                 </div>
                 <div class="text-right">
                     <p class="text-[11px] text-stone-300 flex items-center gap-1 justify-end font-semibold">📦 ${entry.total_clothes} pcs</p>
-                    <p class="font-serif-luxury font-bold text-[#DCA773] text-sm mt-0.5">${entry.total.toFixed(2)} AED ${entry.photo ? '📸' : ''}</p>
+                    <p class="font-bold text-[#DCA773] text-sm mt-0.5">${entry.total.toFixed(2)} AED ${entry.photo ? '📸' : ''}</p>
                 </div>
             </div>
         `;
@@ -1217,10 +1226,10 @@ function printActiveRooms() {
         const tr = document.createElement('tr');
         tr.className = "border-b border-stone-200 text-stone-900";
         tr.innerHTML = `
-            <td class="p-2 font-bold">${entry.room}</td>
-            <td class="p-2">${entry.guest_name || 'Guest'}</td>
-            <td class="p-2 text-center font-bold">${entry.total_clothes} pcs</td>
-            <td class="p-2 text-stone-600">${entry.note || '-'}</td>
+            <td class="p-2 border border-stone-300 font-bold">${entry.room}</td>
+            <td class="p-2 border border-stone-300">${entry.guest_name || 'Guest'}</td>
+            <td class="p-2 border border-stone-300 text-center font-bold">${entry.total_clothes} pcs</td>
+            <td class="p-2 border border-stone-300 text-stone-600">${entry.note || '-'}</td>
         `;
         pdfBody.appendChild(tr);
     });
@@ -1285,12 +1294,12 @@ function afficherListeBordereauxLocal() {
 
         itemDiv.innerHTML = `
             <div>
-                <span class="font-serif-luxury font-bold text-[#DCA773] text-sm">${titleDisplay}</span>
+                <span class="font-bold text-[#DCA773] text-sm">${titleDisplay}</span>
                 <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
                 <div class="text-[10px] text-stone-400 mt-0.5">Date: ${new Date(entry.created_at).toLocaleDateString('fr-FR')}</div>
             </div>
             <div class="text-right font-bold text-stone-200">
-                <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> <span class="text-[#DCA773] font-serif-luxury text-sm">${entry.total.toFixed(2)} AED</span> ${entry.photo ? '📸' : ''}
+                <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> <span class="text-[#DCA773] text-sm">${entry.total.toFixed(2)} AED</span> ${entry.photo ? '📸' : ''}
             </div>
         `;
         container.appendChild(itemDiv);
@@ -1322,7 +1331,8 @@ function importDatabaseBackup(event) {
                     cachedSlips = importedData;
                     sauvegarderDonneesLocalStorage();
                     if(supabaseClient) { 
-                        try { await supabaseClient.from('laundry_slips').upsert(importedData); } catch(err) { console.warn(err); }
+                        const { error } = await supabaseClient.from('laundry_slips').upsert(importedData);
+                        if (error) alert("⚠️ Erreur import Supabase : " + error.message);
                     }
                     alert("✅ Backup successfully restored!");
                     afficherListeBordereauxLocal();
@@ -1398,7 +1408,7 @@ function renderManagementDashboard() {
 
 function calculateSpaTotal() {
     let grandTotal = 0;
-    const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
+    const rows = document.querySelectorAll('#spa-laundry-section tbody tr');
     
     rows.forEach(row => {
         const input = row.querySelector('.spa-qty-input');
@@ -1440,9 +1450,10 @@ async function validateAndSaveSpaReceipt() {
 
     let spaItems = {};
     let totalClothes = 0;
-    const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
+    const rows = document.querySelectorAll('#spa-laundry-section tbody tr');
     rows.forEach(row => {
         const input = row.querySelector('.spa-qty-input');
+        if(!input) return;
         const qty = parseInt(input.value) || 0;
         if(qty > 0) {
             const itemName = row.querySelector('td').innerText;
@@ -1473,7 +1484,6 @@ async function validateAndSaveSpaReceipt() {
         }
         alert(`✅ SPA Receipt #${serialNo} updated successfully!`);
         document.getElementById('editingSpaId').value = '';
-        document.getElementById('spaFormTitleLabel').innerText = "V Element SPA Laundry Daily Record Sheet";
     } else {
         targetRecord = {
             id: Date.now(), is_spa: true, spa_serial: serialNo, room: `SPA #${serialNo}`,
@@ -1494,8 +1504,11 @@ async function validateAndSaveSpaReceipt() {
     sauvegarderDonneesLocalStorage();
 
     if (supabaseClient && targetRecord) {
-        try { await supabaseClient.from('laundry_slips').upsert(targetRecord); } 
-        catch(e) { console.warn("Supabase error:", e); }
+        const { error } = await supabaseClient.from('laundry_slips').upsert(targetRecord);
+        if (error) {
+            console.error("Erreur Supabase SPA :", error);
+            alert("⚠️ Erreur Supabase SPA : " + error.message);
+        }
     }
 
     switchMainSection('liveRecord');
@@ -1546,9 +1559,9 @@ function ouvrirModalDetails(id) {
         const imgCollected = document.getElementById('imgSigCollected');
         const imgDelivered = document.getElementById('imgSigDelivered');
 
-        if (entry.options.sig_given) { imgGiven.src = entry.options.sig_given; imgGiven.style.display = 'block'; } else { imgGiven.style.display = 'none'; }
-        if (entry.options.sig_collected) { imgCollected.src = entry.options.sig_collected; imgCollected.style.display = 'block'; } else { imgCollected.style.display = 'none'; }
-        if (entry.options.sig_delivered) { imgDelivered.src = entry.options.sig_delivered; imgDelivered.style.display = 'block'; } else { imgDelivered.style.display = 'none'; }
+        if (entry.options.sig_given) { imgGiven.src = entry.options.sig_given; imgGiven.classList.remove('hidden'); } else { imgGiven.classList.add('hidden'); }
+        if (entry.options.sig_collected) { imgCollected.src = entry.options.sig_collected; imgCollected.classList.remove('hidden'); } else { imgCollected.classList.add('hidden'); }
+        if (entry.options.sig_delivered) { imgDelivered.src = entry.options.sig_delivered; imgDelivered.classList.remove('hidden'); } else { imgDelivered.classList.add('hidden'); }
 
         spaDetailsBox.classList.remove('hidden');
     } else { spaDetailsBox.classList.add('hidden'); }
@@ -1568,23 +1581,23 @@ function ouvrirModalDetails(id) {
 
         if (freeQty > 0) {
             const trFree = document.createElement('tr');
-            trFree.className = "py-1 border-b border-stone-200 text-emerald-700";
-            trFree.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} (Free Quota)</td><td class="text-center font-bold p-1.5">${freeQty}</td><td class="text-right font-bold p-1.5">0.00</td>`;
+            trFree.className = "border-b border-[#2f2820] text-emerald-400";
+            trFree.innerHTML = `<td class="p-2">${item.name} (Free Quota)</td><td class="p-2 text-center">${freeQty}</td><td class="p-2 text-right">0.00</td>`;
             tbody.appendChild(trFree);
         }
         if (chargeableQty > 0 || entry.count_type === 'guest' || entry.is_spa || k.startsWith('custom_') || item.price > 0) {
             const effectiveQty = (entry.count_type === 'hotel') ? qty : chargeableQty;
             if (entry.count_type === 'hotel' && qty > 0) {
                 const trH = document.createElement('tr');
-                trH.className = "py-1 border-b border-stone-200 text-stone-900";
-                trH.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name}</td><td class="text-center font-bold p-1.5">${qty}</td><td class="text-right font-bold p-1.5">0.00</td>`;
+                trH.className = "border-b border-[#2f2820]";
+                trH.innerHTML = `<td class="p-2">${item.name}</td><td class="p-2 text-center">${qty}</td><td class="p-2 text-right">0.00</td>`;
                 tbody.appendChild(trH);
             } else if (effectiveQty > 0 || entry.count_type === 'guest' || entry.is_spa) {
                 const displayQty = (entry.count_type === 'quota_extra') ? chargeableQty : qty;
                 if (displayQty > 0 || entry.is_spa) {
                     const trChg = document.createElement('tr');
-                    trChg.className = "py-1 border-b border-stone-200 text-stone-900";
-                    trChg.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} ${entry.count_type === 'quota_extra' ? '(Extra)' : ''}</td><td class="text-center font-bold p-1.5">${displayQty}</td><td class="text-right font-bold p-1.5">${(displayQty * (item.price || 0)).toFixed(2)}</td>`;
+                    trChg.className = "border-b border-[#2f2820]";
+                    trChg.innerHTML = `<td class="p-2">${item.name} ${entry.count_type === 'quota_extra' ? '(Extra)' : ''}</td><td class="p-2 text-center">${displayQty}</td><td class="p-2 text-right">${(displayQty * (item.price || 0)).toFixed(2)}</td>`;
                     tbody.appendChild(trChg);
                 }
             }
@@ -1603,7 +1616,7 @@ function ouvrirModalDetails(id) {
 
     const pContainer = document.getElementById('modalPhotoContainer');
     if (entry.photo) {
-        pContainer.innerHTML = `<div class="border-t border-stone-200 pt-2 mt-1"><p class="font-bold text-[10px] mb-1 text-stone-700">Proof Photo:</p><img src="${entry.photo}" class="w-full max-h-36 object-cover rounded-xl border border-stone-300"></div>`;
+        pContainer.innerHTML = `<div class="border-t border-[#2f2820] pt-2 mt-2"><p class="font-bold text-[10px] mb-1 text-stone-400">Proof Photo:</p><img src="${entry.photo}" class="w-full max-h-36 object-cover rounded-xl border border-[#2f2820]"></div>`;
     } else { pContainer.innerHTML = ''; }
 
     const whatsappMsg = encodeURIComponent(`*REMAL HOTEL - LAUNDRY SLIP*\n*Identifier:* ${entry.room}\n*Guest/Staff:* ${entry.guest_name || 'Guest'}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${entry.total.toFixed(2)} AED${entry.note ? `\n*Note:* ${entry.note}` : ''}`);
@@ -1634,7 +1647,7 @@ function modifierBordereauActuel() {
         if(entry.options?.delivery_date) document.getElementById('spa-delivery-date').value = entry.options.delivery_date;
         if(entry.options?.delivery_time) document.getElementById('spa-delivery-time').value = entry.options.delivery_time;
 
-        const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
+        const rows = document.querySelectorAll('#spa-laundry-section tbody tr');
         rows.forEach(row => {
             const input = row.querySelector('.spa-qty-input');
             const itemName = row.querySelector('td').innerText;
@@ -1718,8 +1731,8 @@ async function supprimerBordereauActuel() {
         sauvegarderDonneesLocalStorage();
 
         if (supabaseClient) {
-            try { await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal); } 
-            catch(e) { console.warn("Delete error:", e); }
+            const { error } = await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal);
+            if (error) alert("⚠️ Erreur suppression Supabase : " + error.message);
         }
 
         fermerModal();
