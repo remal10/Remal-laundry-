@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE CLOUD-FIRST & SYNCHRONISÉE */
+/* REMAL LAUNDRY CLOUD - VERSION SYNCHRONISÉE PAR AUTO-POLL 5S */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -366,47 +366,53 @@ async function chargerDonneesEtAbonnementCloud() {
     try {
         purgerAnciennesPhotos();
         
-        // 1. TÉLÉCHARGEMENT PRIORITAIRE DU CLOUD SUR TOUS LES NAVIGATEURS
-        const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
-        const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
+        async function syncWithCloud() {
+            const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
+            const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
 
-        if (!slipsErr && slips) {
-            cachedSlips = slips;
-            sauvegarderDonneesLocalStorage();
+            let hasNewData = false;
+
+            if (!slipsErr && slips) {
+                if (JSON.stringify(cachedSlips) !== JSON.stringify(slips)) {
+                    cachedSlips = slips;
+                    sauvegarderDonneesLocalStorage();
+                    hasNewData = true;
+                }
+            }
+
+            if (!guestsErr && guests && guests.length > 0) {
+                let tempPms = {};
+                guests.forEach(g => {
+                    tempPms[g.room] = {
+                        guestName: g.guest_name,
+                        roomTyp: g.room_typ,
+                        agency: g.agency,
+                        quotaText: g.quota_text,
+                        isChargeable: g.is_chargeable
+                    };
+                });
+                if (JSON.stringify(pmsDatabase) !== JSON.stringify(tempPms)) {
+                    pmsDatabase = tempPms;
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    localStorage.setItem('remal_pms_cache', JSON.stringify({ date: todayStr, database: pmsDatabase }));
+                    hasNewData = true;
+                }
+            }
+
+            if (hasNewData) {
+                chargerLiveOrders();
+                if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+                    afficherListeBordereauxLocal();
+                }
+            }
         }
 
-        if (!guestsErr && guests) {
-            pmsDatabase = {};
-            guests.forEach(g => {
-                pmsDatabase[g.room] = {
-                    guestName: g.guest_name,
-                    roomTyp: g.room_typ,
-                    agency: g.agency,
-                    quotaText: g.quota_text,
-                    isChargeable: g.is_chargeable
-                };
-            });
-            const todayStr = new Date().toISOString().split('T')[0];
-            localStorage.setItem('remal_pms_cache', JSON.stringify({ date: todayStr, database: pmsDatabase }));
-        }
+        // 1. Premier chargement immédiat
+        await syncWithCloud();
 
-        chargerLiveOrders();
-        if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-            afficherListeBordereauxLocal();
-        }
+        // 2. Synchronisation automatique toutes les 5 secondes (contourne les soucis de Realtime réseau)
+        setInterval(syncWithCloud, 5000);
 
-        // 2. ÉCOUTE TEMPS RÉEL (REALTIME) POUR SYNCHRONISER LES AUTRES NAVIGATEURS INSTANTANÉMENT
-        const existingChannel = supabaseClient.getChannels().find(c => c.topic === 'realtime:public:laundry_slips');
-        if (!existingChannel) {
-            supabaseClient.channel('realtime_laundry')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, () => {
-                    chargerDonneesEtAbonnementCloud();
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, () => {
-                    chargerDonneesEtAbonnementCloud();
-                })
-                .subscribe();
-        }
     } catch (e) { 
         console.warn("Erreur critique Cloud, bascule sur le local:", e);
         chargerDonneesLocalStorage(); 
