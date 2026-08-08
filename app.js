@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - VERSION FINALE PROPRE & SÉPARÉE */
+/* REMAL LAUNDRY CLOUD - VERSION FINALE SYNCHRONISÉE & OFFLINE INTELLIGENT */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -204,6 +204,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderItems();
     
     await chargerDonneesEtAbonnementCloud();
+
+    // Écouteur de retour de connexion pour synchroniser instantanément
+    window.addEventListener('online', async () => {
+        console.log("Connexion rétablie ! Synchronisation immédiate...");
+        await chargerDonneesEtAbonnementCloud();
+    });
 
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const spaDateEl = document.getElementById('spa-current-date');
@@ -878,13 +884,37 @@ async function sauvegarderBordereauLocal() {
 
     chargerDonneesLocalStorage();
     let targetRecord = null;
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    if (editingId) {
+    // Vérifie s'il existe déjà un enregistrement pour cette chambre aujourd'hui (Anti-doublon / Écrasement intelligent)
+    const existingIndex = cachedSlips.findIndex(s => !s.is_spa && s.room === roomNum && s.created_at && s.created_at.startsWith(todayStr));
+
+    if (existingIndex !== -1 && !editingId) {
+        cachedSlips[existingIndex] = {
+            ...cachedSlips[existingIndex],
+            count_type: currentCountType,
+            options: { service_style: selectedOption },
+            items: finalCart,
+            total_clothes: totalClothes,
+            subtotal: subtotal,
+            vat: vat,
+            total: grandTotal,
+            note: optionalNote,
+            photo: currentImageData || cachedSlips[existingIndex].photo,
+            guest_name: pmsData.guestName,
+            room_typ: pmsData.roomTyp,
+            agency: pmsData.agency,
+            quota: pmsData.quotaText,
+            created_by: currentActiveUser || 'Laundry Plant'
+        };
+        targetRecord = cachedSlips[existingIndex];
+        alert(`Record updated (overwritten for today) successfully!`);
+    } else if (editingId) {
         const index = cachedSlips.findIndex(s => s.id == editingId);
         if (index !== -1) {
             cachedSlips[index] = {
                 ...cachedSlips[index],
-                is_spa: false, // Laundry standard
+                is_spa: false,
                 room: roomNum,
                 count_type: currentCountType,
                 options: { service_style: selectedOption },
@@ -907,7 +937,7 @@ async function sauvegarderBordereauLocal() {
     } else {
         targetRecord = {
             id: Date.now(),
-            is_spa: false, // Laundry standard (séparé du SPA)
+            is_spa: false,
             spa_serial: null,
             room: roomNum,
             count_type: currentCountType,
@@ -1465,7 +1495,7 @@ async function validateAndSaveSpaReceipt() {
         if (index !== -1) {
             cachedSlips[index] = {
                 ...cachedSlips[index],
-                is_spa: true, // SPA Sheet
+                is_spa: true,
                 spa_serial: serialNo, room: `SPA #${serialNo}`, guest_name: givenBy,
                 options: { 
                     ...cachedSlips[index].options, collection_date: colDate, collection_time: colTime, 
@@ -1482,7 +1512,7 @@ async function validateAndSaveSpaReceipt() {
     } else {
         targetRecord = {
             id: Date.now(), 
-            is_spa: true, // SPA Sheet (séparé du linge standard)
+            is_spa: true, 
             spa_serial: serialNo, 
             room: `SPA #${serialNo}`,
             guest_name: givenBy, 
