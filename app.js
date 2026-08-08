@@ -376,17 +376,12 @@ async function chargerDonneesEtAbonnementCloud() {
         purgerAnciennesPhotos();
         
         async function syncWithCloud() {
-            const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
+            const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*').order('created_at', { ascending: false });
             const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
 
-            let hasNewData = false;
-
             if (!slipsErr && slips) {
-                if (JSON.stringify(cachedSlips) !== JSON.stringify(slips)) {
-                    cachedSlips = slips;
-                    sauvegarderDonneesLocalStorage();
-                    hasNewData = true;
-                }
+                cachedSlips = slips;
+                sauvegarderDonneesLocalStorage();
             }
 
             if (!guestsErr && guests && guests.length > 0) {
@@ -400,19 +395,14 @@ async function chargerDonneesEtAbonnementCloud() {
                         isChargeable: g.is_chargeable
                     };
                 });
-                if (JSON.stringify(pmsDatabase) !== JSON.stringify(tempPms)) {
-                    pmsDatabase = tempPms;
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    localStorage.setItem('remal_pms_cache', JSON.stringify({ date: todayStr, database: pmsDatabase }));
-                    hasNewData = true;
-                }
+                pmsDatabase = tempPms;
+                const todayStr = new Date().toISOString().split('T')[0];
+                localStorage.setItem('remal_pms_cache', JSON.stringify({ date: todayStr, database: pmsDatabase }));
             }
 
-            if (hasNewData) {
-                chargerLiveOrders();
-                if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-                    afficherListeBordereauxLocal();
-                }
+            chargerLiveOrders();
+            if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+                afficherListeBordereauxLocal();
             }
         }
 
