@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE COMPLETE & REALTIME SYNCHRONISÉ */
+/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE CLOUD-FIRST & SYNCHRONISÉE */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -358,42 +358,23 @@ async function purgerAnciennesPhotos() {
 }
 
 async function chargerDonneesEtAbonnementCloud() {
-    chargerDonneesLocalStorage();
-    if (!supabaseClient) return;
+    if (!supabaseClient) {
+        chargerDonneesLocalStorage();
+        return;
+    }
 
     try {
         purgerAnciennesPhotos();
-        await rafraichirDonneesDepuisSupabase();
-
-        const existingChannel = supabaseClient.getChannels().find(c => c.topic === 'realtime:public:laundry_slips');
-        if (!existingChannel) {
-            supabaseClient.channel('realtime_laundry')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, () => {
-                    rafraichirDonneesDepuisSupabase();
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, () => {
-                    rafraichirDonneesDepuisSupabase();
-                })
-                .subscribe();
-        }
-    } catch (e) { console.warn("Erreur Cloud:", e); }
-}
-
-async function rafraichirDonneesDepuisSupabase() {
-    if (!supabaseClient) return;
-    
-    try {
+        
+        // 1. TÉLÉCHARGEMENT PRIORITAIRE DU CLOUD SUR TOUS LES NAVIGATEURS
         const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
+        const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
+
         if (!slipsErr && slips) {
             cachedSlips = slips;
             sauvegarderDonneesLocalStorage();
-            chargerLiveOrders();
-            if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-                afficherListeBordereauxLocal();
-            }
         }
 
-        const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
         if (!guestsErr && guests) {
             pmsDatabase = {};
             guests.forEach(g => {
@@ -405,9 +386,30 @@ async function rafraichirDonneesDepuisSupabase() {
                     isChargeable: g.is_chargeable
                 };
             });
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('remal_pms_cache', JSON.stringify({ date: todayStr, database: pmsDatabase }));
         }
-    } catch (e) {
-        console.warn("Erreur lors du rafraîchissement Cloud :", e);
+
+        chargerLiveOrders();
+        if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+            afficherListeBordereauxLocal();
+        }
+
+        // 2. ÉCOUTE TEMPS RÉEL (REALTIME) POUR SYNCHRONISER LES AUTRES NAVIGATEURS INSTANTANÉMENT
+        const existingChannel = supabaseClient.getChannels().find(c => c.topic === 'realtime:public:laundry_slips');
+        if (!existingChannel) {
+            supabaseClient.channel('realtime_laundry')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, () => {
+                    chargerDonneesEtAbonnementCloud();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, () => {
+                    chargerDonneesEtAbonnementCloud();
+                })
+                .subscribe();
+        }
+    } catch (e) { 
+        console.warn("Erreur critique Cloud, bascule sur le local:", e);
+        chargerDonneesLocalStorage(); 
     }
 }
 
