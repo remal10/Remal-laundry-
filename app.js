@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - VERSION SYNCHRONISÉE PAR AUTO-POLL 5S */
+/* REMAL LAUNDRY CLOUD - VERSION FINALE SYNCHRONISÉE */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -263,6 +263,15 @@ function applyRolePermissions() {
     document.getElementById('navBtnPdfList').style.display = isFrontDesk ? 'none' : 'block';
     document.getElementById('navBtnDashboard').style.display = isFrontDesk ? 'none' : 'block';
 
+    const quickActionButtons = document.getElementById('quickActionButtons');
+    if (quickActionButtons) {
+        if (isFrontDesk) {
+            quickActionButtons.classList.add('hidden');
+        } else {
+            quickActionButtons.classList.remove('hidden');
+        }
+    }
+
     switchMainSection('liveRecord');
 }
 
@@ -407,10 +416,7 @@ async function chargerDonneesEtAbonnementCloud() {
             }
         }
 
-        // 1. Premier chargement immédiat
         await syncWithCloud();
-
-        // 2. Synchronisation automatique toutes les 5 secondes (contourne les soucis de Realtime réseau)
         setInterval(syncWithCloud, 5000);
 
     } catch (e) { 
@@ -948,7 +954,7 @@ async function sauvegarderBordereauLocal() {
     }
 
     reinitialiserFormulaire();
-    switchMainSection('pdfList');
+    switchMainSection('liveRecord');
 }
 
 function reinitialiserFormulaire() {
@@ -1322,11 +1328,13 @@ function importDatabaseBackup(event) {
         try {
             const importedData = JSON.parse(e.target.result);
             if (Array.isArray(importedData)) {
-                if (confirm(`⚠️ Import backup file?`)) {
+                if (confirm(`⚠️ Import backup file containing ${importedData.length} records?`)) {
                     cachedSlips = importedData;
                     sauvegarderDonneesLocalStorage();
-                    if(supabaseClient) { await supabaseClient.from('laundry_slips').upsert(importedData); }
-                    alert("✅ Backup restored!");
+                    if(supabaseClient) { 
+                        try { await supabaseClient.from('laundry_slips').upsert(importedData); } catch(err) { console.warn(err); }
+                    }
+                    alert("✅ Backup successfully restored!");
                     afficherListeBordereauxLocal();
                     chargerLiveOrders();
                 }
@@ -1500,7 +1508,7 @@ async function validateAndSaveSpaReceipt() {
         catch(e) { console.warn("Supabase error:", e); }
     }
 
-    switchMainSection('pdfList');
+    switchMainSection('liveRecord');
     return true;
 }
 
@@ -1701,9 +1709,10 @@ function genererPDF() {
     const roomVal = document.getElementById('modalRoomNumDisplay').innerText.replace('#','');
     
     const opt = {
-        margin: [10, 10, 10, 10], filename: `Laundry_Slip_${roomVal}.pdf`,
+        margin: [10, 10, 10, 10], 
+        filename: `Laundry_Slip_${roomVal}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     html2pdf().set(opt).from(element).save();
