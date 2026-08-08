@@ -1,693 +1,526 @@
 <!DOCTYPE html>
-<html lang="en" id="htmlRoot" dir="ltr">
+<html lang="en" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Remal Hotel & Villas - Laundry OS</title>
-    
-    <!-- PWA META TAGS -->
-    <meta name="theme-color" content="#0f0e0c">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Remal Laundry">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3003/3003984.png">
-
-    <!-- WEBMANIFEST INLINE VIA DATA-URI -->
-    <link rel="manifest" href='data:application/manifest+json,{
-        "name": "Remal Laundry Cloud",
-        "short_name": "Remal Laundry",
-        "description": "Front Desk & Laundry Management System",
-        "start_url": "./",
-        "display": "standalone",
-        "background_color": "#0f0e0c",
-        "theme_color": "#0f0e0c",
-        "orientation": "portrait",
-        "icons": [
-            { "src": "https://cdn-icons-png.flaticon.com/512/3003/3003984.png", "sizes": "192x192", "type": "image/png" },
-            { "src": "https://cdn-icons-png.flaticon.com/512/3003/3003984.png", "sizes": "512x512", "type": "image/png" }
-        ]
-    }'>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remal Laundry Cloud</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- PDF.js for parsing PDF reports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
-    
-    <!-- LIEN CSS EXTERNE -->
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen pb-16">
-
-    <!-- OVERLAY CONNEXION PIN -->
-    <div id="pinLoginModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-center justify-center p-4">
-        <div class="remal-card w-full max-w-sm rounded-2xl p-6 sm:p-8 text-center space-y-6 shadow-2xl border border-[#382C1E]">
-            <div>
-                <h2 id="lblModalRoleTitle" class="text-lg font-serif-luxury text-[#DCA773] font-bold tracking-[0.2em] uppercase">SELECT ROLE</h2>
-                <div class="w-full h-px bg-[#2f2820] my-2"></div>
-                <p id="lblModalRoleSub" class="text-xs text-stone-400">Please identify your terminal.</p>
-            </div>
-
-            <div class="space-y-4 text-left">
-                <div>
-                    <label id="lblModalRoleLabel" class="block text-xs font-bold text-stone-300 mb-1.5">Terminal Role</label>
-                    <select id="userRoleSelect" class="w-full bg-[#0f0e0c] text-stone-200 border border-[#2f2820] rounded-xl p-3 text-xs outline-none focus:border-[#DCA773]">
-                        <option value="Front Desk">Front Desk (PMS Entry Only - PIN: 1234)</option>
-                        <option value="Laundry Plant">Laundry Plant (Full Access - PIN: 5678)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label id="lblModalPinLabel" class="block text-xs font-bold text-stone-300 mb-1.5">Security PIN</label>
-                    <input type="password" id="pinInputDisplay" placeholder="Enter PIN" maxlength="4" class="w-full text-center text-base font-bold bg-[#0f0e0c] border border-[#2f2820] text-[#DCA773] rounded-xl p-3 tracking-[0.3em] outline-none focus:border-[#DCA773]">
-                </div>
-            </div>
-
-            <button onclick="submitPinLogin()" id="btnVerify" class="w-full bg-[#8C6A3F] hover:bg-[#a37c4c] text-stone-100 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg">
-                VERIFY
-            </button>
+<body class="min-h-screen">
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" class="hidden bg-[#DCA773] text-stone-950 p-3 text-center font-bold flex justify-between items-center px-6">
+        <div>
+            <span id="pwaTitle">Installer l'application Remal Laundry</span>
+            <p class="text-xs font-normal" id="pwaSub">Accès rapide écran d'accueil</p>
+        </div>
+        <div class="space-x-2">
+            <button onclick="installPWA()" id="pwaBtnInstall" class="bg-stone-950 text-[#DCA773] px-4 py-1.5 rounded-lg text-xs font-bold">Installer</button>
+            <button onclick="dismissPWAInstall()" class="text-stone-950 font-bold px-2">✕</button>
         </div>
     </div>
 
-    <!-- BANNIÈRE PWA -->
-    <div id="pwaInstallBanner" class="hidden bg-[#181614] border-b border-[#DCA773] px-4 py-2 flex justify-between items-center no-print">
-        <div class="flex items-center gap-2.5">
-            <span class="text-lg">📱</span>
-            <div>
-                <p id="pwaTitle" class="text-xs font-bold text-[#DCA773]">Installer l'application Remal Laundry</p>
-                <p id="pwaSub" class="text-[10px] text-stone-400">Accès rapide écran d'accueil</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2">
-            <button onclick="installPWA()" id="pwaBtnInstall" class="bg-[#DCA773] text-stone-950 font-bold px-3 py-1 rounded-xl text-xs shadow">Installer</button>
-            <button onclick="dismissPWAInstall()" class="text-stone-400 font-bold px-1 text-xs">✕</button>
-        </div>
-    </div>
-
-    <!-- HEADER -->
-    <header class="relative bg-[#0b0a08] border-b border-[#2f2820] no-print overflow-hidden">
-        <div class="absolute inset-0 bg-cover bg-center opacity-40 pointer-events-none"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-[#0b0a08]/50 via-[#0b0a08]/80 to-[#0f0e0c]"></div>
-
-        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-5 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="space-y-0.5">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xl sm:text-2xl font-serif-luxury text-[#DCA773] font-bold tracking-[0.2em] uppercase">Remal Hotel & Villas</span>
-                    </div>
-                    <p id="headerSubLoc" class="text-[9px] text-stone-300 uppercase tracking-widest font-semibold">Al Ruwais City, Abu Dhabi – UAE</p>
-                </div>
-            </div>
+    <!-- PIN Login Modal -->
+    <div id="pinLoginModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="remal-card p-6 rounded-3xl max-w-sm w-full space-y-4 border border-[#2f2820] text-center">
+            <h2 id="lblModalRoleTitle" class="text-xl font-bold text-[#DCA773]">SELECT ROLE</h2>
+            <p id="lblModalRoleSub" class="text-xs text-stone-400">Please identify your terminal.</p>
             
-            <div class="flex items-center space-x-3">
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614]/90 text-stone-300 text-xs border border-[#2f2820] rounded-xl px-2.5 py-1.5 outline-none font-semibold cursor-pointer">
-                    <option value="en">🇬🇧 English</option>
-                    <option value="ar">🇦🇪 العربية</option>
-                    <option value="hi">🇮🇳 हिन्दी</option>
+            <div class="text-left space-y-1">
+                <label id="lblModalRoleLabel" class="text-xs font-bold text-stone-300">Terminal Role</label>
+                <select id="userRoleSelect" class="w-full remal-input rounded-xl p-3 text-sm font-bold">
+                    <option value="Front Desk">Front Desk</option>
+                    <option value="Laundry Plant">Laundry Plant</option>
                 </select>
-
-                <button onclick="logoutUser()" title="Switch Role" class="text-xs font-bold px-3.5 py-2 rounded-xl border border-[#2f2820] bg-[#181614]/90 text-[#DCA773] flex items-center gap-2 hover:border-[#DCA773] transition shadow-md">
-                    <i class="fas fa-user-circle"></i>
-                    <span id="activeUserLabel">SELECT ROLE</span>
-                </button>
             </div>
+
+            <div class="text-left space-y-1 hidden">
+                <label id="lblModalPinLabel" class="text-xs font-bold text-stone-300">Security PIN</label>
+                <input type="password" id="pinInputDisplay" class="w-full remal-input rounded-xl p-3 text-center tracking-widest text-lg font-bold" readonly>
+            </div>
+
+            <button onclick="submitPinLogin()" id="btnVerify" class="w-full py-3 bg-[#DCA773] text-stone-950 rounded-xl font-bold shadow-lg transition">VERIFY</button>
         </div>
-    </header>
-
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5">
-
-        <!-- NAVIGATION PRINCIPALE -->
-        <div id="mainNavContainer" class="flex bg-[#181614] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400 no-print">
-            <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">Active Rooms</button>
-            <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">SPA</button>
-            <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">Archives & Search</button>
-            <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">Mass PDF</button>
-            <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">Chart</button>
-        </div>
-
-        <!-- ACTION RAPIDE LAUNDRY -->
-        <div id="quickActionButtons" class="grid grid-cols-2 gap-3 no-print">
-            <button onclick="switchMainSection('newRecord')" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 shadow transition">
-                <span class="text-base font-bold">+</span> <span id="txtBtnNewRecord">New Record</span>
-            </button>
-            <button onclick="switchMainSection('pdfList')" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 font-bold py-3 px-4 rounded-2xl text-xs border border-[#2f2820] flex items-center justify-center gap-2 transition">
-                <span>📄</span> <span id="txtBtnPdfListNav">PDF List</span>
-            </button>
-        </div>
-
-        <!-- SECTION 1: FORMULAIRE NEW RECORD -->
-        <div id="sectionNewRecord" class="hidden space-y-4 no-print">
-            <div class="remal-card p-5 sm:p-7 rounded-3xl space-y-5 relative max-w-2xl mx-auto">
-                
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                    <h2 class="text-lg font-serif-luxury font-bold text-[#DCA773]" id="lblFormTitle">New Record</h2>
-                    <button onclick="switchMainSection('liveRecord')" class="text-stone-400 hover:text-stone-200 font-bold text-xl px-2">✕</button>
-                </div>
-
-                <input type="hidden" id="editingRecordId" value="">
-
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1 tracking-wide" id="lblRoomNum">Room Number</label>
-                    <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-xl p-3 text-sm font-bold">
-                    
-                    <p class="text-[10px] text-stone-400 mt-1" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
-                    
-                    <div id="roomPmsInfoBox" class="hidden mt-2 p-3 bg-[#211e1a] border border-[#2f2820] rounded-2xl text-xs space-y-1.5 shadow-sm">
-                        <div class="flex justify-between font-bold text-stone-200">
-                            <span id="lblGuestNameTitle">Guest Name:</span> <span id="pmsInfoGuest" class="text-stone-300">---</span>
-                        </div>
-                        <div class="flex justify-between font-bold text-stone-200">
-                            <span id="lblRoomTypeTitle">Room Type (Typ):</span> <span id="pmsInfoTyp" class="text-stone-300">---</span>
-                        </div>
-                        <div class="flex justify-between font-bold text-amber-200 border-t border-[#2f2820] pt-1">
-                            <span id="lblPmsQuotaTitle">PMS Quota / Status:</span> <span id="pmsInfoQuota" class="text-emerald-400">---</span>
-                        </div>
-                        <div class="flex justify-between font-bold text-amber-200">
-                            <span id="lblAgencyTitle">Agency:</span> <span id="pmsInfoAgency" class="text-stone-300">---</span>
-                        </div>
-                    </div>
-
-                    <p id="roomErrorMsg" class="hidden text-rose-400 text-xs font-bold mt-1.5 flex items-center gap-1">
-                        ⚠️ <span id="lblRoomError">Invalid room number! Allowed ranges: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.</span>
-                    </p>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1" id="lblAccountTypeTitle">Account & Quota Type</label>
-                    <div class="grid grid-cols-3 gap-1.5 bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-[10px] sm:text-xs font-bold text-center">
-                        <button onclick="selectCountType('hotel')" id="btn-count-hotel" class="py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow transition leading-tight">Hotel Count (Free)</button>
-                        <button onclick="selectCountType('quota_extra')" id="btn-count-quota-extra" class="py-2.5 px-1 rounded-xl text-stone-400 transition leading-tight">Hotel & Extra Charged</button>
-                        <button onclick="selectCountType('guest')" id="btn-count-guest" class="py-2.5 px-1 rounded-xl text-stone-400 transition leading-tight">Guest Count (Full)</button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1" id="lblServiceTypeTitle">Service Type</label>
-                    <div class="flex gap-2 text-xs font-bold">
-                        <button onclick="switchService('laundry')" id="tab-service-laundry" class="flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 shadow">LAUNDRY</button>
-                        <button onclick="switchService('dry')" id="tab-service-dry" class="flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">DRY CLEANING</button>
-                        <button onclick="switchService('pressing')" id="tab-service-pressing" class="flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">PRESSING</button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1" id="lblPackagingTitle">Packaging</label>
-                    <div class="grid grid-cols-3 gap-2 p-2 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs font-bold text-center text-stone-300">
-                        <label class="flex flex-col items-center justify-center p-2 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
-                            <input type="radio" name="foldingOption" value="F — Folding" checked class="accent-[#DCA773] mb-1"> F — Folding
-                        </label>
-                        <label class="flex flex-col items-center justify-center p-2 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
-                            <input type="radio" name="foldingOption" value="H/F — Hanger/Folding" class="accent-[#DCA773] mb-1"> H/F — Hanger
-                        </label>
-                        <label class="flex flex-col items-center justify-center p-2 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
-                            <input type="radio" name="foldingOption" value="S — Single" class="accent-[#DCA773] mb-1"> S — Single
-                        </label>
-                    </div>
-                </div>
-
-                <div id="itemsContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1 scrollbar-none"></div>
-
-                <details id="detailsCustomItems" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
-                    <summary class="p-3 cursor-pointer font-bold text-[#DCA773] text-xs uppercase tracking-wider flex justify-between items-center select-none">
-                        <span id="lblCustomItemSummary">➕ Other / Custom Items (Manual Entry)</span>
-                        <span class="text-stone-400 transition-transform group-open:rotate-180">▼</span>
-                    </summary>
-                    <div class="p-3 pt-0 space-y-2 border-t border-[#2f2820]/40 mt-1" id="customItemsContainer">
-                        <div class="flex gap-2 items-center">
-                            <input type="text" placeholder="Item name" id="customName0" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-1.5 text-xs font-semibold">
-                            <input type="number" placeholder="Price" id="customPrice0" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-1.5 text-xs text-center font-semibold">
-                            <input type="number" placeholder="Qty" id="customQty0" min="0" value="" oninput="calculateGlobalTotals()" class="w-16 remal-input rounded-xl px-2 py-1.5 text-xs text-center font-bold">
-                        </div>
-                        <div class="flex gap-2 items-center">
-                            <input type="text" placeholder="Item name" id="customName1" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-1.5 text-xs font-semibold">
-                            <input type="number" placeholder="Price" id="customPrice1" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-1.5 text-xs text-center font-semibold">
-                            <input type="number" placeholder="Qty" id="customQty1" min="0" value="" oninput="calculateGlobalTotals()" class="w-16 remal-input rounded-xl px-2 py-1.5 text-xs text-center font-bold">
-                        </div>
-                        <div class="flex gap-2 items-center">
-                            <input type="text" placeholder="Item name" id="customName2" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-1.5 text-xs font-semibold">
-                            <input type="number" placeholder="Price" id="customPrice2" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-1.5 text-xs text-center font-semibold">
-                            <input type="number" placeholder="Qty" id="customQty2" min="0" value="" oninput="calculateGlobalTotals()" class="w-16 remal-input rounded-xl px-2 py-1.5 text-xs text-center font-bold">
-                        </div>
-                    </div>
-                </details>
-
-                <div class="bg-[#211e1a] border border-[#2f2820] text-[#DCA773] p-3 rounded-2xl flex justify-between items-center font-bold text-xs">
-                    <span id="lblSelectedGarments">Total Garments:</span>
-                    <span id="currentBordereauCount" class="bg-[#DCA773] text-stone-950 px-3 py-1 rounded-full text-xs">0 pieces</span>
-                </div>
-
-                <div class="bg-[#0f0e0c] border border-[#2f2820] p-3.5 rounded-2xl text-xs space-y-1.5 font-medium text-stone-300">
-                    <div class="flex justify-between"><span id="lblSubTotal">Subtotal:</span><span id="subTotal">0.00 AED</span></div>
-                    <div class="flex justify-between"><span id="lblVat">VAT (5%):</span><span id="vatAmount">0.00 AED</span></div>
-                    <div class="flex justify-between font-bold text-sm text-stone-100 border-t border-[#2f2820] pt-2 mt-1"><span id="lblGrandTotal">Grand Total:</span><span id="grandTotal" class="text-[#DCA773] font-serif-luxury text-base">0.00 AED</span></div>
-                </div>
-
-                <details id="detailsGarmentNotes" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
-                    <summary class="p-3 cursor-pointer font-bold text-stone-400 text-xs tracking-wide flex justify-between items-center select-none">
-                        <span id="lblNotesSummary">📝 Garment Notes / Defects (Optional)</span>
-                        <span class="text-stone-400 transition-transform group-open:rotate-180">▼</span>
-                    </summary>
-                    <div class="p-3 pt-0 border-t border-[#2f2820]/40 mt-1">
-                        <textarea id="recordOptionalNote" placeholder="e.g., Stain on collar, small tear..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none mt-2"></textarea>
-                    </div>
-                </details>
-
-                <button onclick="document.getElementById('photoInput').click()" class="w-full bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-300 font-bold p-3 rounded-xl text-xs border border-dashed border-[#2f2820] transition flex items-center justify-center gap-2" id="btnPhotoProof">
-                    <span>📷</span> Take Proof Photo (Camera)
-                </button>
-                <input type="file" id="photoInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)">
-                <img id="imagePreview" class="hidden w-full max-h-48 object-cover rounded-2xl mt-2 border border-[#2f2820]" alt="Preuve">
-
-                <button onclick="sauvegarderBordereauLocal()" id="btnSaveRecord" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-sm shadow transition tracking-wider">💾 Save Record</button>
-            </div>
-        </div>
-
-        <!-- SECTION 1.5: MASS ENTRY / PDF PARSER (RECEPTION) -->
-        <div id="sectionMassEntry" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-3xl mx-auto">
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                    <div>
-                        <h2 id="lblMassTitle" class="text-base font-serif-luxury font-bold text-[#DCA773] uppercase tracking-wider">PMS Mass Entry & PDF Parser</h2>
-                        <p id="lblMassSub" class="text-xs text-stone-400 mt-0.5">Front Desk Morning Setup Terminal</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="effacerRapportPmsAujourdhui()" id="btnClearPms" class="text-[10px] bg-rose-950/60 text-rose-300 hover:bg-rose-900 border border-rose-800 font-bold px-2.5 py-1 rounded-full transition">🗑 Clear Today's PMS</button>
-                        <span id="lblAccurateBadge" class="text-[10px] bg-amber-950 text-amber-200 font-bold px-3 py-1 rounded-full border border-amber-800">Accurate Guest Mapping</span>
-                    </div>
-                </div>
-                
-                <p id="lblMassDesc" class="text-xs text-stone-300">Upload your PMS multi-page PDF report directly or paste the text content below.</p>
-
-                <div class="border-2 border-dashed border-[#2f2820] p-6 text-center rounded-2xl bg-[#0f0e0c] hover:border-[#DCA773] transition cursor-pointer" onclick="document.getElementById('pdfFileReceiver').click()">
-                    <i class="fas fa-file-pdf text-3xl text-[#DCA773] mb-2"></i>
-                    <p id="lblPdfUploadTitle" class="text-xs font-bold text-stone-200">Click to upload PMS PDF Report</p>
-                    <p id="lblPdfUploadSub" class="text-[10px] text-stone-500 mt-0.5">Supports multi-page guest list reports</p>
-                    <input type="file" id="pdfFileReceiver" accept=".pdf" onchange="handlePDFUpload(event)" class="hidden">
-                </div>
-
-                <div>
-                    <textarea id="pmsPasteArea" placeholder="Or paste raw copied text from report here..." class="w-full h-28 bg-[#0f0e0c] text-stone-200 p-3 rounded-xl font-mono text-xs outline-none border border-[#2f2820] resize-vertical"></textarea>
-                    <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" id="btnAnalyzeSave" class="mt-2 w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition shadow">Analyze & Save Database</button>
-                </div>
-                <div id="massRecordCounter" class="text-xs font-bold text-emerald-400"></div>
-            </div>
-
-            <div id="massResultsCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-4xl mx-auto">
-                <h3 id="lblInHouseTitle" class="text-sm font-serif-luxury font-bold text-stone-200">In-House Guest Laundry List & Status</h3>
-                <div class="max-h-[450px] overflow-y-auto border border-[#2f2820] rounded-2xl">
-                    <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
-                        <thead class="bg-[#181614] text-stone-300 sticky top-0 z-10 border-b border-[#2f2820]">
-                            <tr>
-                                <th id="thRoom" class="p-3">Room</th>
-                                <th id="thGuest" class="p-3">Guest Name</th>
-                                <th id="thTyp" class="p-3">Typ</th>
-                                <th id="thArrival" class="p-3">Arrival</th>
-                                <th id="thDeparture" class="p-3">Departure</th>
-                                <th id="thAgency" class="p-3">Agency</th>
-                                <th id="thStatus" class="p-3">Laundry Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION 2: ACTIVE ROOMS / LIVE LAUNDRY -->
-        <div id="sectionLiveRecord" class="hidden space-y-4 no-print">
-            <div class="flex justify-between items-center px-1">
-                <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms</span>
-                <div class="flex items-center gap-2">
-                    <span id="activeRoomsCountBadge" class="text-[10px] bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
-                    <button onclick="printActiveRooms()" class="text-[10px] bg-[#DCA773] text-stone-950 font-bold px-3 py-1.5 rounded-xl shadow transition hover:bg-[#c89360]">📥 PDF Roadmap</button>
-                </div>
-            </div>
-
-            <!-- ZONE CACHÉE POUR EXPORT PDF ROADMAP -->
-            <div id="printableActiveRooms" class="hidden printable-page p-6 bg-white text-stone-900 rounded-xl">
-                <h2 class="text-lg font-serif-luxury font-bold text-center text-stone-950 uppercase tracking-wider">Remal Hotel & Villas - Daily Laundry Roadmap</h2>
-                <p class="text-xs text-center text-stone-500 mb-4">Date : <span id="reportDate"></span></p>
-                <table class="w-full border-collapse text-xs">
-                    <thead>
-                        <tr class="border-b border-stone-800 bg-stone-100 text-stone-900 font-bold">
-                            <th class="p-2 text-left">Room / Identifier</th>
-                            <th class="p-2 text-left">Guest Name</th>
-                            <th class="p-2 text-center">Total Pieces</th>
-                            <th class="p-2 text-left">Notes / Defects</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pdfTableBody" class="divide-y divide-stone-200"></tbody>
-                </table>
-            </div>
-
-            <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                <p id="lblLoadingActive" class="text-xs text-stone-500 text-center py-4 col-span-full">Loading active rooms...</p>
-            </div>
-        </div>
-
-        <!-- SECTION SPA LAUNDRY DAILY RECORD SHEET -->
-        <section id="spa-laundry-section" class="hidden remal-card p-6 sm:p-8 rounded-3xl space-y-6 relative max-w-3xl mx-auto text-stone-200 printable-page">
-            
-            <input type="hidden" id="editingSpaId" value="">
-
-            <div class="border-b border-[#2f2820] pb-5 flex justify-between items-center">
-                <div class="space-y-1">
-                    <h2 class="text-lg font-serif-luxury font-bold text-[#DCA773] tracking-wide" id="spaFormTitleLabel">V Element SPA Laundry Daily Record Sheet</h2>
-                    <div class="flex items-center gap-1.5 text-xs text-stone-400">
-                        <span id="lblSpaDateHeader" class="font-bold uppercase tracking-wider">Date :</span>
-                        <span id="spa-current-date" class="font-semibold text-stone-200"></span>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="flex flex-col items-end">
-                        <span class="block text-base font-black uppercase tracking-widest text-[#DCA773] leading-none">REMAL</span>
-                        <span class="text-[9px] uppercase tracking-wider text-stone-400 font-bold mt-0.5">HOTEL & VILLAS</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="flex items-center gap-2 border-b border-[#2f2820] py-1.5">
-                    <span id="lblSpaGivenBy" class="text-xs font-bold text-stone-400 uppercase min-w-[100px]">Given By (Spa):</span>
-                    <input type="text" id="spa-given-by" class="w-full text-stone-200 font-semibold focus:outline-none border-none p-0 bg-transparent text-xs" placeholder="Spa Employee Name">
-                </div>
-                <div class="flex items-center gap-2 border-b border-[#2f2820] py-1.5 justify-end">
-                    <span id="lblSpaSerial" class="text-xs font-bold text-stone-400 uppercase">SERIAL NO:</span>
-                    <input type="text" id="spa-serial-no" class="w-28 text-right text-sm font-black text-rose-400 ml-2 remal-input rounded-lg px-2 py-1" placeholder="Serial">
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse border border-[#2f2820] rounded-2xl overflow-hidden bg-[#0f0e0c]">
-                    <thead>
-                        <tr class="bg-[#181614] text-[#DCA773] text-xs uppercase tracking-wider text-center">
-                            <th id="thSpaItem" class="p-3 text-left">Item</th>
-                            <th id="thSpaQty" class="p-3">Quantity</th>
-                            <th id="thSpaRate" class="p-3">Rate (AED)</th>
-                            <th id="thSpaTotal" class="p-3">Total Amount (AED)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-xs font-medium divide-y divide-[#2f2820]">
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3 font-semibold text-stone-300">BATH TOWEL</td>
-                            <td class="p-3 text-center">
-                                <input type="number" class="spa-qty-input w-16 text-center remal-input rounded-lg p-1 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3 text-center text-stone-400">2.00</td>
-                            <td class="p-3 text-center font-bold text-stone-200 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3 font-semibold text-stone-300">HAND TOWEL</td>
-                            <td class="p-3 text-center">
-                                <input type="number" class="spa-qty-input w-16 text-center remal-input rounded-lg p-1 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3 text-center text-stone-400">1.00</td>
-                            <td class="p-3 text-center font-bold text-stone-200 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3 font-semibold text-stone-300">BED SHEET</td>
-                            <td class="p-3 text-center">
-                                <input type="number" class="spa-qty-input w-16 text-center remal-input rounded-lg p-1 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3 text-center text-stone-400">2.00</td>
-                            <td class="p-3 text-center font-bold text-stone-200 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3 font-semibold text-stone-300">PILLOW CASE</td>
-                            <td class="p-3 text-center">
-                                <input type="number" class="spa-qty-input w-16 text-center remal-input rounded-lg p-1 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3 text-center text-stone-400">1.00</td>
-                            <td class="p-3 text-center font-bold text-stone-200 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3 font-semibold text-stone-300">BATHROBE</td>
-                            <td class="p-3 text-center">
-                                <input type="number" class="spa-qty-input w-16 text-center remal-input rounded-lg p-1 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3 text-center text-stone-400">2.00</td>
-                            <td class="p-3 text-center font-bold text-stone-200 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="bg-[#181614] font-bold">
-                            <td colspan="3" id="lblSpaGrandTotal" class="p-3 text-right text-stone-300 uppercase tracking-wider text-xs">Grand Total :</td>
-                            <td id="spa-grand-total" class="p-3 text-center text-[#DCA773] text-base font-black">0.00 AED</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820]">
-                <div class="space-y-3">
-                    <div>
-                        <label id="lblSpaCollectedByTitle" class="block text-xs font-bold text-stone-400 uppercase mb-1">Collected By (Laundry) :</label>
-                        <input type="text" id="spa-collected-by" class="w-full px-3 py-2 remal-input rounded-xl font-semibold text-xs" placeholder="Laundry Collection Agent">
-                    </div>
-                    <div>
-                        <label id="lblSpaColDateTime" class="block text-xs font-bold text-stone-400 uppercase mb-1">Collection Date & Time :</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="spa-collection-date" class="px-2.5 py-1.5 remal-input rounded-xl text-stone-200 font-medium text-xs cursor-pointer">
-                            <input type="time" id="spa-collection-time" class="px-2.5 py-1.5 remal-input rounded-xl text-stone-200 font-medium text-xs cursor-pointer">
-                        </div>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label id="lblSpaDeliveredByTitle" class="block text-xs font-bold text-stone-400 uppercase mb-1">Delivered By (Laundry) :</label>
-                        <input type="text" id="spa-delivered-by" class="w-full px-3 py-2 remal-input rounded-xl font-semibold text-xs" placeholder="Laundry Delivery Agent">
-                    </div>
-                    <div>
-                        <label id="lblSpaDelDateTime" class="block text-xs font-bold text-stone-400 uppercase mb-1">Delivery Date & Time :</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="spa-delivery-date" class="px-2.5 py-1.5 remal-input rounded-xl text-stone-200 font-medium text-xs cursor-pointer">
-                            <input type="time" id="spa-delivery-time" class="px-2.5 py-1.5 remal-input rounded-xl text-stone-200 font-medium text-xs cursor-pointer">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ZONES DE SIGNATURES TACTILES SPA -->
-            <div class="space-y-4 p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820]">
-                <p id="lblSpaSignaturesTitle" class="text-xs font-bold text-[#DCA773] uppercase tracking-wider text-center">Signatures Officielles (SPA)</p>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div class="space-y-1">
-                        <div class="flex justify-between items-center text-[10px] text-stone-400 font-bold uppercase">
-                            <span id="lblSigGivenText">Sign. Given By (Spa)</span>
-                            <button type="button" onclick="clearSignature('canvasGivenBy')" class="text-rose-400 hover:underline clear-btn-text">Effacer</button>
-                        </div>
-                        <div class="bg-[#181614] border border-[#2f2820] rounded-xl overflow-hidden">
-                            <canvas id="canvasGivenBy" class="w-full h-24 touch-none cursor-crosshair"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between items-center text-[10px] text-stone-400 font-bold uppercase">
-                            <span id="lblSigCollectedText">Sign. Collected By</span>
-                            <button type="button" onclick="clearSignature('canvasCollectedBy')" class="text-rose-400 hover:underline clear-btn-text">Effacer</button>
-                        </div>
-                        <div class="bg-[#181614] border border-[#2f2820] rounded-xl overflow-hidden">
-                            <canvas id="canvasCollectedBy" class="w-full h-24 touch-none cursor-crosshair"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between items-center text-[10px] text-stone-400 font-bold uppercase">
-                            <span id="lblSigDeliveredText">Sign. Delivered By</span>
-                            <button type="button" onclick="clearSignature('canvasDeliveredBy')" class="text-rose-400 hover:underline clear-btn-text">Effacer</button>
-                        </div>
-                        <div class="bg-[#181614] border border-[#2f2820] rounded-xl overflow-hidden">
-                            <canvas id="canvasDeliveredBy" class="w-full h-24 touch-none cursor-crosshair"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="spa-action-buttons" class="pt-1 no-print">
-                <button onclick="validateAndSaveSpaReceipt()" id="btnSaveSpa" class="w-full py-3.5 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl shadow transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
-                    <i class="fas fa-check-circle"></i> Validate & Save SPA Receipt
-                </button>
-            </div>
-        </section>
-
-        <!-- SECTION 3: PDF LIST & ARCHIVES & SEARCH -->
-        <div id="sectionPdfList" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-4 max-w-4xl mx-auto">
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                    <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773]" id="lblArchiveTitle">Archives & Search</h3>
-                    <span class="text-[10px] bg-[#0f0e0c] border border-[#2f2820] text-stone-400 font-bold px-2.5 py-1 rounded-full" id="lblAutoArchive">Auto-Archive 00:00</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="exportDatabaseBackup()" id="btnExportBackup" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
-                        📥 Export Backup
-                    </button>
-                    <button onclick="document.getElementById('importFileJson').click()" id="btnImportBackup" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 border border-[#2f2820] font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
-                        📤 Import Backup
-                    </button>
-                    <input type="file" id="importFileJson" accept=".json" class="hidden" onchange="importDatabaseBackup(event)">
-                </div>
-
-                <div class="space-y-3 bg-[#0f0e0c] p-3.5 rounded-2xl border border-[#2f2820]">
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-stone-400">🔍</span>
-                        <input type="text" id="searchRoom" onkeyup="afficherListeBordereauxLocal()" placeholder="Search by Serial No (#...), room number, or spa name..." class="w-full remal-input rounded-xl pl-9 pr-3 py-2.5 text-xs">
-                    </div>
-                    <div>
-                        <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="w-full remal-input rounded-xl px-3 py-2.5 text-xs cursor-pointer">
-                    </div>
-                </div>
-
-                <div id="laundryList" class="space-y-3 pt-1"><p class="text-xs text-stone-500 text-center py-4" id="lblLoadingRecords">Loading records...</p></div>
-            </div>
-        </div>
-
-        <!-- SECTION 4: ANALYTICS -->
-        <div id="sectionDashboard" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-4xl mx-auto">
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                    <h3 id="lblAnalyticsTitle" class="text-sm font-serif-luxury font-bold text-[#DCA773]">📈 Reception & Management Analytics</h3>
-                    <span id="lblExecOverview" class="text-[10px] bg-amber-950 text-amber-200 border border-amber-800 font-bold px-2.5 py-1 rounded-full">Executive Overview</span>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div class="bg-[#0f0e0c] p-3.5 rounded-2xl border border-[#2f2820] text-center">
-                        <p id="lblKpiRev" class="text-[10px] font-bold text-stone-400 uppercase">Total Revenue</p>
-                        <p id="kpiRevenue" class="text-base font-serif-luxury font-bold text-[#DCA773] mt-0.5">0.00 AED</p>
-                    </div>
-                    <div class="bg-[#0f0e0c] p-3.5 rounded-2xl border border-[#2f2820] text-center">
-                        <p id="lblKpiOrd" class="text-[10px] font-bold text-stone-400 uppercase">Total Orders</p>
-                        <p id="kpiOrders" class="text-base font-serif-luxury font-bold text-stone-100 mt-0.5">0</p>
-                    </div>
-                    <div class="bg-[#0f0e0c] p-3.5 rounded-2xl border border-[#2f2820] text-center col-span-2 sm:col-span-1">
-                        <p id="lblKpiGar" class="text-[10px] font-bold text-stone-400 uppercase">Garments Processed</p>
-                        <p id="kpiGarments" class="text-base font-serif-luxury font-bold text-stone-100 mt-0.5">0 pcs</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div class="bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820] space-y-2">
-                        <p id="lblChartStatus" class="text-xs font-bold text-stone-300 text-center">Orders Status Distribution</p>
-                        <div class="relative h-48 flex items-center justify-center">
-                            <canvas id="statusDoughnutChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820] space-y-2">
-                        <p id="lblChartRev" class="text-xs font-bold text-stone-300 text-center">Business Evolution (Revenue by Date)</p>
-                        <div class="relative h-48 flex items-center justify-center">
-                            <canvas id="revenueBarChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <!-- MODAL REÇU FLOTTANT -->
-    <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-[#181614] w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative text-stone-200">
-            
-            <div id="pdfExportArea" class="p-6 space-y-4 bg-white text-stone-900 rounded-2xl printable-page" style="width: 100%; box-sizing: border-box;">
-                <div class="text-center border-b border-stone-300 pb-3 relative">
-                    <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-500 text-xl font-bold hover:text-stone-900 no-print">✕</button>
-                    <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
-                    <p class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <p class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide" id="modalDocTitle">OFFICIAL LAUNDRY RECEIPT</p>
-                </div>
+    <!-- Main App Container -->
+    <div class="max-w-md mx-auto pb-24">
+        <!-- Header -->
+        <header class="p-4 bg-[#0f0e0c] border-b border-[#2f2820] flex justify-between items-center sticky top-0 z-30">
+            <div>
+                <h1 class="text-lg font-bold text-[#DCA773]">Remal Laundry Cloud</h1>
+                <p class="text-[10px] text-stone-400" id="headerSubLoc">Al Ruwais City, Abu Dhabi – UAE</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614] text-stone-200 text-xs px-2 py-1 rounded-lg border border-[#2f2820] outline-none">
+                    <option value="en">EN</option>
+                    <option value="ar">AR</option>
+                    <option value="hi">HI</option>
+                </select>
+                <button onclick="logoutUser()" class="text-xs bg-rose-950 text-rose-200 px-2.5 py-1 rounded-lg border border-rose-800 font-bold">
+                    <span id="activeUserLabel">Staff</span> 🚪
+                </button>
+            </div>
+        </header>
 
-                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
+        <!-- Navigation Bar -->
+        <nav class="flex bg-[#0f0e0c] p-2 border-b border-[#2f2820] text-xs gap-1">
+            <button id="navBtnLiveRecord" onclick="switchMainSection('liveRecord')" class="flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 font-bold shadow transition text-center">Active Rooms</button>
+            <button id="navBtnSpa" onclick="switchMainSection('spa')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">SPA</button>
+            <button id="navBtnPdfList" onclick="switchMainSection('pdfList')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">Archives & Search</button>
+            <button id="navBtnMassEntry" onclick="switchMainSection('massEntry')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">Mass PDF</button>
+            <button id="navBtnDashboard" onclick="switchMainSection('dashboard')" class="flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200">Chart</button>
+        </nav>
+
+        <!-- Sections Content Container -->
+        <main class="p-4 space-y-4">
+            <!-- Active Rooms Section -->
+            <section id="sectionLiveRecord" class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 id="lblActiveRoomsHeader" class="text-sm font-bold text-[#DCA773] uppercase tracking-wider">Active Rooms</h2>
+                    <span id="activeRoomsCountBadge" class="bg-[#DCA773] text-stone-950 px-2 py-0.5 rounded-full font-bold text-xs">0</span>
+                </div>
+                <div id="liveOrdersList" class="space-y-3"></div>
+            </section>
+
+            <!-- New Record Section -->
+            <section id="sectionNewRecord" class="space-y-4 hidden">
+                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
+                    <h2 id="lblFormTitle" class="text-sm font-bold text-[#DCA773]">New Record</h2>
+                    
+                    <div class="space-y-1">
+                        <label id="lblRoomNum" class="text-xs font-bold text-stone-300">Room Number</label>
+                        <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g. 103" class="w-full remal-input rounded-xl p-3 text-sm font-bold">
+                        <p id="roomErrorMsg" class="text-[10px] text-rose-400 hidden"><span id="lblRoomError">Invalid room number!</span></p>
+                    </div>
+
+                    <div id="roomPmsInfoBox" class="hidden p-3 bg-[#181614] border border-[#2f2820] rounded-xl text-xs space-y-1">
+                        <p><strong id="lblGuestNameTitle">Guest Name:</strong> <span id="pmsInfoGuest" class="text-[#DCA773]">---</span></p>
+                        <p><strong id="lblRoomTypeTitle">Room Type (Typ):</strong> <span id="pmsInfoTyp">---</span></p>
+                        <p><strong id="lblPmsQuotaTitle">PMS Quota / Status:</strong> <span id="pmsInfoQuota">---</span></p>
+                        <p><strong id="lblAgencyTitle">Agency:</strong> <span id="pmsInfoAgency">---</span></p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label id="lblAccountTypeTitle" class="text-xs font-bold text-stone-300">Account & Quota Type</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="selectCountType('hotel')" id="btn-count-hotel" class="py-2.5 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs">Hotel Count (Free)</button>
+                            <button onclick="selectCountType('quota_extra')" id="btn-count-quota-extra" class="py-2.5 px-1 rounded-xl text-stone-400 text-xs">Hotel & Extra Charged</button>
+                            <button onclick="selectCountType('guest')" id="btn-count-guest" class="py-2.5 px-1 rounded-xl text-stone-400 text-xs">Guest Count (Full)</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label id="lblServiceTypeTitle" class="text-xs font-bold text-stone-300">Service Type</label>
+                        <div class="flex gap-2">
+                            <button onclick="switchService('laundry')" id="tab-service-laundry" class="flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold text-xs">Laundry</button>
+                            <button onclick="switchService('dry')" id="tab-service-dry" class="flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820] text-xs">Dry Cleaning</button>
+                            <button onclick="switchService('pressing')" id="tab-service-pressing" class="flex-1 py-2.5 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820] text-xs">Pressing</button>
+                        </div>
+                    </div>
+
+                    <div id="itemsContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+
+                    <div class="space-y-1">
+                        <label id="lblPackagingTitle" class="text-xs font-bold text-stone-300">Packaging</label>
+                        <div class="space-y-1 text-xs">
+                            <label class="flex items-center gap-2"><input type="radio" name="foldingOption" value="F — Folding" checked> F — Folding</label>
+                            <label class="flex items-center gap-2"><input type="radio" name="foldingOption" value="H — Hanger"> H — Hanger</label>
+                        </div>
+                    </div>
+
+                    <details id="detailsCustomItems" class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
+                        <summary id="lblCustomItemSummary" class="text-xs font-bold text-[#DCA773] cursor-pointer">➕ Other / Custom Items (Manual Entry)</summary>
+                        <div class="mt-3 space-y-2 text-xs">
+                            <div class="grid grid-cols-3 gap-1">
+                                <input type="text" id="customName0" placeholder="Item Name" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                                <input type="number" id="customPrice0" placeholder="Price" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                                <input type="number" id="customQty0" placeholder="Qty" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                            </div>
+                            <div class="grid grid-cols-3 gap-1">
+                                <input type="text" id="customName1" placeholder="Item Name" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                                <input type="number" id="customPrice1" placeholder="Price" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                                <input type="number" id="customQty1" placeholder="Qty" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                            </div>
+                            <div class="grid grid-cols-3 gap-1">
+                                <input type="text" id="customName2" placeholder="Item Name" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                                <input type="number" id="customPrice2" placeholder="Price" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                                <input type="number" id="customQty2" placeholder="Qty" oninput="calculateGlobalTotals()" class="remal-input p-2 rounded-lg">
+                            </div>
+                        </div>
+                    </details>
+
+                    <details id="detailsGarmentNotes" class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
+                        <summary id="lblNotesSummary" class="text-xs font-bold text-[#DCA773] cursor-pointer">📝 Garment Notes / Defects (Optional)</summary>
+                        <div class="mt-2">
+                            <textarea id="recordOptionalNote" rows="2" placeholder="Note any stain, tear, or specific request..." class="w-full remal-input p-2 rounded-lg text-xs"></textarea>
+                        </div>
+                    </details>
+
+                    <div class="space-y-2">
+                        <label id="btnPhotoProof" class="block w-full text-center py-2.5 bg-[#181614] border border-[#2f2820] rounded-xl text-xs font-bold text-stone-300 cursor-pointer">📷 Take Proof Photo (Camera)</label>
+                        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="previewImage(event)" class="hidden">
+                        <img id="imagePreview" class="w-full h-32 object-cover rounded-xl hidden border border-[#2f2820]">
+                    </div>
+
+                    <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820] text-xs space-y-1">
+                        <div class="flex justify-between"><span id="lblSelectedGarments">Total Garments:</span> <strong id="currentBordereauCount">0 pieces</strong></div>
+                        <div class="flex justify-between"><span id="lblSubTotal">Subtotal:</span> <strong id="subTotal">0.00 AED</strong></div>
+                        <div class="flex justify-between"><span id="lblVat">VAT (5%):</span> <strong id="vatAmount">0.00 AED</strong></div>
+                        <div class="flex justify-between text-sm text-[#DCA773] font-bold border-t border-[#2f2820] pt-1"><span id="lblGrandTotal">Grand Total:</span> <strong id="grandTotal">0.00 AED</strong></div>
+                    </div>
+
+                    <input type="hidden" id="editingRecordId" value="">
+                    <button onclick="sauvegarderBordereauLocal()" id="btnSaveRecord" class="w-full py-3.5 bg-[#DCA773] text-stone-950 rounded-xl font-bold shadow-lg transition">💾 Save Record</button>
+                </div>
+            </section>
+
+            <!-- SPA Section -->
+            <section id="spa-laundry-section" class="space-y-4 hidden">
+                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
+                    <h2 id="spaFormTitleLabel" class="text-sm font-bold text-[#DCA773]">V Element SPA Laundry Daily Record Sheet</h2>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label id="lblSpaDateHeader" class="font-bold">Date :</label>
+                            <input type="date" id="spa-collection-date" class="w-full remal-input p-2 rounded-lg mt-1">
+                        </div>
+                        <div>
+                            <label id="lblSpaSerial" class="font-bold">SERIAL NO:</label>
+                            <input type="text" id="spa-serial-no" class="w-full remal-input p-2 rounded-lg mt-1 font-bold">
+                        </div>
+                    </div>
+
+                    <div class="text-xs space-y-1">
+                        <label id="lblSpaGivenBy" class="font-bold">Given By (Spa):</label>
+                        <input type="text" id="spa-given-by" placeholder="Staff Name" class="w-full remal-input p-2 rounded-lg">
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead>
+                                <tr class="bg-[#181614] text-[#DCA773] border-b border-[#2f2820]">
+                                    <th id="thSpaItem" class="p-2">Item</th>
+                                    <th id="thSpaQty" class="p-2 w-20">Quantity</th>
+                                    <th id="thSpaRate" class="p-2 w-20">Rate (AED)</th>
+                                    <th id="thSpaTotal" class="p-2 w-24 text-right">Total Amount (AED)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#2f2820]">
+                                <tr>
+                                    <td class="p-2">Bath Sheet</td>
+                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="3.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
+                                    <td class="p-2">3.00</td>
+                                    <td class="p-2 text-right spa-row-amount">0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2">Bath Towel</td>
+                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="2.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
+                                    <td class="p-2">2.00</td>
+                                    <td class="p-2 text-right spa-row-amount">0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2">Hand Towel</td>
+                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="1.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
+                                    <td class="p-2">1.00</td>
+                                    <td class="p-2 text-right spa-row-amount">0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2">Face Towel</td>
+                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="0.50" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
+                                    <td class="p-2">0.50</td>
+                                    <td class="p-2 text-right spa-row-amount">0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2">Bath Robe</td>
+                                    <td class="p-2"><input type="number" oninput="calculateSpaTotal()" data-rate="7.00" class="spa-qty-input w-full remal-input p-1 rounded text-center" value="0"></td>
+                                    <td class="p-2">7.00</td>
+                                    <td class="p-2 text-right spa-row-amount">0.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-[#181614] p-3 rounded-xl border border-[#2f2820] text-sm font-bold text-[#DCA773]">
+                        <span id="lblSpaGrandTotal">Grand Total :</span>
+                        <span id="spa-grand-total">0.00 AED</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label id="lblSpaCollectedByTitle" class="font-bold">Collected By (Laundry) :</label>
+                            <input type="text" id="spa-collected-by" class="w-full remal-input p-2 rounded-lg mt-1">
+                        </div>
+                        <div>
+                            <label id="lblSpaColDateTime" class="font-bold">Collection Date & Time :</label>
+                            <input type="time" id="spa-collection-time" class="w-full remal-input p-2 rounded-lg mt-1">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label id="lblSpaDeliveredByTitle" class="font-bold">Delivered By (Laundry) :</label>
+                            <input type="text" id="spa-delivered-by" class="w-full remal-input p-2 rounded-lg mt-1">
+                        </div>
+                        <div>
+                            <label id="lblSpaDelDateTime" class="font-bold">Delivery Date & Time :</label>
+                            <input type="date" id="spa-delivery-date" class="w-full remal-input p-2 rounded-lg mt-1 hidden">
+                            <input type="time" id="spa-delivery-time" class="w-full remal-input p-2 rounded-lg mt-1">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 text-xs">
+                        <h3 id="lblSpaSignaturesTitle" class="font-bold text-[#DCA773]">Signatures Officielles (SPA)</h3>
+                        <div>
+                            <span id="lblSigGivenText" class="text-[10px] text-stone-400">Sign. Given By (Spa)</span>
+                            <div class="border border-[#2f2820] rounded-xl bg-[#0f0e0c] relative mt-1 overflow-hidden">
+                                <canvas id="canvasGivenBy" class="w-full touch-none"></canvas>
+                                <button onclick="clearSignature('canvasGivenBy')" class="absolute top-1 right-1 text-[9px] bg-rose-950 text-rose-200 px-2 py-0.5 rounded border border-rose-800 clear-btn-text">Effacer</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span id="lblSigCollText" class="text-[10px] text-stone-400">Sign. Collected By</span>
+                            <div class="border border-[#2f2820] rounded-xl bg-[#0f0e0c] relative mt-1 overflow-hidden">
+                                <canvas id="canvasCollectedBy" class="w-full touch-none"></canvas>
+                                <button onclick="clearSignature('canvasCollectedBy')" class="absolute top-1 right-1 text-[9px] bg-rose-950 text-rose-200 px-2 py-0.5 rounded border border-rose-800 clear-btn-text">Effacer</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span id="lblSigDelText" class="text-[10px] text-stone-400">Sign. Delivered By</span>
+                            <div class="border border-[#2f2820] rounded-xl bg-[#0f0e0c] relative mt-1 overflow-hidden">
+                                <canvas id="canvasDeliveredBy" class="w-full touch-none"></canvas>
+                                <button onclick="clearSignature('canvasDeliveredBy')" class="absolute top-1 right-1 text-[9px] bg-rose-950 text-rose-200 px-2 py-0.5 rounded border border-rose-800 clear-btn-text">Effacer</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="editingSpaId" value="">
+                    <button onclick="validateAndSaveSpaReceipt()" id="btnSaveSpa" class="w-full py-3.5 bg-[#DCA773] text-stone-950 rounded-xl font-bold shadow-lg transition">Validate & Save SPA Receipt</button>
+                </div>
+            </section>
+
+            <!-- Archives & Search Section -->
+            <section id="sectionPdfList" class="space-y-4 hidden">
+                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
+                    <h2 id="lblArchiveTitle" class="text-sm font-bold text-[#DCA773]">Archives & Search</h2>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <input type="text" id="searchRoom" oninput="afficherListeBordereauxLocal()" placeholder="Search room, guest..." class="remal-input p-2.5 rounded-xl">
+                        <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="remal-input p-2.5 rounded-xl">
+                    </div>
+
+                    <div id="laundryList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+
+                    <div class="flex gap-2 pt-2 border-t border-[#2f2820]">
+                        <button onclick="exportDatabaseBackup()" id="btnExportBackup" class="flex-1 py-2 bg-[#181614] border border-[#2f2820] rounded-xl text-xs font-bold text-stone-300">📥 Export Backup</button>
+                        <label id="btnImportBackup" class="flex-1 py-2 bg-[#181614] border border-[#2f2820] rounded-xl text-xs font-bold text-stone-300 text-center cursor-pointer">📤 Import Backup
+                            <input type="file" accept=".json" onchange="importDatabaseBackup(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mass PDF / PMS Parser Section -->
+            <section id="sectionMassEntry" class="space-y-4 hidden">
+                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
                     <div class="flex justify-between items-center">
                         <div>
-                            <span class="text-xs text-stone-500 font-semibold" id="modalIdentifierLabel">Room:</span>
-                            <span id="modalRoomNumDisplay" class="text-xl font-serif-luxury font-bold text-stone-900 ml-1">223</span>
+                            <h2 id="lblMassTitle" class="text-sm font-bold text-[#DCA773]">PMS Mass Entry & PDF Parser</h2>
+                            <p id="lblMassSub" class="text-[10px] text-stone-400">Front Desk Morning Setup Terminal</p>
                         </div>
-                        <div class="text-right">
-                            <p id="modalDate" class="text-[10px] text-stone-500 font-bold"></p>
-                            <span id="modalTypeBadgeInline" class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-300">Hotel Count (Free)</span>
-                        </div>
+                        <button onclick="effacerRapportPmsAujourdhui()" id="btnClearPms" class="text-xs bg-rose-950 text-rose-200 px-2.5 py-1.5 rounded-lg border border-rose-800 font-bold">🗑 Clear Today's PMS</button>
                     </div>
-                    <div id="modalAgencyQuotaBox" class="hidden pt-2 border-t border-stone-200 text-xs space-y-1 text-stone-700 font-bold">
-                        <div class="flex justify-between"><span id="lblModalGuest">Guest / Given By:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span id="lblModalTyp">Room Typ / Dept:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span id="lblModalAgency">Agency / Section:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span id="lblModalQuota">Status / Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
-                        <div class="flex justify-between border-t border-stone-200 pt-1 text-[10px] text-stone-500"><span id="lblModalCreated">Created By:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
-                    </div>
-                </div>
 
-                <div id="modalPackagingBox" class="bg-stone-50 p-2.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
-                    <span id="lblModalPack">Packaging / Option:</span>
-                    <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
-                </div>
+                    <label class="block border-2 border-dashed border-[#2f2820] rounded-2xl p-6 text-center cursor-pointer hover:border-[#DCA773] transition bg-[#181614]">
+                        <span class="text-2xl">📄</span>
+                        <p id="lblPdfUploadTitle" class="text-xs font-bold text-stone-200 mt-2">Click to upload PMS PDF Report</p>
+                        <p id="lblPdfUploadSub" class="text-[10px] text-stone-400">Supports multi-page guest list reports</p>
+                        <input type="file" accept=".pdf" onchange="handlePDFUpload(event)" class="hidden">
+                    </label>
 
-                <table class="w-full text-xs text-left border-collapse">
-                    <thead>
-                        <tr class="bg-stone-100 text-stone-900 font-bold text-[11px] border-b border-stone-300">
-                            <th id="thModalItem" class="p-2">Item</th>
-                            <th id="thModalQty" class="p-2 text-center">Qty</th>
-                            <th id="thModalTotal" class="p-2 text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800"></tbody>
-                </table>
+                    <textarea id="pmsPasteArea" rows="3" class="w-full remal-input p-2 rounded-xl text-xs hidden" placeholder="Or paste PMS text report here..."></textarea>
+                    <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" id="btnAnalyzeSave" class="w-full py-2.5 bg-[#DCA773] text-stone-950 rounded-xl font-bold text-xs shadow hidden">Analyze & Save Database</button>
 
-                <div class="bg-stone-50 p-3 rounded-xl text-xs space-y-1 font-medium text-stone-700 border border-stone-200">
-                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1"><span id="lblModalTotPieces">Total Pieces:</span><span id="modalClothesCount">3 pieces</span></div>
-                    <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-2 mt-1"><span id="lblModalGrandTot">Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-base">0.00 AED</span></div>
-                </div>
-
-                <div id="modalSpaDetailsBox" class="hidden bg-stone-50 p-3 rounded-xl border border-stone-200 text-[11px] space-y-2 text-stone-800 font-medium">
-                    <div class="flex justify-between border-b border-stone-200 pb-1"><span id="lblModalCollBy">Collected By:</span><span id="modalCollectedBy" class="font-bold text-stone-900">---</span></div>
-                    <div class="flex justify-between border-b border-stone-200 pb-1"><span id="lblModalDelBy">Delivered By:</span><span id="modalDeliveredBy" class="font-bold text-stone-900">---</span></div>
-                    <div class="flex justify-between text-[10px] text-stone-500 pt-0.5"><span id="lblModalCollTime">Col. Time:</span><span id="modalColTime">---</span></div>
-                    <div class="flex justify-between text-[10px] text-stone-500"><span id="lblModalDelTime">Del. Time:</span><span id="modalDelTime">---</span></div>
-
-                    <div id="modalSignaturesContainer" class="grid grid-cols-3 gap-2 pt-2 border-t border-stone-300">
-                        <div class="text-center">
-                            <p id="lblModalSigGiven" class="text-[9px] font-bold text-stone-500 uppercase">Given By</p>
-                            <img id="imgSigGiven" class="h-12 w-full object-contain border border-stone-200 rounded mt-1 bg-white" alt="Sig Given">
-                        </div>
-                        <div class="text-center">
-                            <p id="lblModalSigColl" class="text-[9px] font-bold text-stone-500 uppercase">Collected</p>
-                            <img id="imgSigCollected" class="h-12 w-full object-contain border border-stone-200 rounded mt-1 bg-white" alt="Sig Collected">
-                        </div>
-                        <div class="text-center">
-                            <p id="lblModalSigDel" class="text-[9px] font-bold text-stone-500 uppercase">Delivered</p>
-                            <img id="imgSigDelivered" class="h-12 w-full object-contain border border-stone-200 rounded mt-1 bg-white" alt="Sig Delivered">
+                    <div id="massResultsCard" class="space-y-2 hidden">
+                        <p id="massRecordCounter" class="text-xs font-bold text-emerald-400"></p>
+                        <div class="overflow-x-auto max-h-60 border border-[#2f2820] rounded-xl text-xs">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-[#181614] text-[#DCA773] border-b border-[#2f2820]">
+                                        <th id="thRoom" class="p-3">Room</th>
+                                        <th id="thGuest" class="p-3">Guest Name</th>
+                                        <th id="thTyp" class="p-3">Typ</th>
+                                        <th id="thArrival" class="p-3">Arrival</th>
+                                        <th id="thDeparture" class="p-3">Departure</th>
+                                        <th id="thAgency" class="p-3">Agency</th>
+                                        <th id="thStatus" class="p-3">Laundry Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1 text-stone-800">
-                    <p id="lblModalNotesTitle" class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
-                    <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
+            <!-- Dashboard Section -->
+            <section id="sectionDashboard" class="space-y-4 hidden">
+                <div class="remal-card p-4 rounded-2xl space-y-4 border border-[#2f2820]">
+                    <h2 id="lblAnalyticsTitle" class="text-sm font-bold text-[#DCA773]">📈 Reception & Management Analytics</h2>
+                    
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
+                            <p id="lblKpiRev" class="text-[10px] text-stone-400">Total Revenue</p>
+                            <p id="kpiRevenue" class="font-bold text-[#DCA773] text-sm mt-1">0.00 AED</p>
+                        </div>
+                        <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
+                            <p id="lblKpiOrd" class="text-[10px] text-stone-400">Total Orders</p>
+                            <p id="kpiOrders" class="font-bold text-stone-200 text-sm mt-1">0</p>
+                        </div>
+                        <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820]">
+                            <p id="lblKpiGar" class="text-[10px] text-stone-400">Garments Processed</p>
+                            <p id="kpiGarments" class="font-bold text-stone-200 text-sm mt-1">0 pcs</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820] space-y-2">
+                        <h3 id="lblChartStatus" class="text-xs font-bold text-stone-300">Orders Status Distribution</h3>
+                        <div class="h-48 relative"><canvas id="statusDoughnutChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-[#181614] p-3 rounded-xl border border-[#2f2820] space-y-2">
+                        <h3 id="lblChartRev" class="text-xs font-bold text-stone-300">Business Evolution (Revenue by Date)</h3>
+                        <div class="h-48 relative"><canvas id="revenueBarChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Quick Action Floating Bar -->
+        <div id="quickActionButtons" class="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-20 flex gap-2 hidden">
+            <button onclick="switchMainSection('newRecord')" id="txtBtnNewRecord" class="flex-1 py-3 bg-[#DCA773] text-stone-950 font-bold rounded-2xl shadow-xl text-xs">New Record</button>
+            <button onclick="switchMainSection('pdfList')" id="txtBtnPdfListNav" class="flex-1 py-3 bg-[#181614] border border-[#2f2820] text-stone-200 font-bold rounded-2xl shadow-xl text-xs">PDF List</button>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="remal-card p-6 rounded-3xl max-w-md w-full space-y-4 border border-[#2f2820] max-h-[90vh] overflow-y-auto">
+            <div id="pdfExportArea" class="space-y-3 bg-[#0f0e0c] p-4 rounded-2xl text-stone-200">
+                <div class="text-center border-b border-[#2f2820] pb-2">
+                    <h3 id="modalDocTitle" class="font-bold text-[#DCA773] text-base">OFFICIAL LAUNDRY RECEIPT</h3>
+                    <p class="text-[10px] text-stone-400">Remal Hotel — Al Ruwais City, Abu Dhabi</p>
+                </div>
+                
+                <div class="flex justify-between items-center text-xs">
+                    <div><strong id="modalIdentifierLabel">Room:</strong> <span id="modalRoomNumDisplay" class="font-bold text-[#DCA773]">---</span></div>
+                    <div id="modalDate" class="text-stone-400">Date: ---</div>
                 </div>
 
-                <div id="modalPhotoContainer" class="pt-1"></div>
+                <div class="flex justify-between items-center text-xs">
+                    <span id="modalTypeBadgeInline" class="px-2 py-0.5 rounded bg-amber-950 text-amber-200 text-[10px] font-bold">Hotel</span>
+                    <div id="modalPackagingBox" class="text-stone-400 text-[10px]">Packaging: <span id="modalPackagingStyle" class="font-bold text-stone-200">---</span></div>
+                </div>
 
-                <div class="text-right text-[9px] text-stone-400 pt-3 border-t border-stone-200 mt-4" id="pdfExportTimestamp"></div>
+                <div id="modalAgencyQuotaBox" class="p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] text-xs space-y-1">
+                    <p><strong id="modalGuest">Guest / Given By:</strong> <span id="modalGuestDisplay" class="text-[#DCA773]">---</span></p>
+                    <p><strong id="modalTyp">Room Typ / Dept:</strong> <span id="modalTypDisplay">---</span></p>
+                    <p><strong id="modalAgency">Agency / Section:</strong> <span id="modalAgencyDisplay">---</span></p>
+                    <p><strong id="modalQuota">Status / Quota:</strong> <span id="modalQuotaDisplay">---</span></p>
+                    <p><strong id="modalCreated">Created By:</strong> <span id="modalCreatedByDisplay">---</span></p>
+                </div>
+
+                <div id="modalSpaDetailsBox" class="p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] text-xs space-y-1 hidden">
+                    <p><strong id="lblModalCollBy">Collected By:</strong> <span id="modalCollectedBy">---</span></p>
+                    <p><strong id="lblModalDelBy">Delivered By:</strong> <span id="modalDeliveredBy">---</span></p>
+                    <p><strong id="lblModalCollTime">Col. Time:</strong> <span id="modalColTime">---</span></p>
+                    <p><strong id="lblModalDelTime">Del. Time:</strong> <span id="modalDelTime">---</span></p>
+                    <div class="grid grid-cols-3 gap-1 pt-2">
+                        <div>
+                            <span id="lblModalSigGiven" class="text-[9px] text-stone-400">Given By</span>
+                            <img id="imgSigGiven" class="w-full h-12 bg-white rounded border hidden">
+                        </div>
+                        <div>
+                            <span id="lblModalSigColl" class="text-[9px] text-stone-400">Collected</span>
+                            <img id="imgSigCollected" class="w-full h-12 bg-white rounded border hidden">
+                        </div>
+                        <div>
+                            <span id="lblModalSigDel" class="text-[9px] text-stone-400">Delivered</span>
+                            <img id="imgSigDelivered" class="w-full h-12 bg-white rounded border hidden">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-[#2f2820] rounded-xl">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-[#181614] text-[#DCA773] border-b border-[#2f2820]">
+                            <tr>
+                                <th id="thModalItem" class="p-2">Item</th>
+                                <th id="thModalQty" class="p-2 text-center w-16">Qty</th>
+                                <th id="thModalTotal" class="p-2 text-right w-20">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTableBody" class="divide-y divide-[#2f2820]"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-between items-center text-xs pt-1">
+                    <span id="modalClothesCount" class="font-bold text-stone-300">0 pieces</span>
+                    <span class="font-bold text-[#DCA773] text-sm"><span id="modalGrandTot">Grand Total:</span> <strong id="modalTotal">0.00 AED</strong></span>
+                </div>
+
+                <div id="modalNoteBox" class="p-2 bg-amber-950/30 border border-amber-800/50 rounded-xl text-xs hidden">
+                    <p class="font-bold text-amber-300 text-[10px]" id="modalNotesTitle">Garment Notes / Defects:</p>
+                    <p id="modalNoteText" class="text-stone-300 mt-0.5"></p>
+                </div>
+
+                <div id="modalPhotoContainer"></div>
+                <p id="pdfExportTimestamp" class="text-[9px] text-stone-500 text-center pt-2"></p>
             </div>
 
-            <div class="space-y-2 pt-2 no-print">
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="genererPDF()" id="btnModalDownload" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📥 Download PDF A4</button>
-                    <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">💬 Share WhatsApp</a>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="modifierBordereauActuel()" id="btnModalEdit" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1">✏️ Edit Record</button>
-                    <button onclick="supprimerBordereauActuel()" id="btnModalDelete" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3 rounded-xl text-xs shadow flex items-center justify-center gap-1">🗑️ Delete</button>
-                </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="genererPDF()" id="btnModalDownload" class="py-2.5 bg-[#DCA773] text-stone-950 font-bold rounded-xl">📥 Download PDF A4</button>
+                <a id="btnWhatsappShare" target="_blank" class="py-2.5 bg-emerald-700 text-stone-100 font-bold rounded-xl text-center">💬 WhatsApp</a>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs pt-1">
+                <button onclick="modifierBordereauActuel()" id="btnModalEdit" class="py-2 bg-[#181614] border border-[#2f2820] text-stone-200 font-bold rounded-xl">✏️ Edit Record</button>
+                <button onclick="supprimerBordereauActuel()" id="btnModalDelete" class="py-2 bg-rose-950 border border-rose-800 text-rose-200 font-bold rounded-xl">🗑️ Delete</button>
+                <button onclick="fermerModal()" class="py-2 bg-[#181614] border border-[#2f2820] text-stone-400 font-bold rounded-xl">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- LIEN JAVASCRIPT EXTERNE -->
+    <!-- Printable Area for Active Rooms -->
+    <div id="printableActiveRooms" class="hidden p-6 bg-white text-stone-900 font-sans">
+        <div class="text-center border-b pb-4 mb-4">
+            <h2 class="text-xl font-bold">REMAL HOTEL - DAILY LAUNDRY ROADMAP</h2>
+            <p class="text-xs text-stone-500">Date: <span id="reportDate">---</span></p>
+        </div>
+        <table class="w-full text-xs text-left border-collapse border border-stone-300">
+            <thead>
+                <tr class="bg-stone-100 border-b border-stone-300">
+                    <th class="p-2 border border-stone-300">Room</th>
+                    <th class="p-2 border border-stone-300">Guest Name</th>
+                    <th class="p-2 border border-stone-300">Total Pieces</th>
+                    <th class="p-2 border border-stone-300">Notes / Defects</th>
+                </tr>
+            </thead>
+            <tbody id="pdfTableBody"></tbody>
+        </table>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
