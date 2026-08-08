@@ -1,4 +1,4 @@
-/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE COMPLETE & REALTIME CORRIGÉ */
+/* REMAL LAUNDRY CLOUD - LOGIQUE GLOBALE COMPLETE & REALTIME SYNCHRONISÉ */
 
 const USER_PINS = { 'Front Desk': '1234', 'Laundry Plant': '5678' };
 let currentActiveUser = sessionStorage.getItem('remal_auth_user') || null;
@@ -363,6 +363,26 @@ async function chargerDonneesEtAbonnementCloud() {
 
     try {
         purgerAnciennesPhotos();
+        await rafraichirDonneesDepuisSupabase();
+
+        const existingChannel = supabaseClient.getChannels().find(c => c.topic === 'realtime:public:laundry_slips');
+        if (!existingChannel) {
+            supabaseClient.channel('realtime_laundry')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, () => {
+                    rafraichirDonneesDepuisSupabase();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, () => {
+                    rafraichirDonneesDepuisSupabase();
+                })
+                .subscribe();
+        }
+    } catch (e) { console.warn("Erreur Cloud:", e); }
+}
+
+async function rafraichirDonneesDepuisSupabase() {
+    if (!supabaseClient) return;
+    
+    try {
         const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
         if (!slipsErr && slips) {
             cachedSlips = slips;
@@ -374,7 +394,8 @@ async function chargerDonneesEtAbonnementCloud() {
         }
 
         const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
-        if (!guestsErr && guests && guests.length > 0) {
+        if (!guestsErr && guests) {
+            pmsDatabase = {};
             guests.forEach(g => {
                 pmsDatabase[g.room] = {
                     guestName: g.guest_name,
@@ -385,38 +406,9 @@ async function chargerDonneesEtAbonnementCloud() {
                 };
             });
         }
-
-        // Écoute Realtime corrigée pour forcer la mise à jour immédiate de l'interface
-        if (!supabaseClient.getChannels().find(c => c.topic === 'realtime:public:laundry_slips')) {
-            supabaseClient.channel('realtime_laundry')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
-                    const { data } = await supabaseClient.from('laundry_slips').select('*');
-                    if (data) {
-                        cachedSlips = data;
-                        sauvegarderDonneesLocalStorage();
-                        chargerLiveOrders();
-                        if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-                            afficherListeBordereauxLocal();
-                        }
-                    }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, async () => {
-                    const { data } = await supabaseClient.from('pms_guests').select('*');
-                    if (data) {
-                        data.forEach(g => {
-                            pmsDatabase[g.room] = {
-                                guestName: g.guest_name,
-                                roomTyp: g.room_typ,
-                                agency: g.agency,
-                                quotaText: g.quota_text,
-                                isChargeable: g.is_chargeable
-                            };
-                        });
-                    }
-                })
-                .subscribe();
-        }
-    } catch (e) { console.warn("Erreur Cloud:", e); }
+    } catch (e) {
+        console.warn("Erreur lors du rafraîchissement Cloud :", e);
+    }
 }
 
 function chargerDonneesLocalStorage() {
