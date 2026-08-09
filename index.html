@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" id="htmlRoot" dir="ltr">
+<html lang="fr" id="htmlRoot" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -36,9 +36,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
     
     <style>
         :root {
@@ -104,8 +101,8 @@
         <div class="flex items-center gap-2.5">
             <span class="text-lg">📱</span>
             <div>
-                <p class="text-xs font-bold text-[#DCA773]">Installer l'application Remal Hotel & Villas Laundry</p>
-                <p class="text-[10px] text-stone-400">Accès rapide écran d'accueil</p>
+                <p class="text-xs font-bold text-[#DCA773]">Installer Remal Laundry OS</p>
+                <p class="text-[10px] text-stone-400">Accès rapide écran d'accueil & usage hors-ligne</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -127,12 +124,12 @@
                 </div>
             </div>
             
-            <div class="flex items-center space-x-3">
-                <span class="text-[10px] font-bold px-3 py-1.5 rounded-xl border border-[#2f2820] bg-[#181614] text-[#DCA773] flex items-center gap-1.5 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online OS 🚀
-                </span>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="choisirDossierDedie()" id="btnFolderConfig" class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl border border-[#2f2820] bg-[#181614] text-amber-400 flex items-center gap-1 shadow-sm">
+                    📁 Dossier Backup
+                </button>
 
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614] text-stone-300 text-xs border border-[#2f2820] rounded-xl px-2.5 py-1.5 outline-none font-semibold cursor-pointer">
+                <select id="langSelect" onchange="setLang(this.value)" class="bg-[#181614] text-stone-300 text-xs border border-[#2f2820] rounded-xl px-2 py-1.5 outline-none font-semibold cursor-pointer">
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                     <option value="hi">हिन्दी</option>
@@ -482,28 +479,27 @@
             </div>
         </section>
 
-        <!-- SECTION 3: PDF LIST & ARCHIVES & SEARCH -->
+        <!-- SECTION 3: ARCHIVES & BORDEREAUX EXPORT/IMPORT -->
         <div id="sectionPdfList" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-4 max-w-4xl mx-auto">
                 <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                     <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773]" id="lblArchiveTitle">Archives & Search</h3>
-                    <span class="text-[10px] bg-[#0f0e0c] border border-[#2f2820] text-stone-400 font-bold px-2.5 py-1 rounded-full" id="lblAutoArchive">Auto-Archive 00:00</span>
+                    <span id="folderStatusBadge" class="text-[10px] bg-[#0f0e0c] border border-[#2f2820] text-stone-400 font-bold px-2.5 py-1 rounded-full">Dossier: Non défini</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="exportDatabaseBackup()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
-                        📥 Export Backup
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="exportAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                        ⚡ Export Auto (1 Clic)
                     </button>
-                    <button onclick="document.getElementById('importFileJson').click()" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 border border-[#2f2820] font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
-                        📤 Import Backup
+                    <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                        🔄 Import Auto (1 Clic)
                     </button>
-                    <input type="file" id="importFileJson" accept=".json" class="hidden" onchange="importDatabaseBackup(event)">
                 </div>
 
                 <div class="space-y-3 bg-[#0f0e0c] p-3.5 rounded-2xl border border-[#2f2820]">
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-stone-400">🔍</span>
-                        <input type="text" id="searchRoom" onkeyup="afficherListeBordereauxLocal()" placeholder="Search by Serial No (#...), room number, or spa name..." class="w-full remal-input rounded-xl pl-9 pr-3 py-2.5 text-xs">
+                        <input type="text" id="searchRoom" onkeyup="afficherListeBordereauxLocal()" placeholder="Tapez n° chambre (103...) ou n° série SPA (#23)..." class="w-full remal-input rounded-xl pl-9 pr-3 py-2.5 text-xs">
                     </div>
                     <div>
                         <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="w-full remal-input rounded-xl px-3 py-2.5 text-xs cursor-pointer">
@@ -572,11 +568,11 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <span class="text-[11px] text-stone-500 font-semibold" id="modalIdentifierLabel">Room:</span>
-                            <span id="modalRoomNumDisplay" class="text-lg font-serif-luxury font-bold text-stone-900 ml-1">223</span>
+                            <span id="modalRoomNumDisplay" class="text-lg font-serif-luxury font-bold text-stone-900 ml-1">---</span>
                         </div>
                         <div class="text-right">
                             <p id="modalDate" class="text-[9px] text-stone-500 font-bold"></p>
-                            <span id="modalTypeBadgeInline" class="text-[8px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-300">Hotel Count (Free)</span>
+                            <span id="modalTypeBadgeInline" class="text-[8px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-300">Hotel Count</span>
                         </div>
                     </div>
                     <div id="modalAgencyQuotaBox" class="hidden pt-1.5 border-t border-stone-200 text-[11px] space-y-0.5 text-stone-700 font-bold">
@@ -605,7 +601,7 @@
                 </table>
 
                 <div class="bg-stone-50 p-2.5 rounded-xl text-[11px] space-y-1 font-medium text-stone-700 border border-stone-200">
-                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1"><span>Total Pieces:</span><span id="modalClothesCount">3 pieces</span></div>
+                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1"><span>Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
                     <div class="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-200 pt-1.5 mt-0.5"><span>Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-sm">0.00 AED</span></div>
                 </div>
 
@@ -635,14 +631,36 @@
         let deferredPrompt;
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v1';
-                self.addEventListener('install', (e) => { self.skipWaiting(); });
-                self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
-                self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); });
+                const CACHE_NAME = 'remal-pwa-v4';
+                const ASSETS = [
+                    './',
+                    'https://cdn.tailwindcss.com',
+                    'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap',
+                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                    'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
+                    'https://cdn.jsdelivr.net/npm/chart.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+                    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+                ];
+
+                self.addEventListener('install', (e) => {
+                    self.skipWaiting();
+                    e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(err => console.log('Cache partial:', err))));
+                });
+
+                self.addEventListener('activate', (e) => {
+                    e.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => { if (k !== CACHE_NAME) return caches.delete(k); }))).then(() => clients.claim()));
+                });
+
+                self.addEventListener('fetch', (e) => {
+                    e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request).catch(() => caches.match('./'))));
+                });
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-            window.addEventListener('load', () => { navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Registration failed:', err)); });
+            window.addEventListener('load', () => { 
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(err => console.log('SW Registration failed:', err)); 
+            });
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -653,15 +671,12 @@
         function installPWA() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('pwaInstallBanner').classList.add('hidden');
-                    }
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') document.getElementById('pwaInstallBanner').classList.add('hidden');
                     deferredPrompt = null;
                 });
             }
         }
-
         function dismissPWAInstall() { document.getElementById('pwaInstallBanner').classList.add('hidden'); }
 
         // SUPABASE REALTIME INITIALISATION
@@ -678,38 +693,33 @@
         let currentLang = 'en';
         let cachedSlips = [];
         let pmsDatabase = {}; 
+        let directoryHandle = null;
         let doughnutChartInstance = null;
         let barChartInstance = null;
 
         const i18n = {
             en: {
-                txtBtnNewRecord: "New Record",
-                lblFormTitle: "New Record", lblRoomNum: "Room Number",
-                lblSelectedGarments: "Total Garments:", lblSubTotal: "Subtotal:",
-                lblVat: "VAT (5%):", lblGrandTotal: "Grand Total:", btnPhotoProof: "📷 Take Proof Photo (Camera)",
+                txtBtnNewRecord: "New Record", lblFormTitle: "New Record", lblRoomNum: "Room Number",
+                lblSelectedGarments: "Total Garments:", lblSubTotal: "Subtotal:", lblVat: "VAT (5%):",
+                lblGrandTotal: "Grand Total:", btnPhotoProof: "📷 Take Proof Photo (Camera)",
                 btnSaveRecord: "💾 Save Record", lblArchiveTitle: "Archives & Search",
-                lblAutoArchive: "Auto-Archive at 00:00", lblLoadingRecords: "Loading records...", noRecords: "No laundry records found.",
-                lblRoomError: "Invalid room number! Allowed ranges: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.",
+                lblLoadingRecords: "Loading records...", lblRoomError: "Invalid room number! Allowed ranges: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.",
                 lblActiveRoomsHeader: "Active Rooms"
             },
             ar: {
-                txtBtnNewRecord: "سجل جديد",
-                lblFormTitle: "سجل جديد", lblRoomNum: "رقم الغرفة",
-                lblSelectedGarments: "مجموع الملابس:", lblSubTotal: "المجموع الفرعي:",
-                lblVat: "ضريبة القيمة المضافة (٥٪):", lblGrandTotal: "المجموع الإجمالي:", btnPhotoProof: "📷 التقاط صورة إثبات (كاميرا)",
+                txtBtnNewRecord: "سجل جديد", lblFormTitle: "سجل جديد", lblRoomNum: "رقم الغرفة",
+                lblSelectedGarments: "مجموع الملابس:", lblSubTotal: "المجموع الفرعي:", lblVat: "ضريبة القيمة المضافة (٥٪):",
+                lblGrandTotal: "المجموع الإجمالي:", btnPhotoProof: "📷 التقاط صورة إثبات (كاميرا)",
                 btnSaveRecord: "💾 حفظ السجل", lblArchiveTitle: "الأرشيف والبحث",
-                lblAutoArchive: "أرشفة تلقائية ٠٠:٠٠", lblLoadingRecords: "جاري تحميل السجلات...", noRecords: "لا توجد سجلات.",
-                lblRoomError: "رقم الغرفة غير صحيح! النطاقات المسموحة: 103-144، 201-246، 301-348، 401-448، 501-520، 601-608.",
+                lblLoadingRecords: "جاري تحميل السجلات...", lblRoomError: "رقم الغرفة غير صحيح!",
                 lblActiveRoomsHeader: "الغرف النشطة"
             },
             hi: {
-                txtBtnNewRecord: "नया रिकॉर्ड",
-                lblFormTitle: "नया रिकॉर्ड", lblRoomNum: "कमरा नंबर",
-                lblSelectedGarments: "कुल कपड़े:", lblSubTotal: "उप-कुल:",
-                lblVat: "जीएसटी/वैट (5%):", lblGrandTotal: "कुल योग:", btnPhotoProof: "📷 प्रमाण फोटो लें (कैमरा)",
+                txtBtnNewRecord: "नया रिकॉर्ड", lblFormTitle: "नया रिकॉर्ड", lblRoomNum: "कमरा नंबर",
+                lblSelectedGarments: "कुल कपड़े:", lblSubTotal: "उप-कुल:", lblVat: "जीएसटी/वैट (5%):",
+                lblGrandTotal: "कुल योग:", btnPhotoProof: "📷 प्रमाण फोटो लें (कैमरा)",
                 btnSaveRecord: "💾 रिकॉर्ड सुरक्षित करें", lblArchiveTitle: "अभिलेख और खोज",
-                lblAutoArchive: "00:00 बजे ऑटो-संग्रह", lblLoadingRecords: "रिकॉर्ड लोड हो रहे हैं...", noRecords: "कोई रिकॉर्ड नहीं मिला।",
-                lblRoomError: "अमान्य कमरा नंबर! केवल ये नंबर मान्य हैं: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.",
+                lblLoadingRecords: "रिकॉर्ड लोड हो रहे हैं...", lblRoomError: "अमान्य कमरा नंबर!",
                 lblActiveRoomsHeader: "सक्रिय कमरे"
             }
         };
@@ -773,6 +783,10 @@
         let selectedIdForModal = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+
             switchMainSection('liveRecord');
             setLang('en');
             selectCountType('hotel');
@@ -781,7 +795,6 @@
             chargerPmsLocalStorage();
             await chargerDonneesEtAbonnementCloud();
             
-            // Afficher directement le tableau Mass Entry si des données PMS existent déjà en local
             if (Object.keys(pmsDatabase).length > 0) {
                 renderMassPreviewTable();
             }
@@ -794,9 +807,7 @@
 
             const now = new Date();
             const todayIso = now.toISOString().split('T')[0];
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const timeIso = `${hours}:${minutes}`;
+            const timeIso = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
             const colDate = document.getElementById('spa-collection-date');
             const colTime = document.getElementById('spa-collection-time');
@@ -811,7 +822,6 @@
 
         async function chargerDonneesEtAbonnementCloud() {
             chargerDonneesLocalStorage();
-
             if (!supabaseClient) return;
 
             try {
@@ -851,29 +861,10 @@
                             }
                         }
                     })
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, async () => {
-                        const { data } = await supabaseClient.from('pms_guests').select('*');
-                        if (data) {
-                            pmsDatabase = {};
-                            data.forEach(g => {
-                                pmsDatabase[g.room] = {
-                                    guestName: g.guest_name,
-                                    roomTyp: g.room_typ,
-                                    arrival: g.arrival || '',
-                                    departure: g.departure || '',
-                                    agency: g.agency,
-                                    quotaText: g.quota_text,
-                                    isChargeable: g.is_chargeable
-                                };
-                            });
-                            sauvegarderPmsLocalStorage();
-                            renderMassPreviewTable();
-                        }
-                    })
                     .subscribe();
 
             } catch (e) {
-                console.warn("Erreur synchronisation Cloud, mode hors-ligne:", e);
+                console.warn("Sync mode fallback:", e);
             }
         }
 
@@ -889,11 +880,7 @@
         function chargerPmsLocalStorage() {
             const data = localStorage.getItem('remal_pms_database');
             if (data) {
-                try {
-                    pmsDatabase = JSON.parse(data);
-                } catch(e) {
-                    pmsDatabase = {};
-                }
+                try { pmsDatabase = JSON.parse(data); } catch(e) { pmsDatabase = {}; }
             }
         }
 
@@ -1012,7 +999,6 @@
             document.getElementById('btnPhotoProof').innerHTML = `<span>📷</span> ${t.btnPhotoProof}`;
             document.getElementById('btnSaveRecord').innerText = t.btnSaveRecord;
             document.getElementById('lblArchiveTitle').innerText = t.lblArchiveTitle;
-            document.getElementById('lblAutoArchive').innerText = t.lblAutoArchive;
             document.getElementById('lblRoomError').innerText = t.lblRoomError;
             document.getElementById('lblActiveRoomsHeader').innerText = t.lblActiveRoomsHeader;
 
@@ -1028,17 +1014,9 @@
                 const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
                 if(el) el.classList.add('hidden');
             });
-            
-            ['liveRecord', 'spa', 'pdfList', 'massEntry', 'dashboard'].forEach(sec => {
-                const btn = document.getElementById(`navBtn${sec.charAt(0).toUpperCase() + sec.slice(1)}`);
-                if(btn) btn.className = "flex-1 py-2.5 rounded-xl transition text-center text-stone-400 hover:text-stone-200";
-            });
 
             const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
             if(targetSection) targetSection.classList.remove('hidden');
-            
-            const activeNav = document.getElementById(`navBtn${section.charAt(0).toUpperCase() + section.slice(1)}`);
-            if(activeNav) activeNav.className = "flex-1 py-2.5 rounded-xl bg-[#DCA773] text-stone-950 font-bold shadow transition text-center";
 
             const quickActionButtons = document.getElementById('quickActionButtons');
             if (section === 'liveRecord') {
@@ -1125,9 +1103,7 @@
         function updateQty(key, name, price, delta) {
             if (!cart[key]) cart[key] = { qty: 0, freeQty: 0, price: price, name: name, service: currentService };
             cart[key].qty += delta;
-            if (cart[key].freeQty > cart[key].qty) {
-                cart[key].freeQty = cart[key].qty;
-            }
+            if (cart[key].freeQty > cart[key].qty) cart[key].freeQty = cart[key].qty;
             if (cart[key].qty <= 0) delete cart[key];
             renderItems(); calculateGlobalTotals();
         }
@@ -1331,7 +1307,7 @@
                 try {
                     await supabaseClient.from('laundry_slips').upsert(targetRecord);
                 } catch(e) {
-                    console.warn("Erreur de sauvegarde Supabase, conservé en local:", e);
+                    console.warn("Erreur Supabase, conservé en local:", e);
                 }
             }
 
@@ -1407,6 +1383,7 @@
             }
         }
 
+        // LOGIQUE PMS MISE À JOUR POUR RECONNAÎTRE "04 PIECES LAU DAILY", "05 PIECES LAU DAILY", ETC.
         async function processTextData(rawData) {
             const counterContainer = document.getElementById('massRecordCounter');
 
@@ -1479,23 +1456,21 @@
             }
 
             if (parsedData.length > 0) {
-                // Écrasement total (mise à jour propre sans doublons)
                 pmsDatabase = {};
                 let cloudGuestsPayload = [];
 
                 parsedData.forEach(item => {
-                    const laundryRegex = /([0-9]{1,2})\s*pcs[\/\s]*(lau|lan|laun|laundy)/i;
+                    // REGEX ÉTENDU POUR CAPTURER TOUTES LES VARIANTES DE QUOTA PMS
+                    const laundryRegex = /([0-9]{1,2})\s*(pcs|pieces)?[\/\s]*(lau|lan|laun|laundy|daily)/i;
                     const match = item.fullContext.match(laundryRegex);
-                    const hasLaundry = match !== null || /hdl[0-9]|laundry/i.test(item.fullContext);
+                    const hasLaundry = match !== null || /hdl[0-9]|laundry|lau\s*daily/i.test(item.fullContext);
                     
                     let quotaText = "";
                     let isChargeable = false;
 
                     if (match) {
                         const pcsCount = parseInt(match[1], 10);
-                        let unitName = match[2].toUpperCase();
-                        if (unitName === "LAUNDRY") unitName = "LAUN";
-                        quotaText = `${pcsCount} PCS ${unitName}`;
+                        quotaText = `${String(pcsCount).padStart(2, '0')} PIECES LAU DAILY`;
                         isChargeable = false;
                     } else if (hasLaundry) {
                         quotaText = "Laundry Package";
@@ -1532,12 +1507,11 @@
 
                 if (supabaseClient && cloudGuestsPayload.length > 0) {
                     try {
-                        // Nettoyer l'ancienne table pour éviter les doublons/orphelins puis insérer la nouvelle liste
                         await supabaseClient.from('pms_guests').delete().neq('room', '000');
                         await supabaseClient.from('pms_guests').insert(cloudGuestsPayload);
-                        alert(`✅ PMS Report updated and duplicates cleared successfully! (${parsedData.length} rooms)`);
+                        alert(`✅ PMS Report updated successfully! (${parsedData.length} rooms mapped)`);
                     } catch(e) {
-                        console.warn("Erreur sauvegarde Cloud PMS Guests:", e);
+                        console.warn("Erreur Supabase PMS Guests:", e);
                     }
                 }
 
@@ -1562,7 +1536,7 @@
             document.getElementById('activeRoomsCountBadge').innerText = activeTodaySlips.length;
 
             if (activeTodaySlips.length === 0) {
-                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room records for today (Auto-archived after 00:00).</p>`;
+                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room records for today.</p>`;
                 return;
             }
 
@@ -1596,7 +1570,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-[11px] text-stone-300 flex items-center gap-1 justify-end font-semibold">📦 ${entry.total_clothes} pcs</p>
-                            <p class="font-serif-luxury font-bold text-[#DCA773] text-sm mt-0.5">${entry.total.toFixed(2)} AED ${entry.photo ? '📸' : ''}</p>
+                            <p class="font-serif-luxury font-bold text-[#DCA773] text-sm mt-0.5">${(entry.total || 0).toFixed(2)} AED ${entry.photo ? '📸' : ''}</p>
                         </div>
                     </div>
                 `;
@@ -1604,6 +1578,7 @@
             });
         }
 
+        // ARCHIVES DE RECHERCHE DÉTAILLÉE PAR DATE ET NUMÉRO
         function afficherListeBordereauxLocal() {
             chargerDonneesLocalStorage();
             const searchVal = document.getElementById('searchRoom').value.toLowerCase().trim();
@@ -1613,28 +1588,30 @@
                 const matchRoom = !searchVal || 
                     String(entry.room).toLowerCase().includes(searchVal) || 
                     String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
-                    String(entry.spa_serial || '').toLowerCase().includes(searchVal);
+                    String(entry.spa_serial || '').toLowerCase().includes(searchVal) ||
+                    (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
                 
                 let matchDate = true;
                 if (searchDateVal) {
-                    const entryDate = new Date(entry.created_at).toISOString().split('T')[0];
+                    const entryDate = entry.created_at ? new Date(entry.created_at).toISOString().split('T')[0] : '';
                     matchDate = (entryDate === searchDateVal);
                 }
                 return matchRoom && matchDate;
             });
 
+            // Tri strict : du plus NOUVEAU record au plus ANCIEN
             filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             
             const container = document.getElementById('laundryList');
             if (filtered.length === 0) {
-                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">No records found.</p>`;
+                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">Aucun bordereau trouvé pour ces critères.</p>`;
                 return;
             }
 
             container.innerHTML = '';
             filtered.forEach(entry => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition'; 
+                itemDiv.className = 'p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition mb-2'; 
                 itemDiv.onclick = () => ouvrirModalDetails(entry.id);
                 
                 let badgeLabel = 'Hotel';
@@ -1653,65 +1630,120 @@
 
                 const titleDisplay = entry.is_spa ? `SPA Sheet #${entry.spa_serial || '---'} — ${entry.guest_name}` : `Room ${entry.room} (${entry.guest_name || 'Guest'})`;
 
+                const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('fr-FR', {
+                    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                }) : '---';
+
                 itemDiv.innerHTML = `
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm">${titleDisplay}</span>
                         <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
-                        <div class="text-[10px] text-stone-400 mt-0.5">Date: ${new Date(entry.created_at).toLocaleDateString('fr-FR')} | Agent: ${entry.created_by || 'Staff'}</div>
+                        <div class="text-[10px] text-stone-400 mt-0.5">📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
-                        <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> <span class="text-[#DCA773] font-serif-luxury text-sm">${entry.total.toFixed(2)} AED</span> ${entry.photo ? '📸' : ''}
+                        <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> 
+                        <span class="text-[#DCA773] font-serif-luxury text-sm ml-1">${(entry.total || 0).toFixed(2)} AED</span> 
+                        ${entry.photo ? '📸' : ''}
                     </div>
                 `;
                 container.appendChild(itemDiv);
             });
         }
 
-        function exportDatabaseBackup() {
-            chargerDonneesLocalStorage();
-            if (cachedSlips.length === 0) {
-                alert("⚠️ Aucun enregistrement à sauvegarder.");
-                return;
+        // EXPORTATION / IMPORTATION AUTOMATIQUE ET DOSSIER DÉDIÉ
+        async function choisirDossierDedie() {
+            if ('showDirectoryPicker' in window) {
+                try {
+                    directoryHandle = await window.showDirectoryPicker();
+                    document.getElementById('folderStatusBadge').innerText = `Dossier: ${directoryHandle.name}`;
+                    document.getElementById('folderStatusBadge').className = "text-[10px] bg-emerald-950 border border-emerald-800 text-emerald-300 font-bold px-2.5 py-1 rounded-full";
+                    alert(`✅ Dossier "${directoryHandle.name}" configuré avec succès !`);
+                } catch (err) {
+                    console.log("Sélecteur de dossier annulé.");
+                }
+            } else {
+                alert("ℹ️ Votre appareil sauvegardera les fichiers dans la mémoire interne du téléphone.");
             }
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cachedSlips, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            const dateStr = new Date().toISOString().split('T')[0];
-            downloadAnchor.setAttribute("download", `Remal_Laundry_Backup_${dateStr}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
         }
 
-        function importDatabaseBackup(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (Array.isArray(importedData)) {
-                        if (confirm(`⚠️ Attention : Importer ce fichier va fusionner/remplacer ${importedData.length} enregistrements. Voulez-vous continuer ?`)) {
-                            cachedSlips = importedData;
-                            sauvegarderDonneesLocalStorage();
-                            
-                            if(supabaseClient) {
-                                await supabaseClient.from('laundry_slips').upsert(importedData);
-                            }
+        async function exportAutoDirect() {
+            chargerDonneesLocalStorage();
+            if (cachedSlips.length === 0) {
+                alert("⚠️ Aucun bordereau à exporter.");
+                return;
+            }
 
-                            alert("✅ Base de données restaurée !");
-                            afficherListeBordereauxLocal();
-                            chargerLiveOrders();
-                        }
-                    } else {
-                        alert("⚠️ Format de fichier invalide.");
-                    }
-                } catch (err) {
-                    alert("⚠️ Erreur lors de la lecture du fichier.");
-                }
+            const backupData = {
+                type: "Remal_Laundry_Slips_Only",
+                exportDate: new Date().toISOString(),
+                slips: cachedSlips
             };
-            reader.readAsText(file);
-            event.target.value = '';
+            const jsonString = JSON.stringify(backupData, null, 2);
+            const filename = `Remal_Laundry_Backup_${new Date().toISOString().split('T')[0]}.json`;
+
+            if (directoryHandle) {
+                try {
+                    const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(jsonString);
+                    await writable.close();
+                    alert(`✅ Fichier "${filename}" enregistré directement dans votre dossier !`);
+                    return;
+                } catch (err) {
+                    console.warn("Écriture dossier échouée:", err);
+                }
+            }
+
+            localStorage.setItem('remal_auto_backup_slips', JSON.stringify(cachedSlips));
+            
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            alert("✅ Enregistré dans le téléphone & la mémoire de l'application !");
+        }
+
+        async function importAutoDirect() {
+            let importedSlips = null;
+
+            if (directoryHandle) {
+                try {
+                    const filename = `Remal_Laundry_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                    const fileHandle = await directoryHandle.getFileHandle(filename);
+                    const file = await fileHandle.getFile();
+                    const text = await file.text();
+                    const json = JSON.parse(text);
+                    importedSlips = json.slips || json;
+                } catch (err) {
+                    console.log("Fichier non trouvé dans le dossier choisi.");
+                }
+            }
+
+            if (!importedSlips) {
+                const internalData = localStorage.getItem('remal_auto_backup_slips');
+                if (internalData) {
+                    importedSlips = JSON.parse(internalData);
+                }
+            }
+
+            if (importedSlips && importedSlips.length > 0) {
+                chargerDonneesLocalStorage();
+                const slipMap = new Map();
+                cachedSlips.forEach(s => slipMap.set(String(s.id), s));
+                importedSlips.forEach(s => slipMap.set(String(s.id), s));
+
+                cachedSlips = Array.from(slipMap.values());
+                sauvegarderDonneesLocalStorage();
+                afficherListeBordereauxLocal();
+
+                alert(`✅ ${importedSlips.length} bordereaux restaurés en 1 clic !`);
+            } else {
+                alert("⚠️ Aucun fichier de sauvegarde trouvé.");
+            }
         }
 
         function renderManagementDashboard() {
@@ -1739,54 +1771,54 @@
             document.getElementById('kpiOrders').innerText = cachedSlips.length;
             document.getElementById('kpiGarments').innerText = `${totalGarments} pcs`;
 
-            const ctxDoughnut = document.getElementById('statusDoughnutChart').getContext('2d');
-            if (doughnutChartInstance) doughnutChartInstance.destroy();
+            requestAnimationFrame(() => {
+                const ctxDoughnut = document.getElementById('statusDoughnutChart').getContext('2d');
+                if (doughnutChartInstance) doughnutChartInstance.destroy();
 
-            doughnutChartInstance = new Chart(ctxDoughnut, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
-                    datasets: [{
-                        data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
-                        backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { font: { size: 10 }, color: '#d6d3d1' } }
+                doughnutChartInstance = new Chart(ctxDoughnut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
+                        datasets: [{
+                            data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
+                            backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: '#d6d3d1' } } }
                     }
-                }
-            });
+                });
 
-            const dates = Object.keys(revenueByDate).sort();
-            const revenues = dates.map(d => revenueByDate[d]);
+                const dates = Object.keys(revenueByDate).sort();
+                const revenues = dates.map(d => revenueByDate[d]);
 
-            const ctxBar = document.getElementById('revenueBarChart').getContext('2d');
-            if (barChartInstance) barChartInstance.destroy();
+                const ctxBar = document.getElementById('revenueBarChart').getContext('2d');
+                if (barChartInstance) barChartInstance.destroy();
 
-            barChartInstance = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: dates.length > 0 ? dates : ['No Data'],
-                    datasets: [{
-                        label: 'Revenue (AED)',
-                        data: revenues.length > 0 ? revenues : [0],
-                        backgroundColor: '#DCA773',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { ticks: { font: { size: 10 }, color: '#d6d3d1' } },
-                        x: { ticks: { font: { size: 10 }, color: '#d6d3d1' } }
+                barChartInstance = new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: dates.length > 0 ? dates : ['No Data'],
+                        datasets: [{
+                            label: 'Revenue (AED)',
+                            data: revenues.length > 0 ? revenues : [0],
+                            backgroundColor: '#DCA773',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { ticks: { font: { size: 10 }, color: '#d6d3d1' } },
+                            x: { ticks: { font: { size: 10 }, color: '#d6d3d1' } }
+                        }
                     }
-                }
+                });
             });
         }
 
@@ -1824,18 +1856,9 @@
             const delDate = document.getElementById('spa-delivery-date').value;
             const delTime = document.getElementById('spa-delivery-time').value;
 
-            if (!serialNo) {
-                alert("⚠️ Erreur : Veuillez entrer un numéro de série (Serial No).");
-                return false;
-            }
-            if (grandTotalValue <= 0) {
-                alert("⚠️ Erreur : Le Grand Total doit être supérieur à 0 AED.");
-                return false;
-            }
-            if (!collectedBy || !deliveredBy || !givenBy) {
-                alert("⚠️ Erreur : Veuillez remplir tous les champs de noms.");
-                return false;
-            }
+            if (!serialNo) { alert("⚠️ Veuillez entrer un numéro de série (Serial No)."); return false; }
+            if (grandTotalValue <= 0) { alert("⚠️ Le Grand Total doit être supérieur à 0 AED."); return false; }
+            if (!collectedBy || !deliveredBy || !givenBy) { alert("⚠️ Veuillez remplir tous les noms."); return false; }
 
             let spaItems = {};
             let totalClothes = 0;
@@ -1852,7 +1875,6 @@
             });
 
             chargerDonneesLocalStorage();
-
             let targetRecord = null;
 
             if (editingSpaId) {
@@ -1865,12 +1887,9 @@
                         guest_name: givenBy,
                         options: { 
                             ...cachedSlips[index].options,
-                            collection_date: colDate, 
-                            collection_time: colTime, 
-                            delivery_date: delDate, 
-                            delivery_time: delTime, 
-                            collected_by: collectedBy, 
-                            delivered_by: deliveredBy 
+                            collection_date: colDate, collection_time: colTime, 
+                            delivery_date: delDate, delivery_time: delTime, 
+                            collected_by: collectedBy, delivered_by: deliveredBy 
                         },
                         items: spaItems,
                         total_clothes: totalClothes,
@@ -1880,10 +1899,7 @@
                     };
                     targetRecord = cachedSlips[index];
                 }
-                alert(`✅ SPA Receipt #${serialNo} updated successfully!`);
-                document.getElementById('editingSpaId').value = '';
-                document.getElementById('spaFormTitleLabel').innerText = "V Element SPA Laundry Daily Record Sheet";
-                document.getElementById('btnSaveSpa').innerHTML = `<i class="fas fa-check-circle"></i> Validate & Save SPA Receipt`;
+                alert(`✅ SPA Receipt #${serialNo} updated!`);
             } else {
                 targetRecord = {
                     id: Date.now(),
@@ -1896,12 +1912,9 @@
                     count_type: 'guest',
                     options: { 
                         service_style: 'SPA Daily Sheet', 
-                        collection_date: colDate, 
-                        collection_time: colTime, 
-                        delivery_date: delDate, 
-                        delivery_time: delTime, 
-                        collected_by: collectedBy, 
-                        delivered_by: deliveredBy 
+                        collection_date: colDate, collection_time: colTime, 
+                        delivery_date: delDate, delivery_time: delTime, 
+                        collected_by: collectedBy, delivered_by: deliveredBy 
                     },
                     items: spaItems,
                     total_clothes: totalClothes,
@@ -1913,17 +1926,12 @@
                     created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
                 };
                 cachedSlips.push(targetRecord);
-                alert(`✅ Reçu SPA validé et archivé !\nNuméro de Série : #${serialNo}\nTotal : ${grandTotalText}`);
+                alert(`✅ SPA Receipt #${serialNo} saved!`);
             }
 
             sauvegarderDonneesLocalStorage();
-
             if (supabaseClient && targetRecord) {
-                try {
-                    await supabaseClient.from('laundry_slips').upsert(targetRecord);
-                } catch(e) {
-                    console.warn("Erreur sauvegarde Supabase SPA:", e);
-                }
+                try { await supabaseClient.from('laundry_slips').upsert(targetRecord); } catch(e) {}
             }
 
             switchMainSection('liveRecord');
@@ -1943,7 +1951,7 @@
 
             const now = new Date();
             const dateDownload = now.toLocaleDateString('fr-FR');
-            const hourDownload = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            const hourDownload = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
             
             const footer = pdfContent.querySelector('#pdf-footer-template');
             if (footer) {
@@ -1963,6 +1971,7 @@
             html2pdf().from(pdfContent).set(opt).save();
         }
 
+        // AFFICHAGE FIABLE DANS LA FENÊTRE POP-UP ET DANS LE PDF TÉLÉCHARGÉ
         function ouvrirModalDetails(id) {
             selectedIdForModal = id;
             chargerDonneesLocalStorage();
@@ -1970,23 +1979,25 @@
             if (!entry) return;
 
             let badgeText = 'Hotel Count (Free)';
-            if(entry.count_type === 'quota_extra') {
-                badgeText = 'Hotel & Extra (Custom Free)';
-            } else if(entry.count_type === 'guest') {
+            if (entry.count_type === 'quota_extra') {
+                badgeText = 'Hotel & Extra';
+            } else if (entry.count_type === 'guest') {
                 badgeText = 'Guest Count (Full)';
             }
 
             document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? 'SPA Sheet:' : 'Room:';
             document.getElementById('modalRoomNumDisplay').innerText = entry.is_spa ? `#${entry.room}` : entry.room;
-            document.getElementById('modalDate').innerText = `Date: ${new Date(entry.created_at).toLocaleDateString('fr-FR')}`;
+            
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('fr-FR') : '---';
+            document.getElementById('modalDate').innerText = `Date: ${dateFormatted}`;
             document.getElementById('modalTypeBadgeInline').innerText = entry.is_spa ? 'SPA Record' : badgeText;
             document.getElementById('modalPackagingStyle').innerText = entry.options?.service_style || 'F — Folding';
 
             const agencyBox = document.getElementById('modalAgencyQuotaBox');
             if (entry.guest_name || entry.agency || entry.quota) {
                 document.getElementById('modalGuestDisplay').innerText = entry.guest_name || 'Unknown';
-                document.getElementById('modalTypDisplay').innerText = entry.room_typ || 'DLXR';
-                document.getElementById('modalAgencyDisplay').innerText = entry.agency || 'Direct';
+                document.getElementById('modalTypDisplay').innerText = entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR');
+                document.getElementById('modalAgencyDisplay').innerText = entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct');
                 document.getElementById('modalQuotaDisplay').innerText = entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
                 document.getElementById('modalCreatedByDisplay').innerText = entry.created_by || 'Staff';
                 agencyBox.classList.remove('hidden');
@@ -1994,30 +2005,69 @@
                 agencyBox.classList.add('hidden');
             }
 
-            const tbody = document.getElementById('modalTableBody'); tbody.innerHTML = '';
-            
-            Object.values(entry.items || {}).forEach(item => {
-                let qty = item.qty || 0;
-                let freeQty = item.freeQty || 0;
-                let chargeableQty = entry.count_type === 'quota_extra' ? (qty - freeQty) : (entry.count_type === 'hotel' ? 0 : qty);
-                if(chargeableQty < 0) chargeableQty = 0;
+            // RENDU DES ARTICLES POUR LA POP-UP ET LE PDF
+            const tbody = document.getElementById('modalTableBody'); 
+            tbody.innerHTML = '';
 
-                if (freeQty > 0) {
-                    const trFree = document.createElement('tr');
-                    trFree.className = "py-1 border-b border-stone-200 text-emerald-700";
-                    trFree.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} (Free Quota)</td><td class="text-center font-bold p-1.5">${freeQty}</td><td class="text-right font-bold p-1.5">0.00</td>`;
-                    tbody.appendChild(trFree);
-                }
-                if (chargeableQty > 0 || entry.count_type === 'guest') {
-                    const trChg = document.createElement('tr');
-                    trChg.className = "py-1 border-b border-stone-200 text-stone-900";
-                    trChg.innerHTML = `<td class="font-bold py-1.5 p-2">${item.name} ${entry.count_type === 'quota_extra' ? '(Extra)' : ''}</td><td class="text-center font-bold p-1.5">${chargeableQty}</td><td class="text-right font-bold p-1.5">${(chargeableQty * item.price).toFixed(2)}</td>`;
-                    tbody.appendChild(trChg);
-                }
-            });
+            const itemsObj = entry.items || {};
+            const itemsList = Object.values(itemsObj);
 
-            document.getElementById('modalClothesCount').innerText = `${entry.total_clothes} pieces`;
-            document.getElementById('modalTotal').innerText = `${entry.total.toFixed(2)} AED`;
+            if (itemsList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">Aucun article trouvé.</td></tr>`;
+            } else {
+                itemsList.forEach(item => {
+                    let name = item.name || 'Article';
+                    let qty = parseInt(item.qty) || 0;
+                    let price = parseFloat(item.price) || 0;
+                    let freeQty = parseInt(item.freeQty) || 0;
+
+                    if (qty <= 0) return;
+
+                    if (entry.is_spa) {
+                        const rowTotal = qty * price;
+                        const tr = document.createElement('tr');
+                        tr.className = "py-1 border-b border-stone-200 text-stone-900";
+                        tr.innerHTML = `
+                            <td class="font-bold py-1.5 p-2">${name}</td>
+                            <td class="text-center font-bold p-1.5">${qty}</td>
+                            <td class="text-right font-bold p-1.5">${rowTotal.toFixed(2)} AED</td>
+                        `;
+                        tbody.appendChild(tr);
+                    } else {
+                        let chargeableQty = qty - freeQty;
+                        if (entry.count_type === 'hotel') chargeableQty = 0;
+                        if (chargeableQty < 0) chargeableQty = 0;
+
+                        if (freeQty > 0) {
+                            const trFree = document.createElement('tr');
+                            trFree.className = "py-1 border-b border-stone-200 text-emerald-700";
+                            trFree.innerHTML = `
+                                <td class="font-bold py-1.5 p-2">${name} (Free Quota)</td>
+                                <td class="text-center font-bold p-1.5">${freeQty}</td>
+                                <td class="text-right font-bold p-1.5">0.00 AED</td>
+                            `;
+                            tbody.appendChild(trFree);
+                        }
+
+                        if (chargeableQty > 0 || (entry.count_type === 'guest' && freeQty === 0)) {
+                            const totalLine = (entry.count_type === 'guest') ? (qty * price) : (chargeableQty * price);
+                            const displayQty = (entry.count_type === 'guest') ? qty : chargeableQty;
+                            
+                            const trChg = document.createElement('tr');
+                            trChg.className = "py-1 border-b border-stone-200 text-stone-900";
+                            trChg.innerHTML = `
+                                <td class="font-bold py-1.5 p-2">${name} ${entry.count_type === 'quota_extra' ? '(Extra)' : ''}</td>
+                                <td class="text-center font-bold p-1.5">${displayQty}</td>
+                                <td class="text-right font-bold p-1.5">${totalLine.toFixed(2)} AED</td>
+                            `;
+                            tbody.appendChild(trChg);
+                        }
+                    }
+                });
+            }
+
+            document.getElementById('modalClothesCount').innerText = `${entry.total_clothes || 0} pieces`;
+            document.getElementById('modalTotal').innerText = `${(entry.total || 0).toFixed(2)} AED`;
 
             const noteBox = document.getElementById('modalNoteBox');
             const noteText = document.getElementById('modalNoteText');
@@ -2035,7 +2085,7 @@
                 pContainer.innerHTML = '';
             }
 
-            const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - LAUNDRY SLIP*\n*Identifier:* ${entry.room}\n*Guest/Staff:* ${entry.guest_name || 'Guest'}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${entry.total.toFixed(2)} AED${entry.note ? `\n*Note:* ${entry.note}` : ''}`);
+            const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - LAUNDRY SLIP*\n*Identifier:* ${entry.room}\n*Guest/Staff:* ${entry.guest_name || 'Guest'}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED${entry.note ? `\n*Note:* ${entry.note}` : ''}`);
             document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
             document.getElementById('detailModal').classList.remove('hidden');
@@ -2059,10 +2109,6 @@
                 document.getElementById('spa-given-by').value = entry.guest_name || '';
                 document.getElementById('spa-collected-by').value = entry.options?.collected_by || '';
                 document.getElementById('spa-delivered-by').value = entry.options?.delivered_by || '';
-                if(entry.options?.collection_date) document.getElementById('spa-collection-date').value = entry.options.collection_date;
-                if(entry.options?.collection_time) document.getElementById('spa-collection-time').value = entry.options.collection_time;
-                if(entry.options?.delivery_date) document.getElementById('spa-delivery-date').value = entry.options.delivery_date;
-                if(entry.options?.delivery_time) document.getElementById('spa-delivery-time').value = entry.options.delivery_time;
 
                 const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
                 rows.forEach(row => {
@@ -2085,21 +2131,10 @@
 
                 selectCountType(entry.count_type || 'hotel');
 
-                const styleVal = entry.options?.service_style;
-                if (styleVal) {
-                    const radio = document.querySelector(`input[name="foldingOption"][value="${styleVal}"]`);
-                    if (radio) radio.checked = true;
-                }
-
                 document.getElementById('recordOptionalNote').value = entry.note || '';
-                if (entry.note && entry.note.trim() !== '') {
-                    const notesDetails = document.getElementById('detailsGarmentNotes');
-                    if (notesDetails) notesDetails.open = true;
-                }
 
                 cart = {};
                 let customIndex = 0;
-                let hasCustomItems = false;
                 if (entry.items) {
                     for (const [k, v] of Object.entries(entry.items)) {
                         if (k.startsWith('custom_')) {
@@ -2108,17 +2143,11 @@
                                 document.getElementById(`customPrice${customIndex}`).value = v.price;
                                 document.getElementById(`customQty${customIndex}`).value = v.qty;
                                 customIndex++;
-                                hasCustomItems = true;
                             }
                         } else {
                             cart[k] = { ...v };
                         }
                     }
-                }
-
-                if (hasCustomItems) {
-                    const customDetails = document.getElementById('detailsCustomItems');
-                    if (customDetails) customDetails.open = true;
                 }
 
                 renderItems();
@@ -2150,11 +2179,7 @@
                 sauvegarderDonneesLocalStorage();
 
                 if (supabaseClient) {
-                    try {
-                        await supabaseClient.getSupabase?.() || await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal);
-                    } catch(e) {
-                        console.warn("Erreur suppression Supabase:", e);
-                    }
+                    try { await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal); } catch(e) {}
                 }
 
                 fermerModal();
