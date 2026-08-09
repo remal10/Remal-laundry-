@@ -778,7 +778,13 @@
             selectCountType('hotel');
             renderItems();
             
+            chargerPmsLocalStorage();
             await chargerDonneesEtAbonnementCloud();
+            
+            // Afficher directement le tableau Mass Entry si des données PMS existent déjà en local
+            if (Object.keys(pmsDatabase).length > 0) {
+                renderMassPreviewTable();
+            }
 
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
             const spaDateEl = document.getElementById('spa-current-date');
@@ -810,22 +816,27 @@
 
             try {
                 const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
-                if (!slipsErr && slips) {
+                if (!slipsErr && slips && slips.length > 0) {
                     cachedSlips = slips;
                     sauvegarderDonneesLocalStorage();
                 }
 
                 const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
-                if (!guestsErr && guests) {
+                if (!guestsErr && guests && guests.length > 0) {
+                    pmsDatabase = {};
                     guests.forEach(g => {
                         pmsDatabase[g.room] = {
                             guestName: g.guest_name,
                             roomTyp: g.room_typ,
+                            arrival: g.arrival || '',
+                            departure: g.departure || '',
                             agency: g.agency,
                             quotaText: g.quota_text,
                             isChargeable: g.is_chargeable
                         };
                     });
+                    sauvegarderPmsLocalStorage();
+                    renderMassPreviewTable();
                 }
 
                 supabaseClient.channel('realtime_laundry')
@@ -843,15 +854,20 @@
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'pms_guests' }, async () => {
                         const { data } = await supabaseClient.from('pms_guests').select('*');
                         if (data) {
+                            pmsDatabase = {};
                             data.forEach(g => {
                                 pmsDatabase[g.room] = {
                                     guestName: g.guest_name,
                                     roomTyp: g.room_typ,
+                                    arrival: g.arrival || '',
+                                    departure: g.departure || '',
                                     agency: g.agency,
                                     quotaText: g.quota_text,
                                     isChargeable: g.is_chargeable
                                 };
                             });
+                            sauvegarderPmsLocalStorage();
+                            renderMassPreviewTable();
                         }
                     })
                     .subscribe();
@@ -868,6 +884,55 @@
 
         function sauvegarderDonneesLocalStorage() {
             localStorage.setItem('remal_laundry_slips', JSON.stringify(cachedSlips));
+        }
+
+        function chargerPmsLocalStorage() {
+            const data = localStorage.getItem('remal_pms_database');
+            if (data) {
+                try {
+                    pmsDatabase = JSON.parse(data);
+                } catch(e) {
+                    pmsDatabase = {};
+                }
+            }
+        }
+
+        function sauvegarderPmsLocalStorage() {
+            localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
+        }
+
+        function renderMassPreviewTable() {
+            const container = document.getElementById('massPreviewContainer');
+            const counterContainer = document.getElementById('massRecordCounter');
+            const resultsCard = document.getElementById('massResultsCard');
+
+            if (!container || Object.keys(pmsDatabase).length === 0) return;
+
+            let html = ``;
+            const rooms = Object.keys(pmsDatabase).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            rooms.forEach(room => {
+                const item = pmsDatabase[room];
+                const hasLaundry = !item.isChargeable;
+                let rowClass = hasLaundry ? "laundry-row" : "";
+                let statusHTML = item.isChargeable ? `<span class="badge-chargeable">Chargeable</span>` : `<span class="badge-green">Included (${item.quotaText})</span>`;
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td class="p-3"><strong>${room}</strong></td>
+                        <td class="p-3">${item.guestName}</td>
+                        <td class="p-3">${item.roomTyp}</td>
+                        <td class="p-3">${item.arrival || '---'}</td>
+                        <td class="p-3">${item.departure || '---'}</td>
+                        <td class="p-3">${item.agency}</td>
+                        <td class="p-3">${statusHTML}</td>
+                    </tr>
+                `;
+            });
+
+            container.innerHTML = html;
+            counterContainer.innerHTML = `✅ ${rooms.length} PMS record(s) loaded from memory.`;
+            resultsCard.classList.remove('hidden');
         }
 
         function isRoomNumberValid(val) {
@@ -1343,9 +1408,7 @@
         }
 
         async function processTextData(rawData) {
-            const container = document.getElementById('massPreviewContainer');
             const counterContainer = document.getElementById('massRecordCounter');
-            const resultsCard = document.getElementById('massResultsCard');
 
             if (!rawData.trim()) {
                 alert("No data found to process.");
@@ -1416,11 +1479,8 @@
             }
 
             if (parsedData.length > 0) {
-                counterContainer.innerHTML = `✅ ${parsedData.length} PMS record(s) synced to Cloud!`;
-                resultsCard.classList.remove('hidden');
-
-                let html = ``;
-                pmsDatabase = {}; 
+                // Écrasement total (mise à jour propre sans doublons)
+                pmsDatabase = {};
                 let cloudGuestsPayload = [];
 
                 parsedData.forEach(item => {
@@ -1428,8 +1488,6 @@
                     const match = item.fullContext.match(laundryRegex);
                     const hasLaundry = match !== null || /hdl[0-9]|laundry/i.test(item.fullContext);
                     
-                    let rowClass = hasLaundry ? "laundry-row" : "";
-                    let statusHTML = "";
                     let quotaText = "";
                     let isChargeable = false;
 
@@ -1438,21 +1496,20 @@
                         let unitName = match[2].toUpperCase();
                         if (unitName === "LAUNDRY") unitName = "LAUN";
                         quotaText = `${pcsCount} PCS ${unitName}`;
-                        statusHTML = `<span class="badge-green">Included (${quotaText})</span>`;
                         isChargeable = false;
                     } else if (hasLaundry) {
                         quotaText = "Laundry Package";
-                        statusHTML = `<span class="badge-green">Included (${quotaText})</span>`;
                         isChargeable = false;
                     } else {
                         quotaText = "Chargeable";
-                        statusHTML = `<span class="badge-chargeable">Chargeable</span>`;
                         isChargeable = true;
                     }
 
                     pmsDatabase[item.room] = {
                         guestName: item.guestName,
                         roomTyp: item.roomTyp,
+                        arrival: item.arrival,
+                        departure: item.departure,
                         agency: item.agency,
                         quotaText: quotaText,
                         isChargeable: isChargeable
@@ -1462,30 +1519,23 @@
                         room: item.room,
                         guest_name: item.guestName,
                         room_typ: item.roomTyp,
+                        arrival: item.arrival,
+                        departure: item.departure,
                         agency: item.agency,
                         quota_text: quotaText,
                         is_chargeable: isChargeable
                     });
-
-                    html += `
-                        <tr class="${rowClass}">
-                            <td class="p-3"><strong>${item.room}</strong></td>
-                            <td class="p-3">${item.guestName}</td>
-                            <td class="p-3">${item.roomTyp}</td>
-                            <td class="p-3">${item.arrival}</td>
-                            <td class="p-3">${item.departure}</td>
-                            <td class="p-3">${item.agency}</td>
-                            <td class="p-3">${statusHTML}</td>
-                        </tr>
-                    `;
                 });
 
-                container.innerHTML = html;
+                sauvegarderPmsLocalStorage();
+                renderMassPreviewTable();
 
                 if (supabaseClient && cloudGuestsPayload.length > 0) {
                     try {
-                        await supabaseClient.from('pms_guests').upsert(cloudGuestsPayload);
-                        alert(`✅ PMS Report for ${parsedData.length} rooms updated in Cloud!`);
+                        // Nettoyer l'ancienne table pour éviter les doublons/orphelins puis insérer la nouvelle liste
+                        await supabaseClient.from('pms_guests').delete().neq('room', '000');
+                        await supabaseClient.from('pms_guests').insert(cloudGuestsPayload);
+                        alert(`✅ PMS Report updated and duplicates cleared successfully! (${parsedData.length} rooms)`);
                     } catch(e) {
                         console.warn("Erreur sauvegarde Cloud PMS Guests:", e);
                     }
@@ -2101,7 +2151,7 @@
 
                 if (supabaseClient) {
                     try {
-                        await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal);
+                        await supabaseClient.getSupabase?.() || await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal);
                     } catch(e) {
                         console.warn("Erreur suppression Supabase:", e);
                     }
