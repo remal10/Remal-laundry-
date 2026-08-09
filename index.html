@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Remal Hotel & Villas - Laundry OS</title>
+    <title>Remal Hotel & Villas - Laundry & Lost & Found OS</title>
     
     <!-- PWA META TAGS -->
     <meta name="theme-color" content="#12100e">
@@ -16,7 +16,7 @@
     <link rel="manifest" href='data:application/manifest+json,{
         "name": "Remal Hotel & Villas Laundry",
         "short_name": "Remal Laundry",
-        "description": "Front Desk & Laundry Management System",
+        "description": "Front Desk, Laundry & Lost & Found System",
         "start_url": "./",
         "display": "standalone",
         "background_color": "#12100e",
@@ -172,16 +172,17 @@
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-6">
+    <!-- NAVIGATION PRINCIPALE STICKY HAUT (OPTIMISÉE TABLETTE) -->
+    <div id="mainNavContainer" class="sticky top-0 z-50 flex flex-nowrap bg-[#12100e] border-b border-[#DCA773]/30 px-4 py-2 gap-3 overflow-x-auto scrollbar-none shadow-2xl no-print">
+        <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow">Active Rooms</button>
+        <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">SPA</button>
+        <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Lost & Found</button>
+        <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Archives</button>
+        <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Mass PDF</button>
+        <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Chart</button>
+    </div>
 
-        <!-- NAVIGATION PRINCIPALE -->
-        <div id="mainNavContainer" class="flex bg-[#181614] p-2 rounded-2xl border border-[#2f2820] text-xs sm:text-sm font-bold gap-2 text-stone-400 no-print">
-            <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-1 py-3 rounded-xl transition text-center hover:text-stone-200">Active Rooms</button>
-            <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-1 py-3 rounded-xl transition text-center hover:text-stone-200">SPA</button>
-            <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" class="flex-1 py-3 rounded-xl transition text-center hover:text-stone-200">Archives & Search</button>
-            <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" class="flex-1 py-3 rounded-xl transition text-center hover:text-stone-200">Mass PDF</button>
-            <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" class="flex-1 py-3 rounded-xl transition text-center hover:text-stone-200">Chart</button>
-        </div>
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-6">
 
         <!-- ACTION RAPIDE LAUNDRY -->
         <div id="quickActionButtons" class="no-print">
@@ -532,6 +533,47 @@
             </div>
         </section>
 
+        <!-- SECTION: LOST & FOUND -->
+        <div id="sectionLostfound" class="hidden space-y-6 no-print">
+            <div class="flex justify-between items-center bg-[#181614] p-4 sm:p-6 rounded-3xl border border-[#2f2820]">
+                <div>
+                    <h2 class="text-base sm:text-lg font-serif-luxury font-bold text-[#DCA773]">Lost & Found Registry</h2>
+                    <p class="text-xs text-stone-400 mt-0.5">Hotel Property & Guest Belongings Tracking</p>
+                </div>
+                <button onclick="document.getElementById('lfFormCard').classList.toggle('hidden')" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow transition flex items-center gap-2">
+                    <span>+</span> Add Lost Item
+                </button>
+            </div>
+
+            <!-- Formulaire d'ajout Lost & Found -->
+            <div id="lfFormCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-2xl mx-auto">
+                <h3 class="text-sm font-bold text-[#DCA773] border-b border-[#2f2820] pb-2">New Lost & Found Item</h3>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Item Name / Description</label>
+                    <input type="text" id="lfItemName" placeholder="e.g., iPhone 15, Gold Ring, Black Jacket..." class="w-full remal-input rounded-xl p-3 text-xs font-semibold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Found Location</label>
+                    <input type="text" id="lfItemLoc" placeholder="e.g., Lobby Sofa, Room 204, Poolside..." class="w-full remal-input rounded-xl p-3 text-xs font-semibold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Notes / Condition</label>
+                    <textarea id="lfItemNote" placeholder="Additional details, colors, serial number..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Photo Evidence</label>
+                    <input type="file" id="lfItemPhoto" accept="image/*" capture="environment" onchange="previewLFImage(event)" class="w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#181614] file:text-[#DCA773] hover:file:bg-[#211e1a] cursor-pointer">
+                    <img id="lfImagePreview" class="hidden w-full max-h-40 object-cover rounded-xl mt-2 border border-[#2f2820]" alt="Preview">
+                </div>
+                <button onclick="saveLostFoundItem()" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow transition">Save Item</button>
+            </div>
+
+            <!-- Grille des objets trouvés -->
+            <div id="lfItemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <p class="text-xs text-stone-500 text-center py-6 col-span-full">No lost and found items registered.</p>
+            </div>
+        </div>
+
         <!-- SECTION 3: ARCHIVES & BORDEREAUX EXPORT/IMPORT (SÉPARÉ LAUNDRY & SPA) -->
         <div id="sectionPdfList" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-5xl mx-auto">
@@ -693,7 +735,7 @@
         let deferredPrompt;
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v11';
+                const CACHE_NAME = 'remal-pwa-v12';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -772,7 +814,7 @@
 
         // SUPABASE REALTIME INITIALISATION
         const SUPABASE_URL = 'https://fwtfeklctflgehueuuik.supabase.co';
-        const SUPABASE_ANON_KEY = 'EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3dGZla2xjdGZsZ2VodWV1dWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzEyNTEsImV4cCI6MjEwMTYwNzI1MX0.vNmrYb4bmFgRcrlGKZ-KlTvCOJLt-GYJMXpRBRD5WDM';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3dGZla2xjdGZsZ2VodWV1dWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzEyNTEsImV4cCI6MjEwMTYwNzI1MX0.vNmrYb4bmFgRcrlGKZ-KlTvCOJLt-GYJMXpRBRD5WDM';
         
         let supabaseClient = null;
         try {
@@ -787,6 +829,7 @@
         let currentArchiveFilter = 'all';
         let doughnutChartInstance = null;
         let barChartInstance = null;
+        let currentLFPhotoData = null;
 
         const i18n = {
             en: {
@@ -1103,13 +1146,33 @@
                 reinitialiserFormulaire();
             }
 
-            ['newRecord', 'massEntry', 'liveRecord', 'spa', 'pdfList', 'dashboard'].forEach(sec => {
+            ['newRecord', 'massEntry', 'liveRecord', 'spa', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
                 const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
                 if(el) el.classList.add('hidden');
             });
 
             const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
             if(targetSection) targetSection.classList.remove('hidden');
+
+            // Mise à jour visuelle du menu tablette du haut
+            const navButtons = {
+                'liveRecord': 'navBtnLiveRecord',
+                'spa': 'navBtnSpa',
+                'lostfound': 'navBtnLostfound',
+                'pdfList': 'navBtnPdfList',
+                'massEntry': 'navBtnMassEntry',
+                'dashboard': 'navBtnDashboard'
+            };
+
+            Object.entries(navButtons).forEach(([key, btnId]) => {
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+                if (key === section) {
+                    btn.className = "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow";
+                } else {
+                    btn.className = "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]";
+                }
+            });
 
             const quickActionButtons = document.getElementById('quickActionButtons');
             if (section === 'liveRecord') {
@@ -1123,6 +1186,8 @@
                 afficherListeBordereauxLocal();
             } else if (section === 'dashboard') {
                 renderManagementDashboard();
+            } else if (section === 'lostfound') {
+                renderLostFoundItems();
             }
         }
 
@@ -1282,7 +1347,6 @@
             reader.readAsDataURL(file);
         }
 
-        // ENREGISTREMENT ET MISE À JOUR
         async function sauvegarderBordereauLocal() {
             const roomInput = document.getElementById('roomNumber');
             const roomNum = roomInput.value.trim();
@@ -1617,7 +1681,6 @@
             }
         }
 
-        // CHARGEMENT DES CHAMBRES ACTIVES AVEC CASES À COCHER POUR SÉLECTION D'IMPRESSION
         function chargerLiveOrders() {
             const container = document.getElementById('liveOrdersList');
             chargerDonneesLocalStorage();
@@ -1641,7 +1704,6 @@
 
             container.innerHTML = '';
 
-            // Boutons Tout Sélectionner / Tout Désélectionner
             const controlsDiv = document.createElement('div');
             controlsDiv.className = 'col-span-full flex gap-3 mb-2';
             controlsDiv.innerHTML = `
@@ -1664,7 +1726,6 @@
                     badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
                 }
 
-                const dateStr = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '';
                 const identifierDisplay = entry.is_spa ? `SPA: ${entry.guest_name} (#${entry.spa_serial || '---'})` : `Room ${entry.room}`;
 
                 itemDiv.innerHTML = `
@@ -1701,7 +1762,6 @@
             document.getElementById('lblBatchPrintText').innerText = `🖨️ Batch Print Selected (${selectedCount} Rooms)`;
         }
 
-        // FONCTION D'IMPRESSION EN MASSE / GROUPÉE AVEC DUPLICATION HANGER/FOLDING
         function imprimerToutesLesChambresDuJour() {
             chargerDonneesLocalStorage();
             
@@ -1745,7 +1805,6 @@
                     }
                 });
 
-                // LOGIQUE HANGER/FOLDING: SI H/F -> GENERER 2 COPIES DU BORDEREAU
                 const isDoublePrint = entry.options?.service_style === 'H/F — Hanger/Folding';
                 const totalCopies = isDoublePrint ? 2 : 1;
 
@@ -1814,7 +1873,6 @@
             afficherListeBordereauxLocal();
         }
 
-        // AFFICHAGE DES ARCHIVES SÉPARÉES (HOTEL LAUNDRY vs SPA LAUNDRY)
         function afficherListeBordereauxLocal() {
             chargerDonneesLocalStorage();
             const searchVal = document.getElementById('searchRoom').value.toLowerCase().trim();
@@ -1853,7 +1911,6 @@
 
             let html = '';
 
-            // SECTION 1: HOTEL ROOM LAUNDRY
             if ((currentArchiveFilter === 'all' || currentArchiveFilter === 'laundry') && hotelEntries.length > 0) {
                 html += `
                     <div class="space-y-2">
@@ -1902,7 +1959,6 @@
                 html += `</div></div>`;
             }
 
-            // SECTION 2: V ELEMENT SPA LAUNDRY
             if ((currentArchiveFilter === 'all' || currentArchiveFilter === 'spa') && spaEntries.length > 0) {
                 html += `
                     <div class="space-y-2 mt-4">
@@ -1941,6 +1997,128 @@
             }
 
             container.innerHTML = html;
+        }
+
+        function previewLFImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    currentLFPhotoData = canvas.toDataURL('image/jpeg', 0.7);
+                    const previewEl = document.getElementById('lfImagePreview');
+                    previewEl.src = currentLFPhotoData;
+                    previewEl.classList.remove('hidden');
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function saveLostFoundItem() {
+            const name = document.getElementById('lfItemName').value.trim();
+            const loc = document.getElementById('lfItemLoc').value.trim();
+            const note = document.getElementById('lfItemNote').value.trim();
+
+            if (!name || !loc) {
+                alert("Please enter the item name and location.");
+                return;
+            }
+
+            const items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                loc: loc,
+                note: note,
+                photo: currentLFPhotoData || null,
+                date: new Date().toLocaleString(),
+                status: 'Unclaimed'
+            };
+
+            items.unshift(newItem);
+            localStorage.setItem('remal_lost_found', JSON.stringify(items));
+
+            document.getElementById('lfItemName').value = '';
+            document.getElementById('lfItemLoc').value = '';
+            document.getElementById('lfItemNote').value = '';
+            document.getElementById('lfItemPhoto').value = '';
+            document.getElementById('lfImagePreview').classList.add('hidden');
+            currentLFPhotoData = null;
+            document.getElementById('lfFormCard').classList.add('hidden');
+
+            renderLostFoundItems();
+            alert("✅ Lost & Found item saved successfully!");
+        }
+
+        function renderLostFoundItems() {
+            const container = document.getElementById('lfItemsGrid');
+            if (!container) return;
+            const items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
+
+            if (items.length === 0) {
+                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No lost and found items registered.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'remal-card p-4 rounded-2xl space-y-3 relative';
+                div.innerHTML = `
+                    ${item.photo ? `<img src="${item.photo}" class="w-full h-36 object-cover rounded-xl border border-[#2f2820]">` : ''}
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-serif-luxury font-bold text-[#DCA773] text-base">${item.name}</h4>
+                            <span class="text-[9px] ${item.status === 'Claimed' ? 'bg-emerald-950 text-emerald-200 border-emerald-800' : 'bg-amber-950 text-amber-200 border-amber-800'} border font-bold px-2 py-0.5 rounded-md">${item.status}</span>
+                        </div>
+                        <p class="text-xs text-stone-300 mt-1">📍 <strong>Location:</strong> ${item.loc}</p>
+                        ${item.note ? `<p class="text-xs text-stone-400 italic mt-1">"${item.note}"</p>` : ''}
+                        <p class="text-[10px] text-stone-500 mt-2">📅 Found: ${item.date}</p>
+                    </div>
+                    <div class="flex gap-2 pt-2 border-t border-[#2f2820]">
+                        <button onclick="toggleLFStatus(${item.id})" class="flex-1 py-2 bg-[#181614] hover:bg-[#211e1a] text-stone-300 font-bold rounded-xl text-[10px] border border-[#2f2820]">Toggle Status</button>
+                        <button onclick="deleteLFItem(${item.id})" class="py-2 px-3 bg-rose-950 hover:bg-rose-900 text-rose-200 font-bold rounded-xl text-[10px] border border-rose-800">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleLFStatus(id) {
+            let items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
+            items = items.map(i => {
+                if (i.id === id) {
+                    i.status = i.status === 'Unclaimed' ? 'Claimed' : 'Unclaimed';
+                }
+                return i;
+            });
+            localStorage.setItem('remal_lost_found', JSON.stringify(items));
+            renderLostFoundItems();
+        }
+
+        function deleteLFItem(id) {
+            if (confirm("Delete this lost item record?")) {
+                let items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
+                items = items.filter(i => i.id !== id);
+                localStorage.setItem('remal_lost_found', JSON.stringify(items));
+                renderLostFoundItems();
+            }
         }
 
         async function exportAutoDirect() {
