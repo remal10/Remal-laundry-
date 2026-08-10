@@ -377,7 +377,7 @@
             </div>
         </div>
 
-        <!-- SECTION 2: ACTIVE ROOMS / LIVE LAUNDRY (AVEC SÉLECTION & IMPRESSION GROUPÉE) -->
+        <!-- SECTION 2: ACTIVE ROOMS / LIVE LAUNDRY -->
         <div id="sectionLiveRecord" class="space-y-4 no-print">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
                 <div class="flex items-center gap-3">
@@ -385,14 +385,12 @@
                     <span id="activeRoomsCountBadge" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
                 </div>
                 
-                <!-- BOUTON D'IMPRESSION GROUPÉE SELECTIONNEE -->
                 <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                     <i class="fas fa-print text-sm"></i>
                     <span id="lblBatchPrintText">🖨️ Batch Print Today (0 Rooms)</span>
                 </button>
             </div>
 
-            <!-- LISTE AVEC BOUTONS SELECT ALL / DESELECT ALL -->
             <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
                 <p class="text-xs text-stone-500 text-center py-6 col-span-full">Loading active rooms...</p>
             </div>
@@ -574,7 +572,7 @@
             </div>
         </div>
 
-        <!-- SECTION 3: ARCHIVES & BORDEREAUX EXPORT/IMPORT (SÉPARÉ LAUNDRY & SPA) -->
+        <!-- SECTION 3: ARCHIVES & BORDEREAUX -->
         <div id="sectionPdfList" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-5xl mx-auto">
                 <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
@@ -590,7 +588,7 @@
                     </button>
                 </div>
 
-                <!-- FILTRE PAR TYPE (TOUT / HOTEL / SPA) -->
+                <!-- FILTRE PAR TYPE -->
                 <div class="flex bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
                     <button onclick="switchArchiveFilter('all')" id="archiveFilterAll" class="flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">ALL RECORDS</button>
                     <button onclick="switchArchiveFilter('laundry')" id="archiveFilterLaundry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🏨 HOTEL LAUNDRY</button>
@@ -812,9 +810,9 @@
             }
         }
 
-        // SUPABASE REALTIME INITIALISATION
-        const SUPABASE_URL = 'https://fwtfeklctflgehueuuik.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3dGZla2xjdGZsZ2VodWV1dWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzEyNTEsImV4cCI6MjEwMTYwNzI1MX0.vNmrYb4bmFgRcrlGKZ-KlTvCOJLt-GYJMXpRBRD5WDM';
+        // SUPABASE CONFIGURATION EXACTE (SYNCHRONISÉE)
+        const SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
         
         let supabaseClient = null;
         try {
@@ -1154,7 +1152,6 @@
             const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
             if(targetSection) targetSection.classList.remove('hidden');
 
-            // Mise à jour visuelle du menu tablette du haut
             const navButtons = {
                 'liveRecord': 'navBtnLiveRecord',
                 'spa': 'navBtnSpa',
