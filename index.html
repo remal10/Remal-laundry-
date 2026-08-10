@@ -709,7 +709,7 @@
         let deferredPrompt;
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v13';
+                const CACHE_NAME = 'remal-pwa-v14';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -2101,20 +2101,24 @@
 
         async function exportAutoDirect() {
             chargerDonneesLocalStorage();
-            if (cachedSlips.length === 0) {
-                alert("⚠️ Aucun bordereau à exporter.");
+            const lostFoundItems = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
+
+            if (cachedSlips.length === 0 && lostFoundItems.length === 0) {
+                alert("⚠️ Aucune donnée à exporter.");
                 return;
             }
 
             const backupData = {
-                type: "Remal_Laundry_Slips_Only",
+                type: "Remal_Full_System_Backup",
                 exportDate: new Date().toISOString(),
-                slips: cachedSlips
+                slips: cachedSlips,
+                lost_found: lostFoundItems
             };
+            
             const jsonString = JSON.stringify(backupData, null, 2);
-            const filename = `Remal_Laundry_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            const filename = `Remal_Hotel_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
 
-            localStorage.setItem('remal_auto_backup_slips', JSON.stringify(cachedSlips));
+            localStorage.setItem('remal_auto_backup_full', JSON.stringify(backupData));
             
             const blob = new Blob([jsonString], { type: 'application/json' });
             const a = document.createElement('a');
@@ -2124,30 +2128,45 @@
             a.click();
             a.remove();
 
-            alert("✅ Backup sauvegardé sur l'appareil !");
+            alert("✅ Sauvegarde complète (Blanchisserie & Lost & Found) effectuée !");
         }
 
         async function importAutoDirect() {
-            let importedSlips = null;
+            let importedData = null;
 
-            const internalData = localStorage.getItem('remal_auto_backup_slips');
+            const internalData = localStorage.getItem('remal_auto_backup_full');
             if (internalData) {
-                importedSlips = JSON.parse(internalData);
+                try {
+                    importedData = JSON.parse(internalData);
+                } catch(e) {}
             }
 
-            if (importedSlips && importedSlips.length > 0) {
-                chargerDonneesLocalStorage();
-                const slipMap = new Map();
-                cachedSlips.forEach(s => slipMap.set(String(s.id), s));
-                importedSlips.forEach(s => slipMap.set(String(s.id), s));
+            if (importedData && (importedData.slips || importedData.lost_found)) {
+                if (importedData.slips && importedData.slips.length > 0) {
+                    chargerDonneesLocalStorage();
+                    const slipMap = new Map();
+                    cachedSlips.forEach(s => slipMap.set(String(s.id), s));
+                    importedData.slips.forEach(s => slipMap.set(String(s.id), s));
+                    cachedSlips = Array.from(slipMap.values());
+                    sauvegarderDonneesLocalStorage();
+                }
 
-                cachedSlips = Array.from(slipMap.values());
-                sauvegarderDonneesLocalStorage();
+                if (importedData.lost_found && importedData.lost_found.length > 0) {
+                    const currentLF = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
+                    const lfMap = new Map();
+                    currentLF.forEach(i => lfMap.set(String(i.id), i));
+                    importedData.lost_found.forEach(i => lfMap.set(String(i.id), i));
+                    localStorage.setItem('remal_lost_found', JSON.stringify(Array.from(lfMap.values())));
+                }
+
                 afficherListeBordereauxLocal();
+                if (typeof renderLostFoundItems === 'function') {
+                    renderLostFoundItems();
+                }
 
-                alert(`✅ ${importedSlips.length} bordereaux restaurés en 1 clic !`);
+                alert(`✅ Données restaurées avec succès (Blanchisserie & Objets Trouvés) !`);
             } else {
-                alert("⚠️ Aucun fichier de sauvegarde trouvé.");
+                alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
             }
         }
 
@@ -2391,7 +2410,6 @@
 
             document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? 'SPA Sheet:' : 'Room:';
             
-            // CORRECTION DU BUG D'AFFICHAGE DU NUMÉRO DE SPA DANS LE MODAL
             if (entry.is_spa) {
                 const serialClean = String(entry.spa_serial || entry.room || '').replace(/SPA\s*#?/gi, '').trim();
                 document.getElementById('modalRoomNumDisplay').innerText = `#${serialClean}`;
