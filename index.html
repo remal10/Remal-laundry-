@@ -638,9 +638,9 @@
             <div id="pdfExportArea" class="p-5 space-y-4 bg-white text-stone-900 rounded-2xl printable-page">
                 <div class="text-center border-b border-stone-300 pb-3 relative">
                     <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-500 text-2xl font-bold hover:text-stone-900 no-print">✕</button>
-                    <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
-                    <p class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <p class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
+                    <h2 id="modalPdfHotelName" class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
+                    <p id="modalPdfHotelSub" class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
+                    <p id="modalPdfLaundryService" class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
                 </div>
 
                 <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
@@ -655,37 +655,37 @@
                         </div>
                     </div>
                     <div id="modalAgencyQuotaBox" class="hidden pt-2 border-t border-stone-200 text-xs space-y-1 text-stone-700 font-bold">
-                        <div class="flex justify-between"><span>Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span>Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span>Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span>Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
-                        <div class="flex justify-between border-t border-stone-200 pt-1 text-[10px] text-stone-500"><span>Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
+                        <div class="flex justify-between"><span id="modalLblGuestName">Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
+                        <div class="flex justify-between"><span id="modalLblRoomTyp">Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
+                        <div class="flex justify-between"><span id="modalLblAgency">Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
+                        <div class="flex justify-between"><span id="modalLblQuota">Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
+                        <div class="flex justify-between border-t border-stone-200 pt-1 text-[10px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
                     </div>
                 </div>
 
                 <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
-                    <span>Packaging:</span>
+                    <span id="modalLblPackaging">Packaging:</span>
                     <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
                 </div>
 
                 <table class="w-full text-xs text-left border-collapse">
                     <thead>
                         <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300">
-                            <th class="p-2.5">Item</th>
-                            <th class="p-2.5 text-center">Qty</th>
-                            <th class="p-2.5 text-right">Total</th>
+                            <th id="modalThItem" class="p-2.5">Item</th>
+                            <th id="modalThQty" class="p-2.5 text-center">Qty</th>
+                            <th id="modalThTotal" class="p-2.5 text-right">Total</th>
                         </tr>
                     </thead>
                     <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800"></tbody>
                 </table>
 
                 <div class="bg-stone-50 p-3 rounded-xl text-xs space-y-1.5 font-medium text-stone-700 border border-stone-200">
-                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1"><span>Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
-                    <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-2 mt-1"><span>Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-base">0.00 AED</span></div>
+                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
+                    <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-2 mt-1"><span id="modalLblGrandTotal">Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-base">0.00 AED</span></div>
                 </div>
 
                 <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1 text-stone-800">
-                    <p class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
+                    <p id="modalLblGarmentNotes" class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
                     <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
                 </div>
 
@@ -709,7 +709,7 @@
         let deferredPrompt;
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v14';
+                const CACHE_NAME = 'remal-pwa-v15';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -810,7 +810,39 @@
                 lblGrandTotal: "Grand Total:", btnPhotoProof: "📷 Take Proof Photo (Camera)",
                 btnSaveRecord: "💾 Save Record", lblArchiveTitle: "Archives & Search",
                 lblLoadingRecords: "Loading records...", lblRoomError: "Invalid room number!",
-                lblActiveRoomsHeader: "Active Rooms"
+                lblActiveRoomsHeader: "Active Rooms",
+                pdfHotelName: "REMAL HOTEL & VILLAS",
+                pdfHotelSub: "Al Ruwais City, Abu Dhabi – UAE",
+                pdfLaundryService: "LAUNDRY SERVICE",
+                pdfRoom: "Room:",
+                pdfDate: "Date:",
+                pdfGuest: "Guest Name:",
+                pdfRoomTyp: "Room Typ:",
+                pdfAgency: "Agency:",
+                pdfQuota: "Laundry Quota:",
+                pdfAgent: "Agent:",
+                pdfPackaging: "Packaging:",
+                pdfItem: "Item",
+                pdfQty: "Qty",
+                pdfTotal: "Total",
+                pdfTotalPieces: "Total Pieces:",
+                pdfGrandTotalText: "Grand Total:",
+                pdfNotes: "Garment Notes / Defects:",
+                pdfProofPhoto: "Proof Photo:",
+                pdfHotelCount: "Hotel Count",
+                pdfHotelCountFree: "Hotel Count (Free)",
+                pdfHotelExtra: "Hotel & Extra",
+                pdfGuestCount: "Guest Count (Full)",
+                pdfSpaSheet: "V ELEMENT SPA LAUNDRY SHEET",
+                pdfGivenBy: "Given By (Spa):",
+                pdfCollectedBy: "Collected By:",
+                pdfDeliveredBy: "Delivered By:",
+                pdfSheetSerial: "Sheet Serial:",
+                pdfReceiptNo: "Receipt No:",
+                pdfDownloaded: "Downloaded:",
+                pdfSpaRecord: "SPA Record",
+                pdfCopyHanger: " — [COPY 1: HANGER]",
+                pdfCopyFolding: " — [COPY 2: FOLDING]"
             },
             ar: {
                 txtBtnNewRecord: "سجل جديد", lblFormTitle: "سجل جديد", lblRoomNum: "رقم الغرفة",
@@ -818,7 +850,39 @@
                 lblGrandTotal: "المجموع الإجمالي:", btnPhotoProof: "📷 التقاط صورة إثبات (كاميرا)",
                 btnSaveRecord: "💾 حفظ السجل", lblArchiveTitle: "الأرشيف والبحث",
                 lblLoadingRecords: "جاري تحميل السجلات...", lblRoomError: "رقم الغرفة غير صحيح!",
-                lblActiveRoomsHeader: "الغرف النشطة"
+                lblActiveRoomsHeader: "الغرف النشطة",
+                pdfHotelName: "فندق وفيلا رمال",
+                pdfHotelSub: "مدينة الرويس، أبوظبي - الإمارات العربية المتحدة",
+                pdfLaundryService: "خدمة المغسلة",
+                pdfRoom: "الغرفة:",
+                pdfDate: "التاريخ:",
+                pdfGuest: "اسم الضيف:",
+                pdfRoomTyp: "نوع الغرفة:",
+                pdfAgency: "الوكالة:",
+                pdfQuota: "حصص المغسلة:",
+                pdfAgent: "الموظف:",
+                pdfPackaging: "التعبئة:",
+                pdfItem: "الصنف",
+                pdfQty: "الكمية",
+                pdfTotal: "المجموع",
+                pdfTotalPieces: "مجموع القطع:",
+                pdfGrandTotalText: "المجموع الإجمالي:",
+                pdfNotes: "ملاحظات / عيوب الملابس:",
+                pdfProofPhoto: "صورة الإثبات:",
+                pdfHotelCount: "عداد الفندق",
+                pdfHotelCountFree: "عداد الفندق (مجاني)",
+                pdfHotelExtra: "الفندق وإضافي",
+                pdfGuestCount: "عداد الضيف (كامل)",
+                pdfSpaSheet: "ورقة مغسلة سبا في إيلمنت",
+                pdfGivenBy: "مقدم من (السبا):",
+                pdfCollectedBy: "تم الاستلام بواسطة:",
+                pdfDeliveredBy: "تم التسليم بواسطة:",
+                pdfSheetSerial: "رقم السجل:",
+                pdfReceiptNo: "رقم الإيصال:",
+                pdfDownloaded: "تم التحميل:",
+                pdfSpaRecord: "سجل السبا",
+                pdfCopyHanger: " — [نسخة 1: شماعة]",
+                pdfCopyFolding: " — [نسخة 2: طي]"
             },
             hi: {
                 txtBtnNewRecord: "नया रिकॉर्ड", lblFormTitle: "नया रिकॉर्ड", lblRoomNum: "कमरा नंबर",
@@ -826,7 +890,39 @@
                 lblGrandTotal: "कुल योग:", btnPhotoProof: "📷 प्रमाण फोटो लें (कैमरा)",
                 btnSaveRecord: "💾 रिकॉर्ड सुरक्षित करें", lblArchiveTitle: "अभिलेख और खोज",
                 lblLoadingRecords: "रिकॉर्ड लोड हो रहे हैं...", lblRoomError: "अमान्य कमरा नंबर!",
-                lblActiveRoomsHeader: "सक्रिय कमरे"
+                lblActiveRoomsHeader: "सक्रिय कमरे",
+                pdfHotelName: "रेमल होटल एंड विला",
+                pdfHotelSub: "अल रुwais सिटी, अबू धाबी - यूएई",
+                pdfLaundryService: "लॉन्ड्रि सेवा",
+                pdfRoom: "कमरा:",
+                pdfDate: "दिनांक:",
+                pdfGuest: "अतिथि का नाम:",
+                pdfRoomTyp: "कमरे का प्रकार:",
+                pdfAgency: "एजेंसी:",
+                pdfQuota: "लॉन्ड्री कोटा:",
+                pdfAgent: "कर्मचारी:",
+                pdfPackaging: "पैकेजिंग:",
+                pdfItem: "आइटम",
+                pdfQty: "मात्रा",
+                pdfTotal: "कुल",
+                pdfTotalPieces: "कुल पीस:",
+                pdfGrandTotalText: "कुल योग:",
+                pdfNotes: "कपड़े के नोट्स / दोष:",
+                pdfProofPhoto: "प्रमाण फोटो:",
+                pdfHotelCount: "होटल काउंट",
+                pdfHotelCountFree: "होटल काउंट (मुफ्त)",
+                pdfHotelExtra: "होटल और अतिरिक्त",
+                pdfGuestCount: "अतिथि काउंट (पूर्ण)",
+                pdfSpaSheet: "वी एलिमेंट स्पा लॉन्ड्रि शीट",
+                pdfGivenBy: "द्वारा दिया गया (स्पा):",
+                pdfCollectedBy: "द्वारा एकत्रित:",
+                pdfDeliveredBy: "द्वारा वितरित:",
+                pdfSheetSerial: "शीट सीरियल:",
+                pdfReceiptNo: "रसीद संख्या:",
+                pdfDownloaded: "डाउनलोड किया गया:",
+                pdfSpaRecord: "स्पा रिकॉर्ड",
+                pdfCopyHanger: " — [प्रति 1: हैंगर]",
+                pdfCopyFolding: " — [प्रति 2: फ़ोल्डिंग]"
             }
         };
 
@@ -1735,6 +1831,7 @@
 
         function imprimerToutesLesChambresDuJour() {
             chargerDonneesLocalStorage();
+            const t = i18n[currentLang] || i18n.en;
             
             const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
 
@@ -1750,11 +1847,11 @@
             batchContainer.innerHTML = '';
 
             slipsToPrint.forEach((entry, idx) => {
-                let badgeText = 'Hotel Count (Free)';
-                if (entry.count_type === 'quota_extra') badgeText = 'Hotel & Extra';
-                else if (entry.count_type === 'guest') badgeText = 'Guest Count (Full)';
+                let badgeText = t.pdfHotelCountFree;
+                if (entry.count_type === 'quota_extra') badgeText = t.pdfHotelExtra;
+                else if (entry.count_type === 'guest') badgeText = t.pdfGuestCount;
 
-                const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('fr-FR') : '---';
+                const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
                 const itemsList = Object.values(entry.items || {});
 
                 let tableRowsHtml = '';
@@ -1782,42 +1879,42 @@
                 const totalCopies = isDoublePrint ? 2 : 1;
 
                 for (let c = 0; c < totalCopies; c++) {
-                    const copyLabel = isDoublePrint ? (c === 0 ? " — [COPY 1: HANGER]" : " — [COPY 2: FOLDING]") : "";
+                    const copyLabel = isDoublePrint ? (c === 0 ? t.pdfCopyHanger : t.pdfCopyFolding) : "";
                     
                     const receiptCard = document.createElement('div');
                     receiptCard.className = `p-6 bg-white text-stone-900 printable-page ${ (idx < slipsToPrint.length - 1 || c < totalCopies - 1) ? 'page-break' : ''}`;
                     receiptCard.innerHTML = `
                         <div class="text-center border-b border-stone-300 pb-3">
-                            <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
-                            <p class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
-                            <p class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">${entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'LAUNDRY SERVICE BORDEREAU'} ${copyLabel}</p>
+                            <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">${t.pdfHotelName}</h2>
+                            <p class="text-[9px] text-stone-500 uppercase tracking-widest">${t.pdfHotelSub}</p>
+                            <p class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">${entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService} ${copyLabel}</p>
                         </div>
 
                         <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 my-3 space-y-1">
                             <div class="flex justify-between items-center">
-                                <div><span class="text-xs text-stone-500 font-semibold">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span> <span class="text-xl font-serif-luxury font-bold text-stone-900">${entry.is_spa ? `#${entry.spa_serial}` : entry.room}</span></div>
-                                <div class="text-right"><p class="text-xs text-stone-500 font-bold">Date: ${dateFormatted}</p><span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">${entry.is_spa ? 'SPA Record' : badgeText}</span></div>
+                                <div><span class="text-xs text-stone-500 font-semibold">${entry.is_spa ? t.pdfSheetSerial : t.pdfRoom}</span> <span class="text-xl font-serif-luxury font-bold text-stone-900">${entry.is_spa ? `#${entry.spa_serial}` : entry.room}</span></div>
+                                <div class="text-right"><p class="text-xs text-stone-500 font-bold">${t.pdfDate} ${dateFormatted}</p><span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">${entry.is_spa ? t.pdfSpaRecord : badgeText}</span></div>
                             </div>
                             <div class="pt-2 border-t border-stone-200 text-xs space-y-0.5 text-stone-700 font-bold">
-                                <div class="flex justify-between"><span>${entry.is_spa ? 'Given By (Spa):' : 'Guest:'}</span> <span>${entry.guest_name || 'Guest'}</span></div>
+                                <div class="flex justify-between"><span>${entry.is_spa ? t.pdfGivenBy : t.pdfGuest}</span> <span>${entry.guest_name || 'Guest'}</span></div>
                                 ${entry.is_spa ? `
-                                    <div class="flex justify-between"><span>Collected By:</span> <span>${entry.options?.collected_by || '---'}</span></div>
-                                    <div class="flex justify-between"><span>Delivered By:</span> <span>${entry.options?.delivered_by || '---'}</span></div>
+                                    <div class="flex justify-between"><span>${t.pdfCollectedBy}</span> <span>${entry.options?.collected_by || '---'}</span></div>
+                                    <div class="flex justify-between"><span>${t.pdfDeliveredBy}</span> <span>${entry.options?.delivered_by || '---'}</span></div>
                                 ` : `
-                                    <div class="flex justify-between"><span>Quota / Status:</span> <span>${entry.quota || badgeText}</span></div>
-                                    <div class="flex justify-between text-amber-800"><span>Packaging:</span> <span>${entry.options?.service_style || 'Folding'}</span></div>
+                                    <div class="flex justify-between"><span>${t.pdfQuota}</span> <span>${entry.quota || badgeText}</span></div>
+                                    <div class="flex justify-between text-amber-800"><span>${t.pdfPackaging}</span> <span>${entry.options?.service_style || 'Folding'}</span></div>
                                 `}
                             </div>
                         </div>
 
                         <table class="w-full text-xs text-left border-collapse my-3">
-                            <thead><tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300"><th class="p-2">Item</th><th class="p-2 text-center">Qty</th><th class="p-2 text-right">Total</th></tr></thead>
+                            <thead><tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300"><th class="p-2">${t.pdfItem}</th><th class="p-2 text-center">${t.pdfQty}</th><th class="p-2 text-right">${t.pdfTotal}</th></tr></thead>
                             <tbody class="divide-y divide-stone-200 text-stone-800">${tableRowsHtml}</tbody>
                         </table>
 
                         <div class="bg-stone-50 p-3 rounded-xl text-xs space-y-1 font-medium text-stone-700 border border-stone-200">
-                            <div class="flex justify-between font-bold text-stone-900"><span>Total Pieces:</span><span>${entry.total_clothes} pieces</span></div>
-                            <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-1"><span>Grand Total:</span><span class="text-amber-700 font-serif-luxury">${(entry.total || 0).toFixed(2)} AED</span></div>
+                            <div class="flex justify-between font-bold text-stone-900"><span>${t.pdfTotalPieces}</span><span>${entry.total_clothes} pieces</span></div>
+                            <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-1"><span>${t.pdfGrandTotalText}</span><span class="text-amber-700 font-serif-luxury">${(entry.total || 0).toFixed(2)} AED</span></div>
                         </div>
                     `;
                     batchContainer.appendChild(receiptCard);
@@ -2401,14 +2498,33 @@
             const entry = cachedSlips.find(e => e.id == id);
             if (!entry) return;
 
-            let badgeText = 'Hotel Count (Free)';
+            const t = i18n[currentLang] || i18n.en;
+
+            // Update modal PDF template text dynamically using strict currentLang
+            document.getElementById('modalPdfHotelName').innerText = t.pdfHotelName;
+            document.getElementById('modalPdfHotelSub').innerText = t.pdfHotelSub;
+            document.getElementById('modalPdfLaundryService').innerText = entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService;
+            document.getElementById('modalThItem').innerText = t.pdfItem;
+            document.getElementById('modalThQty').innerText = t.pdfQty;
+            document.getElementById('modalThTotal').innerText = t.pdfTotal;
+            document.getElementById('modalLblTotalPieces').innerText = t.pdfTotalPieces;
+            document.getElementById('modalLblGrandTotal').innerText = t.pdfGrandTotalText;
+            document.getElementById('modalLblGarmentNotes').innerText = t.pdfNotes;
+            document.getElementById('modalLblGuestName').innerText = t.pdfGuest;
+            document.getElementById('modalLblRoomTyp').innerText = t.pdfRoomTyp;
+            document.getElementById('modalLblAgency').innerText = t.pdfAgency;
+            document.getElementById('modalLblQuota').innerText = t.pdfQuota;
+            document.getElementById('modalLblAgent').innerText = t.pdfAgent;
+            document.getElementById('modalLblPackaging').innerText = t.pdfPackaging;
+
+            let badgeText = t.pdfHotelCountFree;
             if (entry.count_type === 'quota_extra') {
-                badgeText = 'Hotel & Extra';
+                badgeText = t.pdfHotelExtra;
             } else if (entry.count_type === 'guest') {
-                badgeText = 'Guest Count (Full)';
+                badgeText = t.pdfGuestCount;
             }
 
-            document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? 'SPA Sheet:' : 'Room:';
+            document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;
             
             if (entry.is_spa) {
                 const serialClean = String(entry.spa_serial || entry.room || '').replace(/SPA\s*#?/gi, '').trim();
@@ -2417,9 +2533,9 @@
                 document.getElementById('modalRoomNumDisplay').innerText = entry.room;
             }
             
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('fr-FR') : '---';
-            document.getElementById('modalDate').innerText = `Date: ${dateFormatted}`;
-            document.getElementById('modalTypeBadgeInline').innerText = entry.is_spa ? 'SPA Record' : badgeText;
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
+            document.getElementById('modalDate').innerText = `${t.pdfDate} ${dateFormatted}`;
+            document.getElementById('modalTypeBadgeInline').innerText = entry.is_spa ? t.pdfSpaRecord : badgeText;
             document.getElementById('modalPackagingStyle').innerText = entry.options?.service_style || 'F — Folding';
 
             const agencyBox = document.getElementById('modalAgencyQuotaBox');
@@ -2526,7 +2642,7 @@
 
             const pContainer = document.getElementById('modalPhotoContainer');
             if (entry.photo) {
-                pContainer.innerHTML = `<div class="border-t border-stone-200 pt-2 mt-1"><p class="font-bold text-[10px] mb-1 text-stone-700">Proof Photo:</p><img src="${entry.photo}" class="w-full max-h-40 object-cover rounded-xl border border-stone-300"></div>`;
+                pContainer.innerHTML = `<div class="border-t border-stone-200 pt-2 mt-1"><p class="font-bold text-[10px] mb-1 text-stone-700">${t.pdfProofPhoto}</p><img src="${entry.photo}" class="w-full max-h-40 object-cover rounded-xl border border-stone-300"></div>`;
             } else {
                 pContainer.innerHTML = '';
             }
