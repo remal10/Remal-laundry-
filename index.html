@@ -567,6 +567,9 @@
                     <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
                         🔄 Import Auto (1 Clic)
                     </button>
+                    <button onclick="selectBackupFolder()" class="col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                        📁 Choisir le dossier téléphone (File System)
+                    </button>
                 </div>
 
                 <div class="flex bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
@@ -707,6 +710,34 @@
 
     <script>
         let deferredPrompt;
+        let globalDirHandle = null;
+
+        async function selectBackupFolder() {
+            try {
+                if (window.showDirectoryPicker) {
+                    globalDirHandle = await window.showDirectoryPicker();
+                    alert("✅ Dossier de sauvegarde direct configuré avec succès !");
+                } else {
+                    alert("⚠️ Votre navigateur ne supporte pas l'accès direct aux dossiers.");
+                }
+            } catch (err) {
+                console.warn("Folder picker cancelled:", err);
+            }
+        }
+
+        async function writeRecordToFile(record) {
+            if (!globalDirHandle) return;
+            try {
+                const filename = `Remal_Record_${record.room || record.spa_serial}_${Date.now()}.json`;
+                const fileHandle = await globalDirHandle.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(record, null, 2));
+                await writable.close();
+            } catch (err) {
+                console.warn("Could not write record to direct folder:", err);
+            }
+        }
+
         if ('serviceWorker' in navigator) {
             const swCode = `
                 const CACHE_NAME = 'remal-pwa-v15';
@@ -1541,6 +1572,8 @@
                 }
             }
 
+            await writeRecordToFile(targetRecord);
+
             reinitialiserFormulaire();
             switchMainSection('liveRecord');
         }
@@ -2105,7 +2138,7 @@
             reader.readAsDataURL(file);
         }
 
-        function saveLostFoundItem() {
+        async function saveLostFoundItem() {
             const name = document.getElementById('lfItemName').value.trim();
             const loc = document.getElementById('lfItemLoc').value.trim();
             const note = document.getElementById('lfItemNote').value.trim();
@@ -2118,6 +2151,7 @@
             const items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
             const newItem = {
                 id: Date.now(),
+                is_lost_found: true,
                 name: name,
                 loc: loc,
                 note: note,
@@ -2128,6 +2162,8 @@
 
             items.unshift(newItem);
             localStorage.setItem('remal_lost_found', JSON.stringify(items));
+
+            await writeRecordToFile(newItem);
 
             document.getElementById('lfItemName').value = '';
             document.getElementById('lfItemLoc').value = '';
@@ -2455,6 +2491,8 @@
                 try { await supabaseClient.from('laundry_slips').upsert(targetRecord); } catch(e) {}
             }
 
+            await writeRecordToFile(targetRecord);
+
             switchMainSection('liveRecord');
             return true;
         }
@@ -2500,7 +2538,6 @@
 
             const t = i18n[currentLang] || i18n.en;
 
-            // Update modal PDF template text dynamically using strict currentLang
             document.getElementById('modalPdfHotelName').innerText = t.pdfHotelName;
             document.getElementById('modalPdfHotelSub').innerText = t.pdfHotelSub;
             document.getElementById('modalPdfLaundryService').innerText = entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService;
