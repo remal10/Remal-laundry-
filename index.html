@@ -108,7 +108,7 @@
             body { background-color: #ffffff !important; color: #000000 !important; }
             .no-print { display: none !important; }
             .printable-page { background-color: #ffffff !important; color: #000000 !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .page-break { page-break-after: always; break-after: page; }
+            .page-break { page-break-after: always !important; break-after: page !important; display: block !important; }
         }
     </style>
 </head>
@@ -1915,7 +1915,8 @@
                     const copyLabel = isDoublePrint ? (c === 0 ? t.pdfCopyHanger : t.pdfCopyFolding) : "";
                     
                     const receiptCard = document.createElement('div');
-                    receiptCard.className = `p-6 bg-white text-stone-900 printable-page ${ (idx < slipsToPrint.length - 1 || c < totalCopies - 1) ? 'page-break' : ''}`;
+                    // CORRECTION APPLIQUÉE ICI : Ajout de la classe page-break pour forcer chaque bordereau sur une page unique
+                    receiptCard.className = `p-6 bg-white text-stone-900 printable-page page-break`;
                     receiptCard.innerHTML = `
                         <div class="text-center border-b border-stone-300 pb-3">
                             <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">${t.pdfHotelName}</h2>
