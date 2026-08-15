@@ -1899,15 +1899,15 @@
                     if (qty <= 0) return;
 
                     if (entry.is_spa) {
-                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1.5 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1.5">${qty}</td><td class="text-right font-bold px-2 py-1.5">${(qty * price).toFixed(2)} AED</td></tr>`;
+                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1">${(qty * price).toFixed(2)} AED</td></tr>`;
                     } else if (entry.count_type === 'hotel') {
-                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1.5 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1.5">${qty}</td><td class="text-right font-bold px-2 py-1.5 text-emerald-700">0.00 AED</td></tr>`;
+                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1 text-emerald-700">0.00 AED</td></tr>`;
                     } else if (entry.count_type === 'guest') {
-                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1.5 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1.5">${qty}</td><td class="text-right font-bold px-2 py-1.5">${(qty * price).toFixed(2)} AED</td></tr>`;
+                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1">${(qty * price).toFixed(2)} AED</td></tr>`;
                     } else if (entry.count_type === 'quota_extra') {
                         let chg = qty - freeQty; if (chg < 0) chg = 0;
-                        if (freeQty > 0) tableRowsHtml += `<tr class="border-b border-stone-200 text-emerald-700"><td class="py-1.5 px-2 font-bold">${name} (Free)</td><td class="text-center font-bold px-2 py-1.5">${freeQty}</td><td class="text-right font-bold px-2 py-1.5">0.00 AED</td></tr>`;
-                        if (chg > 0) tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1.5 px-2 font-bold">${name} (Extra)</td><td class="text-center font-bold px-2 py-1.5">${chg}</td><td class="text-right font-bold px-2 py-1.5">${(chg * price).toFixed(2)} AED</td></tr>`;
+                        if (freeQty > 0) tableRowsHtml += `<tr class="border-b border-stone-200 text-emerald-700"><td class="py-1 px-2 font-bold">${name} (Free)</td><td class="text-center font-bold px-2 py-1">${freeQty}</td><td class="text-right font-bold px-2 py-1">0.00 AED</td></tr>`;
+                        if (chg > 0) tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name} (Extra)</td><td class="text-center font-bold px-2 py-1">${chg}</td><td class="text-right font-bold px-2 py-1">${(chg * price).toFixed(2)} AED</td></tr>`;
                     }
                 });
 
@@ -1923,10 +1923,11 @@
                     totalDocumentsCount++;
                     const card = document.createElement('div');
                     
+                    // Hauteur maximisée et compacte pour empêcher tout débordement sur une seconde page
                     card.style.cssText = `
                         background: white;
                         color: #1c1917;
-                        padding: 20mm;
+                        padding: 10mm 15mm;
                         box-sizing: border-box;
                         page-break-after: always;
                         break-after: page;
@@ -1935,23 +1936,23 @@
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
-                        min-height: 270mm;
+                        height: 250mm;
                     `;
                     
                     card.innerHTML = `
                         <div>
-                            <div class="text-center border-b border-stone-300 pb-3">
-                                <h2 class="text-xl font-serif-luxury font-bold text-stone-950 tracking-wider">${t.pdfHotelName}</h2>
-                                <p class="text-[10px] text-stone-500 uppercase tracking-widest">${t.pdfHotelSub}</p>
-                                <p class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">${entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService} ${copy.label}</p>
+                            <div class="text-center border-b border-stone-300 pb-2">
+                                <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">${t.pdfHotelName}</h2>
+                                <p class="text-[9px] text-stone-500 uppercase tracking-widest">${t.pdfHotelSub}</p>
+                                <p class="text-xs font-bold text-amber-700 mt-0.5 uppercase tracking-wide">${entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService} ${copy.label}</p>
                             </div>
 
-                            <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 my-4 space-y-2">
+                            <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 my-2.5 space-y-1.5">
                                 <div class="flex justify-between items-center">
-                                    <div><span class="text-xs text-stone-500 font-semibold">${entry.is_spa ? t.pdfSheetSerial : t.pdfRoom}</span> <span class="text-2xl font-serif-luxury font-bold text-stone-900">${entry.is_spa ? `#${entry.spa_serial}` : entry.room}</span></div>
-                                    <div class="text-right"><p class="text-xs text-stone-500 font-bold">${t.pdfDate} ${dateFormatted}</p><span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300">${entry.is_spa ? t.pdfSpaRecord : badgeText}</span></div>
+                                    <div><span class="text-xs text-stone-500 font-semibold">${entry.is_spa ? t.pdfSheetSerial : t.pdfRoom}</span> <span class="text-xl font-serif-luxury font-bold text-stone-900">${entry.is_spa ? `#${entry.spa_serial}` : entry.room}</span></div>
+                                    <div class="text-right"><p class="text-xs text-stone-500 font-bold">${t.pdfDate} ${dateFormatted}</p><span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">${entry.is_spa ? t.pdfSpaRecord : badgeText}</span></div>
                                 </div>
-                                <div class="pt-2 border-t border-stone-200 text-xs space-y-1 text-stone-700 font-bold">
+                                <div class="pt-1.5 border-t border-stone-200 text-xs space-y-0.5 text-stone-700 font-bold">
                                     <div class="flex justify-between"><span>${entry.is_spa ? t.pdfGivenBy : t.pdfGuest}</span> <span class="text-stone-900">${entry.guest_name || 'Guest'}</span></div>
                                     ${entry.is_spa ? `
                                         <div class="flex justify-between"><span>${t.pdfCollectedBy}</span> <span>${entry.options?.collected_by || '---'}</span></div>
@@ -1963,15 +1964,15 @@
                                 </div>
                             </div>
 
-                            <table class="w-full text-xs text-left border-collapse my-4">
-                                <thead><tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300"><th class="p-2.5">${t.pdfItem}</th><th class="p-2.5 text-center">${t.pdfQty}</th><th class="p-2.5 text-right">${t.pdfTotal}</th></tr></thead>
+                            <table class="w-full text-xs text-left border-collapse my-2">
+                                <thead><tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300"><th class="p-2">${t.pdfItem}</th><th class="p-2 text-center">${t.pdfQty}</th><th class="p-2 text-right">${t.pdfTotal}</th></tr></thead>
                                 <tbody class="divide-y divide-stone-200 text-stone-800">${tableRowsHtml}</tbody>
                             </table>
                         </div>
 
-                        <div class="bg-stone-50 p-4 rounded-xl text-xs space-y-1.5 font-medium text-stone-700 border border-stone-200 mt-4">
+                        <div class="bg-stone-50 p-3 rounded-xl text-xs space-y-1 font-medium text-stone-700 border border-stone-200 mt-2">
                             <div class="flex justify-between font-bold text-stone-900"><span>${t.pdfTotalPieces}</span><span>${entry.total_clothes} pieces</span></div>
-                            <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-1.5"><span>${t.pdfGrandTotalText}</span><span class="text-amber-700 font-serif-luxury text-lg">${(entry.total || 0).toFixed(2)} AED</span></div>
+                            <div class="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-200 pt-1"><span>${t.pdfGrandTotalText}</span><span class="text-amber-700 font-serif-luxury text-base">${(entry.total || 0).toFixed(2)} AED</span></div>
                         </div>
                     `;
                     batchContainer.appendChild(card);
