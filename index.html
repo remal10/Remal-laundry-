@@ -1862,7 +1862,7 @@
             document.getElementById('lblBatchPrintText').innerText = `🖨️ Batch Print Selected (${selectedCount} Rooms)`;
         }
 
-        function imprimerToutesLesChambresDuJour() {
+        async function imprimerToutesLesChambresDuJour() {
             chargerDonneesLocalStorage();
             const t = i18n[currentLang] || i18n.en;
             
@@ -1879,7 +1879,7 @@
             const batchContainer = document.getElementById('batchPrintContainer');
             batchContainer.innerHTML = '';
 
-            slipsToPrint.forEach((entry, idx) => {
+            slipsToPrint.forEach((entry) => {
                 let badgeText = t.pdfHotelCountFree;
                 if (entry.count_type === 'quota_extra') badgeText = t.pdfHotelExtra;
                 else if (entry.count_type === 'guest') badgeText = t.pdfGuestCount;
@@ -1914,10 +1914,10 @@
                 for (let c = 0; c < totalCopies; c++) {
                     const copyLabel = isDoublePrint ? (c === 0 ? t.pdfCopyHanger : t.pdfCopyFolding) : "";
                     
-                    const receiptCard = document.createElement('div');
-                    // CORRECTION APPLIQUÉE ICI : Ajout de la classe page-break pour forcer chaque bordereau sur une page unique
-                    receiptCard.className = `p-6 bg-white text-stone-900 printable-page page-break`;
-                    receiptCard.innerHTML = `
+                    const pageWrapper = document.createElement('div');
+                    pageWrapper.style.cssText = "width: 100%; min-height: 270mm; box-sizing: border-box; page-break-after: always; break-after: page; background: white; padding: 10mm; margin-bottom: 20mm;";
+                    
+                    pageWrapper.innerHTML = `
                         <div class="text-center border-b border-stone-300 pb-3">
                             <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">${t.pdfHotelName}</h2>
                             <p class="text-[9px] text-stone-500 uppercase tracking-widest">${t.pdfHotelSub}</p>
@@ -1951,7 +1951,7 @@
                             <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-1"><span>${t.pdfGrandTotalText}</span><span class="text-amber-700 font-serif-luxury">${(entry.total || 0).toFixed(2)} AED</span></div>
                         </div>
                     `;
-                    batchContainer.appendChild(receiptCard);
+                    batchContainer.appendChild(pageWrapper);
                 }
             });
 
@@ -1960,7 +1960,7 @@
 
             const todayStr = new Date().toISOString().split('T')[0];
             const opt = {
-                margin:       8,
+                margin:       0,
                 filename:     `Remal_Batch_Laundry_Slips_${todayStr}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
