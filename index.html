@@ -371,10 +371,16 @@
                     <span id="activeRoomsCountBadge" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
                 </div>
                 
-                <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
-                    <i class="fas fa-print text-sm"></i>
-                    <span id="lblBatchPrintText">🖨️ Batch Print Today (0 Rooms)</span>
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                        <i class="fas fa-print text-sm"></i>
+                        <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
+                    </button>
+                    <button onclick="telechargerToutesLesChambresDuJour()" id="btnBatchDownload" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                        <i class="fas fa-download text-sm"></i>
+                        <span>📥 Download All (PDFs)</span>
+                    </button>
+                </div>
             </div>
 
             <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
@@ -1859,7 +1865,7 @@
 
         function updatePrintButtonCount() {
             const selectedCount = document.querySelectorAll('.room-checkbox:checked').length;
-            document.getElementById('lblBatchPrintText').innerText = `🖨️ Batch Print Selected (${selectedCount} Rooms)`;
+            document.getElementById('lblBatchPrintText').innerText = `🖨️ Batch Print (${selectedCount})`;
         }
 
         async function imprimerToutesLesChambresDuJour() {
@@ -1879,8 +1885,6 @@
             const batchContainer = document.getElementById('batchPrintContainer');
             batchContainer.innerHTML = '';
             batchContainer.classList.remove('hidden');
-
-            let totalDocumentsCount = 0;
 
             slipsToPrint.forEach(entry => {
                 let badgeText = t.pdfHotelCountFree;
@@ -1920,23 +1924,11 @@
                 ];
 
                 copies.forEach(copy => {
-                    totalDocumentsCount++;
                     const card = document.createElement('div');
-                    
-                    // Hauteur maximisée et compacte pour empêcher tout débordement sur une seconde page
                     card.style.cssText = `
-                        background: white;
-                        color: #1c1917;
-                        padding: 10mm 15mm;
-                        box-sizing: border-box;
-                        page-break-after: always;
-                        break-after: page;
-                        page-break-inside: avoid;
-                        break-inside: avoid;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: space-between;
-                        height: 250mm;
+                        background: white; color: #1c1917; padding: 10mm 15mm; box-sizing: border-box;
+                        page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid;
+                        display: flex; flex-direction: column; justify-content: space-between; height: 250mm;
                     `;
                     
                     card.innerHTML = `
@@ -1984,6 +1976,55 @@
                 batchContainer.classList.add('hidden');
                 batchContainer.innerHTML = '';
             }, 400);
+        }
+
+        /**
+         * FONCTION AJOUTÉE : Téléchargement massif un par un sous forme de fichiers PDF individuels
+         * Nommage structuré : Chambre_116_2026-08-16.pdf (compatible avec search_pdf.html)
+         */
+        async function telechargerToutesLesChambresDuJour() {
+            chargerDonneesLocalStorage();
+            const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+
+            if (selectedIds.length === 0) {
+                alert("⚠️ Aucune chambre sélectionnée pour le téléchargement.");
+                return;
+            }
+
+            const slipsToDownload = cachedSlips.filter(s => selectedIds.includes(s.id));
+            const dateJour = new Date().toISOString().split('T')[0];
+
+            for (const entry of slipsToDownload) {
+                // 1. Charger les données dans la modale existante
+                ouvrirModalDetails(entry.id);
+                await new Promise(resolve => setTimeout(resolve, 600));
+                
+                // 2. Définition du nom selon le type
+                let prefixe = 'Chambre';
+                if (entry.is_spa) prefixe = 'SPA';
+                else if (String(entry.room).toLowerCase().includes('lost')) prefixe = 'Lost';
+                
+                const identifiant = entry.is_spa ? (entry.spa_serial || '0000') : (entry.room || '000');
+                const nomFichier = `${prefixe}_${identifiant}_${dateJour}.pdf`;
+
+                // 3. Génération et téléchargement individuel du PDF
+                const element = document.getElementById('pdfExportArea');
+                const opt = {
+                    margin: 6,
+                    filename: nomFichier,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                await html2pdf().from(element).set(opt).save();
+                
+                // Pause pour éviter toute saturation du navigateur
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+            
+            fermerModal();
+            alert(`✅ ${slipsToDownload.length} bordereaux téléchargés un par un avec succès.`);
         }
 
         function switchArchiveFilter(filter) {
