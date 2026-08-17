@@ -1896,7 +1896,13 @@
                     badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
                 }
 
-                const identifierDisplay = entry.is_spa ? `SPA Sheet #${entry.spa_serial || '---'}` : `Room ${entry.room}`;
+                // Nom affiché explicitement "SPA - Date" ou numéro de série dans Active Rooms pour faciliter la recherche
+                let identifierDisplay = `Room ${entry.room}`;
+                if (entry.is_spa) {
+                    const entryDateOnly = entry.created_at ? entry.created_at.split('T')[0] : '';
+                    identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
+                }
+
                 const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${entry.total_clothes} pcs` : `👤 ${entry.guest_name || 'Guest'} · 📦 ${entry.total_clothes} pcs`;
 
                 itemDiv.innerHTML = `
