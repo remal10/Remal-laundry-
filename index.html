@@ -747,7 +747,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v17';
+                const CACHE_NAME = 'remal-pwa-v18';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1849,9 +1849,12 @@
             chargerDonneesLocalStorage();
             
             const todayStr = new Date().toISOString().split('T')[0];
+            
+            // Correction : On affiche dans Active Rooms tous les tickets du jour OU tous les tickets SPA validés récemment
             const activeTodaySlips = cachedSlips.filter(entry => {
+                if (entry.is_spa) return true; // Les SPA s'affichent toujours dans Active Rooms pour un accès direct rapide
                 if (!entry.created_at) return false;
-                const entryDateStr = new Date(entry.created_at).toISOString().split('T')[0];
+                const entryDateStr = entry.created_at.split('T')[0];
                 return entryDateStr === todayStr || entry.status === 'pickup_alert';
             });
 
@@ -1896,10 +1899,10 @@
                     badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
                 }
 
-                // Nom affiché explicitement "SPA - Date" ou numéro de série dans Active Rooms pour faciliter la recherche
+                // Format exigé : Nommé SPA et la date pour faciliter la recherche
                 let identifierDisplay = `Room ${entry.room}`;
                 if (entry.is_spa) {
-                    const entryDateOnly = entry.created_at ? entry.created_at.split('T')[0] : '';
+                    const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
                     identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
                 }
 
