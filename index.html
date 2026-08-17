@@ -352,9 +352,9 @@
                                 <th class="p-3.5">Room</th>
                                 <th class="p-3.5">Guest Name</th>
                                 <th class="p-3.5">Typ</th>
+                                <th class="p-3.5 text-amber-500">Company / Agency</th>
                                 <th class="p-3.5">Arrival</th>
                                 <th class="p-3.5">Departure</th>
-                                <th class="p-3.5">Agency</th>
                                 <th class="p-3.5">Laundry Status</th>
                             </tr>
                         </thead>
@@ -746,7 +746,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v15';
+                const CACHE_NAME = 'remal-pwa-v17';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1143,6 +1143,12 @@
                 const item = pmsDatabase[room];
                 const hasLaundry = !item.isChargeable;
                 let rowClass = hasLaundry ? "laundry-row" : "";
+                
+                const isMissingAgency = (!item.agency || item.agency === "---" || item.agency === "Direct" || item.agency === "N/A");
+                if (isMissingAgency) {
+                    rowClass += " bg-yellow-950/30 text-yellow-200 border-yellow-800";
+                }
+
                 let statusHTML = item.isChargeable ? `<span class="badge-chargeable">Chargeable</span>` : `<span class="badge-green">Included (${item.quotaText})</span>`;
 
                 html += `
@@ -1150,9 +1156,9 @@
                         <td class="p-3.5"><strong>${room}</strong></td>
                         <td class="p-3.5">${item.guestName}</td>
                         <td class="p-3.5">${item.roomTyp}</td>
+                        <td class="p-3.5 font-bold ${isMissingAgency ? 'text-yellow-400' : 'text-stone-200'}">${item.agency || '---'}</td>
                         <td class="p-3.5">${item.arrival || '---'}</td>
                         <td class="p-3.5">${item.departure || '---'}</td>
-                        <td class="p-3.5">${item.agency}</td>
                         <td class="p-3.5">${statusHTML}</td>
                     </tr>
                 `;
@@ -1652,6 +1658,33 @@
             }
         }
 
+        const companyKeywords = [
+            'llc', 'inc', 'w.l.l', 'wll', 'corp', 'corporation', 'company', 'co.',
+            'ltd', 'limited', 'energy', 'systems', 'services', 'tourism', 'travel',
+            'holdings', 'trading', 'contracting', 'establishment', 'est.', 'group',
+            'expedia', 'booking', 'agoda', 'tui', 'emirates', 'rotana', 'marriott',
+            'hilton', 'saudi', 'qatar', 'adnoc', 'excelerate', 'generation', 'homat',
+            'gulf', 'international', 'global', 'solutions', 'enterprises', 'hunter'
+        ];
+
+        function isPAXOrInvalid(val) {
+            if (!val) return true;
+            let cleaned = val.trim();
+            if (/^\d+[\/\-\.]\d+[\/\-\.]\d+$/.test(cleaned)) return true;
+            if (/^[\d\/\s\-\.]+$/.test(cleaned)) return true;
+            if (/\d{2}\/\d{2}\/\d{4}/.test(cleaned)) return true;
+            const blockedCodes = ['DLXR', 'BBLA', 'HBDL', 'REG', 'IN', 'CN', 'EMA', 'SAM', 'CORP', 'B1', 'B2', '1/0/0', '2/0/0'];
+            if (blockedCodes.includes(cleaned.toUpperCase())) return true;
+            return false;
+        }
+
+        function sanitizeAgencyName(agencyStr) {
+            if (!agencyStr || isPAXOrInvalid(agencyStr)) return "Direct";
+            let cleaned = agencyStr.trim();
+            if (isPAXOrInvalid(cleaned)) return "Direct";
+            return cleaned;
+        }
+
         async function processTextData(rawData) {
             const counterContainer = document.getElementById('massRecordCounter');
 
@@ -1667,12 +1700,13 @@
             let currentRoomTyp = "";
             let currentArrival = "";
             let currentDeparture = "";
-            let currentAgency = "";
+            let currentAgency = "Direct";
             let accumulatedText = "";
 
             lines.forEach((line) => {
                 const trimmed = line.trim();
                 if (!trimmed) return;
+                
                 const cols = line.split('\t').map(c => c.trim()).filter(c => c !== "");
 
                 if (/^\d{3,4}$/.test(cols[0])) {
@@ -1683,30 +1717,52 @@
                             roomTyp: currentRoomTyp || 'DLXR',
                             arrival: currentArrival,
                             departure: currentDeparture,
-                            agency: currentAgency || 'Direct',
+                            agency: sanitizeAgencyName(currentAgency),
                             fullContext: accumulatedText.toLowerCase()
                         });
                     }
                     currentRoom = cols[0];
-                    
-                    let potentialCol1 = cols[1] || "";
-                    let potentialCol3 = cols[3] || "";
+                    currentGuest = "";
+                    currentRoomTyp = "DLXR";
+                    currentArrival = "";
+                    currentDeparture = "";
+                    currentAgency = "Direct";
 
-                    if (potentialCol1.length <= 5 && /^[A-Z]+$/.test(potentialCol1)) {
-                        currentRoomTyp = potentialCol1;
-                        currentGuest = potentialCol3 || "Unknown Guest";
-                    } else {
-                        currentGuest = potentialCol1;
-                        currentRoomTyp = potentialCol3.length <= 6 ? potentialCol3 : "DLXR";
+                    for (let i = 1; i < cols.length; i++) {
+                        let val = cols[i];
+                        let valLower = val.toLowerCase();
+
+                        if (isPAXOrInvalid(val)) continue;
+
+                        const isCompany = companyKeywords.some(kw => valLower.includes(kw));
+                        if (isCompany) {
+                            currentAgency = val;
+                            continue;
+                        }
+
+                        if (val.length <= 5 && /^[A-Z]+$/.test(val) && !currentRoomTyp) {
+                            currentRoomTyp = val;
+                        } 
+                        else if (/\d{2}\/\d{2}\/\d{4}/.test(val)) {
+                            if (!currentArrival) currentArrival = val;
+                            else if (!currentDeparture) currentDeparture = val;
+                        } 
+                        else if (!currentGuest && (val.includes(',') || val.includes('Mr.') || val.includes('Ms.'))) {
+                            currentGuest = val;
+                        }
                     }
 
-                    currentArrival = cols.find(c => /\d{2}\/\d{2}\/\d{4}/.test(c)) || "";
-                    currentAgency = cols.find(c => /LLC|Staff|Expedia|Booking|Toshiba/i.test(c)) || cols[6] || "";
+                    let candidateCompany = cols.find(c => companyKeywords.some(kw => c.toLowerCase().includes(kw)) && !isPAXOrInvalid(c));
+                    if (candidateCompany) {
+                        currentAgency = candidateCompany;
+                    }
+
                     accumulatedText = line;
                 } else {
                     accumulatedText += " " + line;
-                    if (!currentAgency && cols.length > 0) {
-                        currentAgency = cols.find(c => /LLC|Staff|Expedia|Booking|Toshiba/i.test(c)) || currentAgency;
+                    let candidateCompany = cols.find(c => companyKeywords.some(kw => c.toLowerCase().includes(kw)) && !isPAXOrInvalid(c));
+                    if (candidateCompany && (currentAgency === "Direct" || isPAXOrInvalid(currentAgency))) {
+                        currentAgency = candidateCompany;
                     }
                 }
             });
@@ -1718,7 +1774,7 @@
                     roomTyp: currentRoomTyp || 'DLXR',
                     arrival: currentArrival,
                     departure: currentDeparture,
-                    agency: currentAgency || 'Direct',
+                    agency: sanitizeAgencyName(currentAgency),
                     fullContext: accumulatedText.toLowerCase()
                 });
             }
@@ -1978,10 +2034,6 @@
             }, 400);
         }
 
-        /**
-         * FONCTION AJOUTÉE : Téléchargement massif un par un sous forme de fichiers PDF individuels
-         * Nommage structuré : Chambre_116_2026-08-16.pdf (compatible avec search_pdf.html)
-         */
         async function telechargerToutesLesChambresDuJour() {
             chargerDonneesLocalStorage();
             const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
@@ -1995,11 +2047,9 @@
             const dateJour = new Date().toISOString().split('T')[0];
 
             for (const entry of slipsToDownload) {
-                // 1. Charger les données dans la modale existante
                 ouvrirModalDetails(entry.id);
                 await new Promise(resolve => setTimeout(resolve, 600));
                 
-                // 2. Définition du nom selon le type
                 let prefixe = 'Chambre';
                 if (entry.is_spa) prefixe = 'SPA';
                 else if (String(entry.room).toLowerCase().includes('lost')) prefixe = 'Lost';
@@ -2007,7 +2057,6 @@
                 const identifiant = entry.is_spa ? (entry.spa_serial || '0000') : (entry.room || '000');
                 const nomFichier = `${prefixe}_${identifiant}_${dateJour}.pdf`;
 
-                // 3. Génération et téléchargement individuel du PDF
                 const element = document.getElementById('pdfExportArea');
                 const opt = {
                     margin: 6,
@@ -2018,8 +2067,6 @@
                 };
 
                 await html2pdf().from(element).set(opt).save();
-                
-                // Pause pour éviter toute saturation du navigateur
                 await new Promise(resolve => setTimeout(resolve, 800));
             }
             
@@ -2560,25 +2607,26 @@
             const serialNo = document.getElementById('spa-serial-no').value.trim();
             
             const pdfContent = element.cloneNode(true);
+            pdfContent.classList.remove('hidden');
+
             const actionButtons = pdfContent.querySelector('#spa-action-buttons');
             if (actionButtons) actionButtons.remove();
 
-            const now = new Date();
-            const dateDownload = now.toLocaleDateString('fr-FR');
-            const hourDownload = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-            
             const footer = pdfContent.querySelector('#pdf-footer-template');
             if (footer) {
                 footer.classList.remove('hidden');
-                pdfContent.querySelector('#pdf-footer-serial-no').innerText = serialNo;
-                pdfContent.querySelector('#pdf-footer-download-time').innerText = `${dateDownload} à ${hourDownload}`;
+                const now = new Date();
+                const serialEl = pdfContent.querySelector('#pdf-footer-serial-no');
+                const timeEl = pdfContent.querySelector('#pdf-footer-download-time');
+                if (serialEl) serialEl.innerText = serialNo;
+                if (timeEl) timeEl.innerText = `${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`;
             }
 
             const opt = {
                 margin:       10,
                 filename:     `V_Element_Spa_Laundry_#${serialNo}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', putOnlyUsedFonts: true }
             };
 
