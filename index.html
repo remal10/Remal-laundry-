@@ -388,126 +388,127 @@
             </div>
         </div>
 
-        <section id="spa-laundry-section" class="hidden remal-card p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto text-stone-200 printable-page">
+        <!-- SECTION SPA - DESIGN PAGE BLANCHE IDENTIQUE AUX AUTRES BORDEREAUX -->
+        <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
             
             <input type="hidden" id="editingSpaId" value="">
 
-            <div class="border-b border-[#2f2820] pb-6 flex justify-between items-center">
+            <div class="border-b border-stone-300 pb-6 flex justify-between items-center">
                 <div class="space-y-1">
-                    <h2 class="text-xl font-serif-luxury font-bold text-[#DCA773]" id="spaFormTitleLabel">V Element SPA Laundry Daily Record Sheet</h2>
-                    <div class="flex items-center gap-2 text-xs text-stone-400">
+                    <h2 class="text-xl font-serif-luxury font-bold text-stone-950" id="spaFormTitleLabel">V Element SPA Laundry Daily Record Sheet</h2>
+                    <div class="flex items-center gap-2 text-xs text-stone-500">
                         <span class="font-bold uppercase tracking-wider">Date :</span>
-                        <span id="spa-current-date" class="font-semibold text-stone-200"></span>
+                        <span id="spa-current-date" class="font-semibold text-stone-800"></span>
                     </div>
                 </div>
                 <div class="text-right">
                     <div class="flex flex-col items-end">
-                        <span class="block text-base sm:text-lg font-black uppercase tracking-widest text-[#DCA773] leading-none">REMAL HOTEL & VILLAS</span>
-                        <span class="text-[9px] uppercase tracking-wider text-stone-400 font-bold mt-1">AL RUWAIS CITY, ABU DHABI</span>
+                        <span class="block text-base sm:text-lg font-black uppercase tracking-widest text-amber-700 leading-none">REMAL HOTEL & VILLAS</span>
+                        <span class="text-[9px] uppercase tracking-wider text-stone-500 font-bold mt-1">AL RUWAIS CITY, ABU DHABI</span>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div class="flex items-center gap-2 border-b border-[#2f2820] py-2">
-                    <span class="text-xs font-bold text-stone-400 uppercase min-w-[120px]">Given By (Spa):</span>
-                    <input type="text" id="spa-given-by" class="w-full font-semibold focus:outline-none border-none p-0 bg-transparent text-xs" placeholder="Spa Employee Name">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-stone-50 p-4 rounded-2xl border border-stone-200">
+                <div class="flex items-center gap-2 border-b border-stone-300 py-2">
+                    <span class="text-xs font-bold text-stone-600 uppercase min-w-[120px]">Given By (Spa):</span>
+                    <input type="text" id="spa-given-by" class="w-full font-semibold focus:outline-none border-none p-0 bg-transparent text-xs text-stone-900" placeholder="Spa Employee Name">
                 </div>
-                <div class="flex items-center gap-2 border-b border-[#2f2820] py-2 justify-end">
-                    <span class="text-xs font-bold text-stone-400 uppercase">SERIAL NO:</span>
-                    <input type="text" id="spa-serial-no" class="w-32 text-right text-sm font-black text-rose-400 ml-2 remal-input rounded-xl px-3 py-1.5" placeholder="Serial">
+                <div class="flex items-center gap-2 border-b border-stone-300 py-2 justify-end">
+                    <span class="text-xs font-bold text-stone-600 uppercase">SERIAL NO:</span>
+                    <input type="text" id="spa-serial-no" class="w-32 text-right text-sm font-black text-amber-700 ml-2 bg-white border border-stone-300 rounded-xl px-3 py-1.5" placeholder="Serial">
                 </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse border border-[#2f2820] rounded-2xl overflow-hidden bg-[#0f0e0c]">
+                <table class="w-full text-left border-collapse border border-stone-300 rounded-2xl overflow-hidden bg-white">
                     <thead>
-                        <tr class="bg-[#181614] text-[#DCA773] text-xs uppercase tracking-wider text-center">
+                        <tr class="bg-stone-100 text-stone-900 text-xs uppercase tracking-wider text-center border-b border-stone-300 font-bold">
                             <th class="p-3.5 text-left">Item</th>
                             <th class="p-3.5">Quantity</th>
                             <th class="p-3.5">Rate (AED)</th>
                             <th class="p-3.5">Total Amount (AED)</th>
                         </tr>
                     </thead>
-                    <tbody class="text-xs font-medium divide-y divide-[#2f2820]">
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3.5 font-semibold">BATH TOWEL</td>
+                    <tbody class="text-xs font-medium divide-y divide-stone-200 text-stone-800">
+                        <tr class="hover:bg-stone-50">
+                            <td class="p-3.5 font-bold">BATH TOWEL</td>
                             <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center remal-input rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
+                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
                             </td>
-                            <td class="p-3.5 text-center text-stone-400">2.00</td>
-                            <td class="p-3.5 text-center font-bold spa-row-amount">0.00</td>
+                            <td class="p-3.5 text-center text-stone-600">2.00</td>
+                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
                         </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3.5 font-semibold">HAND TOWEL</td>
+                        <tr class="hover:bg-stone-50">
+                            <td class="p-3.5 font-bold">HAND TOWEL</td>
                             <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center remal-input rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
+                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
                             </td>
-                            <td class="p-3.5 text-center text-stone-400">1.00</td>
-                            <td class="p-3.5 text-center font-bold spa-row-amount">0.00</td>
+                            <td class="p-3.5 text-center text-stone-600">1.00</td>
+                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
                         </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3.5 font-semibold">BED SHEET</td>
+                        <tr class="hover:bg-stone-50">
+                            <td class="p-3.5 font-bold">BED SHEET</td>
                             <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center remal-input rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
+                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
                             </td>
-                            <td class="p-3.5 text-center text-stone-400">2.00</td>
-                            <td class="p-3.5 text-center font-bold spa-row-amount">0.00</td>
+                            <td class="p-3.5 text-center text-stone-600">2.00</td>
+                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
                         </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3.5 font-semibold">PILLOW CASE</td>
+                        <tr class="hover:bg-stone-50">
+                            <td class="p-3.5 font-bold">PILLOW CASE</td>
                             <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center remal-input rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
+                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
                             </td>
-                            <td class="p-3.5 text-center text-stone-400">1.00</td>
-                            <td class="p-3.5 text-center font-bold spa-row-amount">0.00</td>
+                            <td class="p-3.5 text-center text-stone-600">1.00</td>
+                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
                         </tr>
-                        <tr class="hover:bg-[#211e1a]">
-                            <td class="p-3.5 font-semibold">BATHROBE</td>
+                        <tr class="hover:bg-stone-50">
+                            <td class="p-3.5 font-bold">BATHROBE</td>
                             <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center remal-input rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
+                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
                             </td>
-                            <td class="p-3.5 text-center text-stone-400">2.00</td>
-                            <td class="p-3.5 text-center font-bold spa-row-amount">0.00</td>
+                            <td class="p-3.5 text-center text-stone-600">2.00</td>
+                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
                         </tr>
-                        <tr class="bg-[#181614] font-bold">
+                        <tr class="bg-stone-100 font-bold text-stone-950">
                             <td colspan="3" class="p-3.5 text-right uppercase tracking-wider text-xs">Grand Total :</td>
-                            <td id="spa-grand-total" class="p-3.5 text-center text-[#DCA773] text-lg font-black">0.00 AED</td>
+                            <td id="spa-grand-total" class="p-3.5 text-center text-amber-700 text-lg font-black">0.00 AED</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820]">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-stone-50 rounded-2xl border border-stone-200">
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-stone-400 uppercase mb-1">Collected By (Laundry) :</label>
-                        <input type="text" id="spa-collected-by" class="w-full px-3.5 py-2.5 remal-input rounded-xl font-semibold text-xs" placeholder="Laundry Collection Agent">
+                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Collected By (Laundry) :</label>
+                        <input type="text" id="spa-collected-by" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 text-stone-900 rounded-xl font-semibold text-xs" placeholder="Laundry Collection Agent">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-stone-400 uppercase mb-1">Collection Date & Time :</label>
+                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Collection Date & Time :</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="spa-collection-date" class="px-3 py-2 remal-input rounded-xl font-medium text-xs cursor-pointer">
-                            <input type="time" id="spa-collection-time" class="px-3 py-2 remal-input rounded-xl font-medium text-xs cursor-pointer">
+                            <input type="date" id="spa-collection-date" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
+                            <input type="time" id="spa-collection-time" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
                         </div>
                     </div>
                 </div>
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-stone-400 uppercase mb-1">Delivered By (Laundry) :</label>
-                        <input type="text" id="spa-delivered-by" class="w-full px-3.5 py-2.5 remal-input rounded-xl font-semibold text-xs" placeholder="Laundry Delivery Agent">
+                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Delivered By (Laundry) :</label>
+                        <input type="text" id="spa-delivered-by" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 text-stone-900 rounded-xl font-semibold text-xs" placeholder="Laundry Delivery Agent">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-stone-400 uppercase mb-1">Delivery Date & Time :</label>
+                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Delivery Date & Time :</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="spa-delivery-date" class="px-3 py-2 remal-input rounded-xl font-medium text-xs cursor-pointer">
-                            <input type="time" id="spa-delivery-time" class="px-3 py-2 remal-input rounded-xl font-medium text-xs cursor-pointer">
+                            <input type="date" id="spa-delivery-date" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
+                            <input type="time" id="spa-delivery-time" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="pdf-footer-template" class="hidden border-t border-[#2f2820] pt-3 text-stone-400 text-[10px] flex justify-between items-center">
+            <div id="pdf-footer-template" class="hidden border-t border-stone-300 pt-3 text-stone-600 text-[10px] flex justify-between items-center">
                 <div>Receipt No: <span id="pdf-footer-serial-no" class="font-bold">--</span></div>
                 <div class="text-right">Downloaded: <span id="pdf-footer-download-time" class="font-semibold"></span></div>
             </div>
@@ -847,7 +848,7 @@
                 lblGrandTotal: "Grand Total:", btnPhotoProof: "📷 Take Proof Photo (Camera)",
                 btnSaveRecord: "💾 Save Record", lblArchiveTitle: "Archives & Search",
                 lblLoadingRecords: "Loading records...", lblRoomError: "Invalid room number!",
-                lblActiveRoomsHeader: "Active Rooms",
+                lblActiveRoomsHeader: "Active Rooms & SPA",
                 pdfHotelName: "REMAL HOTEL & VILLAS",
                 pdfHotelSub: "Al Ruwais City, Abu Dhabi – UAE",
                 pdfLaundryService: "LAUNDRY SERVICE",
@@ -887,7 +888,7 @@
                 lblGrandTotal: "المجموع الإجمالي:", btnPhotoProof: "📷 التقاط صورة إثبات (كاميرا)",
                 btnSaveRecord: "💾 حفظ السجل", lblArchiveTitle: "الأرشيف والبحث",
                 lblLoadingRecords: "جاري تحميل السجلات...", lblRoomError: "رقم الغرفة غير صحيح!",
-                lblActiveRoomsHeader: "الغرف النشطة",
+                lblActiveRoomsHeader: "الغرف النشطة والسبا",
                 pdfHotelName: "فندق وفيلا رمال",
                 pdfHotelSub: "مدينة الرويس، أبوظبي - الإمارات العربية المتحدة",
                 pdfLaundryService: "خدمة المغسلة",
@@ -927,7 +928,7 @@
                 lblGrandTotal: "कुल योग:", btnPhotoProof: "📷 प्रमाण फोटो लें (कैमरा)",
                 btnSaveRecord: "💾 रिकॉर्ड सुरक्षित करें", lblArchiveTitle: "अभिलेख और खोज",
                 lblLoadingRecords: "रिकॉर्ड लोड हो रहे हैं...", lblRoomError: "अमान्य कमरा नंबर!",
-                lblActiveRoomsHeader: "सक्रिय कमरे",
+                lblActiveRoomsHeader: "सक्रिय कमरे और स्पा",
                 pdfHotelName: "रेमल होटल एंड विला",
                 pdfHotelSub: "अल रुwais सिटी, अबू धाबी - यूएई",
                 pdfLaundryService: "लॉन्ड्रि सेवा",
@@ -1854,12 +1855,16 @@
                 return entryDateStr === todayStr || entry.status === 'pickup_alert';
             });
 
-            activeTodaySlips.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
+            activeTodaySlips.sort((a, b) => {
+                if (a.is_spa && !b.is_spa) return -1;
+                if (!a.is_spa && b.is_spa) return 1;
+                return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
+            });
 
             document.getElementById('activeRoomsCountBadge').innerText = activeTodaySlips.length;
 
             if (activeTodaySlips.length === 0) {
-                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room records for today.</p>`;
+                container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room or SPA records for today.</p>`;
                 updatePrintButtonCount();
                 return;
             }
@@ -1880,7 +1885,10 @@
 
                 let badgeText = 'Hotel Count';
                 let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
-                if(entry.count_type === 'quota_extra') {
+                if(entry.is_spa) {
+                    badgeText = 'SPA Daily Sheet';
+                    badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
+                } else if(entry.count_type === 'quota_extra') {
                     badgeText = 'Hotel & Extra';
                     badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
                 } else if(entry.count_type === 'guest') {
@@ -1888,7 +1896,8 @@
                     badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
                 }
 
-                const identifierDisplay = entry.is_spa ? `SPA: ${entry.guest_name} (#${entry.spa_serial || '---'})` : `Room ${entry.room}`;
+                const identifierDisplay = entry.is_spa ? `SPA Sheet #${entry.spa_serial || '---'}` : `Room ${entry.room}`;
+                const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${entry.total_clothes} pcs` : `👤 ${entry.guest_name || 'Guest'} · 📦 ${entry.total_clothes} pcs`;
 
                 itemDiv.innerHTML = `
                     <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[#DCA773] cursor-pointer" onchange="updatePrintButtonCount()">
@@ -1896,14 +1905,14 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <span class="font-serif-luxury font-bold text-[#DCA773] text-base">${identifierDisplay}</span>
+                                    <span class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[#DCA773]'} text-base">${identifierDisplay}</span>
                                     <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeText}</span>
                                 </div>
-                                <p class="text-[10px] text-stone-400 mt-1 flex items-center gap-1">👤 ${entry.guest_name || 'Guest'} · 📦 ${entry.total_clothes} pcs</p>
+                                <p class="text-[10px] text-stone-400 mt-1 flex items-center gap-1">${subDesc}</p>
                             </div>
                             <div class="text-right">
-                                <p class="font-serif-luxury font-bold text-[#DCA773] text-sm">${(entry.total || 0).toFixed(2)} AED ${entry.photo ? '📸' : ''}</p>
-                                <p class="text-[9px] text-stone-500 font-semibold">${entry.options?.service_style || 'Folding'}</p>
+                                <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[#DCA773]'} text-sm">${(entry.total || 0).toFixed(2)} AED</p>
+                                <p class="text-[9px] text-stone-500 font-semibold">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.options?.service_style || 'Folding')}</p>
                             </div>
                         </div>
                     </div>
@@ -1931,12 +1940,16 @@
             const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
 
             if (selectedIds.length === 0) {
-                alert("⚠️ Aucune chambre sélectionnée pour l'impression.");
+                alert("⚠️ Aucune sélection pour l'impression.");
                 return;
             }
 
             const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(s.id));
-            slipsToPrint.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
+            slipsToPrint.sort((a, b) => {
+                if (a.is_spa && !b.is_spa) return -1;
+                if (!a.is_spa && b.is_spa) return 1;
+                return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
+            });
 
             const batchContainer = document.getElementById('batchPrintContainer');
             batchContainer.innerHTML = '';
@@ -1955,7 +1968,6 @@
                     let name = item.name || 'Article';
                     let qty = parseInt(item.qty) || 0;
                     let price = parseFloat(item.price) || 0;
-                    let freeQty = parseInt(item.freeQty) || 0;
                     if (qty <= 0) return;
 
                     if (entry.is_spa) {
@@ -1965,6 +1977,7 @@
                     } else if (entry.count_type === 'guest') {
                         tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1">${(qty * price).toFixed(2)} AED</td></tr>`;
                     } else if (entry.count_type === 'quota_extra') {
+                        let freeQty = parseInt(item.freeQty) || 0;
                         let chg = qty - freeQty; if (chg < 0) chg = 0;
                         if (freeQty > 0) tableRowsHtml += `<tr class="border-b border-stone-200 text-emerald-700"><td class="py-1 px-2 font-bold">${name} (Free)</td><td class="text-center font-bold px-2 py-1">${freeQty}</td><td class="text-right font-bold px-2 py-1">0.00 AED</td></tr>`;
                         if (chg > 0) tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name} (Extra)</td><td class="text-center font-bold px-2 py-1">${chg}</td><td class="text-right font-bold px-2 py-1">${(chg * price).toFixed(2)} AED</td></tr>`;
@@ -2039,7 +2052,7 @@
             const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
 
             if (selectedIds.length === 0) {
-                alert("⚠️ Aucune chambre sélectionnée pour le téléchargement.");
+                alert("⚠️ Aucun élément sélectionné.");
                 return;
             }
 
@@ -2052,7 +2065,6 @@
                 
                 let prefixe = 'Chambre';
                 if (entry.is_spa) prefixe = 'SPA';
-                else if (String(entry.room).toLowerCase().includes('lost')) prefixe = 'Lost';
                 
                 const identifiant = entry.is_spa ? (entry.spa_serial || '0000') : (entry.room || '000');
                 const nomFichier = `${prefixe}_${identifiant}_${dateJour}.pdf`;
@@ -2071,7 +2083,7 @@
             }
             
             fermerModal();
-            alert(`✅ ${slipsToDownload.length} bordereaux téléchargés un par un avec succès.`);
+            alert(`✅ ${slipsToDownload.length} bordereaux téléchargés avec succès.`);
         }
 
         function switchArchiveFilter(filter) {
@@ -2483,7 +2495,7 @@
 
         function calculateSpaTotal() {
             let grandTotal = 0;
-            const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
+            const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
             
             rows.forEach(row => {
                 const input = row.querySelector('.spa-qty-input');
@@ -2521,7 +2533,7 @@
 
             let spaItems = {};
             let totalClothes = 0;
-            const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
+            const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
             rows.forEach(row => {
                 const input = row.querySelector('.spa-qty-input');
                 const qty = parseInt(input.value) || 0;
@@ -2812,7 +2824,7 @@
                 document.getElementById('spa-collected-by').value = entry.options?.collected_by || '';
                 document.getElementById('spa-delivered-by').value = entry.options?.delivered_by || '';
 
-                const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-\\[\\#181614\\])');
+                const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
                 rows.forEach(row => {
                     const input = row.querySelector('.spa-qty-input');
                     const itemName = row.querySelector('td').innerText;
