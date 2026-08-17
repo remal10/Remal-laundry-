@@ -367,7 +367,7 @@
         <div id="sectionLiveRecord" class="space-y-4 no-print">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
                 <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms</span>
+                    <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms & SPA</span>
                     <span id="activeRoomsCountBadge" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
                 </div>
                 
@@ -2635,7 +2635,7 @@
             }
 
             const opt = {
-                margin:       10,
+                margin:       [4, 4, 4, 4],
                 filename:     `V_Element_Spa_Laundry_#${serialNo}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
