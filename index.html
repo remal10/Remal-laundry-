@@ -747,7 +747,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v18';
+                const CACHE_NAME = 'remal-pwa-v19';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1850,9 +1850,8 @@
             
             const todayStr = new Date().toISOString().split('T')[0];
             
-            // Correction : On affiche dans Active Rooms tous les tickets du jour OU tous les tickets SPA validés récemment
             const activeTodaySlips = cachedSlips.filter(entry => {
-                if (entry.is_spa) return true; // Les SPA s'affichent toujours dans Active Rooms pour un accès direct rapide
+                if (entry.is_spa) return true;
                 if (!entry.created_at) return false;
                 const entryDateStr = entry.created_at.split('T')[0];
                 return entryDateStr === todayStr || entry.status === 'pickup_alert';
@@ -1899,7 +1898,6 @@
                     badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
                 }
 
-                // Format exigé : Nommé SPA et la date pour faciliter la recherche
                 let identifierDisplay = `Room ${entry.room}`;
                 if (entry.is_spa) {
                     const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
@@ -2079,16 +2077,26 @@
                 const nomFichier = `${prefixe}_${identifiant}_${dateJour}.pdf`;
 
                 const element = document.getElementById('pdfExportArea');
+                element.style.display = 'block';
+
                 const opt = {
                     margin: 6,
                     filename: nomFichier,
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
-                await html2pdf().from(element).set(opt).save();
-                await new Promise(resolve => setTimeout(resolve, 800));
+                await new Promise(resolve => setTimeout(async () => {
+                    try {
+                        await html2pdf().from(element).set(opt).save();
+                    } catch(e) {
+                        console.error("PDF export error:", e);
+                    }
+                    resolve();
+                }, 400));
+
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
             
             fermerModal();
@@ -2610,8 +2618,13 @@
             }
 
             sauvegarderDonneesLocalStorage();
+
             if (supabaseClient && targetRecord) {
-                try { await supabaseClient.from('laundry_slips').upsert(targetRecord); } catch(e) {}
+                try {
+                    await supabaseClient.from('laundry_slips').upsert(targetRecord);
+                } catch(e) {
+                    console.warn("Erreur Supabase SPA, conservé en local:", e);
+                }
             }
 
             await writeRecordToFile(targetRecord);
@@ -2878,18 +2891,28 @@
             }
         }
 
-        function genererPDF() {
+        async function genererPDF() {
             const element = document.getElementById('pdfExportArea');
             const roomVal = document.getElementById('modalRoomNumDisplay').innerText.replace('#','');
             
+            element.style.display = 'block';
+
             const opt = {
                 margin:       6,
                 filename:     `Laundry_Slip_${roomVal}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', putOnlyUsedFonts: true }
             };
-            html2pdf().set(opt).from(element).save();
+
+            setTimeout(async () => {
+                try {
+                    await html2pdf().set(opt).from(element).save();
+                } catch (e) {
+                    console.error("Erreur PDF:", e);
+                    alert("Erreur lors de la génération du PDF. Réessayez.");
+                }
+            }, 300);
         }
 
         function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
