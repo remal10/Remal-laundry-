@@ -388,7 +388,7 @@
             </div>
         </div>
 
-        <!-- SECTION SPA - DESIGN PAGE BLANCHE IDENTIQUE AUX AUTRES BORDEREAUX -->
+        <!-- SECTION SPA -->
         <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
             
             <input type="hidden" id="editingSpaId" value="">
@@ -704,7 +704,7 @@
 
             <div class="space-y-3 pt-2 no-print">
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="genererPDF()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
+                    <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
                     <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -747,7 +747,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v19';
+                const CACHE_NAME = 'remal-pwa-v21';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -824,7 +824,7 @@
         }
 
         const SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3regzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
         
         let supabaseClient = null;
         try {
@@ -878,9 +878,7 @@
                 pdfSheetSerial: "Sheet Serial:",
                 pdfReceiptNo: "Receipt No:",
                 pdfDownloaded: "Downloaded:",
-                pdfSpaRecord: "SPA Record",
-                pdfCopyHanger: " — [COPY 1: HANGER]",
-                pdfCopyFolding: " — [COPY 2: FOLDING]"
+                pdfSpaRecord: "SPA Record"
             },
             ar: {
                 txtBtnNewRecord: "سجل جديد", lblFormTitle: "سجل جديد", lblRoomNum: "رقم الغرفة",
@@ -918,9 +916,7 @@
                 pdfSheetSerial: "رقم السجل:",
                 pdfReceiptNo: "رقم الإيصال:",
                 pdfDownloaded: "تم التحميل:",
-                pdfSpaRecord: "سجل السبا",
-                pdfCopyHanger: " — [نسخة 1: شماعة]",
-                pdfCopyFolding: " — [نسخة 2: طي]"
+                pdfSpaRecord: "سجل السبا"
             },
             hi: {
                 txtBtnNewRecord: "नया रिकॉर्ड", lblFormTitle: "नया रिकॉर्ड", lblRoomNum: "कमरा नंबर",
@@ -958,9 +954,7 @@
                 pdfSheetSerial: "शीट सीरियल:",
                 pdfReceiptNo: "रसीद संख्या:",
                 pdfDownloaded: "डाउनलोड किया गया:",
-                pdfSpaRecord: "स्पा रिकॉर्ड",
-                pdfCopyHanger: " — [प्रति 1: हैंगर]",
-                pdfCopyFolding: " — [प्रति 2: फ़ोल्डिंग]"
+                pdfSpaRecord: "स्पा रिकॉर्ड"
             }
         };
 
@@ -1993,8 +1987,8 @@
 
                 const isDoublePrint = entry.options?.service_style === 'H/F — Hanger/Folding';
                 const copies = isDoublePrint ? [
-                    { label: t.pdfCopyHanger || ' — [COPY 1: HANGER]' },
-                    { label: t.pdfCopyFolding || ' — [COPY 2: FOLDING]' }
+                    { label: ' — [COPY 1: HANGER]' },
+                    { label: ' — [COPY 2: FOLDING]' }
                 ] : [
                     { label: '' }
                 ];
@@ -2064,42 +2058,12 @@
             }
 
             const slipsToDownload = cachedSlips.filter(s => selectedIds.includes(s.id));
-            const dateJour = new Date().toISOString().split('T')[0];
-
+            
             for (const entry of slipsToDownload) {
-                ouvrirModalDetails(entry.id);
-                await new Promise(resolve => setTimeout(resolve, 600));
-                
-                let prefixe = 'Chambre';
-                if (entry.is_spa) prefixe = 'SPA';
-                
-                const identifiant = entry.is_spa ? (entry.spa_serial || '0000') : (entry.room || '000');
-                const nomFichier = `${prefixe}_${identifiant}_${dateJour}.pdf`;
-
-                const element = document.getElementById('pdfExportArea');
-                element.style.display = 'block';
-
-                const opt = {
-                    margin: 6,
-                    filename: nomFichier,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, logging: false },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-
-                await new Promise(resolve => setTimeout(async () => {
-                    try {
-                        await html2pdf().from(element).set(opt).save();
-                    } catch(e) {
-                        console.error("PDF export error:", e);
-                    }
-                    resolve();
-                }, 400));
-
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await genererPDF(entry.id);
+                await new Promise(resolve => setTimeout(resolve, 400));
             }
             
-            fermerModal();
             alert(`✅ ${slipsToDownload.length} bordereaux téléchargés avec succès.`);
         }
 
@@ -2633,38 +2597,44 @@
             return true;
         }
 
-        function exportSpaToPDF() {
+        async function exportSpaToPDF() {
             const isValid = validateAndSaveSpaReceipt();
             if (!isValid) return;
 
-            const element = document.getElementById('spa-laundry-section');
             const serialNo = document.getElementById('spa-serial-no').value.trim();
+            const tempSpaContainer = document.getElementById('spa-laundry-section').cloneNode(true);
+            tempSpaContainer.classList.remove('hidden');
+            tempSpaContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; width: 210mm; background: #ffffff; color: #000000; padding: 15mm;`;
             
-            const pdfContent = element.cloneNode(true);
-            pdfContent.classList.remove('hidden');
-
-            const actionButtons = pdfContent.querySelector('#spa-action-buttons');
-            if (actionButtons) actionButtons.remove();
-
-            const footer = pdfContent.querySelector('#pdf-footer-template');
+            const btnBox = tempSpaContainer.querySelector('#spa-action-buttons');
+            if (btnBox) btnBox.remove();
+            
+            const footer = tempSpaContainer.querySelector('#pdf-footer-template');
             if (footer) {
                 footer.classList.remove('hidden');
                 const now = new Date();
-                const serialEl = pdfContent.querySelector('#pdf-footer-serial-no');
-                const timeEl = pdfContent.querySelector('#pdf-footer-download-time');
-                if (serialEl) serialEl.innerText = serialNo;
-                if (timeEl) timeEl.innerText = `${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`;
+                footer.querySelector('#pdf-footer-serial-no').innerText = serialNo;
+                footer.querySelector('#pdf-footer-download-time').innerText = `${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`;
             }
 
+            document.body.appendChild(tempSpaContainer);
+
             const opt = {
-                margin:       [4, 4, 4, 4],
+                margin:       10,
                 filename:     `V_Element_Spa_Laundry_#${serialNo}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', putOnlyUsedFonts: true }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().from(pdfContent).set(opt).save();
+            try {
+                await html2pdf().from(tempSpaContainer).set(opt).save();
+            } catch (e) {
+                console.error("Erreur PDF SPA:", e);
+                alert("Erreur lors de la génération du PDF du SPA.");
+            } finally {
+                document.body.removeChild(tempSpaContainer);
+            }
         }
 
         function ouvrirModalDetails(id) {
@@ -2821,7 +2791,7 @@
                 pContainer.innerHTML = '';
             }
 
-            const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - SPA RECEIPT*\n*Serial:* #${entry.spa_serial}\n*Given By:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
+            const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + entry.room}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
             document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
             document.getElementById('detailModal').classList.remove('hidden');
@@ -2891,28 +2861,96 @@
             }
         }
 
-        async function genererPDF() {
-            const element = document.getElementById('pdfExportArea');
-            const roomVal = document.getElementById('modalRoomNumDisplay').innerText.replace('#','');
-            
-            element.style.display = 'block';
+        // --- FONCTION DE GÉNÉRATION PDF CORRIGÉE (STABLE SUR MOBILE VIA BLOB POPUP) ---
+        async function genererPDF(entryId = null) {
+            const targetId = entryId || selectedIdForModal;
+            if (!targetId) {
+                alert("⚠️ Aucun élément sélectionné pour le PDF.");
+                return;
+            }
 
-            const opt = {
-                margin:       6,
-                filename:     `Laundry_Slip_${roomVal}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', putOnlyUsedFonts: true }
-            };
+            chargerDonneesLocalStorage();
+            const entry = cachedSlips.find(e => e.id == targetId);
+            if (!entry) return;
 
-            setTimeout(async () => {
-                try {
-                    await html2pdf().set(opt).from(element).save();
-                } catch (e) {
-                    console.error("Erreur PDF:", e);
-                    alert("Erreur lors de la génération du PDF. Réessayez.");
+            const t = i18n[currentLang] || i18n.en;
+            let badgeText = t.pdfHotelCountFree;
+            if (entry.count_type === 'quota_extra') badgeText = t.pdfHotelExtra;
+            else if (entry.count_type === 'guest') badgeText = t.pdfGuestCount;
+
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
+            const itemsList = Object.values(entry.items || {});
+
+            let tableRowsHtml = '';
+            itemsList.forEach(item => {
+                let name = item.name || 'Article';
+                let qty = parseInt(item.qty) || 0;
+                let price = parseFloat(item.price) || 0;
+                if (qty <= 0) return;
+
+                if (entry.is_spa) {
+                    tableRowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${(qty * price).toFixed(2)} AED</td></tr>`;
+                } else if (entry.count_type === 'hotel') {
+                    tableRowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd; color: #047857;">0.00 AED</td></tr>`;
+                } else if (entry.count_type === 'guest') {
+                    tableRowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${(qty * price).toFixed(2)} AED</td></tr>`;
+                } else if (entry.count_type === 'quota_extra') {
+                    let freeQty = parseInt(item.freeQty) || 0;
+                    let chg = qty - freeQty; if (chg < 0) chg = 0;
+                    if (freeQty > 0) tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd; color: #047857;"><td style="padding: 10px; font-weight: bold;">${name} (Free)</td><td style="text-align: center; font-weight: bold; padding: 10px;">${freeQty}</td><td style="text-align: right; font-weight: bold; padding: 10px;">0.00 AED</td></tr>`;
+                    if (chg > 0) tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name} (Extra)</td><td style="text-align: center; font-weight: bold; padding: 10px;">${chg}</td><td style="text-align: right; font-weight: bold; padding: 10px;">${(chg * price).toFixed(2)} AED</td></tr>`;
                 }
-            }, 300);
+            });
+
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="${currentLang}" dir="${currentLang === 'ar' ? 'rtl' : 'ltr'}">
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: sans-serif; padding: 25px; color: #1c1917; background: #ffffff; }
+                    .header { text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 15px; margin-bottom: 20px; }
+                    .card { background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+                    th { background: #f4f4f4; padding: 10px; border-bottom: 2px solid #ddd; text-align: left; }
+                    .total-box { background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 13px; text-align: right; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1 style="color: #DCA773; margin: 0; font-size: 20px;">${t.pdfHotelName}</h1>
+                    <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">${t.pdfHotelSub}</p>
+                    <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService}</p>
+                </div>
+                <div class="card">
+                    <p><strong>${entry.is_spa ? t.pdfSheetSerial : t.pdfRoom}:</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
+                    <p><strong>${t.pdfDate}:</strong> ${dateFormatted}</p>
+                    <p><strong>${entry.is_spa ? t.pdfGivenBy : t.pdfGuest}:</strong> ${entry.guest_name || 'Guest'}</p>
+                </div>
+                <table>
+                    <thead><tr><th>${t.pdfItem}</th><th style="text-align: center;">${t.pdfQty}</th><th style="text-align: right;">${t.pdfTotal}</th></tr></thead>
+                    <tbody>${tableRowsHtml}</tbody>
+                </table>
+                <div class="total-box">
+                    <p style="margin: 0 0 5px 0;"><strong>${t.pdfTotalPieces}</strong> ${entry.total_clothes} pieces</p>
+                    <p style="margin: 0; font-size: 16px; color: #DCA773;"><strong>${t.pdfGrandTotalText}</strong> ${(entry.total || 0).toFixed(2)} AED</p>
+                </div>
+                ${entry.note ? `<div style="margin-top: 15px; background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 10px; font-size: 11px;"><p style="font-weight: bold; color: #78350f; margin: 0 0 4px 0;">Notes:</p><p style="margin: 0; color: #451a03;">${entry.note}</p></div>` : ''}
+            </body>
+            </html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const win = window.open(url, '_blank');
+            if (win) {
+                win.onload = () => {
+                    setTimeout(() => {
+                        win.print();
+                    }, 500);
+                };
+            } else {
+                alert("⚠️ Veuillez autoriser les popups pour ce site.");
+            }
         }
 
         function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
