@@ -651,6 +651,7 @@
                     <h2 id="modalPdfHotelName" class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
                     <p id="modalPdfHotelSub" class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
                     <p id="modalPdfLaundryService" class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
+                    <p id="modalPdfReceiptId" class="text-[10px] font-mono text-stone-500 mt-0.5">Receipt ID: <strong id="modalReceiptIdDisplay" class="text-stone-900">---</strong></p>
                 </div>
 
                 <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
@@ -747,7 +748,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v23';
+                const CACHE_NAME = 'remal-pwa-v25';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1460,6 +1461,20 @@
             reader.readAsDataURL(file);
         }
 
+        function genererIdentifiantBordereau(entry) {
+            if (entry.receipt_id) return entry.receipt_id;
+            const d = entry.created_at ? new Date(entry.created_at) : new Date();
+            const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
+            
+            if (entry.is_spa) {
+                const serial = String(entry.spa_serial || '0000').padStart(4, '0');
+                return `SPA-${dateStr}-${serial}`;
+            } else {
+                const roomClean = String(entry.room || '000').trim();
+                return `REM-${dateStr}-RM${roomClean}`;
+            }
+        }
+
         async function sauvegarderBordereauLocal() {
             const roomInput = document.getElementById('roomNumber');
             const roomNum = roomInput.value.trim();
@@ -1548,6 +1563,7 @@
                     quota: pmsData.quotaText,
                     created_by: 'Staff'
                 };
+                cachedSlips[existingIndex].receipt_id = genererIdentifiantBordereau(cachedSlips[existingIndex]);
                 targetRecord = cachedSlips[existingIndex];
                 alert(`✅ Record for Room ${roomNum} updated successfully!`);
             } else {
@@ -1573,6 +1589,7 @@
                     status: 'Collected',
                     created_at: new Date().toISOString()
                 };
+                targetRecord.receipt_id = genererIdentifiantBordereau(targetRecord);
                 cachedSlips.push(targetRecord);
                 alert(`✅ Record for Room ${roomNum} saved!`);
             }
@@ -1994,6 +2011,7 @@
                             <h2 style="color: #DCA773; margin: 0; font-size: 22px;">REMAL HOTEL & VILLAS</h2>
                             <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
                             <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
+                            <p style="font-size: 11px; font-family: monospace; color: #555; margin: 4px 0;">Receipt ID: <strong>${genererIdentifiantBordereau(entry)}</strong></p>
                         </div>
                         <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px;">
                             <p><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
@@ -2034,7 +2052,7 @@
             
             for (const entry of slipsToDownload) {
                 await genererPDF(entry.id);
-                await new Promise(resolve => setTimeout(resolve, 400));
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
             
             alert(`✅ ${slipsToDownload.length} bordereaux téléchargés avec succès.`);
@@ -2522,6 +2540,7 @@
                         total: grandTotalValue,
                         created_by: 'Staff'
                     };
+                    cachedSlips[index].receipt_id = genererIdentifiantBordereau(cachedSlips[index]);
                     targetRecord = cachedSlips[index];
                 }
                 alert(`✅ SPA Receipt #${serialNo} updated!`);
@@ -2550,6 +2569,7 @@
                     status: 'Collected',
                     created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
                 };
+                targetRecord.receipt_id = genererIdentifiantBordereau(targetRecord);
                 cachedSlips.push(targetRecord);
                 alert(`✅ SPA Receipt #${serialNo} saved!`);
             }
@@ -2571,45 +2591,38 @@
         }
 
         async function exportSpaToPDF() {
-            const isValid = validateAndSaveSpaReceipt();
+            const isValid = await validateAndSaveSpaReceipt();
             if (!isValid) return;
 
             const serialNo = document.getElementById('spa-serial-no').value.trim();
-            const tempSpaContainer = document.getElementById('spa-laundry-section').cloneNode(true);
-            tempSpaContainer.classList.remove('hidden');
-            tempSpaContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; width: 210mm; background: #ffffff; color: #000000; padding: 15mm;`;
-            
-            const btnBox = tempSpaContainer.querySelector('#spa-action-buttons');
-            if (btnBox) btnBox.remove();
-            
-            const footer = tempSpaContainer.querySelector('#pdf-footer-template');
-            if (footer) {
-                footer.classList.remove('hidden');
-                const now = new Date();
-                footer.querySelector('#pdf-footer-serial-no').innerText = serialNo;
-                footer.querySelector('#pdf-footer-download-time').innerText = `${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`;
-            }
+            const colDate = document.getElementById('spa-collection-date').value || new Date().toISOString().split('T')[0];
+            const spaArea = document.getElementById('spa-laundry-section');
 
-            document.body.appendChild(tempSpaContainer);
-
-            let dateIso = new Date().toISOString().split('T')[0];
-            let filename = `REMAL_${dateIso}_SPA-${serialNo}.pdf`;
+            const actionButtons = document.getElementById('spa-action-buttons');
+            if (actionButtons) actionButtons.style.display = 'none';
 
             const opt = {
-                margin:       10,
-                filename:     filename,
+                margin:       [8, 8, 8, 8],
+                filename:     `REMAL_${colDate}_SPA-${serialNo}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false, 
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0
+                },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
             try {
-                await html2pdf().from(tempSpaContainer).set(opt).save();
+                await html2pdf().set(opt).from(spaArea).save();
             } catch (e) {
                 console.error("Erreur PDF SPA:", e);
-                alert("Erreur lors de la génération du PDF du SPA.");
+                alert("⚠️ Erreur lors de la génération du PDF du SPA.");
             } finally {
-                document.body.removeChild(tempSpaContainer);
+                if (actionButtons) actionButtons.style.display = '';
             }
         }
 
@@ -2619,11 +2632,13 @@
             const entry = cachedSlips.find(e => e.id == id);
             if (!entry) return;
 
+            entry.receipt_id = genererIdentifiantBordereau(entry);
             const t = i18n[currentLang] || i18n.en;
 
             document.getElementById('modalPdfHotelName').innerText = t.pdfHotelName;
             document.getElementById('modalPdfHotelSub').innerText = t.pdfHotelSub;
             document.getElementById('modalPdfLaundryService').innerText = entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService;
+            document.getElementById('modalReceiptIdDisplay').innerText = entry.receipt_id;
             document.getElementById('modalThItem').innerText = t.pdfItem;
             document.getElementById('modalThQty').innerText = t.pdfQty;
             document.getElementById('modalThTotal').innerText = t.pdfTotal;
@@ -2840,7 +2855,7 @@
         async function genererPDF(entryId = null) {
             const targetId = entryId || selectedIdForModal;
             if (!targetId) {
-                alert("⚠️ Aucun élément sélectionné pour le PDF.");
+                alert("⚠️ Aucun élément sélectionné.");
                 return;
             }
 
@@ -2848,85 +2863,45 @@
             const entry = cachedSlips.find(e => e.id == targetId);
             if (!entry) return;
 
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; width: 210mm; background: #ffffff; color: #000000; padding: 15mm; font-family: sans-serif;`;
-            
-            let dateIso = new Date().toISOString().split('T')[0];
-            if (entry.created_at) {
-                dateIso = entry.created_at.split('T')[0];
+            const modalEl = document.getElementById('detailModal');
+            const modalWasHidden = modalEl.classList.contains('hidden');
+            if (modalWasHidden) {
+                ouvrirModalDetails(targetId);
             }
 
-            let filename = "";
-            if (entry.is_spa) {
-                const serialClean = String(entry.spa_serial || '0000').trim();
-                filename = `REMAL_${dateIso}_SPA-${serialClean}.pdf`;
-            } else {
-                const roomClean = String(entry.room || '000').trim();
-                filename = `REMAL_${dateIso}_RM-${roomClean}.pdf`;
-            }
+            entry.receipt_id = genererIdentifiantBordereau(entry);
+            const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+            const fileTargetName = entry.is_spa ? `REMAL_${dateIso}_SPA-${entry.spa_serial}` : `REMAL_${dateIso}_RM-${entry.room}`;
 
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
-            const itemsList = Object.values(entry.items || {});
-
-            let tableRowsHtml = '';
-            itemsList.forEach(item => {
-                let name = item.name || 'Article';
-                let qty = parseInt(item.qty) || 0;
-                let price = parseFloat(item.price) || 0;
-                if (qty <= 0) return;
-
-                if (entry.is_spa) {
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px;">${(qty * price).toFixed(2)} AED</td></tr>`;
-                } else if (entry.count_type === 'hotel') {
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; color: #047857;">0.00 AED</td></tr>`;
-                } else if (entry.count_type === 'guest') {
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px;">${(qty * price).toFixed(2)} AED</td></tr>`;
-                } else if (entry.count_type === 'quota_extra') {
-                    let freeQty = parseInt(item.freeQty) || 0;
-                    let chg = qty - freeQty; if (chg < 0) chg = 0;
-                    if (freeQty > 0) tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd; color: #047857;"><td style="padding: 10px; font-weight: bold;">${name} (Free)</td><td style="text-align: center; font-weight: bold; padding: 10px;">${freeQty}</td><td style="text-align: right; font-weight: bold; padding: 10px;">0.00 AED</td></tr>`;
-                    if (chg > 0) tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name} (Extra)</td><td style="text-align: center; font-weight: bold; padding: 10px;">${chg}</td><td style="text-align: right; font-weight: bold; padding: 10px;">${(chg * price).toFixed(2)} AED</td></tr>`;
-                }
-            });
-
-            tempContainer.innerHTML = `
-                <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 15px; margin-bottom: 20px;">
-                    <h1 style="color: #DCA773; margin: 0; font-size: 20px;">REMAL HOTEL & VILLAS</h1>
-                    <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
-                </div>
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px;">
-                    <p><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
-                    <p><strong>Date:</strong> ${dateFormatted}</p>
-                    <p><strong>${entry.is_spa ? 'Given By:' : 'Guest Name:'}</strong> ${entry.guest_name || 'Guest'}</p>
-                </div>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
-                    <thead><tr style="background: #f4f4f4;"><th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Item</th><th style="text-align: center; padding: 10px; border-bottom: 2px solid #ddd;">Qty</th><th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Total</th></tr></thead>
-                    <tbody>${tableRowsHtml}</tbody>
-                </table>
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 13px; text-align: right;">
-                    <p style="margin: 0 0 5px 0;"><strong>Total Pieces:</strong> ${entry.total_clothes} pieces</p>
-                    <p style="margin: 0; font-size: 16px; color: #DCA773;"><strong>Grand Total:</strong> ${(entry.total || 0).toFixed(2)} AED</p>
-                </div>
-            `;
-
-            document.body.appendChild(tempContainer);
+            const printArea = document.getElementById('pdfExportArea');
+            const noPrintElements = printArea.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.display = 'none');
 
             const opt = {
-                margin:       10,
-                filename:     filename,
+                margin:       [5, 5, 5, 5],
+                filename:     `${fileTargetName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false, 
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
             };
 
             try {
-                await html2pdf().from(tempContainer).set(opt).save();
+                await html2pdf().set(opt).from(printArea).save();
             } catch (e) {
                 console.error("Erreur génération PDF:", e);
-                alert("Erreur lors de la génération du fichier PDF.");
+                alert("⚠️ Erreur lors de la création du PDF.");
             } finally {
-                document.body.removeChild(tempContainer);
+                noPrintElements.forEach(el => el.style.display = '');
+                if (modalWasHidden) {
+                    fermerModal();
+                }
             }
         }
 
