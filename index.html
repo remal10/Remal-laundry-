@@ -747,7 +747,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v21';
+                const CACHE_NAME = 'remal-pwa-v22';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1064,7 +1064,6 @@
             }
 
             try {
-                // 1. Récupération des slips (bordereaux)
                 const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
                 if (!slipsErr && slips && slips.length > 0) {
                     cachedSlips = slips;
@@ -1073,11 +1072,10 @@
                     console.warn("Erreur lecture laundry_slips sur Supabase:", slipsErr.message);
                 }
 
-                // 2. Récupération des invités PMS avec gestion d'erreurs robuste
                 const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
                 
                 if (guestsErr) {
-                    console.error("Erreur de lecture de la table pms_guests (Vérifiez vos RLS policies ou le nom de la table):", guestsErr.message);
+                    console.error("Erreur de lecture de la table pms_guests:", guestsErr.message);
                 } else if (guests && guests.length > 0) {
                     pmsDatabase = {};
                     guests.forEach(g => {
@@ -1093,12 +1091,8 @@
                     });
                     sauvegarderPmsLocalStorage();
                     renderMassPreviewTable();
-                    console.log(`✅ ${guests.length} clients PMS synchronisés depuis Supabase.`);
-                } else {
-                    console.log("ℹ️ La table pms_guests est vide sur Supabase. Utilisez l'onglet 'Mass PDF' pour y injecter les données.");
                 }
 
-                // 3. Abonnement Realtime (écoute des changements en direct)
                 supabaseClient.channel('realtime_laundry')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
                         const { data } = await supabaseClient.from('laundry_slips').select('*');
@@ -2406,7 +2400,7 @@
                     renderLostFoundItems();
                 }
 
-                alert(`✅ Données restaurées avec succès (Blanchisserie & Objets Trouvés) !`);
+                alert(`✅ Données restaurées avec succès !`);
             } else {
                 alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
             }
@@ -2633,9 +2627,12 @@
 
             document.body.appendChild(tempSpaContainer);
 
+            let dateIso = new Date().toISOString().split('T')[0];
+            let filename = `REMAL_${dateIso}_SPA-${serialNo}.pdf`;
+
             const opt = {
                 margin:       10,
-                filename:     `V_Element_Spa_Laundry_#${serialNo}.pdf`,
+                filename:     filename,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -2891,6 +2888,21 @@
             if (entry.count_type === 'quota_extra') badgeText = t.pdfHotelExtra;
             else if (entry.count_type === 'guest') badgeText = t.pdfGuestCount;
 
+            // Nommage standardisé et chronologique (ex: REMAL_2026-08-22_RM-103.pdf)
+            let dateIso = new Date().toISOString().split('T')[0];
+            if (entry.created_at) {
+                dateIso = entry.created_at.split('T')[0];
+            }
+
+            let filename = "";
+            if (entry.is_spa) {
+                const serialClean = String(entry.spa_serial || '0000').trim();
+                filename = `REMAL_${dateIso}_SPA-${serialClean}.pdf`;
+            } else {
+                const roomClean = String(entry.room || '000').trim();
+                filename = `REMAL_${dateIso}_RM-${roomClean}.pdf`;
+            }
+
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
             const itemsList = Object.values(entry.items || {});
 
@@ -2954,16 +2966,13 @@
 
             const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
-            const win = window.open(url, '_blank');
-            if (win) {
-                win.onload = () => {
-                    setTimeout(() => {
-                        win.print();
-                    }, 500);
-                };
-            } else {
-                alert("⚠️ Veuillez autoriser les popups pour ce site.");
-            }
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
         }
 
         function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
