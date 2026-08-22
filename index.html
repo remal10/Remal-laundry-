@@ -105,10 +105,23 @@
         details summary { list-style: none; }
 
         @media print {
-            body { background-color: #ffffff !important; color: #000000 !important; }
+            body * { visibility: hidden !important; }
+            #batchPrintContainer, #batchPrintContainer * { visibility: visible !important; }
+            #batchPrintContainer { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 100% !important; 
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .printable-card {
+                page-break-after: always !important;
+                break-after: page !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
             .no-print { display: none !important; }
-            .printable-page { background-color: #ffffff !important; color: #000000 !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .page-break { page-break-after: always !important; break-after: page !important; display: block !important; }
         }
     </style>
 </head>
@@ -1973,8 +1986,6 @@
 
             const batchContainer = document.getElementById('batchPrintContainer');
             batchContainer.innerHTML = '';
-            batchContainer.classList.remove('hidden');
-            batchContainer.style.cssText = "display: block; background: white; color: black; position: absolute; left: 0; top: 0; width: 100%; z-index: 99999;";
 
             slipsToPrint.forEach(entry => {
                 const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
@@ -1986,57 +1997,56 @@
                     let qty = parseInt(item.qty) || 0;
                     let price = parseFloat(item.price) || 0;
                     if (qty <= 0) return;
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; font-weight: bold;">${name}</td><td style="text-align: center; padding: 8px;">${qty}</td><td style="text-align: right; padding: 8px;">${(qty * price).toFixed(2)} AED</td></tr>`;
+                    tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 6px 8px; font-weight: 600; color: #000;">${name}</td><td style="text-align: center; font-weight: 600; padding: 6px 8px; color: #000;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 6px 8px; color: #000;">${(qty * price).toFixed(2)} AED</td></tr>`;
                 });
 
                 const card = document.createElement('div');
+                card.className = "printable-card";
                 card.style.cssText = `
-                    padding: 15mm; 
-                    background: white; 
-                    color: black; 
-                    page-break-after: always; 
-                    break-after: page; 
-                    page-break-inside: avoid; 
-                    break-inside: avoid; 
-                    height: 100vh; 
-                    box-sizing: border-box; 
-                    display: flex; 
-                    flex-direction: column; 
-                    justify-content: space-between;
+                    padding: 10mm; 
+                    background: #ffffff !important; 
+                    color: #000000 !important; 
+                    box-sizing: border-box;
+                    font-family: Arial, sans-serif;
                 `;
                 
                 card.innerHTML = `
-                    <div>
-                        <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 15px; margin-bottom: 20px;">
-                            <h2 style="color: #DCA773; margin: 0; font-size: 22px;">REMAL HOTEL & VILLAS</h2>
-                            <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
-                            <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
-                            <p style="font-size: 11px; font-family: monospace; color: #555; margin: 4px 0;">Receipt ID: <strong>${genererIdentifiantBordereau(entry)}</strong></p>
-                        </div>
-                        <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px;">
-                            <p><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
-                            <p><strong>Date:</strong> ${dateFormatted}</p>
-                            <p><strong>Guest:</strong> ${entry.guest_name || 'Guest'}</p>
-                        </div>
-                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
-                            <thead><tr style="background: #f4f4f4;"><th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left;">Item</th><th style="text-align: center; padding: 8px; border-bottom: 2px solid #ddd;">Qty</th><th style="text-align: right; padding: 8px; border-bottom: 2px solid #ddd;">Total</th></tr></thead>
-                            <tbody>${tableRowsHtml}</tbody>
-                        </table>
+                    <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 8px; margin-bottom: 12px;">
+                        <h2 style="color: #b47a3e; margin: 0; font-size: 18px; font-weight: 700;">REMAL HOTEL & VILLAS</h2>
+                        <p style="font-size: 9px; color: #4b5563; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
+                        <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
+                        <p style="font-size: 10px; font-family: monospace; color: #555; margin: 2px 0;">Receipt ID: <strong>${genererIdentifiantBordereau(entry)}</strong></p>
                     </div>
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 13px; text-align: right;">
-                        <p style="margin: 0 0 5px 0;"><strong>Total Pieces:</strong> ${entry.total_clothes} pieces</p>
-                        <p style="margin: 0; font-size: 16px; color: #DCA773;"><strong>Grand Total:</strong> ${(entry.total || 0).toFixed(2)} AED</p>
+                    <div style="background: #f9fafb; padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 12px; font-size: 11px;">
+                        <p style="margin: 2px 0;"><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
+                        <p style="margin: 2px 0;"><strong>Date:</strong> ${dateFormatted}</p>
+                        <p style="margin: 2px 0;"><strong>Guest:</strong> ${entry.guest_name || 'Guest'}</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f3f4f6;">
+                                <th style="padding: 6px 8px; border-bottom: 2px solid #d1d5db; text-align: left;">Item</th>
+                                <th style="text-align: center; padding: 6px 8px; border-bottom: 2px solid #d1d5db;">Qty</th>
+                                <th style="text-align: right; padding: 6px 8px; border-bottom: 2px solid #d1d5db;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRowsHtml}</tbody>
+                    </table>
+                    <div style="background: #f9fafb; padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb; font-size: 11px; text-align: right;">
+                        <p style="margin: 0 0 3px 0;"><strong>Total Pieces:</strong> ${entry.total_clothes} pcs</p>
+                        <p style="margin: 0; font-size: 14px; color: #b47a3e;"><strong>Grand Total:</strong> ${(entry.total || 0).toFixed(2)} AED</p>
                     </div>
                 `;
                 batchContainer.appendChild(card);
             });
 
+            batchContainer.classList.remove('hidden');
+
             setTimeout(() => {
                 window.print();
                 batchContainer.classList.add('hidden');
                 batchContainer.innerHTML = '';
-                batchContainer.style.cssText = "";
-            }, 500);
+            }, 250);
         }
 
         async function telechargerToutesLesChambresDuJour() {
