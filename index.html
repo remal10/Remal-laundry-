@@ -824,7 +824,7 @@
         }
 
         const SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3regzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
         
         let supabaseClient = null;
         try {
@@ -1058,33 +1058,47 @@
 
         async function chargerDonneesEtAbonnementCloud() {
             chargerDonneesLocalStorage();
-            if (!supabaseClient) return;
+            if (!supabaseClient) {
+                console.warn("Supabase client non initialisé. Mode 100% Local actif.");
+                return;
+            }
 
             try {
+                // 1. Récupération des slips (bordereaux)
                 const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
                 if (!slipsErr && slips && slips.length > 0) {
                     cachedSlips = slips;
                     sauvegarderDonneesLocalStorage();
+                } else if (slipsErr) {
+                    console.warn("Erreur lecture laundry_slips sur Supabase:", slipsErr.message);
                 }
 
+                // 2. Récupération des invités PMS avec gestion d'erreurs robuste
                 const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
-                if (!guestsErr && guests && guests.length > 0) {
+                
+                if (guestsErr) {
+                    console.error("Erreur de lecture de la table pms_guests (Vérifiez vos RLS policies ou le nom de la table):", guestsErr.message);
+                } else if (guests && guests.length > 0) {
                     pmsDatabase = {};
                     guests.forEach(g => {
                         pmsDatabase[g.room] = {
-                            guestName: g.guest_name,
-                            roomTyp: g.room_typ,
+                            guestName: g.guest_name || g.guestName || 'Unknown Guest',
+                            roomTyp: g.room_typ || g.roomTyp || 'DLXR',
                             arrival: g.arrival || '',
                             departure: g.departure || '',
-                            agency: g.agency,
-                            quotaText: g.quota_text,
-                            isChargeable: g.is_chargeable
+                            agency: g.agency || 'Direct',
+                            quotaText: g.quota_text || g.quotaText || 'Chargeable',
+                            isChargeable: g.is_chargeable !== undefined ? g.is_chargeable : true
                         };
                     });
                     sauvegarderPmsLocalStorage();
                     renderMassPreviewTable();
+                    console.log(`✅ ${guests.length} clients PMS synchronisés depuis Supabase.`);
+                } else {
+                    console.log("ℹ️ La table pms_guests est vide sur Supabase. Utilisez l'onglet 'Mass PDF' pour y injecter les données.");
                 }
 
+                // 3. Abonnement Realtime (écoute des changements en direct)
                 supabaseClient.channel('realtime_laundry')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
                         const { data } = await supabaseClient.from('laundry_slips').select('*');
@@ -1100,7 +1114,7 @@
                     .subscribe();
 
             } catch (e) {
-                console.warn("Sync mode fallback:", e);
+                console.error("Exception lors de la synchronisation cloud:", e);
             }
         }
 
@@ -2861,7 +2875,6 @@
             }
         }
 
-        // --- FONCTION DE GÉNÉRATION PDF CORRIGÉE (STABLE SUR MOBILE VIA BLOB POPUP) ---
         async function genererPDF(entryId = null) {
             const targetId = entryId || selectedIdForModal;
             if (!targetId) {
