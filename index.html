@@ -747,7 +747,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v22';
+                const CACHE_NAME = 'remal-pwa-v23';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1944,8 +1944,6 @@
 
         async function imprimerToutesLesChambresDuJour() {
             chargerDonneesLocalStorage();
-            const t = i18n[currentLang] || i18n.en;
-            
             const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
 
             if (selectedIds.length === 0) {
@@ -1954,22 +1952,15 @@
             }
 
             const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(s.id));
-            slipsToPrint.sort((a, b) => {
-                if (a.is_spa && !b.is_spa) return -1;
-                if (!a.is_spa && b.is_spa) return 1;
-                return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
-            });
+            slipsToPrint.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
 
             const batchContainer = document.getElementById('batchPrintContainer');
             batchContainer.innerHTML = '';
             batchContainer.classList.remove('hidden');
+            batchContainer.style.cssText = "display: block; background: white; color: black; position: absolute; left: 0; top: 0; width: 100%; z-index: 99999;";
 
             slipsToPrint.forEach(entry => {
-                let badgeText = t.pdfHotelCountFree;
-                if (entry.count_type === 'quota_extra') badgeText = t.pdfHotelExtra;
-                else if (entry.count_type === 'guest') badgeText = t.pdfGuestCount;
-
-                const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
+                const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
                 const itemsList = Object.values(entry.items || {});
 
                 let tableRowsHtml = '';
@@ -1978,82 +1969,56 @@
                     let qty = parseInt(item.qty) || 0;
                     let price = parseFloat(item.price) || 0;
                     if (qty <= 0) return;
-
-                    if (entry.is_spa) {
-                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1">${(qty * price).toFixed(2)} AED</td></tr>`;
-                    } else if (entry.count_type === 'hotel') {
-                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1 text-emerald-700">0.00 AED</td></tr>`;
-                    } else if (entry.count_type === 'guest') {
-                        tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name}</td><td class="text-center font-bold px-2 py-1">${qty}</td><td class="text-right font-bold px-2 py-1">${(qty * price).toFixed(2)} AED</td></tr>`;
-                    } else if (entry.count_type === 'quota_extra') {
-                        let freeQty = parseInt(item.freeQty) || 0;
-                        let chg = qty - freeQty; if (chg < 0) chg = 0;
-                        if (freeQty > 0) tableRowsHtml += `<tr class="border-b border-stone-200 text-emerald-700"><td class="py-1 px-2 font-bold">${name} (Free)</td><td class="text-center font-bold px-2 py-1">${freeQty}</td><td class="text-right font-bold px-2 py-1">0.00 AED</td></tr>`;
-                        if (chg > 0) tableRowsHtml += `<tr class="border-b border-stone-200"><td class="py-1 px-2 font-bold">${name} (Extra)</td><td class="text-center font-bold px-2 py-1">${chg}</td><td class="text-right font-bold px-2 py-1">${(chg * price).toFixed(2)} AED</td></tr>`;
-                    }
+                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; font-weight: bold;">${name}</td><td style="text-align: center; padding: 8px;">${qty}</td><td style="text-align: right; padding: 8px;">${(qty * price).toFixed(2)} AED</td></tr>`;
                 });
 
-                const isDoublePrint = entry.options?.service_style === 'H/F — Hanger/Folding';
-                const copies = isDoublePrint ? [
-                    { label: ' — [COPY 1: HANGER]' },
-                    { label: ' — [COPY 2: FOLDING]' }
-                ] : [
-                    { label: '' }
-                ];
-
-                copies.forEach(copy => {
-                    const card = document.createElement('div');
-                    card.style.cssText = `
-                        background: white; color: #1c1917; padding: 10mm 15mm; box-sizing: border-box;
-                        page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid;
-                        display: flex; flex-direction: column; justify-content: space-between; height: 250mm;
-                    `;
-                    
-                    card.innerHTML = `
-                        <div>
-                            <div class="text-center border-b border-stone-300 pb-2">
-                                <h2 class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">${t.pdfHotelName}</h2>
-                                <p class="text-[9px] text-stone-500 uppercase tracking-widest">${t.pdfHotelSub}</p>
-                                <p class="text-xs font-bold text-amber-700 mt-0.5 uppercase tracking-wide">${entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService} ${copy.label}</p>
-                            </div>
-
-                            <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 my-2.5 space-y-1.5">
-                                <div class="flex justify-between items-center">
-                                    <div><span class="text-xs text-stone-500 font-semibold">${entry.is_spa ? t.pdfSheetSerial : t.pdfRoom}</span> <span class="text-xl font-serif-luxury font-bold text-stone-900">${entry.is_spa ? `#${entry.spa_serial}` : entry.room}</span></div>
-                                    <div class="text-right"><p class="text-xs text-stone-500 font-bold">${t.pdfDate} ${dateFormatted}</p><span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">${entry.is_spa ? t.pdfSpaRecord : badgeText}</span></div>
-                                </div>
-                                <div class="pt-1.5 border-t border-stone-200 text-xs space-y-0.5 text-stone-700 font-bold">
-                                    <div class="flex justify-between"><span>${entry.is_spa ? t.pdfGivenBy : t.pdfGuest}</span> <span class="text-stone-900">${entry.guest_name || 'Guest'}</span></div>
-                                    ${entry.is_spa ? `
-                                        <div class="flex justify-between"><span>${t.pdfCollectedBy}</span> <span>${entry.options?.collected_by || '---'}</span></div>
-                                        <div class="flex justify-between"><span>${t.pdfDeliveredBy}</span> <span>${entry.options?.delivered_by || '---'}</span></div>
-                                    ` : `
-                                        <div class="flex justify-between"><span>${t.pdfQuota}</span> <span>${entry.quota || badgeText}</span></div>
-                                        <div class="flex justify-between text-amber-800"><span>${t.pdfPackaging}</span> <span>${entry.options?.service_style || 'Folding'}</span></div>
-                                    `}
-                                </div>
-                            </div>
-
-                            <table class="w-full text-xs text-left border-collapse my-2">
-                                <thead><tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300"><th class="p-2">${t.pdfItem}</th><th class="p-2 text-center">${t.pdfQty}</th><th class="p-2 text-right">${t.pdfTotal}</th></tr></thead>
-                                <tbody class="divide-y divide-stone-200 text-stone-800">${tableRowsHtml}</tbody>
-                            </table>
+                const card = document.createElement('div');
+                card.style.cssText = `
+                    padding: 15mm; 
+                    background: white; 
+                    color: black; 
+                    page-break-after: always; 
+                    break-after: page; 
+                    page-break-inside: avoid; 
+                    break-inside: avoid; 
+                    height: 100vh; 
+                    box-sizing: border-box; 
+                    display: flex; 
+                    flex-direction: column; 
+                    justify-content: space-between;
+                `;
+                
+                card.innerHTML = `
+                    <div>
+                        <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 15px; margin-bottom: 20px;">
+                            <h2 style="color: #DCA773; margin: 0; font-size: 22px;">REMAL HOTEL & VILLAS</h2>
+                            <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
+                            <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
                         </div>
-
-                        <div class="bg-stone-50 p-3 rounded-xl text-xs space-y-1 font-medium text-stone-700 border border-stone-200 mt-2">
-                            <div class="flex justify-between font-bold text-stone-900"><span>${t.pdfTotalPieces}</span><span>${entry.total_clothes} pieces</span></div>
-                            <div class="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-200 pt-1"><span>${t.pdfGrandTotalText}</span><span class="text-amber-700 font-serif-luxury text-base">${(entry.total || 0).toFixed(2)} AED</span></div>
+                        <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px;">
+                            <p><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
+                            <p><strong>Date:</strong> ${dateFormatted}</p>
+                            <p><strong>Guest:</strong> ${entry.guest_name || 'Guest'}</p>
                         </div>
-                    `;
-                    batchContainer.appendChild(card);
-                });
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                            <thead><tr style="background: #f4f4f4;"><th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left;">Item</th><th style="text-align: center; padding: 8px; border-bottom: 2px solid #ddd;">Qty</th><th style="text-align: right; padding: 8px; border-bottom: 2px solid #ddd;">Total</th></tr></thead>
+                            <tbody>${tableRowsHtml}</tbody>
+                        </table>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 13px; text-align: right;">
+                        <p style="margin: 0 0 5px 0;"><strong>Total Pieces:</strong> ${entry.total_clothes} pieces</p>
+                        <p style="margin: 0; font-size: 16px; color: #DCA773;"><strong>Grand Total:</strong> ${(entry.total || 0).toFixed(2)} AED</p>
+                    </div>
+                `;
+                batchContainer.appendChild(card);
             });
 
             setTimeout(() => {
                 window.print();
                 batchContainer.classList.add('hidden');
                 batchContainer.innerHTML = '';
-            }, 400);
+                batchContainer.style.cssText = "";
+            }, 500);
         }
 
         async function telechargerToutesLesChambresDuJour() {
@@ -2883,12 +2848,9 @@
             const entry = cachedSlips.find(e => e.id == targetId);
             if (!entry) return;
 
-            const t = i18n[currentLang] || i18n.en;
-            let badgeText = t.pdfHotelCountFree;
-            if (entry.count_type === 'quota_extra') badgeText = t.pdfHotelExtra;
-            else if (entry.count_type === 'guest') badgeText = t.pdfGuestCount;
-
-            // Nommage standardisé et chronologique (ex: REMAL_2026-08-22_RM-103.pdf)
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; width: 210mm; background: #ffffff; color: #000000; padding: 15mm; font-family: sans-serif;`;
+            
             let dateIso = new Date().toISOString().split('T')[0];
             if (entry.created_at) {
                 dateIso = entry.created_at.split('T')[0];
@@ -2903,7 +2865,7 @@
                 filename = `REMAL_${dateIso}_RM-${roomClean}.pdf`;
             }
 
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
             const itemsList = Object.values(entry.items || {});
 
             let tableRowsHtml = '';
@@ -2914,11 +2876,11 @@
                 if (qty <= 0) return;
 
                 if (entry.is_spa) {
-                    tableRowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${(qty * price).toFixed(2)} AED</td></tr>`;
+                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px;">${(qty * price).toFixed(2)} AED</td></tr>`;
                 } else if (entry.count_type === 'hotel') {
-                    tableRowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd; color: #047857;">0.00 AED</td></tr>`;
+                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; color: #047857;">0.00 AED</td></tr>`;
                 } else if (entry.count_type === 'guest') {
-                    tableRowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px; border-bottom: 1px solid #ddd;">${(qty * price).toFixed(2)} AED</td></tr>`;
+                    tableRowsHtml += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px; font-weight: bold;">${name}</td><td style="text-align: center; font-weight: bold; padding: 10px;">${qty}</td><td style="text-align: right; font-weight: bold; padding: 10px;">${(qty * price).toFixed(2)} AED</td></tr>`;
                 } else if (entry.count_type === 'quota_extra') {
                     let freeQty = parseInt(item.freeQty) || 0;
                     let chg = qty - freeQty; if (chg < 0) chg = 0;
@@ -2927,52 +2889,45 @@
                 }
             });
 
-            const htmlContent = `
-            <!DOCTYPE html>
-            <html lang="${currentLang}" dir="${currentLang === 'ar' ? 'rtl' : 'ltr'}">
-            <head>
-                <meta charset="utf-8">
-                <style>
-                    body { font-family: sans-serif; padding: 25px; color: #1c1917; background: #ffffff; }
-                    .header { text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 15px; margin-bottom: 20px; }
-                    .card { background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-                    th { background: #f4f4f4; padding: 10px; border-bottom: 2px solid #ddd; text-align: left; }
-                    .total-box { background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 13px; text-align: right; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1 style="color: #DCA773; margin: 0; font-size: 20px;">${t.pdfHotelName}</h1>
-                    <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">${t.pdfHotelSub}</p>
-                    <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService}</p>
+            tempContainer.innerHTML = `
+                <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 15px; margin-bottom: 20px;">
+                    <h1 style="color: #DCA773; margin: 0; font-size: 20px;">REMAL HOTEL & VILLAS</h1>
+                    <p style="font-size: 10px; color: #666; text-transform: uppercase; margin: 4px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
+                    <p style="font-size: 12px; font-weight: bold; color: #b45309; margin: 5px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
                 </div>
-                <div class="card">
-                    <p><strong>${entry.is_spa ? t.pdfSheetSerial : t.pdfRoom}:</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
-                    <p><strong>${t.pdfDate}:</strong> ${dateFormatted}</p>
-                    <p><strong>${entry.is_spa ? t.pdfGivenBy : t.pdfGuest}:</strong> ${entry.guest_name || 'Guest'}</p>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 12px;">
+                    <p><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
+                    <p><strong>Date:</strong> ${dateFormatted}</p>
+                    <p><strong>${entry.is_spa ? 'Given By:' : 'Guest Name:'}</strong> ${entry.guest_name || 'Guest'}</p>
                 </div>
-                <table>
-                    <thead><tr><th>${t.pdfItem}</th><th style="text-align: center;">${t.pdfQty}</th><th style="text-align: right;">${t.pdfTotal}</th></tr></thead>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                    <thead><tr style="background: #f4f4f4;"><th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Item</th><th style="text-align: center; padding: 10px; border-bottom: 2px solid #ddd;">Qty</th><th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Total</th></tr></thead>
                     <tbody>${tableRowsHtml}</tbody>
                 </table>
-                <div class="total-box">
-                    <p style="margin: 0 0 5px 0;"><strong>${t.pdfTotalPieces}</strong> ${entry.total_clothes} pieces</p>
-                    <p style="margin: 0; font-size: 16px; color: #DCA773;"><strong>${t.pdfGrandTotalText}</strong> ${(entry.total || 0).toFixed(2)} AED</p>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 13px; text-align: right;">
+                    <p style="margin: 0 0 5px 0;"><strong>Total Pieces:</strong> ${entry.total_clothes} pieces</p>
+                    <p style="margin: 0; font-size: 16px; color: #DCA773;"><strong>Grand Total:</strong> ${(entry.total || 0).toFixed(2)} AED</p>
                 </div>
-                ${entry.note ? `<div style="margin-top: 15px; background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 10px; font-size: 11px;"><p style="font-weight: bold; color: #78350f; margin: 0 0 4px 0;">Notes:</p><p style="margin: 0; color: #451a03;">${entry.note}</p></div>` : ''}
-            </body>
-            </html>`;
+            `;
 
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = filename;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
+            document.body.appendChild(tempContainer);
+
+            const opt = {
+                margin:       10,
+                filename:     filename,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().from(tempContainer).set(opt).save();
+            } catch (e) {
+                console.error("Erreur génération PDF:", e);
+                alert("Erreur lors de la génération du fichier PDF.");
+            } finally {
+                document.body.removeChild(tempContainer);
+            }
         }
 
         function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
