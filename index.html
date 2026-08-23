@@ -2012,6 +2012,10 @@
                     badgeText = 'Guest Count (Full)';
                 }
 
+                // Détection de l'option Hanger/Folding pour imprimer 2 copies
+                const isHangerFolding = (entry.options?.service_style || '').includes('H/F') || (entry.options?.service_style || '').includes('Hanger');
+                const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
+
                 const itemsObj = entry.items || {};
                 const itemsList = Object.values(itemsObj);
                 let tableRowsHtml = '';
@@ -2062,76 +2066,86 @@
                     </div>
                 ` : '';
 
-                const card = document.createElement('div');
-                card.className = "printable-card";
-                card.style.cssText = `
-                    padding: 8mm 10mm; 
-                    background: #ffffff !important; 
-                    color: #000000 !important; 
-                    box-sizing: border-box;
-                    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
-                `;
-                
-                card.innerHTML = `
-                    <div style="text-align: center; border-bottom: 1px solid #d1d5db; padding-bottom: 10px; margin-bottom: 12px; position: relative;">
-                        <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #09090b; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.05em;">REMAL HOTEL & VILLAS</h2>
-                        <p style="font-size: 8px; color: #6b7280; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
-                        <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'LAUNDRY SERVICE'}</p>
-                        <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 2px 0;">Receipt ID: <strong style="color: #111827;">${entry.receipt_id}</strong></p>
-                    </div>
+                // Génération des cartes (1 ou 2 copies selon H/F)
+                copiesToPrint.forEach((copyLabel) => {
+                    const card = document.createElement('div');
+                    card.className = "printable-card";
+                    card.style.cssText = `
+                        padding: 8mm 10mm; 
+                        background: #ffffff !important; 
+                        color: #000000 !important; 
+                        box-sizing: border-box;
+                        font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+                    `;
+                    
+                    const copyBadgeHtml = isHangerFolding ? `
+                        <div style="position: absolute; top: 0; right: 0; background-color: #111827; color: #ffffff; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">
+                            ${copyLabel}
+                        </div>
+                    ` : '';
 
-                    <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <div>
-                                <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
-                                <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : entry.room}</span>
+                    card.innerHTML = `
+                        <div style="text-align: center; border-bottom: 1px solid #d1d5db; padding-bottom: 10px; margin-bottom: 12px; position: relative;">
+                            ${copyBadgeHtml}
+                            <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #09090b; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.05em;">REMAL HOTEL & VILLAS</h2>
+                            <p style="font-size: 8px; color: #6b7280; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
+                            <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'LAUNDRY SERVICE'}</p>
+                            <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 2px 0;">Receipt ID: <strong style="color: #111827;">${entry.receipt_id}</strong></p>
+                        </div>
+
+                        <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div>
+                                    <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
+                                    <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : entry.room}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="color: #6b7280; font-weight: 700;">Date: ${dateFormatted}</span><br>
+                                    <span style="display: inline-block; margin-top: 3px; background-color: #fef3c7; color: #92400e; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid #fde68a;">${entry.is_spa ? 'SPA Record' : badgeText}</span>
+                                </div>
                             </div>
-                            <div style="text-align: right;">
-                                <span style="color: #6b7280; font-weight: 700;">Date: ${dateFormatted}</span><br>
-                                <span style="display: inline-block; margin-top: 3px; background-color: #fef3c7; color: #92400e; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid #fde68a;">${entry.is_spa ? 'SPA Record' : badgeText}</span>
+
+                            <div style="border-top: 1px solid #e5e7eb; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-weight: 700; color: #374151;">
+                                <div><span style="color: #6b7280; font-weight: 500;">Guest Name:</span> <span style="color: #111827;">${entry.guest_name || 'Unknown'}</span></div>
+                                <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Room Typ:</span> <span style="color: #111827;">${entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR')}</span></div>
+                                <div><span style="color: #6b7280; font-weight: 500;">Agency:</span> <span style="color: #111827;">${entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct')}</span></div>
+                                <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText)}</span></div>
+                                <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${entry.created_by || 'Staff'}</span></div>
                             </div>
                         </div>
 
-                        <div style="border-top: 1px solid #e5e7eb; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-weight: 700; color: #374151;">
-                            <div><span style="color: #6b7280; font-weight: 500;">Guest Name:</span> <span style="color: #111827;">${entry.guest_name || 'Unknown'}</span></div>
-                            <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Room Typ:</span> <span style="color: #111827;">${entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR')}</span></div>
-                            <div><span style="color: #6b7280; font-weight: 500;">Agency:</span> <span style="color: #111827;">${entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct')}</span></div>
-                            <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText)}</span></div>
-                            <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${entry.created_by || 'Staff'}</span></div>
+                        <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between;">
+                            <span style="color: #374151;">Packaging:</span>
+                            <span style="color: #b45309;">${entry.options?.service_style || 'F — Folding'}</span>
                         </div>
-                    </div>
 
-                    <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between;">
-                        <span style="color: #374151;">Packaging:</span>
-                        <span style="color: #b45309;">${entry.options?.service_style || 'F — Folding'}</span>
-                    </div>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
+                            <thead>
+                                <tr style="background-color: #f3f4f6; color: #111827; font-weight: 700; border-bottom: 1px solid #d1d5db;">
+                                    <th style="padding: 8px; text-align: left;">Item</th>
+                                    <th style="padding: 8px; text-align: center;">Qty</th>
+                                    <th style="padding: 8px; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRowsHtml}</tbody>
+                        </table>
 
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
-                        <thead>
-                            <tr style="background-color: #f3f4f6; color: #111827; font-weight: 700; border-bottom: 1px solid #d1d5db;">
-                                <th style="padding: 8px; text-align: left;">Item</th>
-                                <th style="padding: 8px; text-align: center;">Qty</th>
-                                <th style="padding: 8px; text-align: right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>${tableRowsHtml}</tbody>
-                    </table>
-
-                    <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
-                        <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
-                            <span>Total Pieces:</span>
-                            <span>${entry.total_clothes || 0} pieces</span>
+                        <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
+                            <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
+                                <span>Total Pieces:</span>
+                                <span>${entry.total_clothes || 0} pieces</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
+                                <span>Grand Total:</span>
+                                <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${(entry.total || 0).toFixed(2)} AED</span>
+                            </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
-                            <span>Grand Total:</span>
-                            <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${(entry.total || 0).toFixed(2)} AED</span>
-                        </div>
-                    </div>
 
-                    ${noteHtml}
-                    ${photoHtml}
-                `;
-                batchContainer.appendChild(card);
+                        ${noteHtml}
+                        ${photoHtml}
+                    `;
+                    batchContainer.appendChild(card);
+                });
             });
 
             batchContainer.classList.remove('hidden');
