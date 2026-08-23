@@ -2002,54 +2002,134 @@
             batchContainer.innerHTML = '';
 
             slipsToPrint.forEach(entry => {
+                entry.receipt_id = genererIdentifiantBordereau(entry);
                 const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
-                const itemsList = Object.values(entry.items || {});
+                
+                let badgeText = 'Hotel Count (Free)';
+                if (entry.count_type === 'quota_extra') {
+                    badgeText = 'Hotel & Extra';
+                } else if (entry.count_type === 'guest') {
+                    badgeText = 'Guest Count (Full)';
+                }
 
+                const itemsObj = entry.items || {};
+                const itemsList = Object.values(itemsObj);
                 let tableRowsHtml = '';
+
                 itemsList.forEach(item => {
                     let name = item.name || 'Article';
                     let qty = parseInt(item.qty) || 0;
                     let price = parseFloat(item.price) || 0;
+                    let freeQty = parseInt(item.freeQty) || 0;
+
                     if (qty <= 0) return;
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 6px 8px; font-weight: 600; color: #000;">${name}</td><td style="text-align: center; font-weight: 600; padding: 6px 8px; color: #000;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 6px 8px; color: #000;">${(qty * price).toFixed(2)} AED</td></tr>`;
+
+                    if (entry.is_spa) {
+                        const rowTotal = qty * price;
+                        tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${rowTotal.toFixed(2)} AED</td></tr>`;
+                    } else {
+                        if (entry.count_type === 'hotel') {
+                            tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px; color: #047857;">0.00 AED</td></tr>`;
+                        } else if (entry.count_type === 'guest') {
+                            const rowTotal = qty * price;
+                            tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${rowTotal.toFixed(2)} AED</td></tr>`;
+                        } else if (entry.count_type === 'quota_extra') {
+                            let chargeableQty = qty - freeQty;
+                            if (chargeableQty < 0) chargeableQty = 0;
+
+                            if (freeQty > 0) {
+                                tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #047857;"><td style="padding: 8px; font-weight: 700;">${name} (Free Quota)</td><td style="text-align: center; font-weight: 700; padding: 8px;">${freeQty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">0.00 AED</td></tr>`;
+                            }
+                            if (chargeableQty > 0) {
+                                const totalLine = chargeableQty * price;
+                                tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name} (Extra)</td><td style="text-align: center; font-weight: 700; padding: 8px;">${chargeableQty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${totalLine.toFixed(2)} AED</td></tr>`;
+                            }
+                        }
+                    }
                 });
+
+                const noteHtml = (entry.note && entry.note.trim() !== '') ? `
+                    <div style="background-color: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 12px; margin-top: 10px; font-size: 11px;">
+                        <p style="font-weight: 700; color: #78350f; text-transform: uppercase; margin: 0 0 4px 0; font-size: 9px;">Garment Notes / Defects:</p>
+                        <p style="margin: 0; color: #1f2937; font-weight: 500;">${entry.note}</p>
+                    </div>
+                ` : '';
+
+                const photoHtml = entry.photo ? `
+                    <div style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
+                        <p style="font-weight: 700; font-size: 10px; margin-bottom: 4px; color: #374151;">Proof Photo:</p>
+                        <img src="${entry.photo}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 12px; border: 1px solid #d1d5db;">
+                    </div>
+                ` : '';
 
                 const card = document.createElement('div');
                 card.className = "printable-card";
                 card.style.cssText = `
-                    padding: 10mm; 
+                    padding: 8mm 10mm; 
                     background: #ffffff !important; 
                     color: #000000 !important; 
                     box-sizing: border-box;
-                    font-family: Arial, sans-serif;
+                    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
                 `;
                 
                 card.innerHTML = `
-                    <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 8px; margin-bottom: 12px;">
-                        <h2 style="color: #b47a3e; margin: 0; font-size: 18px; font-weight: 700;">REMAL HOTEL & VILLAS</h2>
-                        <p style="font-size: 9px; color: #4b5563; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
-                        <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA SHEET' : 'LAUNDRY SERVICE'}</p>
-                        <p style="font-size: 10px; font-family: monospace; color: #555; margin: 2px 0;">Receipt ID: <strong>${genererIdentifiantBordereau(entry)}</strong></p>
+                    <div style="text-align: center; border-bottom: 1px solid #d1d5db; padding-bottom: 10px; margin-bottom: 12px; position: relative;">
+                        <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #09090b; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.05em;">REMAL HOTEL & VILLAS</h2>
+                        <p style="font-size: 8px; color: #6b7280; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
+                        <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'LAUNDRY SERVICE'}</p>
+                        <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 2px 0;">Receipt ID: <strong style="color: #111827;">${entry.receipt_id}</strong></p>
                     </div>
-                    <div style="background: #f9fafb; padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 12px; font-size: 11px;">
-                        <p style="margin: 2px 0;"><strong>${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</strong> ${entry.is_spa ? '#' + entry.spa_serial : entry.room}</p>
-                        <p style="margin: 2px 0;"><strong>Date:</strong> ${dateFormatted}</p>
-                        <p style="margin: 2px 0;"><strong>Guest:</strong> ${entry.guest_name || 'Guest'}</p>
+
+                    <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <div>
+                                <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
+                                <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : entry.room}</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="color: #6b7280; font-weight: 700;">Date: ${dateFormatted}</span><br>
+                                <span style="display: inline-block; margin-top: 3px; background-color: #fef3c7; color: #92400e; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid #fde68a;">${entry.is_spa ? 'SPA Record' : badgeText}</span>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #e5e7eb; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-weight: 700; color: #374151;">
+                            <div><span style="color: #6b7280; font-weight: 500;">Guest Name:</span> <span style="color: #111827;">${entry.guest_name || 'Unknown'}</span></div>
+                            <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Room Typ:</span> <span style="color: #111827;">${entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR')}</span></div>
+                            <div><span style="color: #6b7280; font-weight: 500;">Agency:</span> <span style="color: #111827;">${entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct')}</span></div>
+                            <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText)}</span></div>
+                            <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${entry.created_by || 'Staff'}</span></div>
+                        </div>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px;">
+
+                    <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between;">
+                        <span style="color: #374151;">Packaging:</span>
+                        <span style="color: #b45309;">${entry.options?.service_style || 'F — Folding'}</span>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
                         <thead>
-                            <tr style="background: #f3f4f6;">
-                                <th style="padding: 6px 8px; border-bottom: 2px solid #d1d5db; text-align: left;">Item</th>
-                                <th style="text-align: center; padding: 6px 8px; border-bottom: 2px solid #d1d5db;">Qty</th>
-                                <th style="text-align: right; padding: 6px 8px; border-bottom: 2px solid #d1d5db;">Total</th>
+                            <tr style="background-color: #f3f4f6; color: #111827; font-weight: 700; border-bottom: 1px solid #d1d5db;">
+                                <th style="padding: 8px; text-align: left;">Item</th>
+                                <th style="padding: 8px; text-align: center;">Qty</th>
+                                <th style="padding: 8px; text-align: right;">Total</th>
                             </tr>
                         </thead>
                         <tbody>${tableRowsHtml}</tbody>
                     </table>
-                    <div style="background: #f9fafb; padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb; font-size: 11px; text-align: right;">
-                        <p style="margin: 0 0 3px 0;"><strong>Total Pieces:</strong> ${entry.total_clothes} pcs</p>
-                        <p style="margin: 0; font-size: 14px; color: #b47a3e;"><strong>Grand Total:</strong> ${(entry.total || 0).toFixed(2)} AED</p>
+
+                    <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
+                            <span>Total Pieces:</span>
+                            <span>${entry.total_clothes || 0} pieces</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
+                            <span>Grand Total:</span>
+                            <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${(entry.total || 0).toFixed(2)} AED</span>
+                        </div>
                     </div>
+
+                    ${noteHtml}
+                    ${photoHtml}
                 `;
                 batchContainer.appendChild(card);
             });
