@@ -665,32 +665,59 @@
 
     <div id="batchPrintContainer" class="hidden"></div>
 
-    <!-- MODAL LISTE DES CHAMBRES ACTIVES EN ORDRE CROISSANT -->
+    <!-- MODAL LISTE DES CHAMBRES ACTIVES (SEULEMENT LAUNDRY & STYLE PDF ÉLÉGANT) -->
     <div id="activeRoomsListModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-        <div class="bg-[#181614] w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[85vh] flex flex-col border border-[#2f2820]">
+        <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+            
             <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                 <div>
-                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">Active Rooms Overview</h3>
-                    <p class="text-xs text-stone-400">Ordre croissant par numéro de chambre</p>
+                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">Active Hotel Laundry Rooms Overview</h3>
+                    <p class="text-xs text-stone-400">Liste des chambres du jour (ordre croissant)</p>
                 </div>
                 <button onclick="fermerModalActiveRoomsList()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
             </div>
 
-            <div class="overflow-y-auto flex-1 pr-1 border border-[#2f2820] rounded-2xl">
-                <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
-                    <thead class="bg-[#181614] text-[#DCA773] sticky top-0 z-10 border-b border-[#2f2820] font-bold">
-                        <tr>
-                            <th class="p-3">Room / Ref</th>
-                            <th class="p-3">Guest Name</th>
-                            <th class="p-3">Packaging</th>
-                            <th class="p-3 text-right">Account & Quota</th>
+            <!-- CONTENU IMPRIMABLE / CONVERTIBLE EN PDF -->
+            <div id="activeRoomsPdfExportArea" class="bg-white text-stone-900 p-6 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
+                
+                <!-- EN-TÊTE ÉLÉGANT DU DOCUMENT -->
+                <div class="text-center border-b border-stone-300 pb-4 mb-4">
+                    <h2 class="text-lg font-serif-luxury font-black text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
+                    <p class="text-[9px] text-stone-500 uppercase tracking-widest font-bold">Al Ruwais City, Abu Dhabi – UAE</p>
+                    <div class="mt-2 flex justify-between items-center px-2 text-xs font-bold text-amber-800 border-t border-stone-200 pt-2">
+                        <span>DAILY LAUNDRY ACTIVE ROOMS LIST</span>
+                        <span id="activeRoomsPdfDate" class="text-stone-600 font-semibold">Date: --</span>
+                    </div>
+                </div>
+
+                <!-- TABLEAU DE BORDEREAUX LAUNDRY SEULEMENT -->
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                        <tr class="bg-stone-100 text-stone-900 font-bold border-b border-stone-300 uppercase tracking-wider text-[10px]">
+                            <th class="p-2.5">Room</th>
+                            <th class="p-2.5">Guest Name</th>
+                            <th class="p-2.5">Packaging</th>
+                            <th class="p-2.5">Account & Quota</th>
+                            <th class="p-2.5 text-right">Pieces</th>
                         </tr>
                     </thead>
-                    <tbody id="activeRoomsTableBody" class="divide-y divide-[#2f2820] text-stone-200"></tbody>
+                    <tbody id="activeRoomsTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
                 </table>
+
+                <div class="mt-4 pt-3 border-t border-stone-300 flex justify-between text-[11px] font-bold text-stone-600">
+                    <span>Total Active Rooms: <strong id="activeRoomsTotalCount" class="text-stone-950">0</strong></span>
+                    <span>Total Garments: <strong id="activeRoomsTotalPieces" class="text-stone-950">0 pcs</strong></span>
+                </div>
             </div>
 
-            <button onclick="fermerModalActiveRoomsList()" class="w-full py-3 bg-[#DCA773] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider">Fermer</button>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="exportActiveRoomsListToPDF()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
+                    <i class="fas fa-file-pdf"></i> 📥 Download PDF List
+                </button>
+                <button onclick="fermerModalActiveRoomsList()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+                    Fermer
+                </button>
+            </div>
         </div>
     </div>
 
@@ -800,7 +827,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v26';
+                const CACHE_NAME = 'remal-pwa-v27';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1929,7 +1956,7 @@
             
             const todayStr = new Date().toISOString().split('T')[0];
             
-            // Changement 1 : SPA et chambres quittent active rooms dès 00h00
+            // SPA et chambres quittent active rooms dès 00h00
             const activeTodaySlips = cachedSlips.filter(entry => {
                 if (!entry.created_at) return false;
                 const entryDateStr = entry.created_at.split('T')[0];
@@ -2009,56 +2036,86 @@
             updatePrintButtonCount();
         }
 
-        // Changement 2 : Modal Active Rooms List en ordre croissant
+        // Modal Active Rooms List : SEULEMENT LAUNDRY & DESIGN ÉLÉGANT
         function ouvrirModalActiveRoomsList() {
             chargerDonneesLocalStorage();
             const todayStr = new Date().toISOString().split('T')[0];
             
-            let activeTodaySlips = cachedSlips.filter(entry => {
+            // Filtrer EXCLUSIVEMENT les bordereaux LAUNDRY HOTEL du jour (pas de SPA)
+            let activeLaundrySlips = cachedSlips.filter(entry => {
+                if (entry.is_spa) return false; // EXCLUSION DU SPA
                 if (!entry.created_at) return false;
                 return entry.created_at.split('T')[0] === todayStr || entry.status === 'pickup_alert';
             });
 
             // Tri par ordre croissant (numéro de chambre)
-            activeTodaySlips.sort((a, b) => {
-                const roomA = parseInt(a.room) || 9999;
-                const roomB = parseInt(b.room) || 9999;
+            activeLaundrySlips.sort((a, b) => {
+                const roomA = parseInt(a.room) || 0;
+                const roomB = parseInt(b.room) || 0;
                 return roomA - roomB;
             });
 
             const tbody = document.getElementById('activeRoomsTableBody');
             tbody.innerHTML = '';
 
-            if (activeTodaySlips.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-stone-500">Aucune chambre active aujourd'hui.</td></tr>`;
+            let totalPieces = 0;
+
+            if (activeLaundrySlips.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-stone-400 font-semibold">Aucune chambre d'hôtel active aujourd'hui.</td></tr>`;
             } else {
-                activeTodaySlips.forEach(s => {
+                activeLaundrySlips.forEach(s => {
                     let quotaLabel = 'Hotel Count (Free)';
                     if (s.count_type === 'quota_extra') quotaLabel = 'Hotel & Extra';
                     if (s.count_type === 'guest') quotaLabel = 'Guest Count (Full)';
-                    if (s.is_spa) quotaLabel = 'SPA Sheet';
 
-                    const roomDisp = s.is_spa ? `SPA #${s.spa_serial}` : s.room;
+                    const roomDisp = s.room;
                     const pkgDisp = s.options?.service_style || 'F — Folding';
                     const guestDisp = s.guest_name || 'Guest';
+                    const pcs = s.total_clothes || 0;
+                    totalPieces += pcs;
 
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-[#181614] transition";
+                    tr.className = "py-2 border-b border-stone-200 text-stone-800 text-xs font-semibold";
                     tr.innerHTML = `
-                        <td class="p-3 font-bold text-[#DCA773]">${roomDisp}</td>
-                        <td class="p-3">${guestDisp}</td>
-                        <td class="p-3 text-stone-300 font-medium">${pkgDisp}</td>
-                        <td class="p-3 text-right font-semibold text-emerald-400">${quotaLabel}</td>
+                        <td class="p-2.5 font-bold text-amber-800">${roomDisp}</td>
+                        <td class="p-2.5">${guestDisp}</td>
+                        <td class="p-2.5 text-stone-600">${pkgDisp}</td>
+                        <td class="p-2.5 font-bold text-emerald-700">${quotaLabel}</td>
+                        <td class="p-2.5 text-right font-bold text-stone-900">${pcs} pcs</td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
+
+            document.getElementById('activeRoomsTotalCount').innerText = activeLaundrySlips.length;
+            document.getElementById('activeRoomsTotalPieces').innerText = `${totalPieces} pcs`;
+            document.getElementById('activeRoomsPdfDate').innerText = `Date: ${new Date().toLocaleDateString('en-GB')}`;
 
             document.getElementById('activeRoomsListModal').classList.remove('hidden');
         }
 
         function fermerModalActiveRoomsList() {
             document.getElementById('activeRoomsListModal').classList.add('hidden');
+        }
+
+        async function exportActiveRoomsListToPDF() {
+            const printArea = document.getElementById('activeRoomsPdfExportArea');
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const opt = {
+                margin:       [8, 8, 8, 8],
+                filename:     `REMAL_Active_Laundry_Rooms_${todayStr}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(printArea).save();
+            } catch (e) {
+                console.error("Erreur génération PDF Active Rooms List:", e);
+                alert("⚠️ Erreur lors de l'export du PDF.");
+            }
         }
 
         function toggleAllSelections(state) {
