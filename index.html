@@ -109,7 +109,7 @@
                 background: #ffffff !important;
                 color: #000000 !important;
             }
-            header, #mainNavContainer, .max-w-7xl, #detailModal, .no-print {
+            header, #mainNavContainer, .max-w-7xl, #detailModal, #activeRoomsListModal, .no-print {
                 display: none !important;
             }
             #batchPrintContainer {
@@ -391,6 +391,10 @@
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="ouvrirModalActiveRoomsList()" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 border border-[#2f2820] font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                        <i class="fas fa-list-ol text-[#DCA773]"></i>
+                        <span>📋 Active Rooms List</span>
+                    </button>
                     <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                         <i class="fas fa-print text-sm"></i>
                         <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
@@ -661,6 +665,35 @@
 
     <div id="batchPrintContainer" class="hidden"></div>
 
+    <!-- MODAL LISTE DES CHAMBRES ACTIVES EN ORDRE CROISSANT -->
+    <div id="activeRoomsListModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
+        <div class="bg-[#181614] w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[85vh] flex flex-col border border-[#2f2820]">
+            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+                <div>
+                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">Active Rooms Overview</h3>
+                    <p class="text-xs text-stone-400">Ordre croissant par numéro de chambre</p>
+                </div>
+                <button onclick="fermerModalActiveRoomsList()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 pr-1 border border-[#2f2820] rounded-2xl">
+                <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
+                    <thead class="bg-[#181614] text-[#DCA773] sticky top-0 z-10 border-b border-[#2f2820] font-bold">
+                        <tr>
+                            <th class="p-3">Room / Ref</th>
+                            <th class="p-3">Guest Name</th>
+                            <th class="p-3">Packaging</th>
+                            <th class="p-3 text-right">Account & Quota</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeRoomsTableBody" class="divide-y divide-[#2f2820] text-stone-200"></tbody>
+                </table>
+            </div>
+
+            <button onclick="fermerModalActiveRoomsList()" class="w-full py-3 bg-[#DCA773] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider">Fermer</button>
+        </div>
+    </div>
+
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
             
@@ -767,7 +800,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v25';
+                const CACHE_NAME = 'remal-pwa-v26';
                 const ASSETS = [
                     './',
                     'https://cdn.tailwindcss.com',
@@ -1896,8 +1929,8 @@
             
             const todayStr = new Date().toISOString().split('T')[0];
             
+            // Changement 1 : SPA et chambres quittent active rooms dès 00h00
             const activeTodaySlips = cachedSlips.filter(entry => {
-                if (entry.is_spa) return true;
                 if (!entry.created_at) return false;
                 const entryDateStr = entry.created_at.split('T')[0];
                 return entryDateStr === todayStr || entry.status === 'pickup_alert';
@@ -1974,6 +2007,58 @@
             });
 
             updatePrintButtonCount();
+        }
+
+        // Changement 2 : Modal Active Rooms List en ordre croissant
+        function ouvrirModalActiveRoomsList() {
+            chargerDonneesLocalStorage();
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            let activeTodaySlips = cachedSlips.filter(entry => {
+                if (!entry.created_at) return false;
+                return entry.created_at.split('T')[0] === todayStr || entry.status === 'pickup_alert';
+            });
+
+            // Tri par ordre croissant (numéro de chambre)
+            activeTodaySlips.sort((a, b) => {
+                const roomA = parseInt(a.room) || 9999;
+                const roomB = parseInt(b.room) || 9999;
+                return roomA - roomB;
+            });
+
+            const tbody = document.getElementById('activeRoomsTableBody');
+            tbody.innerHTML = '';
+
+            if (activeTodaySlips.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-stone-500">Aucune chambre active aujourd'hui.</td></tr>`;
+            } else {
+                activeTodaySlips.forEach(s => {
+                    let quotaLabel = 'Hotel Count (Free)';
+                    if (s.count_type === 'quota_extra') quotaLabel = 'Hotel & Extra';
+                    if (s.count_type === 'guest') quotaLabel = 'Guest Count (Full)';
+                    if (s.is_spa) quotaLabel = 'SPA Sheet';
+
+                    const roomDisp = s.is_spa ? `SPA #${s.spa_serial}` : s.room;
+                    const pkgDisp = s.options?.service_style || 'F — Folding';
+                    const guestDisp = s.guest_name || 'Guest';
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-[#181614] transition";
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-[#DCA773]">${roomDisp}</td>
+                        <td class="p-3">${guestDisp}</td>
+                        <td class="p-3 text-stone-300 font-medium">${pkgDisp}</td>
+                        <td class="p-3 text-right font-semibold text-emerald-400">${quotaLabel}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('activeRoomsListModal').classList.remove('hidden');
+        }
+
+        function fermerModalActiveRoomsList() {
+            document.getElementById('activeRoomsListModal').classList.add('hidden');
         }
 
         function toggleAllSelections(state) {
