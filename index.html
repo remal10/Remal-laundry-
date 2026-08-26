@@ -32,6 +32,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- LIBRAIRIES EXTERNES (QR CODE ET SIGNATURE) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
     <!-- FEUILLE DE STYLE EXTERNE -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -622,12 +626,17 @@
         </div>
     </div>
 
+    <!-- MODAL DETAIL ET IMPRESSION PDF -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
             
             <div id="pdfExportArea" class="p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
                 <div class="text-center border-b border-stone-300 pb-4 relative">
                     <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-500 text-2xl font-bold hover:text-stone-900 no-print">✕</button>
+                    
+                    <!-- QR Code Généré -->
+                    <div id="qrcode" class="flex justify-center my-2"></div>
+
                     <h2 id="modalPdfHotelName" class="text-xl font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
                     <p id="modalPdfHotelSub" class="text-[10px] text-stone-500 uppercase tracking-widest mt-0.5">Al Ruwais City, Abu Dhabi – UAE</p>
                     <p id="modalPdfLaundryService" class="text-sm font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
@@ -680,6 +689,19 @@
                     <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
                 </div>
 
+                <!-- SECTION SIGNATURE ELECTRONIQUE -->
+                <div id="signatureSection" class="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
+                    <p class="text-[10px] font-bold text-stone-600 uppercase">Signature Client / Agent :</p>
+                    <div class="border border-stone-300 rounded-lg bg-white overflow-hidden">
+                        <canvas id="signatureCanvas" class="w-full h-24 touch-none cursor-crosshair"></canvas>
+                    </div>
+                    <div class="flex justify-between items-center no-print">
+                        <button type="button" onclick="clearSignature()" class="text-[10px] text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded border border-rose-200">Effacer</button>
+                        <button type="button" onclick="saveSignature()" class="text-[10px] text-stone-950 font-bold px-2 py-1 bg-[#DCA773] rounded shadow">Valider Signature</button>
+                    </div>
+                    <img id="signatureImageDisplay" class="hidden max-h-16 mx-auto object-contain" alt="Signature valides">
+                </div>
+
                 <div id="modalPhotoContainer" class="pt-1"></div>
             </div>
 
@@ -700,7 +722,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v27';
+                const CACHE_NAME = 'remal-pwa-v28';
                 const ASSETS = [
                     './',
                     'style.css',
@@ -714,7 +736,9 @@
                     'https://cdn.jsdelivr.net/npm/chart.js',
                     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
                     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
-                    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+                    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+                    'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+                    'https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js'
                 ];
 
                 self.addEventListener('install', (e) => {
@@ -748,7 +772,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- VOS SCRIPTS APPLICATION (DANS L'ORDRE EXIGÉ) -->
+    <!-- VOS SCRIPTS APPLICATION -->
     <script src="js/config.js"></script>
     <script src="js/laundry.js"></script>
     <script src="js/ui.js"></script>
