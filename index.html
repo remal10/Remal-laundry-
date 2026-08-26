@@ -724,54 +724,54 @@
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
             
-            <div id="pdfExportArea" class="p-5 space-y-4 bg-white text-stone-900 rounded-2xl printable-page">
-                <div class="text-center border-b border-stone-300 pb-3 relative">
+            <div id="pdfExportArea" class="p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
+                <div class="text-center border-b border-stone-300 pb-4 relative">
                     <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-500 text-2xl font-bold hover:text-stone-900 no-print">✕</button>
-                    <h2 id="modalPdfHotelName" class="text-lg font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
-                    <p id="modalPdfHotelSub" class="text-[9px] text-stone-500 uppercase tracking-widest">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <p id="modalPdfLaundryService" class="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
-                    <p id="modalPdfReceiptId" class="text-[10px] font-mono text-stone-500 mt-0.5">Receipt ID: <strong id="modalReceiptIdDisplay" class="text-stone-900">---</strong></p>
+                    <h2 id="modalPdfHotelName" class="text-xl font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
+                    <p id="modalPdfHotelSub" class="text-[10px] text-stone-500 uppercase tracking-widest mt-0.5">Al Ruwais City, Abu Dhabi – UAE</p>
+                    <p id="modalPdfLaundryService" class="text-sm font-bold text-amber-700 mt-1 uppercase tracking-wide">LAUNDRY SERVICE</p>
+                    <p id="modalPdfReceiptId" class="text-xs font-mono text-stone-500 mt-0.5">Receipt ID: <strong id="modalReceiptIdDisplay" class="text-stone-900">---</strong></p>
                 </div>
 
-                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
+                <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
                     <div class="flex justify-between items-center">
                         <div>
                             <span class="text-xs text-stone-500 font-semibold" id="modalIdentifierLabel">Room:</span>
-                            <span id="modalRoomNumDisplay" class="text-xl font-serif-luxury font-bold text-stone-900 ml-1">---</span>
+                            <span id="modalRoomNumDisplay" class="text-2xl font-serif-luxury font-bold text-stone-900 ml-1">---</span>
                         </div>
                         <div class="text-right">
                             <p id="modalDate" class="text-xs text-stone-500 font-bold"></p>
-                            <span id="modalTypeBadgeInline" class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">Hotel Count</span>
+                            <span id="modalTypeBadgeInline" class="text-[10px] bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300 inline-block mt-1">Hotel Count</span>
                         </div>
                     </div>
-                    <div id="modalAgencyQuotaBox" class="hidden pt-2 border-t border-stone-200 text-xs space-y-1 text-stone-700 font-bold">
+                    <div id="modalAgencyQuotaBox" class="hidden pt-3 border-t border-stone-200 text-xs space-y-1.5 text-stone-700 font-bold">
                         <div class="flex justify-between"><span id="modalLblGuestName">Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
                         <div class="flex justify-between"><span id="modalLblRoomTyp">Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
                         <div class="flex justify-between"><span id="modalLblAgency">Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
                         <div class="flex justify-between"><span id="modalLblQuota">Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
-                        <div class="flex justify-between border-t border-stone-200 pt-1 text-[10px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
+                        <div class="flex justify-between border-t border-stone-200 pt-1.5 text-[11px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
                     </div>
                 </div>
 
-                <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
+                <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
                     <span id="modalLblPackaging">Packaging:</span>
                     <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
                 </div>
 
                 <table class="w-full text-xs text-left border-collapse">
                     <thead>
-                        <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300">
-                            <th id="modalThItem" class="p-2.5">Item</th>
-                            <th id="modalThQty" class="p-2.5 text-center">Qty</th>
-                            <th id="modalThTotal" class="p-2.5 text-right">Total</th>
+                        <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300 uppercase tracking-wider">
+                            <th id="modalThItem" class="p-3">Item</th>
+                            <th id="modalThQty" class="p-3 text-center">Qty</th>
+                            <th id="modalThTotal" class="p-3 text-right">Total</th>
                         </tr>
                     </thead>
-                    <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800"></tbody>
+                    <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
                 </table>
 
-                <div class="bg-stone-50 p-3 rounded-xl text-xs space-y-1.5 font-medium text-stone-700 border border-stone-200">
-                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-1"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
-                    <div class="flex justify-between font-bold text-base text-stone-900 border-t border-stone-200 pt-2 mt-1"><span id="modalLblGrandTotal">Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-base">0.00 AED</span></div>
+                <div class="bg-stone-50 p-4 rounded-xl text-xs space-y-2 font-medium text-stone-700 border border-stone-200">
+                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-2"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
+                    <div class="flex justify-between font-bold text-lg text-stone-900 pt-1"><span id="modalLblGrandTotal">Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-xl">0.00 AED</span></div>
                 </div>
 
                 <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1 text-stone-800">
@@ -1956,7 +1956,6 @@
             
             const todayStr = new Date().toISOString().split('T')[0];
             
-            // SPA et chambres quittent active rooms dès 00h00
             const activeTodaySlips = cachedSlips.filter(entry => {
                 if (!entry.created_at) return false;
                 const entryDateStr = entry.created_at.split('T')[0];
@@ -2036,19 +2035,16 @@
             updatePrintButtonCount();
         }
 
-        // Modal Active Rooms List : SEULEMENT LAUNDRY & DESIGN ÉLÉGANT
         function ouvrirModalActiveRoomsList() {
             chargerDonneesLocalStorage();
             const todayStr = new Date().toISOString().split('T')[0];
             
-            // Filtrer EXCLUSIVEMENT les bordereaux LAUNDRY HOTEL du jour (pas de SPA)
             let activeLaundrySlips = cachedSlips.filter(entry => {
-                if (entry.is_spa) return false; // EXCLUSION DU SPA
+                if (entry.is_spa) return false;
                 if (!entry.created_at) return false;
                 return entry.created_at.split('T')[0] === todayStr || entry.status === 'pickup_alert';
             });
 
-            // Tri par ordre croissant (numéro de chambre)
             activeLaundrySlips.sort((a, b) => {
                 const roomA = parseInt(a.room) || 0;
                 const roomB = parseInt(b.room) || 0;
@@ -2154,7 +2150,6 @@
                     badgeText = 'Guest Count (Full)';
                 }
 
-                // Détection de l'option Hanger/Folding pour imprimer 2 copies
                 const isHangerFolding = (entry.options?.service_style || '').includes('H/F') || (entry.options?.service_style || '').includes('Hanger');
                 const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
 
@@ -2208,7 +2203,6 @@
                     </div>
                 ` : '';
 
-                // Génération des cartes (1 ou 2 copies selon H/F)
                 copiesToPrint.forEach((copyLabel) => {
                     const card = document.createElement('div');
                     card.className = "printable-card";
@@ -2862,7 +2856,7 @@
             if (actionButtons) actionButtons.style.display = 'none';
 
             const opt = {
-                margin:       [8, 8, 8, 8],
+                margin:       [10, 10, 10, 10],
                 filename:     `REMAL_${colDate}_SPA-${serialNo}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
@@ -2873,7 +2867,8 @@
                     scrollX: 0,
                     scrollY: 0
                 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             try {
@@ -3138,7 +3133,7 @@
             noPrintElements.forEach(el => el.style.display = 'none');
 
             const opt = {
-                margin:       [5, 5, 5, 5],
+                margin:       [10, 12, 10, 12],
                 filename:     `${fileTargetName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
@@ -3149,7 +3144,8 @@
                     scrollX: 0,
                     scrollY: 0
                 },
-                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             try {
