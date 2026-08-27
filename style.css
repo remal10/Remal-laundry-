@@ -66,6 +66,52 @@ details summary::-webkit-details-marker { display: none; }
 details summary { list-style: none; }
 
 /* =========================================================
+   FIX TABLEAU PMS (VISIBILITÉ TOTALE DES COLONNES)
+   ========================================================= */
+
+#massPreviewContainer table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+#massPreviewContainer th {
+    color: #DCA773 !important;
+    background-color: #181614 !important;
+    border-bottom: 1px solid #2f2820 !important;
+    padding: 12px 16px !important;
+    text-align: left !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+}
+
+#massPreviewContainer td {
+    color: #f3f4f6 !important;
+    padding: 12px 16px !important;
+    font-size: 12px !important;
+    vertical-align: middle !important;
+}
+
+#massPreviewContainer tr {
+    border-bottom: 1px solid #2f2820 !important;
+}
+
+body.light-mode #massPreviewContainer th {
+    color: #b47a3e !important;
+    background-color: #f8fafc !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+}
+
+body.light-mode #massPreviewContainer td {
+    color: #0f172a !important;
+}
+
+body.light-mode #massPreviewContainer tr {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* =========================================================
    ADAPTATION ÉLÉGANTE ET NETTE DU MODE CLAIR (LIGHT MODE)
    ========================================================= */
 
@@ -77,18 +123,15 @@ body.light-mode #itemsContainer,
 body.light-mode details,
 body.light-mode details div,
 body.light-mode #customItemsContainer,
-body.light-mode label[class*="bg-[#181614]"] {
+body.light-mode label[class*="bg-[#181614]"],
+body.light-mode label[class*="bg-[#0f0e0c]"] {
     background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
     color: #0f172a !important;
 }
 
-/* Restauration des badges de statut en mode clair (Évite le pavé noir) */
-body.light-mode span[class*="bg-amber-950"],
-body.light-mode span[class*="bg-purple-950"],
-body.light-mode span[class*="bg-rose-950"],
-body.light-mode span[class*="bg-[#0f0e0c]"],
-body.light-mode span[class*="bg-[#181614]"] {
+/* Badges de statut & d'archives */
+body.light-mode span[class*="bg-amber-950"] {
     background-color: #fef3c7 !important;
     color: #92400e !important;
     border-color: #fde68a !important;
@@ -106,7 +149,8 @@ body.light-mode span[class*="bg-rose-950"] {
     border-color: #fecdd3 !important;
 }
 
-/* Titres, dorures et typographie élégante */
+/* Titres, dorures et typographie luxe */
+body.light-mode h1,
 body.light-mode h2, 
 body.light-mode h3, 
 body.light-mode .font-serif-luxury,
@@ -121,9 +165,10 @@ body.light-mode summary {
     color: #334155 !important;
 }
 
-/* Boutons inactifs et options de packaging */
+/* Boutons d'options, packaging et navigation */
 body.light-mode button[class*="bg-[#0f0e0c]"],
-body.light-mode button[class*="bg-[#181614]"] {
+body.light-mode button[class*="bg-[#181614]"],
+body.light-mode div[class*="bg-[#181614]"] button {
     background-color: #f1f5f9 !important;
     border-color: #cbd5e1 !important;
     color: #334155 !important;
