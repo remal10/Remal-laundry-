@@ -102,12 +102,11 @@ function calculateGlobalTotals() {
         }
     }
 
-    const vat = subtotal * 0.05; 
-    const grandTotal = subtotal + vat;
+    // Le Grand Total correspond désormais exactement au Subtotal (Sans TVA)
+    const grandTotal = subtotal;
     
     document.getElementById('currentBordereauCount').innerText = `${totalClothes} pieces`;
     document.getElementById('subTotal').innerText = `${subtotal.toFixed(2)} AED`;
-    document.getElementById('vatAmount').innerText = `${vat.toFixed(2)} AED`;
     document.getElementById('grandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 }
 
@@ -177,8 +176,10 @@ async function sauvegarderBordereauLocal() {
     });
 
     const selectedOption = document.querySelector('input[name="foldingOption"]:checked')?.value || 'F — Folding';
-    const vat = subtotal * 0.05; 
-    const grandTotal = subtotal + vat;
+    
+    // Le Grand Total correspond au Subtotal et la TVA est fixée à 0
+    const vat = 0; 
+    const grandTotal = subtotal;
 
     const pmsData = pmsDatabase[roomNum] || { guestName: 'Unknown Guest', roomTyp: 'DLXR', agency: 'Direct', quotaText: 'Chargeable', isChargeable: true };
 
