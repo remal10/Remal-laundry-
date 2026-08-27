@@ -241,7 +241,6 @@ function setLang(lang) {
     document.getElementById('lblRoomNum').innerText = t.lblRoomNum;
     document.getElementById('lblSelectedGarments').innerText = t.lblSelectedGarments;
     document.getElementById('lblSubTotal').innerText = t.lblSubTotal;
-    document.getElementById('lblVat').innerText = t.lblVat;
     document.getElementById('lblGrandTotal').innerText = t.lblGrandTotal;
     document.getElementById('btnPhotoProof').innerHTML = `<span>📷</span> ${t.btnPhotoProof}`;
     document.getElementById('btnSaveRecord').innerText = t.btnSaveRecord;
@@ -1178,6 +1177,9 @@ async function exportSpaToPDF() {
     const colDate = document.getElementById('spa-collection-date').value || new Date().toISOString().split('T')[0];
     const spaArea = document.getElementById('spa-laundry-section');
 
+    const isHidden = spaArea.classList.contains('hidden');
+    if (isHidden) spaArea.classList.remove('hidden');
+
     const actionButtons = document.getElementById('spa-action-buttons');
     if (actionButtons) actionButtons.style.display = 'none';
 
@@ -1204,6 +1206,7 @@ async function exportSpaToPDF() {
         alert("⚠️ Erreur lors de la génération du PDF du SPA.");
     } finally {
         if (actionButtons) actionButtons.style.display = '';
+        if (isHidden) spaArea.classList.add('hidden');
     }
 }
 
@@ -1444,6 +1447,44 @@ async function genererPDF(entryId = null) {
     const entry = cachedSlips.find(e => e.id == targetId);
     if (!entry) return;
 
+    if (entry.is_spa) {
+        ouvrirModalDetails(targetId);
+        const modalEl = document.getElementById('detailModal');
+        const printArea = document.getElementById('pdfExportArea');
+        const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+        const fileTargetName = `REMAL_${dateIso}_SPA-${entry.spa_serial || '0000'}`;
+
+        const noPrintElements = printArea.querySelectorAll('.no-print');
+        noPrintElements.forEach(el => el.style.display = 'none');
+
+        const opt = {
+            margin:       [10, 12, 10, 12],
+            filename:     `${fileTargetName}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false, 
+                backgroundColor: '#ffffff',
+                scrollX: 0,
+                scrollY: 0
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        try {
+            await html2pdf().set(opt).from(printArea).save();
+        } catch (e) {
+            console.error("Erreur génération PDF SPA:", e);
+            alert("⚠️ Erreur lors de la création du PDF SPA.");
+        } finally {
+            noPrintElements.forEach(el => el.style.display = '');
+            fermerModal();
+        }
+        return;
+    }
+
     const modalEl = document.getElementById('detailModal');
     const modalWasHidden = modalEl.classList.contains('hidden');
     if (modalWasHidden) {
@@ -1452,7 +1493,7 @@ async function genererPDF(entryId = null) {
 
     entry.receipt_id = genererIdentifiantBordereau(entry);
     const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-    const fileTargetName = entry.is_spa ? `REMAL_${dateIso}_SPA-${entry.spa_serial}` : `REMAL_${dateIso}_RM-${entry.room}`;
+    const fileTargetName = `REMAL_${dateIso}_RM-${entry.room}`;
 
     const printArea = document.getElementById('pdfExportArea');
     const noPrintElements = printArea.querySelectorAll('.no-print');
