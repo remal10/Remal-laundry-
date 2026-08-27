@@ -10,11 +10,11 @@
 }
 
 .light-mode {
-    --bg-dark: #f4f5f7;
+    --bg-dark: #f8fafc;
     --bg-card: #ffffff;
     --bg-card-hover: #f1f5f9;
     --text-gold: #b47a3e;
-    --border-gold: #cbd5e1;
+    --border-gold: #e2e8f0;
     --text-main: #0f172a;
 }
 
@@ -33,7 +33,7 @@ body {
 .remal-card { 
     background: var(--bg-card); 
     border: 1px solid var(--border-gold); 
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); 
     transition: background-color 0.3s, border-color 0.3s;
 }
 
@@ -49,9 +49,10 @@ body {
     outline: none; 
 }
 
-.laundry-row { background-color: rgba(40, 167, 69, 0.12) !important; }
-.badge-green { color: #28a745; font-weight: bold; background-color: rgba(40, 167, 69, 0.15); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(40, 167, 69, 0.3); display: inline-block; }
-.badge-chargeable { color: #dc3545; font-weight: bold; background-color: rgba(220, 53, 69, 0.15); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(220, 53, 69, 0.3); display: inline-block; }
+/* Badges de statut PMS & Quotas */
+.laundry-row { background-color: rgba(40, 167, 69, 0.08) !important; }
+.badge-green { color: #15803d !important; font-weight: 700; background-color: #dcfce7 !important; padding: 4px 10px; border-radius: 8px; border: 1px solid #bbf7d0 !important; display: inline-block; }
+.badge-chargeable { color: #b91c1c !important; font-weight: 700; background-color: #fee2e2 !important; padding: 4px 10px; border-radius: 8px; border: 1px solid #fecaca !important; display: inline-block; }
 
 button, input, select, textarea { touch-action: manipulation; }
 
@@ -65,45 +66,75 @@ details summary::-webkit-details-marker { display: none; }
 details summary { list-style: none; }
 
 /* =========================================================
-   ADAPTATION TOTALE MODE CLAIR (LIGHT MODE OVERRIDES)
+   ADAPTATION ÉLÉGANTE ET NETTE DU MODE CLAIR (LIGHT MODE)
    ========================================================= */
 
-/* Transforme tous les fonds sombres codés en dur en fonds clairs */
+/* Arrière-plans des conteneurs principaux */
 body.light-mode div[class*="bg-[#0f0e0c]"],
 body.light-mode div[class*="bg-[#211e1a]"],
 body.light-mode div[class*="bg-[#181614]"],
 body.light-mode #itemsContainer,
 body.light-mode details,
 body.light-mode details div,
-body.light-mode #customItemsContainer {
+body.light-mode #customItemsContainer,
+body.light-mode label[class*="bg-[#181614]"] {
     background-color: #ffffff !important;
-    border-color: #cbd5e1 !important;
+    border-color: #e2e8f0 !important;
     color: #0f172a !important;
 }
 
-/* Force tous les éléments de texte à devenir sombre/lisible en mode clair */
-body.light-mode label,
-body.light-mode p,
-body.light-mode span,
-body.light-mode summary,
-body.light-mode .text-stone-300,
-body.light-mode .text-stone-400 {
-    color: #334155 !important;
+/* Restauration des badges de statut en mode clair (Évite le pavé noir) */
+body.light-mode span[class*="bg-amber-950"],
+body.light-mode span[class*="bg-purple-950"],
+body.light-mode span[class*="bg-rose-950"],
+body.light-mode span[class*="bg-[#0f0e0c]"],
+body.light-mode span[class*="bg-[#181614]"] {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border-color: #fde68a !important;
 }
 
-/* Titres et dorures en mode clair */
-body.light-mode .text-\[\#DCA773\],
-body.light-mode summary span,
-body.light-mode h2,
-body.light-mode h3 {
+body.light-mode span[class*="bg-purple-950"] {
+    background-color: #f3e8ff !important;
+    color: #6b21a8 !important;
+    border-color: #e9d5ff !important;
+}
+
+body.light-mode span[class*="bg-rose-950"] {
+    background-color: #ffe4e6 !important;
+    color: #9f1239 !important;
+    border-color: #fecdd3 !important;
+}
+
+/* Titres, dorures et typographie élégante */
+body.light-mode h2, 
+body.light-mode h3, 
+body.light-mode .font-serif-luxury,
+body.light-mode .text-\[\#DCA773\] {
     color: #b47a3e !important;
 }
 
-/* Formulaires et champs de texte */
+body.light-mode label,
+body.light-mode p,
+body.light-mode span,
+body.light-mode summary {
+    color: #334155 !important;
+}
+
+/* Boutons inactifs et options de packaging */
+body.light-mode button[class*="bg-[#0f0e0c]"],
+body.light-mode button[class*="bg-[#181614]"] {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+/* Inputs, Textareas et Selects */
 body.light-mode .remal-input,
 body.light-mode input[type="number"],
 body.light-mode input[type="text"],
-body.light-mode textarea {
+body.light-mode textarea,
+body.light-mode select {
     background-color: #f8fafc !important;
     border-color: #cbd5e1 !important;
     color: #0f172a !important;
@@ -114,15 +145,6 @@ body.light-mode textarea::placeholder {
     color: #94a3b8 !important;
 }
 
-/* Boutons secondaires en mode clair */
-body.light-mode button[class*="bg-[#0f0e0c]"],
-body.light-mode button[class*="bg-[#181614]"] {
-    background-color: #f1f5f9 !important;
-    border-color: #cbd5e1 !important;
-    color: #0f172a !important;
-}
-
-/* Icônes de sélecteur de date en mode clair */
 body.light-mode input[type="date"]::-webkit-calendar-picker-indicator,
 body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
     filter: none;
