@@ -64,6 +64,74 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 details summary::-webkit-details-marker { display: none; }
 details summary { list-style: none; }
 
+/* =========================================================
+   ADAPTATION TOTALE MODE CLAIR (LIGHT MODE OVERRIDES)
+   ========================================================= */
+
+/* Transforme tous les fonds sombres codés en dur en fonds clairs */
+body.light-mode div[class*="bg-[#0f0e0c]"],
+body.light-mode div[class*="bg-[#211e1a]"],
+body.light-mode div[class*="bg-[#181614]"],
+body.light-mode #itemsContainer,
+body.light-mode details,
+body.light-mode details div,
+body.light-mode #customItemsContainer {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* Force tous les éléments de texte à devenir sombre/lisible en mode clair */
+body.light-mode label,
+body.light-mode p,
+body.light-mode span,
+body.light-mode summary,
+body.light-mode .text-stone-300,
+body.light-mode .text-stone-400 {
+    color: #334155 !important;
+}
+
+/* Titres et dorures en mode clair */
+body.light-mode .text-\[\#DCA773\],
+body.light-mode summary span,
+body.light-mode h2,
+body.light-mode h3 {
+    color: #b47a3e !important;
+}
+
+/* Formulaires et champs de texte */
+body.light-mode .remal-input,
+body.light-mode input[type="number"],
+body.light-mode input[type="text"],
+body.light-mode textarea {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode input::placeholder,
+body.light-mode textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Boutons secondaires en mode clair */
+body.light-mode button[class*="bg-[#0f0e0c]"],
+body.light-mode button[class*="bg-[#181614]"] {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* Icônes de sélecteur de date en mode clair */
+body.light-mode input[type="date"]::-webkit-calendar-picker-indicator,
+body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: none;
+}
+
+/* =========================================================
+   IMPRESSION (PRINT STYLES)
+   ========================================================= */
+
 @media print {
     body {
         background: #ffffff !important;
