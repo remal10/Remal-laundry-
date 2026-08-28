@@ -1,4 +1,15 @@
-// Logique Métier Blanchisserie, SPA & Traitements Données
+// js/laundry.js - Logique Métier Blanchisserie, SPA & Traitements Données
+
+let cart = {};
+let cachedSlips = [];
+let pmsDatabase = {};
+let globalDirHandle = null;
+let companyKeywords = ["agency", "company", "airline", "crew", "corp", "group", "travel"];
+
+/* ==========================================
+   1. GESTION DES FICHIERS ET SAUVEGARDES
+   ========================================== */
+
 async function selectBackupFolder() {
     try {
         if (window.showDirectoryPicker) {
@@ -45,6 +56,10 @@ function sauvegarderPmsLocalStorage() {
     localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
 }
 
+/* ==========================================
+   2. VALIDATION & CALCULS DES ARTICLES
+   ========================================== */
+
 function isRoomNumberValid(val) {
     const room = parseInt(val, 10);
     if (isNaN(room)) return false;
@@ -59,11 +74,12 @@ function isRoomNumberValid(val) {
 }
 
 function updateQty(key, name, price, delta) {
-    if (!cart[key]) cart[key] = { qty: 0, freeQty: 0, price: price, name: name, service: currentService };
+    if (!cart[key]) cart[key] = { qty: 0, freeQty: 0, price: price, name: name, service: typeof currentService !== 'undefined' ? currentService : 'laundry' };
     cart[key].qty += delta;
     if (cart[key].freeQty > cart[key].qty) cart[key].freeQty = cart[key].qty;
     if (cart[key].qty <= 0) delete cart[key];
-    renderItems(); calculateGlobalTotals();
+    if (typeof renderItems === 'function') renderItems();
+    calculateGlobalTotals();
 }
 
 function updateFreeQty(key, delta) {
@@ -71,18 +87,20 @@ function updateFreeQty(key, delta) {
     cart[key].freeQty += delta;
     if (cart[key].freeQty < 0) cart[key].freeQty = 0;
     if (cart[key].freeQty > cart[key].qty) cart[key].freeQty = cart[key].qty;
-    renderItems(); calculateGlobalTotals();
+    if (typeof renderItems === 'function') renderItems();
+    calculateGlobalTotals();
 }
 
 function calculateGlobalTotals() {
     let totalClothes = 0; 
     let subtotal = 0;
+    const countType = typeof currentCountType !== 'undefined' ? currentCountType : 'hotel';
 
     Object.values(cart).forEach(item => { 
         totalClothes += item.qty; 
-        if (currentCountType === 'guest') {
+        if (countType === 'guest') {
             subtotal += item.price * item.qty;
-        } else if (currentCountType === 'quota_extra') {
+        } else if (countType === 'quota_extra') {
             let chargeableQty = item.qty - (item.freeQty || 0);
             if(chargeableQty < 0) chargeableQty = 0;
             subtotal += item.price * chargeableQty;
@@ -96,7 +114,7 @@ function calculateGlobalTotals() {
 
         if (nameVal && qtyVal > 0) {
             totalClothes += qtyVal;
-            if (currentCountType === 'guest' || currentCountType === 'quota_extra') {
+            if (countType === 'guest' || countType === 'quota_extra') {
                 subtotal += priceVal * qtyVal;
             }
         }
@@ -105,10 +123,10 @@ function calculateGlobalTotals() {
     const vat = subtotal * 0.05; 
     const grandTotal = subtotal + vat;
     
-    document.getElementById('currentBordereauCount').innerText = `${totalClothes} pieces`;
-    document.getElementById('subTotal').innerText = `${subtotal.toFixed(2)} AED`;
-    document.getElementById('vatAmount').innerText = `${vat.toFixed(2)} AED`;
-    document.getElementById('grandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
+    if (document.getElementById('currentBordereauCount')) document.getElementById('currentBordereauCount').innerText = `${totalClothes} pieces`;
+    if (document.getElementById('subTotal')) document.getElementById('subTotal').innerText = `${subtotal.toFixed(2)} AED`;
+    if (document.getElementById('vatAmount')) document.getElementById('vatAmount').innerText = `${vat.toFixed(2)} AED`;
+    if (document.getElementById('grandTotal')) document.getElementById('grandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 }
 
 function genererIdentifiantBordereau(entry) {
@@ -125,11 +143,18 @@ function genererIdentifiantBordereau(entry) {
     }
 }
 
+/* ==========================================
+   3. SAUVEGARDE ET SYNCHRONISATION
+   ========================================== */
+
 async function sauvegarderBordereauLocal() {
     const roomInput = document.getElementById('roomNumber');
-    const roomNum = roomInput.value.trim();
-    const editingId = document.getElementById('editingRecordId').value;
-    const optionalNote = document.getElementById('recordOptionalNote').value.trim();
+    const roomNum = roomInput ? roomInput.value.trim() : '';
+    const editingId = document.getElementById('editingRecordId') ? document.getElementById('editingRecordId').value : '';
+    const optionalNote = document.getElementById('recordOptionalNote') ? document.getElementById('recordOptionalNote').value.trim() : '';
+    const currentImageData = typeof window.currentImageData !== 'undefined' ? window.currentImageData : null;
+    const countType = typeof currentCountType !== 'undefined' ? currentCountType : 'hotel';
+    const serviceType = typeof currentService !== 'undefined' ? currentService : 'laundry';
 
     if (!roomNum) {
         alert('Please enter a room number.');
@@ -142,9 +167,9 @@ async function sauvegarderBordereauLocal() {
     }
 
     for (let i = 0; i < 3; i++) {
-        const nameVal = document.getElementById(`customName${i}`).value.trim();
-        const priceVal = parseFloat(document.getElementById(`customPrice${i}`).value) || 0;
-        const qtyVal = parseInt(document.getElementById(`customQty${i}`).value) || 0;
+        const nameVal = document.getElementById(`customName${i}`)?.value.trim() || '';
+        const priceVal = parseFloat(document.getElementById(`customPrice${i}`)?.value) || 0;
+        const qtyVal = parseInt(document.getElementById(`customQty${i}`)?.value) || 0;
 
         if (nameVal && qtyVal > 0) {
             finalCart[`custom_${i}`] = {
@@ -152,7 +177,7 @@ async function sauvegarderBordereauLocal() {
                 price: priceVal,
                 qty: qtyVal,
                 freeQty: 0,
-                service: currentService
+                service: serviceType
             };
         }
     }
@@ -167,9 +192,9 @@ async function sauvegarderBordereauLocal() {
 
     let subtotal = 0;
     Object.values(finalCart).forEach(item => {
-        if (currentCountType === 'guest') {
+        if (countType === 'guest') {
             subtotal += item.price * item.qty;
-        } else if (currentCountType === 'quota_extra') {
+        } else if (countType === 'quota_extra') {
             let chargeableQty = item.qty - (item.freeQty || 0);
             if(chargeableQty < 0) chargeableQty = 0;
             subtotal += item.price * chargeableQty;
@@ -186,8 +211,8 @@ async function sauvegarderBordereauLocal() {
 
     const todayStr = new Date().toISOString().split('T')[0];
     let targetRecord = null;
-
     let existingIndex = -1;
+
     if (editingId) {
         existingIndex = cachedSlips.findIndex(s => s.id == editingId);
     } else {
@@ -198,7 +223,7 @@ async function sauvegarderBordereauLocal() {
         cachedSlips[existingIndex] = {
             ...cachedSlips[existingIndex],
             room: roomNum,
-            count_type: currentCountType,
+            count_type: countType,
             options: { service_style: selectedOption },
             items: finalCart,
             total_clothes: totalClothes,
@@ -222,7 +247,7 @@ async function sauvegarderBordereauLocal() {
             is_spa: false,
             spa_serial: null,
             room: roomNum,
-            count_type: currentCountType,
+            count_type: countType,
             options: { service_style: selectedOption },
             items: finalCart,
             total_clothes: totalClothes,
@@ -246,9 +271,10 @@ async function sauvegarderBordereauLocal() {
 
     sauvegarderDonneesLocalStorage();
 
-    if (supabaseClient && targetRecord) {
+    const client = window.supabaseClient || window.supabase;
+    if (client && targetRecord) {
         try {
-            await supabaseClient.from('laundry_slips').upsert(targetRecord);
+            await client.from('laundry_slips').upsert(targetRecord);
         } catch(e) {
             console.warn("Erreur Supabase, conservé en local:", e);
         }
@@ -256,9 +282,13 @@ async function sauvegarderBordereauLocal() {
 
     await writeRecordToFile(targetRecord);
 
-    reinitialiserFormulaire();
-    switchMainSection('liveRecord');
+    if (typeof reinitialiserFormulaire === 'function') reinitialiserFormulaire();
+    if (typeof switchMainSection === 'function') switchMainSection('liveRecord');
 }
+
+/* ==========================================
+   4. IMPORTATION & PARSER PMS MASS PDF
+   ========================================== */
 
 function isPAXOrInvalid(val) {
     if (!val) return true;
@@ -279,8 +309,6 @@ function sanitizeAgencyName(agencyStr) {
 }
 
 async function processTextData(rawData) {
-    const counterContainer = document.getElementById('massRecordCounter');
-
     if (!rawData.trim()) {
         alert("No data found to process.");
         return;
@@ -419,12 +447,13 @@ async function processTextData(rawData) {
         });
 
         sauvegarderPmsLocalStorage();
-        renderMassPreviewTable();
+        if (typeof renderMassPreviewTable === 'function') renderMassPreviewTable();
 
-        if (supabaseClient && cloudGuestsPayload.length > 0) {
+        const client = window.supabaseClient || window.supabase;
+        if (client && cloudGuestsPayload.length > 0) {
             try {
-                await supabaseClient.from('pms_guests').delete().neq('room', '000');
-                await supabaseClient.from('pms_guests').insert(cloudGuestsPayload);
+                await client.from('pms_guests').delete().neq('room', '000');
+                await client.from('pms_guests').insert(cloudGuestsPayload);
                 alert(`✅ PMS Report updated successfully! (${parsedData.length} rooms mapped)`);
             } catch(e) {
                 console.warn("Erreur Supabase PMS Guests:", e);
@@ -435,6 +464,10 @@ async function processTextData(rawData) {
         alert("Could not automatically map data from this format.");
     }
 }
+
+/* ==========================================
+   5. REÇUS ET LOGIQUE V ELEMENT SPA
+   ========================================== */
 
 function calculateSpaTotal() {
     let grandTotal = 0;
@@ -463,7 +496,7 @@ async function validateAndSaveSpaReceipt() {
     const collectedBy = document.getElementById('spa-collected-by').value.trim();
     const deliveredBy = document.getElementById('spa-delivered-by').value.trim();
     const givenBy = document.getElementById('spa-given-by').value.trim();
-    const editingSpaId = document.getElementById('editingSpaId').value;
+    const editingSpaId = document.getElementById('editingSpaId') ? document.getElementById('editingSpaId').value : '';
     
     const colDate = document.getElementById('spa-collection-date').value;
     const colTime = document.getElementById('spa-collection-time').value;
@@ -547,9 +580,10 @@ async function validateAndSaveSpaReceipt() {
 
     sauvegarderDonneesLocalStorage();
 
-    if (supabaseClient && targetRecord) {
+    const client = window.supabaseClient || window.supabase;
+    if (client && targetRecord) {
         try {
-            await supabaseClient.from('laundry_slips').upsert(targetRecord);
+            await client.from('laundry_slips').upsert(targetRecord);
         } catch(e) {
             console.warn("Erreur Supabase SPA, conservé en local:", e);
         }
@@ -557,9 +591,13 @@ async function validateAndSaveSpaReceipt() {
 
     await writeRecordToFile(targetRecord);
 
-    switchMainSection('liveRecord');
+    if (typeof switchMainSection === 'function') switchMainSection('liveRecord');
     return true;
 }
+
+/* ==========================================
+   6. EXPORT / IMPORT ET RESTAURATION
+   ========================================== */
 
 async function exportAutoDirect() {
     chargerDonneesLocalStorage();
@@ -621,13 +659,17 @@ async function importAutoDirect() {
             localStorage.setItem('remal_lost_found', JSON.stringify(Array.from(lfMap.values())));
         }
 
-        afficherListeBordereauxLocal();
-        if (typeof renderLostFoundItems === 'function') {
-            renderLostFoundItems();
-        }
+        if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
+        if (typeof renderLostFoundItems === 'function') renderLostFoundItems();
 
         alert(`✅ Données restaurées avec succès !`);
     } else {
         alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
     }
-            }
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+    chargerDonneesLocalStorage();
+    chargerPmsLocalStorage();
+});
