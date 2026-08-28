@@ -96,7 +96,7 @@ async function chargerDonneesEtAbonnementCloud() {
             
             cachedSlips = Array.from(slipMap.values());
             sauvegarderDonneesLocalStorage();
-            chargerLiveOrders();
+            await chargerLiveOrders();
         } else if (slipsErr) {
             console.warn("Erreur lecture laundry_slips sur Supabase:", slipsErr.message);
         }
@@ -121,19 +121,10 @@ async function chargerDonneesEtAbonnementCloud() {
 
         supabaseClient.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
-                const { data } = await supabaseClient.from('laundry_slips').select('*');
-                if (data && data.length > 0) {
-                    const slipMap = new Map();
-                    cachedSlips.forEach(s => slipMap.set(String(s.id), s));
-                    data.forEach(s => slipMap.set(String(s.id), s));
-                    
-                    cachedSlips = Array.from(slipMap.values());
-                    sauvegarderDonneesLocalStorage();
-                    chargerLiveOrders();
-                    if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-                        afficherListeBordereauxLocal();
-                    }
-                }
+                await chargerLiveOrders();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_requests' }, async () => {
+                await chargerLiveOrders();
             })
             .subscribe();
 
@@ -471,28 +462,42 @@ async function handlePDFUpload(event) {
     }
 }
 
-function chargerLiveOrders() {
+async function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
     chargerDonneesLocalStorage();
     
     const todayStr = new Date().toISOString().split('T')[0];
     
+    // 1. Slips créés par le staff
     const activeTodaySlips = cachedSlips.filter(entry => {
         if (!entry.created_at) return false;
         const entryDateStr = entry.created_at.split('T')[0];
         return entryDateStr === todayStr || entry.status === 'pickup_alert';
     });
 
-    activeTodaySlips.sort((a, b) => {
-        if (a.is_spa && !b.is_spa) return -1;
-        if (!a.is_spa && b.is_spa) return 1;
-        return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
-    });
+    // 2. Demandes enregistrées via le Guest Interface (laundry_requests)
+    let guestRequests = [];
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const { data: reqs, error: reqErr } = await supabaseClient
+                .from('laundry_requests')
+                .select('*')
+                .neq('status', 'Completed')
+                .order('created_at', { ascending: false });
 
-    document.getElementById('activeRoomsCountBadge').innerText = activeTodaySlips.length;
+            if (!reqErr && reqs) {
+                guestRequests = reqs;
+            }
+        } catch (err) {
+            console.warn("Erreur chargement laundry_requests:", err);
+        }
+    }
 
-    if (activeTodaySlips.length === 0) {
-        container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room or SPA records for today.</p>`;
+    const totalActiveCount = activeTodaySlips.length + guestRequests.length;
+    document.getElementById('activeRoomsCountBadge').innerText = totalActiveCount;
+
+    if (totalActiveCount === 0) {
+        container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room, SPA or guest requests for today.</p>`;
         updatePrintButtonCount();
         return;
     }
@@ -506,6 +511,41 @@ function chargerLiveOrders() {
         <button onclick="toggleAllSelections(false)" class="text-xs font-bold text-stone-400 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">❌ Deselect All</button>
     `;
     container.appendChild(controlsDiv);
+
+    // Cartes pour les demandes clients directes
+    guestRequests.forEach(req => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'remal-card p-4 rounded-2xl flex items-center gap-3.5 border-2 border-amber-500/50 bg-amber-950/10 hover:border-amber-400 transition';
+
+        itemDiv.innerHTML = `
+            <div class="flex-1">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-serif-luxury font-bold text-amber-400 text-base">Room ${req.room}</span>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500 text-stone-950">🛎️ Guest Request</span>
+                        </div>
+                        <p class="text-[10px] text-stone-300 mt-1 flex items-center gap-1">👤 ${req.guest_name || 'Guest'} · 📦 ${req.service_type || 'Laundry Request'}</p>
+                        ${req.notes ? `<p class="text-[10px] text-stone-400 italic mt-0.5">"${req.notes}"</p>` : ''}
+                    </div>
+                    <div class="text-right flex flex-col items-end gap-1">
+                        <span class="text-[10px] text-stone-400">${req.created_at ? new Date(req.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                        <button onclick="traiterDemandeClient('${req.id}', '${req.room}')" class="px-3 py-1.5 bg-[#DCA773] hover:bg-[#c89563] text-stone-950 font-bold text-xs rounded-xl shadow transition">
+                            Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(itemDiv);
+    });
+
+    // Cartes pour les bordereaux internes
+    activeTodaySlips.sort((a, b) => {
+        if (a.is_spa && !b.is_spa) return -1;
+        if (!a.is_spa && b.is_spa) return 1;
+        return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
+    });
 
     activeTodaySlips.forEach(entry => {
         const itemDiv = document.createElement('div');
@@ -554,6 +594,19 @@ function chargerLiveOrders() {
     });
 
     updatePrintButtonCount();
+}
+
+async function traiterDemandeClient(reqId, roomNum) {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient.from('laundry_requests').update({ status: 'Completed' }).eq('id', reqId);
+        } catch(e) {
+            console.warn("Erreur mise à jour demande:", e);
+        }
+    }
+    switchMainSection('newRecord');
+    document.getElementById('roomNumber').value = roomNum;
+    onRoomNumberInput();
 }
 
 function ouvrirModalActiveRoomsList() {
