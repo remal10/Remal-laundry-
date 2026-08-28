@@ -81,13 +81,14 @@ function initTheme() {
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
-    if (!supabaseClient) {
+    const client = window.supabaseClient || window.supabase;
+    if (!client) {
         console.warn("Supabase client non initialisé. Mode 100% Local actif.");
         return;
     }
 
     try {
-        const { data: slips, error: slipsErr } = await supabaseClient.from('laundry_slips').select('*');
+        const { data: slips, error: slipsErr } = await client.from('laundry_slips').select('*');
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
@@ -101,7 +102,7 @@ async function chargerDonneesEtAbonnementCloud() {
             console.warn("Erreur lecture laundry_slips sur Supabase:", slipsErr.message);
         }
 
-        const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
+        const { data: guests, error: guestsErr } = await client.from('pms_guests').select('*');
         if (!guestsErr && guests && guests.length > 0) {
             pmsDatabase = {};
             guests.forEach(g => {
@@ -119,7 +120,7 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        supabaseClient.channel('realtime_laundry')
+        client.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
                 await chargerLiveOrders();
             })
@@ -311,6 +312,7 @@ function switchService(service) {
 
 function renderItems() {
     const container = document.getElementById('itemsContainer');
+    if (!container) return;
     container.innerHTML = '';
     const serviceData = database[currentService];
     for (const [catName, items] of Object.entries(serviceData)) {
@@ -386,8 +388,10 @@ function previewImage(event) {
             currentImageData = canvas.toDataURL('image/jpeg', 0.7);
             
             const previewEl = document.getElementById('imagePreview');
-            previewEl.src = currentImageData;
-            previewEl.classList.remove('hidden');
+            if (previewEl) {
+                previewEl.src = currentImageData;
+                previewEl.classList.remove('hidden');
+            }
         }
         img.src = e.target.result;
     }
@@ -395,10 +399,14 @@ function previewImage(event) {
 }
 
 function reinitialiserFormulaire() {
-    document.getElementById('roomNumber').value = ''; 
-    document.getElementById('editingRecordId').value = '';
-    document.getElementById('recordOptionalNote').value = '';
-    document.getElementById('roomPmsInfoBox').classList.add('hidden');
+    const roomInput = document.getElementById('roomNumber');
+    if (roomInput) roomInput.value = ''; 
+    const editId = document.getElementById('editingRecordId');
+    if (editId) editId.value = '';
+    const optNote = document.getElementById('recordOptionalNote');
+    if (optNote) optNote.value = '';
+    const infoBox = document.getElementById('roomPmsInfoBox');
+    if (infoBox) infoBox.classList.add('hidden');
     
     const defaultFoldingRadio = document.querySelector('input[name="foldingOption"][value="F — Folding"]');
     if(defaultFoldingRadio) defaultFoldingRadio.checked = true;
@@ -416,7 +424,10 @@ function reinitialiserFormulaire() {
 
     validateRoomNumber();
     cart = {}; currentImageData = null;
-    document.getElementById('imagePreview').classList.add('hidden'); document.getElementById('photoInput').value = '';
+    const previewEl = document.getElementById('imagePreview');
+    if (previewEl) previewEl.classList.add('hidden');
+    const photoInput = document.getElementById('photoInput');
+    if (photoInput) photoInput.value = '';
     
     selectCountType('hotel'); 
     renderItems(); 
@@ -464,6 +475,7 @@ async function handlePDFUpload(event) {
 
 async function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
+    if (!container) return;
     chargerDonneesLocalStorage();
     
     const todayStr = new Date().toISOString().split('T')[0];
@@ -477,9 +489,10 @@ async function chargerLiveOrders() {
 
     // 2. Demandes enregistrées via le Guest Interface (laundry_requests)
     let guestRequests = [];
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+    const client = window.supabaseClient || window.supabase;
+    if (client) {
         try {
-            const { data: reqs, error: reqErr } = await supabaseClient
+            const { data: reqs, error: reqErr } = await client
                 .from('laundry_requests')
                 .select('*')
                 .neq('status', 'Completed')
@@ -494,7 +507,14 @@ async function chargerLiveOrders() {
     }
 
     const totalActiveCount = activeTodaySlips.length + guestRequests.length;
-    document.getElementById('activeRoomsCountBadge').innerText = totalActiveCount;
+    const badge = document.getElementById('activeRoomsCountBadge');
+    if (badge) badge.innerText = totalActiveCount;
+
+    const headerBadge = document.getElementById('guestRequestBadgeHeader');
+    if (headerBadge) {
+        if (guestRequests.length > 0) headerBadge.classList.remove('hidden');
+        else headerBadge.classList.add('hidden');
+    }
 
     if (totalActiveCount === 0) {
         container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No active room, SPA or guest requests for today.</p>`;
@@ -512,8 +532,15 @@ async function chargerLiveOrders() {
     `;
     container.appendChild(controlsDiv);
 
-    // Cartes pour les demandes clients directes
+    // Cartes pour les demandes clients directes (avec formatage et chargement des articles)
     guestRequests.forEach(req => {
+        let itemsSummary = "Articles non spécifiés";
+        if (req.items && Object.keys(req.items).length > 0) {
+            itemsSummary = Object.values(req.items)
+                .map(i => `${i.qty}x ${i.name}`)
+                .join(', ');
+        }
+
         const itemDiv = document.createElement('div');
         itemDiv.className = 'remal-card p-4 rounded-2xl flex items-center gap-3.5 border-2 border-amber-500/50 bg-amber-950/10 hover:border-amber-400 transition';
 
@@ -525,13 +552,14 @@ async function chargerLiveOrders() {
                             <span class="font-serif-luxury font-bold text-amber-400 text-base">Room ${req.room}</span>
                             <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500 text-stone-950">🛎️ Guest Request</span>
                         </div>
-                        <p class="text-[10px] text-stone-300 mt-1 flex items-center gap-1">👤 ${req.guest_name || 'Guest'} · 📦 ${req.service_type || 'Laundry Request'}</p>
+                        <p class="text-[10px] text-stone-300 mt-1">👤 <strong>${req.guest_name || 'Guest'}</strong></p>
+                        <p class="text-[10px] text-[#DCA773] mt-0.5 font-bold">📦 Articles : ${itemsSummary}</p>
                         ${req.notes ? `<p class="text-[10px] text-stone-400 italic mt-0.5">"${req.notes}"</p>` : ''}
                     </div>
                     <div class="text-right flex flex-col items-end gap-1">
                         <span class="text-[10px] text-stone-400">${req.created_at ? new Date(req.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
-                        <button onclick="traiterDemandeClient('${req.id}', '${req.room}')" class="px-3 py-1.5 bg-[#DCA773] hover:bg-[#c89563] text-stone-950 font-bold text-xs rounded-xl shadow transition">
-                            Process
+                        <button onclick="traiterDemandeClientAvecArticles('${req.id}', '${req.room}')" class="px-3 py-1.5 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold text-xs rounded-xl shadow transition">
+                            Process & Load Items
                         </button>
                     </div>
                 </div>
@@ -596,17 +624,41 @@ async function chargerLiveOrders() {
     updatePrintButtonCount();
 }
 
-async function traiterDemandeClient(reqId, roomNum) {
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+async function traiterDemandeClientAvecArticles(reqId, roomNum) {
+    const client = window.supabaseClient || window.supabase;
+    let requestData = null;
+
+    if (client) {
         try {
-            await supabaseClient.from('laundry_requests').update({ status: 'Completed' }).eq('id', reqId);
+            const { data } = await client.from('laundry_requests').select('*').eq('id', reqId).single();
+            requestData = data;
+            await client.from('laundry_requests').update({ status: 'Completed' }).eq('id', reqId);
         } catch(e) {
-            console.warn("Erreur mise à jour demande:", e);
+            console.warn("Erreur récupération demande:", e);
         }
     }
+
     switchMainSection('newRecord');
-    document.getElementById('roomNumber').value = roomNum;
-    onRoomNumberInput();
+    
+    const roomInput = document.getElementById('roomNumber');
+    if (roomInput) {
+        roomInput.value = roomNum;
+        if (typeof onRoomNumberInput === 'function') onRoomNumberInput();
+    }
+
+    if (requestData && requestData.items) {
+        cart = { ...requestData.items };
+    } else {
+        cart = {};
+    }
+
+    if (typeof renderItems === 'function') renderItems();
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+}
+
+// Rétrocompatibilité avec l'ancienne fonction simple
+async function traiterDemandeClient(reqId, roomNum) {
+    await traiterDemandeClientAvecArticles(reqId, roomNum);
 }
 
 function ouvrirModalActiveRoomsList() {
@@ -626,6 +678,7 @@ function ouvrirModalActiveRoomsList() {
     });
 
     const tbody = document.getElementById('activeRoomsTableBody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     let totalPieces = 0;
@@ -695,7 +748,8 @@ function toggleAllSelections(state) {
 
 function updatePrintButtonCount() {
     const selectedCount = document.querySelectorAll('.room-checkbox:checked').length;
-    document.getElementById('lblBatchPrintText').innerText = `🖨️ Batch Print (${selectedCount})`;
+    const btnLabel = document.getElementById('lblBatchPrintText');
+    if (btnLabel) btnLabel.innerText = `🖨️ Batch Print (${selectedCount})`;
 }
 
 async function imprimerToutesLesChambresDuJour() {
@@ -923,6 +977,7 @@ function afficherListeBordereauxLocal() {
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
     const container = document.getElementById('laundryList');
+    if (!container) return;
     if (filtered.length === 0) {
         container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Aucun bordereau trouvé pour ces critères.</p>`;
         return;
@@ -1044,8 +1099,10 @@ function previewLFImage(event) {
             ctx.drawImage(img, 0, 0, width, height);
             currentLFPhotoData = canvas.toDataURL('image/jpeg', 0.7);
             const previewEl = document.getElementById('lfImagePreview');
-            previewEl.src = currentLFPhotoData;
-            previewEl.classList.remove('hidden');
+            if (previewEl) {
+                previewEl.src = currentLFPhotoData;
+                previewEl.classList.remove('hidden');
+            }
         }
         img.src = e.target.result;
     }
@@ -1077,13 +1134,16 @@ async function saveLostFoundItem() {
     items.unshift(newItem);
     localStorage.setItem('remal_lost_found', JSON.stringify(items));
 
-    await writeRecordToFile(newItem);
+    if (typeof writeRecordToFile === 'function') {
+        await writeRecordToFile(newItem);
+    }
 
     document.getElementById('lfItemName').value = '';
     document.getElementById('lfItemLoc').value = '';
     document.getElementById('lfItemNote').value = '';
     document.getElementById('lfItemPhoto').value = '';
-    document.getElementById('lfImagePreview').classList.add('hidden');
+    const preview = document.getElementById('lfImagePreview');
+    if (preview) preview.classList.add('hidden');
     currentLFPhotoData = null;
     document.getElementById('lfFormCard').classList.add('hidden');
 
@@ -1167,58 +1227,67 @@ function renderManagementDashboard() {
         }
     });
 
-    document.getElementById('kpiRevenue').innerText = `${totalRevenue.toFixed(2)} AED`;
-    document.getElementById('kpiOrders').innerText = cachedSlips.length;
-    document.getElementById('kpiGarments').innerText = `${totalGarments} pcs`;
+    const kpiRev = document.getElementById('kpiRevenue');
+    const kpiOrd = document.getElementById('kpiOrders');
+    const kpiGar = document.getElementById('kpiGarments');
+    if (kpiRev) kpiRev.innerText = `${totalRevenue.toFixed(2)} AED`;
+    if (kpiOrd) kpiOrd.innerText = cachedSlips.length;
+    if (kpiGar) kpiGar.innerText = `${totalGarments} pcs`;
 
     requestAnimationFrame(() => {
-        const ctxDoughnut = document.getElementById('statusDoughnutChart').getContext('2d');
-        if (doughnutChartInstance) doughnutChartInstance.destroy();
+        const ctxDoughnutEl = document.getElementById('statusDoughnutChart');
+        if (ctxDoughnutEl) {
+            const ctxDoughnut = ctxDoughnutEl.getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
 
-        doughnutChartInstance = new Chart(ctxDoughnut, {
-            type: 'doughnut',
-            data: {
-                labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
-                datasets: [{
-                    data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
-                    backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#d6d3d1' } } }
-            }
-        });
-
-        const dates = Object.keys(revenueByDate).sort();
-        const revenues = dates.map(d => revenueByDate[d]);
-
-        const ctxBar = document.getElementById('revenueBarChart').getContext('2d');
-        if (barChartInstance) barChartInstance.destroy();
-
-        barChartInstance = new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: dates.length > 0 ? dates : ['No Data'],
-                datasets: [{
-                    label: 'Revenue (AED)',
-                    data: revenues.length > 0 ? revenues : [0],
-                    backgroundColor: '#DCA773',
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { ticks: { font: { size: 11 }, color: '#d6d3d1' } },
-                    x: { ticks: { font: { size: 11 }, color: '#d6d3d1' } }
+            doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
+                    datasets: [{
+                        data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
+                        backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#d6d3d1' } } }
                 }
-            }
-        });
+            });
+        }
+
+        const ctxBarEl = document.getElementById('revenueBarChart');
+        if (ctxBarEl) {
+            const dates = Object.keys(revenueByDate).sort();
+            const revenues = dates.map(d => revenueByDate[d]);
+
+            const ctxBar = ctxBarEl.getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: dates.length > 0 ? dates : ['No Data'],
+                    datasets: [{
+                        label: 'Revenue (AED)',
+                        data: revenues.length > 0 ? revenues : [0],
+                        backgroundColor: '#DCA773',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { font: { size: 11 }, color: '#d6d3d1' } },
+                        x: { ticks: { font: { size: 11 }, color: '#d6d3d1' } }
+                    }
+                }
+            });
+        }
     });
 }
 
@@ -1502,7 +1571,6 @@ async function genererPDF(entryId = null) {
 
     if (entry.is_spa) {
         ouvrirModalDetails(targetId);
-        const modalEl = document.getElementById('detailModal');
         const printArea = document.getElementById('pdfExportArea');
         const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
         const fileTargetName = `REMAL_${dateIso}_SPA-${entry.spa_serial || '0000'}`;
@@ -1581,7 +1649,11 @@ async function genererPDF(entryId = null) {
     }
 }
 
-function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
+function fermerModal() { 
+    const modal = document.getElementById('detailModal');
+    if (modal) modal.classList.add('hidden'); 
+    selectedIdForModal = null; 
+}
 
 async function supprimerBordereauActuel() {
     if (!selectedIdForModal) return;
@@ -1590,13 +1662,15 @@ async function supprimerBordereauActuel() {
         cachedSlips = cachedSlips.filter(e => e.id != selectedIdForModal);
         sauvegarderDonneesLocalStorage();
 
-        if (supabaseClient) {
-            try { await supabaseClient.from('laundry_slips').delete().eq('id', selectedIdForModal); } catch(e) {}
+        const client = window.supabaseClient || window.supabase;
+        if (client) {
+            try { await client.from('laundry_slips').delete().eq('id', selectedIdForModal); } catch(e) {}
         }
 
         fermerModal();
         chargerLiveOrders();
-        if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+        const pdfListSec = document.getElementById('sectionPdfList');
+        if(pdfListSec && !pdfListSec.classList.contains('hidden')) {
             afficherListeBordereauxLocal();
         }
     }
