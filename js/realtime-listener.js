@@ -1,37 +1,47 @@
-// js/realtime-listener.js - Module de réception Realtime pour Laundry OS
+// js/realtime-listener.js - Module d'écoute en temps réel pour Laundry OS
 document.addEventListener('DOMContentLoaded', () => {
-    // Vérification que le client Supabase est bien initialisé
-    if (typeof supabaseClient === 'undefined') {
-        console.error("⚠️ Supabase client introuvable dans Laundry OS.");
+    // 1. Vérification de la présence du client Supabase
+    const client = window.supabaseClient || window.supabase;
+    
+    if (!client) {
+        console.error("⚠️ [Realtime] Impossible de trouver l'instance Supabase.");
         return;
     }
 
-    console.log("🔊 Écoute en temps réel des commandes démarrée...");
+    console.log("🔊 [Realtime] Module de réception activé pour Laundry OS");
 
-    // Écoute en direct des insertions dans la table laundry_requests
-    supabaseClient
-        .channel('laundry-os-realtime')
+    // 2. Abonnement en temps réel sur la table laundry_requests
+    client
+        .channel('laundry-os-sync')
         .on('postgres_changes', { 
             event: 'INSERT', 
             schema: 'public', 
             table: 'laundry_requests' 
         }, (payload) => {
             const nouvelleCommande = payload.new;
-            console.log("🛎️ Nouvelle commande reçue :", nouvelleCommande);
+            console.log("🛎️ [Realtime] Nouvelle commande reçue :", nouvelleCommande);
 
-            // 1. Signal sonore d'alerte
+            // A. Signal sonore d'alerte
             try {
                 const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                audio.play();
-            } catch (e) {
-                console.log("Alerte sonore bloquée par le navigateur");
+                audio.play().catch(e => console.log("Alerte audio bloquée par le navigateur :", e));
+            } catch (err) {
+                console.error("Erreur lecture audio :", err);
             }
 
-            // 2. Notification visuelle rapide à l'écran
-            alert(`🛎️ NOUVELLE COMMANDE REÇUE !\nChambre: ${nouvelleCommande.room}\nClient: ${nouvelleCommande.guest_name}\nService: ${nouvelleCommande.service_type}`);
+            // B. Notification visuelle
+            alert(`🛎️ NOUVELLE DEMANDE REÇUE !\n\nChambre : ${nouvelleCommande.room}\nClient : ${nouvelleCommande.guest_name || 'Non spécifié'}\nService : ${nouvelleCommande.service_type}`);
 
-            // 3. Si tu as une fonction d'actualisation de tableau déjà présente dans ton JS, appelle-la ici :
-            // Exemple : if (typeof chargerCommandes === 'function') { chargerCommandes(); }
+            // C. Rafraîchissement automatique de la liste si une fonction existe
+            if (typeof window.chargerCommandes === 'function') {
+                window.chargerCommandes();
+            } else if (typeof window.fetchOrders === 'function') {
+                window.fetchOrders();
+            } else if (typeof window.init === 'function') {
+                window.init();
+            }
         })
-        .subscribe();
+        .subscribe((status) => {
+            console.log("📡 [Realtime] Statut de connexion :", status);
+        });
 });
