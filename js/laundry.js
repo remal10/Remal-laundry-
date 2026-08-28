@@ -1,14 +1,34 @@
-// js/laundry.js - Logique Métier Blanchisserie, SPA & Traitements Données
+// js/laundry.js - Logique Métier, Traitement des Données & Base de Données
 
 let cart = {};
 let cachedSlips = [];
 let pmsDatabase = {};
 let globalDirHandle = null;
-let companyKeywords = ["agency", "company", "airline", "crew", "corp", "group", "travel"];
+const companyKeywords = ["agency", "company", "airline", "crew", "corp", "group", "travel"];
 
 /* ==========================================
-   1. GESTION DES FICHIERS ET SAUVEGARDES
+   1. LOCAL STORAGE & FICHIERS LOCAUX
    ========================================== */
+
+function chargerDonneesLocalStorage() {
+    const data = localStorage.getItem('remal_laundry_slips');
+    cachedSlips = data ? JSON.parse(data) : [];
+}
+
+function sauvegarderDonneesLocalStorage() {
+    localStorage.setItem('remal_laundry_slips', JSON.stringify(cachedSlips));
+}
+
+function chargerPmsLocalStorage() {
+    const data = localStorage.getItem('remal_pms_database');
+    if (data) {
+        try { pmsDatabase = JSON.parse(data); } catch(e) { pmsDatabase = {}; }
+    }
+}
+
+function sauvegarderPmsLocalStorage() {
+    localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
+}
 
 async function selectBackupFolder() {
     try {
@@ -36,28 +56,8 @@ async function writeRecordToFile(record) {
     }
 }
 
-function chargerDonneesLocalStorage() {
-    const data = localStorage.getItem('remal_laundry_slips');
-    cachedSlips = data ? JSON.parse(data) : [];
-}
-
-function sauvegarderDonneesLocalStorage() {
-    localStorage.setItem('remal_laundry_slips', JSON.stringify(cachedSlips));
-}
-
-function chargerPmsLocalStorage() {
-    const data = localStorage.getItem('remal_pms_database');
-    if (data) {
-        try { pmsDatabase = JSON.parse(data); } catch(e) { pmsDatabase = {}; }
-    }
-}
-
-function sauvegarderPmsLocalStorage() {
-    localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
-}
-
 /* ==========================================
-   2. VALIDATION & CALCULS DES ARTICLES
+   2. VALIDATION & GENERATION D'IDENTIFIANTS
    ========================================== */
 
 function isRoomNumberValid(val) {
@@ -73,8 +73,27 @@ function isRoomNumberValid(val) {
     );
 }
 
+function genererIdentifiantBordereau(entry) {
+    if (entry.receipt_id) return entry.receipt_id;
+    const d = entry.created_at ? new Date(entry.created_at) : new Date();
+    const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
+    
+    if (entry.is_spa) {
+        const serial = String(entry.spa_serial || '0000').padStart(4, '0');
+        return `SPA-${dateStr}-${serial}`;
+    } else {
+        const roomClean = String(entry.room || '000').trim();
+        return `REM-${dateStr}-RM${roomClean}`;
+    }
+}
+
+/* ==========================================
+   3. CALCULS DES TOTAUX & PANIER
+   ========================================== */
+
 function updateQty(key, name, price, delta) {
-    if (!cart[key]) cart[key] = { qty: 0, freeQty: 0, price: price, name: name, service: typeof currentService !== 'undefined' ? currentService : 'laundry' };
+    const sType = typeof currentService !== 'undefined' ? currentService : 'laundry';
+    if (!cart[key]) cart[key] = { qty: 0, freeQty: 0, price: price, name: name, service: sType };
     cart[key].qty += delta;
     if (cart[key].freeQty > cart[key].qty) cart[key].freeQty = cart[key].qty;
     if (cart[key].qty <= 0) delete cart[key];
@@ -129,22 +148,8 @@ function calculateGlobalTotals() {
     if (document.getElementById('grandTotal')) document.getElementById('grandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 }
 
-function genererIdentifiantBordereau(entry) {
-    if (entry.receipt_id) return entry.receipt_id;
-    const d = entry.created_at ? new Date(entry.created_at) : new Date();
-    const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
-    
-    if (entry.is_spa) {
-        const serial = String(entry.spa_serial || '0000').padStart(4, '0');
-        return `SPA-${dateStr}-${serial}`;
-    } else {
-        const roomClean = String(entry.room || '000').trim();
-        return `REM-${dateStr}-RM${roomClean}`;
-    }
-}
-
 /* ==========================================
-   3. SAUVEGARDE ET SYNCHRONISATION
+   4. ENREGISTREMENT LAUNDRY & SPA
    ========================================== */
 
 async function sauvegarderBordereauLocal() {
@@ -152,9 +157,9 @@ async function sauvegarderBordereauLocal() {
     const roomNum = roomInput ? roomInput.value.trim() : '';
     const editingId = document.getElementById('editingRecordId') ? document.getElementById('editingRecordId').value : '';
     const optionalNote = document.getElementById('recordOptionalNote') ? document.getElementById('recordOptionalNote').value.trim() : '';
-    const currentImageData = typeof window.currentImageData !== 'undefined' ? window.currentImageData : null;
+    const photoData = typeof currentImageData !== 'undefined' ? currentImageData : null;
     const countType = typeof currentCountType !== 'undefined' ? currentCountType : 'hotel';
-    const serviceType = typeof currentService !== 'undefined' ? currentService : 'laundry';
+    const sType = typeof currentService !== 'undefined' ? currentService : 'laundry';
 
     if (!roomNum) {
         alert('Please enter a room number.');
@@ -172,17 +177,11 @@ async function sauvegarderBordereauLocal() {
         const qtyVal = parseInt(document.getElementById(`customQty${i}`)?.value) || 0;
 
         if (nameVal && qtyVal > 0) {
-            finalCart[`custom_${i}`] = {
-                name: nameVal,
-                price: priceVal,
-                qty: qtyVal,
-                freeQty: 0,
-                service: serviceType
-            };
+            finalCart[`custom_${i}`] = { name: nameVal, price: priceVal, qty: qtyVal, freeQty: 0, service: sType };
         }
     }
 
-    if (Object.keys(finalCart).length === 0 && !currentImageData) {
+    if (Object.keys(finalCart).length === 0 && !photoData) {
         alert('Please select at least one garment or take a proof photo.');
         return;
     }
@@ -208,7 +207,6 @@ async function sauvegarderBordereauLocal() {
     const pmsData = pmsDatabase[roomNum] || { guestName: 'Unknown Guest', roomTyp: 'DLXR', agency: 'Direct', quotaText: 'Chargeable', isChargeable: true };
 
     chargerDonneesLocalStorage();
-
     const todayStr = new Date().toISOString().split('T')[0];
     let targetRecord = null;
     let existingIndex = -1;
@@ -231,7 +229,7 @@ async function sauvegarderBordereauLocal() {
             vat: vat,
             total: grandTotal,
             note: optionalNote,
-            photo: currentImageData || cachedSlips[existingIndex].photo,
+            photo: photoData || cachedSlips[existingIndex].photo,
             guest_name: pmsData.guestName,
             room_typ: pmsData.roomTyp,
             agency: pmsData.agency,
@@ -255,7 +253,7 @@ async function sauvegarderBordereauLocal() {
             vat: vat,
             total: grandTotal,
             note: optionalNote,
-            photo: currentImageData,
+            photo: photoData,
             guest_name: pmsData.guestName,
             room_typ: pmsData.roomTyp,
             agency: pmsData.agency,
@@ -273,11 +271,7 @@ async function sauvegarderBordereauLocal() {
 
     const client = window.supabaseClient || window.supabase;
     if (client && targetRecord) {
-        try {
-            await client.from('laundry_slips').upsert(targetRecord);
-        } catch(e) {
-            console.warn("Erreur Supabase, conservé en local:", e);
-        }
+        try { await client.from('laundry_slips').upsert(targetRecord); } catch(e) { console.warn("Supabase Sync:", e); }
     }
 
     await writeRecordToFile(targetRecord);
@@ -285,189 +279,6 @@ async function sauvegarderBordereauLocal() {
     if (typeof reinitialiserFormulaire === 'function') reinitialiserFormulaire();
     if (typeof switchMainSection === 'function') switchMainSection('liveRecord');
 }
-
-/* ==========================================
-   4. IMPORTATION & PARSER PMS MASS PDF
-   ========================================== */
-
-function isPAXOrInvalid(val) {
-    if (!val) return true;
-    let cleaned = val.trim();
-    if (/^\d+[\/\-\.]\d+[\/\-\.]\d+$/.test(cleaned)) return true;
-    if (/^[\d\/\s\-\.]+$/.test(cleaned)) return true;
-    if (/\d{2}\/\d{2}\/\d{4}/.test(cleaned)) return true;
-    const blockedCodes = ['DLXR', 'BBLA', 'HBDL', 'REG', 'IN', 'CN', 'EMA', 'SAM', 'CORP', 'B1', 'B2', '1/0/0', '2/0/0'];
-    if (blockedCodes.includes(cleaned.toUpperCase())) return true;
-    return false;
-}
-
-function sanitizeAgencyName(agencyStr) {
-    if (!agencyStr || isPAXOrInvalid(agencyStr)) return "Direct";
-    let cleaned = agencyStr.trim();
-    if (isPAXOrInvalid(cleaned)) return "Direct";
-    return cleaned;
-}
-
-async function processTextData(rawData) {
-    if (!rawData.trim()) {
-        alert("No data found to process.");
-        return;
-    }
-
-    const lines = rawData.split('\n');
-    let parsedData = [];
-    let currentRoom = null;
-    let currentGuest = "";
-    let currentRoomTyp = "";
-    let currentArrival = "";
-    let currentDeparture = "";
-    let currentAgency = "Direct";
-    let accumulatedText = "";
-
-    lines.forEach((line) => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        
-        const cols = line.split('\t').map(c => c.trim()).filter(c => c !== "");
-
-        if (/^\d{3,4}$/.test(cols[0])) {
-            if (currentRoom) {
-                parsedData.push({
-                    room: currentRoom,
-                    guestName: currentGuest || 'Unknown Guest',
-                    roomTyp: currentRoomTyp || 'DLXR',
-                    arrival: currentArrival,
-                    departure: currentDeparture,
-                    agency: sanitizeAgencyName(currentAgency),
-                    fullContext: accumulatedText.toLowerCase()
-                });
-            }
-            currentRoom = cols[0];
-            currentGuest = "";
-            currentRoomTyp = "DLXR";
-            currentArrival = "";
-            currentDeparture = "";
-            currentAgency = "Direct";
-
-            for (let i = 1; i < cols.length; i++) {
-                let val = cols[i];
-                let valLower = val.toLowerCase();
-
-                if (isPAXOrInvalid(val)) continue;
-
-                const isCompany = companyKeywords.some(kw => valLower.includes(kw));
-                if (isCompany) {
-                    currentAgency = val;
-                    continue;
-                }
-
-                if (val.length <= 5 && /^[A-Z]+$/.test(val) && !currentRoomTyp) {
-                    currentRoomTyp = val;
-                } 
-                else if (/\d{2}\/\d{2}\/\d{4}/.test(val)) {
-                    if (!currentArrival) currentArrival = val;
-                    else if (!currentDeparture) currentDeparture = val;
-                } 
-                else if (!currentGuest && (val.includes(',') || val.includes('Mr.') || val.includes('Ms.'))) {
-                    currentGuest = val;
-                }
-            }
-
-            let candidateCompany = cols.find(c => companyKeywords.some(kw => c.toLowerCase().includes(kw)) && !isPAXOrInvalid(c));
-            if (candidateCompany) {
-                currentAgency = candidateCompany;
-            }
-
-            accumulatedText = line;
-        } else {
-            accumulatedText += " " + line;
-            let candidateCompany = cols.find(c => companyKeywords.some(kw => c.toLowerCase().includes(kw)) && !isPAXOrInvalid(c));
-            if (candidateCompany && (currentAgency === "Direct" || isPAXOrInvalid(currentAgency))) {
-                currentAgency = candidateCompany;
-            }
-        }
-    });
-
-    if (currentRoom) {
-        parsedData.push({
-            room: currentRoom,
-            guestName: currentGuest || 'Unknown Guest',
-            roomTyp: currentRoomTyp || 'DLXR',
-            arrival: currentArrival,
-            departure: currentDeparture,
-            agency: sanitizeAgencyName(currentAgency),
-            fullContext: accumulatedText.toLowerCase()
-        });
-    }
-
-    if (parsedData.length > 0) {
-        pmsDatabase = {};
-        let cloudGuestsPayload = [];
-
-        parsedData.forEach(item => {
-            const laundryRegex = /([0-9]{1,2})\s*(pcs|pieces)?[\/\s]*(lau|lan|laun|laundy|daily)/i;
-            const match = item.fullContext.match(laundryRegex);
-            const hasLaundry = match !== null || /hdl[0-9]|laundry|lau\s*daily/i.test(item.fullContext);
-            
-            let quotaText = "";
-            let isChargeable = false;
-
-            if (match) {
-                const pcsCount = parseInt(match[1], 10);
-                quotaText = `${String(pcsCount).padStart(2, '0')} PIECES LAU DAILY`;
-                isChargeable = false;
-            } else if (hasLaundry) {
-                quotaText = "Laundry Package";
-                isChargeable = false;
-            } else {
-                quotaText = "Chargeable";
-                isChargeable = true;
-            }
-
-            pmsDatabase[item.room] = {
-                guestName: item.guestName,
-                roomTyp: item.roomTyp,
-                arrival: item.arrival,
-                departure: item.departure,
-                agency: item.agency,
-                quotaText: quotaText,
-                isChargeable: isChargeable
-            };
-
-            cloudGuestsPayload.push({
-                room: item.room,
-                guest_name: item.guestName,
-                room_typ: item.roomTyp,
-                arrival: item.arrival,
-                departure: item.departure,
-                agency: item.agency,
-                quota_text: quotaText,
-                is_chargeable: isChargeable
-            });
-        });
-
-        sauvegarderPmsLocalStorage();
-        if (typeof renderMassPreviewTable === 'function') renderMassPreviewTable();
-
-        const client = window.supabaseClient || window.supabase;
-        if (client && cloudGuestsPayload.length > 0) {
-            try {
-                await client.from('pms_guests').delete().neq('room', '000');
-                await client.from('pms_guests').insert(cloudGuestsPayload);
-                alert(`✅ PMS Report updated successfully! (${parsedData.length} rooms mapped)`);
-            } catch(e) {
-                console.warn("Erreur Supabase PMS Guests:", e);
-            }
-        }
-
-    } else {
-        alert("Could not automatically map data from this format.");
-    }
-}
-
-/* ==========================================
-   5. REÇUS ET LOGIQUE V ELEMENT SPA
-   ========================================== */
 
 function calculateSpaTotal() {
     let grandTotal = 0;
@@ -503,8 +314,8 @@ async function validateAndSaveSpaReceipt() {
     const delDate = document.getElementById('spa-delivery-date').value;
     const delTime = document.getElementById('spa-delivery-time').value;
 
-    if (!serialNo) { alert("⚠️ Veuillez entrer un numéro de série (Serial No)."); return false; }
-    if (grandTotalValue <= 0) { alert("⚠️ Le Grand Total doit être supérieur à 0 AED."); return false; }
+    if (!serialNo) { alert("⚠️ Veuillez entrer un numéro de série."); return false; }
+    if (grandTotalValue <= 0) { alert("⚠️ Le Grand Total doit être > 0 AED."); return false; }
     if (!collectedBy || !deliveredBy || !givenBy) { alert("⚠️ Veuillez remplir tous les noms."); return false; }
 
     let spaItems = {};
@@ -532,17 +343,8 @@ async function validateAndSaveSpaReceipt() {
                 spa_serial: serialNo,
                 room: `SPA #${serialNo}`,
                 guest_name: givenBy,
-                options: { 
-                    ...cachedSlips[index].options,
-                    collection_date: colDate, collection_time: colTime, 
-                    delivery_date: delDate, delivery_time: delTime, 
-                    collected_by: collectedBy, delivered_by: deliveredBy 
-                },
-                items: spaItems,
-                total_clothes: totalClothes,
-                subtotal: grandTotalValue,
-                total: grandTotalValue,
-                created_by: 'Staff'
+                options: { ...cachedSlips[index].options, collection_date: colDate, collection_time: colTime, delivery_date: delDate, delivery_time: delTime, collected_by: collectedBy, delivered_by: deliveredBy },
+                items: spaItems, total_clothes: totalClothes, subtotal: grandTotalValue, total: grandTotalValue, created_by: 'Staff'
             };
             cachedSlips[index].receipt_id = genererIdentifiantBordereau(cachedSlips[index]);
             targetRecord = cachedSlips[index];
@@ -550,27 +352,9 @@ async function validateAndSaveSpaReceipt() {
         alert(`✅ SPA Receipt #${serialNo} updated!`);
     } else {
         targetRecord = {
-            id: Date.now(),
-            is_spa: true,
-            spa_serial: serialNo,
-            room: `SPA #${serialNo}`,
-            guest_name: givenBy,
-            room_typ: 'SPA',
-            agency: 'V Element SPA',
-            count_type: 'guest',
-            options: { 
-                service_style: 'SPA Daily Sheet', 
-                collection_date: colDate, collection_time: colTime, 
-                delivery_date: delDate, delivery_time: delTime, 
-                collected_by: collectedBy, delivered_by: deliveredBy 
-            },
-            items: spaItems,
-            total_clothes: totalClothes,
-            subtotal: grandTotalValue,
-            vat: 0,
-            total: grandTotalValue,
-            created_by: 'Staff',
-            status: 'Collected',
+            id: Date.now(), is_spa: true, spa_serial: serialNo, room: `SPA #${serialNo}`, guest_name: givenBy, room_typ: 'SPA', agency: 'V Element SPA', count_type: 'guest',
+            options: { service_style: 'SPA Daily Sheet', collection_date: colDate, collection_time: colTime, delivery_date: delDate, delivery_time: delTime, collected_by: collectedBy, delivered_by: deliveredBy },
+            items: spaItems, total_clothes: totalClothes, subtotal: grandTotalValue, vat: 0, total: grandTotalValue, created_by: 'Staff', status: 'Collected',
             created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
         };
         targetRecord.receipt_id = genererIdentifiantBordereau(targetRecord);
@@ -582,21 +366,153 @@ async function validateAndSaveSpaReceipt() {
 
     const client = window.supabaseClient || window.supabase;
     if (client && targetRecord) {
-        try {
-            await client.from('laundry_slips').upsert(targetRecord);
-        } catch(e) {
-            console.warn("Erreur Supabase SPA, conservé en local:", e);
-        }
+        try { await client.from('laundry_slips').upsert(targetRecord); } catch(e) { console.warn("Supabase SPA sync:", e); }
     }
 
     await writeRecordToFile(targetRecord);
-
     if (typeof switchMainSection === 'function') switchMainSection('liveRecord');
     return true;
 }
 
 /* ==========================================
-   6. EXPORT / IMPORT ET RESTAURATION
+   5. PARSER RAPPORT PMS ET TEXTE
+   ========================================== */
+
+function isPAXOrInvalid(val) {
+    if (!val) return true;
+    let cleaned = val.trim();
+    if (/^\d+[\/\-\.]\d+[\/\-\.]\d+$/.test(cleaned)) return true;
+    if (/^[\d\/\s\-\.]+$/.test(cleaned)) return true;
+    if (/\d{2}\/\d{2}\/\d{4}/.test(cleaned)) return true;
+    const blockedCodes = ['DLXR', 'BBLA', 'HBDL', 'REG', 'IN', 'CN', 'EMA', 'SAM', 'CORP', 'B1', 'B2', '1/0/0', '2/0/0'];
+    if (blockedCodes.includes(cleaned.toUpperCase())) return true;
+    return false;
+}
+
+function sanitizeAgencyName(agencyStr) {
+    if (!agencyStr || isPAXOrInvalid(agencyStr)) return "Direct";
+    let cleaned = agencyStr.trim();
+    if (isPAXOrInvalid(cleaned)) return "Direct";
+    return cleaned;
+}
+
+async function processTextData(rawData) {
+    if (!rawData.trim()) { alert("No data found to process."); return; }
+
+    const lines = rawData.split('\n');
+    let parsedData = [];
+    let currentRoom = null;
+    let currentGuest = "";
+    let currentRoomTyp = "";
+    let currentArrival = "";
+    let currentDeparture = "";
+    let currentAgency = "Direct";
+    let accumulatedText = "";
+
+    lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const cols = line.split('\t').map(c => c.trim()).filter(c => c !== "");
+
+        if (/^\d{3,4}$/.test(cols[0])) {
+            if (currentRoom) {
+                parsedData.push({
+                    room: currentRoom,
+                    guestName: currentGuest || 'Unknown Guest',
+                    roomTyp: currentRoomTyp || 'DLXR',
+                    arrival: currentArrival,
+                    departure: currentDeparture,
+                    agency: sanitizeAgencyName(currentAgency),
+                    fullContext: accumulatedText.toLowerCase()
+                });
+            }
+            currentRoom = cols[0];
+            currentGuest = ""; currentRoomTyp = "DLXR"; currentArrival = ""; currentDeparture = ""; currentAgency = "Direct";
+
+            for (let i = 1; i < cols.length; i++) {
+                let val = cols[i];
+                let valLower = val.toLowerCase();
+                if (isPAXOrInvalid(val)) continue;
+
+                if (companyKeywords.some(kw => valLower.includes(kw))) { currentAgency = val; continue; }
+
+                if (val.length <= 5 && /^[A-Z]+$/.test(val) && !currentRoomTyp) {
+                    currentRoomTyp = val;
+                } else if (/\d{2}\/\d{2}\/\d{4}/.test(val)) {
+                    if (!currentArrival) currentArrival = val;
+                    else if (!currentDeparture) currentDeparture = val;
+                } else if (!currentGuest && (val.includes(',') || val.includes('Mr.') || val.includes('Ms.'))) {
+                    currentGuest = val;
+                }
+            }
+            accumulatedText = line;
+        } else {
+            accumulatedText += " " + line;
+        }
+    });
+
+    if (currentRoom) {
+        parsedData.push({
+            room: currentRoom,
+            guestName: currentGuest || 'Unknown Guest',
+            roomTyp: currentRoomTyp || 'DLXR',
+            arrival: currentArrival,
+            departure: currentDeparture,
+            agency: sanitizeAgencyName(currentAgency),
+            fullContext: accumulatedText.toLowerCase()
+        });
+    }
+
+    if (parsedData.length > 0) {
+        pmsDatabase = {};
+        let cloudGuestsPayload = [];
+
+        parsedData.forEach(item => {
+            const match = item.fullContext.match(/([0-9]{1,2})\s*(pcs|pieces)?[\/\s]*(lau|lan|laun|laundy|daily)/i);
+            const hasLaundry = match !== null || /hdl[0-9]|laundry|lau\s*daily/i.test(item.fullContext);
+            let quotaText = match ? `${String(parseInt(match[1], 10)).padStart(2, '0')} PIECES LAU DAILY` : (hasLaundry ? "Laundry Package" : "Chargeable");
+            let isChargeable = !match && !hasLaundry;
+
+            pmsDatabase[item.room] = {
+                guestName: item.guestName,
+                roomTyp: item.roomTyp,
+                arrival: item.arrival,
+                departure: item.departure,
+                agency: item.agency,
+                quotaText: quotaText,
+                isChargeable: isChargeable
+            };
+
+            cloudGuestsPayload.push({
+                room: item.room,
+                guest_name: item.guestName,
+                room_typ: item.roomTyp,
+                arrival: item.arrival,
+                departure: item.departure,
+                agency: item.agency,
+                quota_text: quotaText,
+                is_chargeable: isChargeable
+            });
+        });
+
+        sauvegarderPmsLocalStorage();
+        if (typeof renderMassPreviewTable === 'function') renderMassPreviewTable();
+
+        const client = window.supabaseClient || window.supabase;
+        if (client && cloudGuestsPayload.length > 0) {
+            try {
+                await client.from('pms_guests').delete().neq('room', '000');
+                await client.from('pms_guests').insert(cloudGuestsPayload);
+                alert(`✅ PMS Report updated! (${parsedData.length} rooms mapped)`);
+            } catch(e) { console.warn("Supabase PMS error:", e); }
+        }
+    } else {
+        alert("Could not automatically map data from this format.");
+    }
+}
+
+/* ==========================================
+   6. EXPORT / IMPORT SYSTÈME
    ========================================== */
 
 async function exportAutoDirect() {
@@ -604,17 +520,10 @@ async function exportAutoDirect() {
     const lostFoundItems = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
 
     if (cachedSlips.length === 0 && lostFoundItems.length === 0) {
-        alert("⚠️ Aucune donnée à exporter.");
-        return;
+        alert("⚠️ Aucune donnée à exporter."); return;
     }
 
-    const backupData = {
-        type: "Remal_Full_System_Backup",
-        exportDate: new Date().toISOString(),
-        slips: cachedSlips,
-        lost_found: lostFoundItems
-    };
-    
+    const backupData = { type: "Remal_Full_System_Backup", exportDate: new Date().toISOString(), slips: cachedSlips, lost_found: lostFoundItems };
     const jsonString = JSON.stringify(backupData, null, 2);
     const filename = `Remal_Hotel_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
 
@@ -624,22 +533,15 @@ async function exportAutoDirect() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    document.body.appendChild(a); a.click(); a.remove();
 
-    alert("✅ Sauvegarde complète (Blanchisserie & Lost & Found) effectuée !");
+    alert("✅ Sauvegarde complète effectuée !");
 }
 
 async function importAutoDirect() {
     let importedData = null;
-
     const internalData = localStorage.getItem('remal_auto_backup_full');
-    if (internalData) {
-        try {
-            importedData = JSON.parse(internalData);
-        } catch(e) {}
-    }
+    if (internalData) { try { importedData = JSON.parse(internalData); } catch(e) {} }
 
     if (importedData && (importedData.slips || importedData.lost_found)) {
         if (importedData.slips && importedData.slips.length > 0) {
@@ -664,12 +566,6 @@ async function importAutoDirect() {
 
         alert(`✅ Données restaurées avec succès !`);
     } else {
-        alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
+        alert("⚠️ Aucune sauvegarde trouvée.");
     }
 }
-
-// Initialisation au chargement de la page
-document.addEventListener('DOMContentLoaded', () => {
-    chargerDonneesLocalStorage();
-    chargerPmsLocalStorage();
-});
