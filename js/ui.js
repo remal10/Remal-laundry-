@@ -1611,10 +1611,10 @@ window.onNewGuestRequestReceived = function(newOrder) {
     
     sauvegarderDonneesLocalStorage();
 
-    // Mise à jour visuelle de la bannière VIP
+        // Update VIP notification banner in English
     const bannerText = document.getElementById('guestBannerText');
     if (bannerText) {
-        bannerText.innerText = `Chambre ${roomNum} (${guestName}) — ${totalPcs} article(s)`;
+        bannerText.innerText = `Room ${roomNum} (${guestName}) — ${totalPcs} piece(s) submitted.`;
     }
 
     // Actualisation de l'affichage dans la section Active Rooms
