@@ -1,141 +1,133 @@
 // ==========================================
-// REALTIME LISTENER - GUEST REQUESTS (REMAL HOTEL)
+// REALTIME LISTENER & NOTIFICATIONS (REMAL LAUNDRY OS)
 // ==========================================
 
-let audioCtxInstance = null;
-
-// Déblocage automatique du Web Audio API au premier clic utilisateur
-function initAudioOnUserInteraction() {
-    if (!audioCtxInstance) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-            audioCtxInstance = new AudioContext();
-        }
-    }
-    if (audioCtxInstance && audioCtxInstance.state === 'suspended') {
-        audioCtxInstance.resume();
-    }
-}
-
-window.addEventListener('click', initAudioOnUserInteraction, { once: true });
-window.addEventListener('touchstart', initAudioOnUserInteraction, { once: true });
-
-// 1. Sonnerie élégante Carillon Hôtel 5 Étoiles (Web Audio API)
+// 1. Jouer un carillon Web Audio "Luxury Hotel"
 function playLuxuryHotelChime() {
     try {
-        if (!audioCtxInstance) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (AudioContext) audioCtxInstance = new AudioContext();
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        // Si le contexte est en pause (sécurité navigateur), on le relance
+        if (ctx.state === 'suspended') {
+            ctx.resume();
         }
 
-        if (audioCtxInstance.state === 'suspended') {
-            audioCtxInstance.resume();
-        }
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // Do, Mi, Sol, Do (Aptement luxueux)
+        let now = ctx.currentTime;
 
-        const ctx = audioCtxInstance;
-        const notes = [880, 1318.51]; // La5 (880Hz) puis Mi6 (1318.51Hz)
-        
-        notes.forEach((freq, index) => {
+        notes.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            osc.frequency.setValueAtTime(freq, now + idx * 0.15);
 
-            const startTime = ctx.currentTime + (index * 0.25);
-            gain.gain.setValueAtTime(0, startTime);
-            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.2);
+            gain.gain.setValueAtTime(0, now + idx * 0.15);
+            gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.15 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.15 + 1.2);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
 
-            osc.start(startTime);
-            osc.stop(startTime + 1.2);
+            osc.start(now + idx * 0.15);
+            osc.stop(now + idx * 0.15 + 1.3);
         });
+
+        // Vibration smartphone si supportée
+        if ("vibrate" in navigator) {
+            navigator.vibrate([200, 100, 200, 100, 400]);
+        }
     } catch (e) {
-        console.warn("Audio Context non autorisé ou non supporté :", e);
+        console.warn("Erreur AudioContext:", e);
     }
 }
 
-// 2. Affichage de la Bannière de Notification VIP
-function showLuxuryNotificationBanner(order) {
-    const existingBanner = document.getElementById('remalLuxuryBanner');
-    if (existingBanner) existingBanner.remove();
+// 2. Afficher la bannière de notification VIP en haut
+function showLuxuryNotificationBanner(reqData) {
+    const banner = document.getElementById('guestRequestNotificationBanner');
+    const bannerText = document.getElementById('guestBannerText');
 
-    const roomDisp = order.room || order.room_number || '---';
-    const guestDisp = order.guest_name || 'Guest';
-    const piecesDisp = order.total_clothes || order.total_items || order.total_pieces || 0;
+    // Récupération intelligente des champs (compatibilité Guest Portal)
+    const roomNum = reqData.room_number || reqData.room || '---';
+    const guestName = reqData.guest_name || 'Guest';
+    const totalPcs = reqData.total_pieces || reqData.total_clothes || 0;
 
-    const banner = document.createElement('div');
-    banner.id = 'remalLuxuryBanner';
-    banner.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[92%] max-w-md bg-[#161412]/95 border border-[#DCA773] text-[#ffffff] p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-xl flex items-center justify-between gap-4 transition-all duration-500 transform -translate-y-10 opacity-0';
-    
-    banner.innerHTML = `
-        <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-[#DCA773]/20 border border-[#DCA773] flex items-center justify-center text-[#DCA773] shrink-0">
-                <i class="fas fa-bell text-base animate-bounce"></i>
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-xs uppercase tracking-widest text-[#DCA773]">New Guest Order</span>
-                    <span class="text-[9px] bg-[#DCA773] text-stone-950 font-black px-2 py-0.5 rounded-full">ROOM ${roomDisp}</span>
-                </div>
-                <p class="text-xs font-semibold text-stone-200 mt-0.5">${guestDisp} • ${piecesDisp} Pcs</p>
-            </div>
-        </div>
-        <button onclick="document.getElementById('remalLuxuryBanner').remove()" class="text-stone-400 hover:text-white p-1 text-base">✕</button>
-    `;
+    if (bannerText) {
+        bannerText.innerText = `Chambre ${roomNum} (${guestName}) vient de demander ${totalPcs} pièce(s).`;
+    }
 
-    document.body.appendChild(banner);
+    if (banner) {
+        banner.classList.remove('hidden');
+    }
 
-    requestAnimationFrame(() => {
-        banner.classList.remove('-translate-y-10', 'opacity-0');
-    });
-
-    setTimeout(() => {
-        if (banner && banner.parentNode) {
-            banner.classList.add('-translate-y-10', 'opacity-0');
-            setTimeout(() => banner.remove(), 500);
-        }
-    }, 7000);
+    // Jouer le son
+    playLuxuryHotelChime();
 }
 
-// 3. Écouteur Realtime Supabase
-function initGuestRequestsRealtime() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        console.warn("Abonnement Realtime en attente de l'initialisation de Supabase...");
-        setTimeout(initGuestRequestsRealtime, 500);
+// 3. Initialiser l'abonnement Supabase Realtime
+function initRealtimeGuestRequests() {
+    if (!supabaseClient) {
+        console.warn("⚠️ supabaseClient non initialisé. Realtime désactivé.");
         return;
     }
 
-    supabaseClient
-        .channel('laundry_os_guest_requests')
-        .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'guest_laundry_requests' 
-        }, payload => {
-            const newOrder = payload.new;
-            console.log("🔔 Nouvelle demande en temps réel reçue :", newOrder);
+    console.log("⚡ Activation du canal Realtime sur la table guest_laundry_requests...");
 
-            // 1. Jouer la sonnerie
-            playLuxuryHotelChime();
+    const channel = supabaseClient
+        .channel('laundry_os_guest_requests_channel')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'guest_laundry_requests'
+            },
+            (payload) => {
+                console.log("🔔 NOUVELLE DEMANDE EN DIRECT REÇUE :", payload.new);
 
-            // 2. Afficher la bannière VIP
-            showLuxuryNotificationBanner(newOrder);
+                const rawData = payload.new;
 
-            // 3. Passer la main à ui.js
-            if (typeof window.onNewGuestRequestReceived === 'function') {
-                window.onNewGuestRequestReceived(newOrder);
+                // Normalisation des données pour l'interface de Laundry OS
+                const normalizedRequest = {
+                    id: rawData.id || Date.now(),
+                    room: rawData.room_number || rawData.room || '---',
+                    guest_name: rawData.guest_name || 'Guest',
+                    service: rawData.service_type || 'Laundry',
+                    items: rawData.items || [],
+                    total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
+                    total: rawData.grand_total || rawData.total || rawData.subtotal || 0,
+                    note: rawData.special_notes || rawData.note || 'None',
+                    status: 'pickup_alert',
+                    pms_quota: rawData.pms_quota || 'Standard',
+                    extra_charged: rawData.extra_charged || false,
+                    is_guest_request: true,
+                    created_at: rawData.created_at || new Date().toISOString()
+                };
+
+                // Notification visuelle et sonore
+                showLuxuryNotificationBanner(normalizedRequest);
+
+                // Transmission à l'UI globale
+                if (typeof window.onNewGuestRequestReceived === 'function') {
+                    window.onNewGuestRequestReceived(normalizedRequest);
+                } else if (typeof afficherListeBordereauxLocal === 'function') {
+                    afficherListeBordereauxLocal();
+                }
             }
-        })
-        .subscribe((status) => {
-            console.log("Statut Connexion Realtime Guest Requests:", status);
+        )
+        .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') {
+                console.log("✅ Connecté au temps réel Supabase avec succès !");
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error("❌ Erreur d'abonnement Realtime :", err);
+            }
         });
 }
 
-// Lancement automatique
+// Lancement automatique au chargement
 document.addEventListener('DOMContentLoaded', () => {
-    initGuestRequestsRealtime();
+    // Petit délai pour s'assurer du chargement de Supabase SDK
+    setTimeout(initRealtimeGuestRequests, 1000);
 });
