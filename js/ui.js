@@ -1643,3 +1643,101 @@ window.onNewGuestRequestReceived = function(newOrder) {
         }
     }, 200);
 };
+// (Fin de votre code existant dans js/ui.js...)
+// ...
+
+// ==========================================================================
+// LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY (COLLER TOUT EN BAS)
+// ==========================================================================
+
+let currentStaffUser = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkStaffSession();
+});
+
+function checkStaffSession() {
+    const savedStaff = localStorage.getItem('remal_current_staff');
+    const loginModal = document.getElementById('staffLoginModal');
+
+    if (savedStaff) {
+        try {
+            currentStaffUser = JSON.parse(savedStaff);
+            if (loginModal) loginModal.classList.add('hidden');
+            updateStaffUIIndicator();
+            return;
+        } catch (e) {}
+    }
+
+    if (loginModal) {
+        loginModal.classList.remove('hidden');
+    }
+}
+
+async function verifyStaffPin() {
+    const pinInput = document.getElementById('staffPinInput');
+    const errorMsg = document.getElementById('loginErrorMsg');
+    const pin = pinInput ? pinInput.value.trim() : '';
+
+    if (!pin) return;
+
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        if (pin === '1234') {
+            currentStaffUser = { name: 'Superviseur (Local)', role: 'Manager' };
+            saveAndUnlockSession();
+            return;
+        } else {
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('laundry_staff')
+            .select('*')
+            .eq('pin_code', pin)
+            .eq('is_active', true)
+            .single();
+
+        if (error || !data) {
+            errorMsg.classList.remove('hidden');
+            pinInput.value = '';
+            return;
+        }
+
+        currentStaffUser = {
+            id: data.id,
+            name: data.name,
+            role: data.role
+        };
+
+        saveAndUnlockSession();
+
+    } catch (err) {
+        console.error("Erreur authentification staff:", err);
+        errorMsg.classList.remove('hidden');
+    }
+}
+
+function saveAndUnlockSession() {
+    localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
+    const loginModal = document.getElementById('staffLoginModal');
+    if (loginModal) loginModal.classList.add('hidden');
+    
+    updateStaffUIIndicator();
+    console.log(`✅ Session déverrouillée par : ${currentStaffUser.name} (${currentStaffUser.role})`);
+}
+
+function updateStaffUIIndicator() {
+    const indicator = document.getElementById('currentLoggedStaff');
+    if (indicator && currentStaffUser) {
+        indicator.innerText = `👤 ${currentStaffUser.name}`;
+    }
+}
+
+function logoutStaff() {
+    localStorage.removeItem('remal_current_staff');
+    currentStaffUser = null;
+    location.reload();
+}
