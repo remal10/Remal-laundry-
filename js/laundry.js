@@ -105,10 +105,15 @@ function calculateGlobalTotals() {
     const vat = subtotal * 0.05; 
     const grandTotal = subtotal + vat;
     
-    document.getElementById('currentBordereauCount').innerText = `${totalClothes} pieces`;
-    document.getElementById('subTotal').innerText = `${subtotal.toFixed(2)} AED`;
-    document.getElementById('vatAmount').innerText = `${vat.toFixed(2)} AED`;
-    document.getElementById('grandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
+    const countEl = document.getElementById('currentBordereauCount');
+    const subEl = document.getElementById('subTotal');
+    const vatEl = document.getElementById('vatAmount');
+    const grandEl = document.getElementById('grandTotal');
+
+    if (countEl) countEl.innerText = `${totalClothes} pieces`;
+    if (subEl) subEl.innerText = `${subtotal.toFixed(2)} AED`;
+    if (vatEl) vatEl.innerText = `${vat.toFixed(2)} AED`;
+    if (grandEl) grandEl.innerText = `${grandTotal.toFixed(2)} AED`;
 }
 
 function genererIdentifiantBordereau(entry) {
@@ -142,9 +147,13 @@ async function sauvegarderBordereauLocal() {
     }
 
     for (let i = 0; i < 3; i++) {
-        const nameVal = document.getElementById(`customName${i}`).value.trim();
-        const priceVal = parseFloat(document.getElementById(`customPrice${i}`).value) || 0;
-        const qtyVal = parseInt(document.getElementById(`customQty${i}`).value) || 0;
+        const nameInput = document.getElementById(`customName${i}`);
+        const priceInput = document.getElementById(`customPrice${i}`);
+        const qtyInput = document.getElementById(`customQty${i}`);
+
+        const nameVal = nameInput ? nameInput.value.trim() : '';
+        const priceVal = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+        const qtyVal = qtyInput ? parseInt(qtyInput.value) || 0 : 0;
 
         if (nameVal && qtyVal > 0) {
             finalCart[`custom_${i}`] = {
@@ -189,7 +198,7 @@ async function sauvegarderBordereauLocal() {
 
     let existingIndex = -1;
     if (editingId) {
-        existingIndex = cachedSlips.findIndex(s => s.id == editingId);
+        existingIndex = cachedSlips.findIndex(s => String(s.id) === String(editingId));
     } else {
         existingIndex = cachedSlips.findIndex(s => !s.is_spa && String(s.room) === String(roomNum) && s.created_at && s.created_at.split('T')[0] === todayStr);
     }
@@ -218,7 +227,7 @@ async function sauvegarderBordereauLocal() {
         alert(`✅ Record for Room ${roomNum} updated successfully!`);
     } else {
         targetRecord = {
-            id: Date.now(),
+            id: String(Date.now()),
             is_spa: false,
             spa_serial: null,
             room: roomNum,
@@ -240,7 +249,7 @@ async function sauvegarderBordereauLocal() {
             created_at: new Date().toISOString()
         };
         targetRecord.receipt_id = genererIdentifiantBordereau(targetRecord);
-        cachedSlips.push(targetRecord);
+        cachedSlips.unshift(targetRecord);
         alert(`✅ Record for Room ${roomNum} saved!`);
     }
 
@@ -281,7 +290,7 @@ function sanitizeAgencyName(agencyStr) {
 async function processTextData(rawData) {
     const counterContainer = document.getElementById('massRecordCounter');
 
-    if (!rawData.trim()) {
+    if (!rawData || !rawData.trim()) {
         alert("No data found to process.");
         return;
     }
@@ -444,7 +453,7 @@ function calculateSpaTotal() {
         const input = row.querySelector('.spa-qty-input');
         if(!input) return;
         const qty = parseInt(input.value) || 0;
-        const rate = parseFloat(input.getAttribute('data-rate'));
+        const rate = parseFloat(input.getAttribute('data-rate')) || 0;
         const rowAmountCell = row.querySelector('.spa-row-amount');
         
         const rowTotal = qty * rate;
@@ -479,10 +488,11 @@ async function validateAndSaveSpaReceipt() {
     const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
     rows.forEach(row => {
         const input = row.querySelector('.spa-qty-input');
+        if (!input) return;
         const qty = parseInt(input.value) || 0;
         if(qty > 0) {
             const itemName = row.querySelector('td').innerText;
-            const rate = parseFloat(input.getAttribute('data-rate'));
+            const rate = parseFloat(input.getAttribute('data-rate')) || 0;
             spaItems[itemName] = { name: itemName, qty: qty, price: rate };
             totalClothes += qty;
         }
@@ -492,7 +502,7 @@ async function validateAndSaveSpaReceipt() {
     let targetRecord = null;
 
     if (editingSpaId) {
-        const index = cachedSlips.findIndex(s => s.id == editingSpaId);
+        const index = cachedSlips.findIndex(s => String(s.id) === String(editingSpaId));
         if (index !== -1) {
             cachedSlips[index] = {
                 ...cachedSlips[index],
@@ -517,7 +527,7 @@ async function validateAndSaveSpaReceipt() {
         alert(`✅ SPA Receipt #${serialNo} updated!`);
     } else {
         targetRecord = {
-            id: Date.now(),
+            id: String(Date.now()),
             is_spa: true,
             spa_serial: serialNo,
             room: `SPA #${serialNo}`,
@@ -541,7 +551,7 @@ async function validateAndSaveSpaReceipt() {
             created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
         };
         targetRecord.receipt_id = genererIdentifiantBordereau(targetRecord);
-        cachedSlips.push(targetRecord);
+        cachedSlips.unshift(targetRecord);
         alert(`✅ SPA Receipt #${serialNo} saved!`);
     }
 
@@ -630,4 +640,4 @@ async function importAutoDirect() {
     } else {
         alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
     }
-                                                                     }
+}
