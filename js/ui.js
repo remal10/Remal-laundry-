@@ -684,9 +684,9 @@ async function imprimerToutesLesChambresDuJour() {
 
         itemsList.forEach(item => {
             let name = item.name || 'Article';
-            let qty = parseInt(item.qty) || 0;
-            let price = parseFloat(item.price) || 0;
-            let freeQty = parseInt(item.freeQty) || 0;
+            let qty = parseInt(item.qty || item.quantity) || 0;
+            let price = parseFloat(item.price || item.unit_price) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity) || 0;
 
             if (qty <= 0) return;
 
@@ -1284,9 +1284,9 @@ function ouvrirModalDetails(id) {
     } else {
         itemsList.forEach(item => {
             let name = item.name || 'Article';
-            let qty = parseInt(item.qty) || 0;
-            let price = parseFloat(item.price) || 0;
-            let freeQty = parseInt(item.freeQty) || 0;
+            let qty = parseInt(item.qty || item.quantity) || 0;
+            let price = parseFloat(item.price || item.unit_price) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity) || 0;
 
             if (qty <= 0) return;
 
@@ -1399,7 +1399,7 @@ function modifierBordereauActuel() {
         rows.forEach(row => {
             const input = row.querySelector('.spa-qty-input');
             const itemName = row.querySelector('td').innerText;
-            if (input && entry.items[itemName]) {
+            if (input && entry.items && entry.items[itemName]) {
                 input.value = entry.items[itemName].qty;
             } else if (input) {
                 input.value = '';
@@ -1554,7 +1554,7 @@ async function supprimerBordereauActuel() {
 }
 
 // ==========================================================================
-// INTEGRATION REALTIME: Handling Guest Online Requests
+// INTEGRATION REALTIME: Handling Guest Online Requests (Version Corrigée)
 // ==========================================================================
 
 window.onNewGuestRequestReceived = function(newOrder) {
@@ -1562,30 +1562,40 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     console.log("📥 Nouvelle commande client reçue en temps réel :", newOrder);
 
-    const roomNum = String(newOrder.room || newOrder.room_number || '---');
-    const totalPcs = parseInt(newOrder.total_clothes || newOrder.total_items) || 0;
-    const grandTotal = parseFloat(newOrder.total || newOrder.total_price) || 0;
+    // Extraction robuste des champs (Gère les formats Guest Portal & Laundry OS)
+    const roomNum = String(newOrder.room_number || newOrder.room || '---');
+    const guestName = newOrder.guest_name || 'Online Guest';
+    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
+    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
+    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
+    const pmsQuotaText = newOrder.pms_quota || 'Standard';
+    const isExtra = newOrder.extra_charged || false;
 
+    // Normalisation complète pour Laundry OS
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
-        guest_name: newOrder.guest_name || 'Online Guest',
-        count_type: newOrder.count_type || 'guest',
+        guest_name: guestName,
+        count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
         created_at: newOrder.created_at || new Date().toISOString(),
         total_clothes: totalPcs,
         total: grandTotal,
+        subtotal: parseFloat(newOrder.subtotal) || grandTotal,
+        vat: parseFloat(newOrder.vat) || 0,
         status: newOrder.status || 'pickup_alert',
         is_spa: false,
-        created_by: newOrder.created_by || 'Guest App',
-        note: newOrder.note || newOrder.special_instructions || 'Demande reçue via App Client',
-        items: newOrder.items || {},
-        options: newOrder.options || {
-            service_style: newOrder.service_type || 'Express / Regular'
+        created_by: 'Guest App',
+        note: specialNotes,
+        quota: pmsQuotaText,
+        items: newOrder.items || [],
+        options: {
+            service_style: newOrder.service_type || 'Laundry Collection'
         }
     };
 
     chargerDonneesLocalStorage();
     
+    // Remplacement ou insertion sans doublon
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
@@ -1595,11 +1605,13 @@ window.onNewGuestRequestReceived = function(newOrder) {
     
     sauvegarderDonneesLocalStorage();
 
+    // Mise à jour de la bannière si elle existe dans le DOM
     const bannerText = document.getElementById('guestBannerText');
     if (bannerText) {
-        bannerText.innerText = `Chambre ${roomNum} (${slipRecord.guest_name}) — ${totalPcs} article(s)`;
+        bannerText.innerText = `Chambre ${roomNum} (${guestName}) — ${totalPcs} article(s)`;
     }
 
+    // Rafraîchissement direct de l'affichage
     const liveSection = document.getElementById('sectionLiveRecord');
     if (liveSection && !liveSection.classList.contains('hidden')) {
         chargerLiveOrders();
@@ -1613,6 +1625,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
         if (badge) badge.innerText = activeTodaySlips.length;
     }
 
+    // Effet visuel de mise en surbrillance de la carte
     setTimeout(() => {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${slipRecord.id}"]`);
         if (checkbox) {
