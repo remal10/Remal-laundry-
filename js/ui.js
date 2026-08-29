@@ -679,7 +679,7 @@ async function imprimerToutesLesChambresDuJour() {
         const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
 
         const itemsObj = entry.items || {};
-        const itemsList = Object.values(itemsObj);
+        const itemsList = Array.isArray(itemsObj) ? itemsObj : Object.values(itemsObj);
         let tableRowsHtml = '';
 
         itemsList.forEach(item => {
@@ -755,7 +755,7 @@ async function imprimerToutesLesChambresDuJour() {
                 </div>
 
                 <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; justify-between; align-items: center; margin-bottom: 6px;">
                         <div>
                             <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
                             <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : entry.room}</span>
@@ -775,7 +775,7 @@ async function imprimerToutesLesChambresDuJour() {
                     </div>
                 </div>
 
-                <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between;">
+                <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-between;">
                     <span style="color: #374151;">Packaging:</span>
                     <span style="color: #b45309;">${entry.options?.service_style || 'F — Folding'}</span>
                 </div>
@@ -792,11 +792,11 @@ async function imprimerToutesLesChambresDuJour() {
                 </table>
 
                 <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
-                    <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
+                    <div style="display: flex; justify-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
                         <span>Total Pieces:</span>
                         <span>${entry.total_clothes || 0} pieces</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
+                    <div style="display: flex; justify-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
                         <span>Grand Total:</span>
                         <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${(entry.total || 0).toFixed(2)} AED</span>
                     </div>
@@ -1277,7 +1277,7 @@ function ouvrirModalDetails(id) {
     tbody.innerHTML = '';
 
     const itemsObj = entry.items || {};
-    const itemsList = Object.values(itemsObj);
+    const itemsList = Array.isArray(itemsObj) ? itemsObj : Object.values(itemsObj);
 
     if (itemsList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">Aucun article sélectionné.</td></tr>`;
@@ -1376,6 +1376,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
+// MODIFICATION DU BORDEREAU (GÈRE AUSSI LES DEMANDES GUEST PORTAL)
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -1408,31 +1409,36 @@ function modifierBordereauActuel() {
         calculateSpaTotal();
 
     } else {
+        // Formulaire de saisie pour bordereau standard ou commande Guest Portal
         switchMainSection('newRecord');
         document.getElementById('editingRecordId').value = entry.id;
-        document.getElementById('lblFormTitle').innerText = `✏️ Edit Record for Room ${entry.room}`;
+        document.getElementById('lblFormTitle').innerText = `✏️ Edit / Validate Record - Room ${entry.room}`;
         document.getElementById('roomNumber').value = entry.room;
         onRoomNumberInput();
 
         selectCountType(entry.count_type || 'hotel');
-
         document.getElementById('recordOptionalNote').value = entry.note || '';
 
         cart = {};
         let customIndex = 0;
+
         if (entry.items) {
-            for (const [k, v] of Object.entries(entry.items)) {
-                if (k.startsWith('custom_')) {
-                    if (customIndex < 3) {
-                        document.getElementById(`customName${customIndex}`).value = v.name;
-                        document.getElementById(`customPrice${customIndex}`).value = v.price;
-                        document.getElementById(`customQty${customIndex}`).value = v.qty;
-                        customIndex++;
-                    }
-                } else {
-                    cart[k] = { ...v };
-                }
-            }
+            const itemsList = Array.isArray(entry.items) ? entry.items : Object.values(entry.items);
+            
+            itemsList.forEach(item => {
+                const itemName = item.name || 'Article';
+                const itemQty = parseInt(item.quantity || item.qty, 10) || 1;
+                const itemPrice = parseFloat(item.unit_price || item.price) || 0;
+                const freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+
+                const key = `${currentService}_${itemName}`;
+                cart[key] = {
+                    name: itemName,
+                    price: itemPrice,
+                    qty: itemQty,
+                    freeQty: freeQty
+                };
+            });
         }
 
         renderItems();
@@ -1554,15 +1560,15 @@ async function supprimerBordereauActuel() {
 }
 
 // ==========================================================================
-// INTEGRATION REALTIME: Handling Guest Online Requests (Version Corrigée)
+// INTEGRATION REALTIME & CONVERSION GUEST PORTAL EN BORDEREAU ÉDITABLE
 // ==========================================================================
 
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
 
-    console.log("📥 Nouvelle commande client reçue en temps réel :", newOrder);
+    console.log("📥 Nouvelle demande client convertie en bordereau éditable :", newOrder);
 
-    // Extraction robuste des champs (Gère les formats Guest Portal & Laundry OS)
+    // Extraction et normalisation robuste des variables
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Online Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
@@ -1571,7 +1577,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
-    // Normalisation complète pour Laundry OS
+    // Transformation au format bordereau d'équipe Laundry OS
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
@@ -1582,7 +1588,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
         total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: newOrder.status || 'pickup_alert',
+        status: 'pickup_alert', // Conserve le badge clignotant ⚡ GUEST REQ
         is_spa: false,
         created_by: 'Guest App',
         note: specialNotes,
@@ -1595,7 +1601,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     chargerDonneesLocalStorage();
     
-    // Remplacement ou insertion sans doublon
+    // Insertion ou mise à jour sans doublons
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
@@ -1605,13 +1611,13 @@ window.onNewGuestRequestReceived = function(newOrder) {
     
     sauvegarderDonneesLocalStorage();
 
-    // Mise à jour de la bannière si elle existe dans le DOM
+    // Mise à jour visuelle de la bannière VIP
     const bannerText = document.getElementById('guestBannerText');
     if (bannerText) {
         bannerText.innerText = `Chambre ${roomNum} (${guestName}) — ${totalPcs} article(s)`;
     }
 
-    // Rafraîchissement direct de l'affichage
+    // Actualisation de l'affichage dans la section Active Rooms
     const liveSection = document.getElementById('sectionLiveRecord');
     if (liveSection && !liveSection.classList.contains('hidden')) {
         chargerLiveOrders();
@@ -1625,7 +1631,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
         if (badge) badge.innerText = activeTodaySlips.length;
     }
 
-    // Effet visuel de mise en surbrillance de la carte
+    // Surbrillance automatique de la carte reçue
     setTimeout(() => {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${slipRecord.id}"]`);
         if (checkbox) {
