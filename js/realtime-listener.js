@@ -2,15 +2,38 @@
 // REALTIME LISTENER - GUEST REQUESTS (REMAL HOTEL)
 // ==========================================
 
+let audioCtxInstance = null;
+
+// Déblocage automatique du Web Audio API au premier clic utilisateur
+function initAudioOnUserInteraction() {
+    if (!audioCtxInstance) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtxInstance = new AudioContext();
+        }
+    }
+    if (audioCtxInstance && audioCtxInstance.state === 'suspended') {
+        audioCtxInstance.resume();
+    }
+}
+
+window.addEventListener('click', initAudioOnUserInteraction, { once: true });
+window.addEventListener('touchstart', initAudioOnUserInteraction, { once: true });
+
 // 1. Sonnerie élégante Carillon Hôtel 5 Étoiles (Web Audio API)
 function playLuxuryHotelChime() {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
+        if (!audioCtxInstance) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtxInstance = new AudioContext();
+        }
 
-        // Notes harmonieuses (La5 - 880Hz puis Mi6 - 1318.51Hz)
-        const notes = [880, 1318.51];
+        if (audioCtxInstance.state === 'suspended') {
+            audioCtxInstance.resume();
+        }
+
+        const ctx = audioCtxInstance;
+        const notes = [880, 1318.51]; // La5 (880Hz) puis Mi6 (1318.51Hz)
         
         notes.forEach((freq, index) => {
             const osc = ctx.createOscillator();
@@ -19,11 +42,10 @@ function playLuxuryHotelChime() {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-            // Attaque douce et déclin élégant style cloche en cristal
             const startTime = ctx.currentTime + (index * 0.25);
             gain.gain.setValueAtTime(0, startTime);
-            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05); // Attaque
-            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.2); // Déclin doux
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.2);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -32,15 +54,18 @@ function playLuxuryHotelChime() {
             osc.stop(startTime + 1.2);
         });
     } catch (e) {
-        console.warn("Audio Context non autorisé ou non supporté sans interaction préalable.");
+        console.warn("Audio Context non autorisé ou non supporté :", e);
     }
 }
 
 // 2. Affichage de la Bannière de Notification VIP
 function showLuxuryNotificationBanner(order) {
-    // Supprimer une ancienne bannière si elle existe
     const existingBanner = document.getElementById('remalLuxuryBanner');
     if (existingBanner) existingBanner.remove();
+
+    const roomDisp = order.room || order.room_number || '---';
+    const guestDisp = order.guest_name || 'Guest';
+    const piecesDisp = order.total_clothes || order.total_items || order.total_pieces || 0;
 
     const banner = document.createElement('div');
     banner.id = 'remalLuxuryBanner';
@@ -54,9 +79,9 @@ function showLuxuryNotificationBanner(order) {
             <div>
                 <div class="flex items-center gap-2">
                     <span class="font-bold text-xs uppercase tracking-widest text-[#DCA773]">New Guest Order</span>
-                    <span class="text-[9px] bg-[#DCA773] text-stone-950 font-black px-2 py-0.5 rounded-full">ROOM ${order.room_number}</span>
+                    <span class="text-[9px] bg-[#DCA773] text-stone-950 font-black px-2 py-0.5 rounded-full">ROOM ${roomDisp}</span>
                 </div>
-                <p class="text-xs font-semibold text-stone-200 mt-0.5">${order.guest_name || 'Guest'} • ${order.total_pieces || 0} Pcs</p>
+                <p class="text-xs font-semibold text-stone-200 mt-0.5">${guestDisp} • ${piecesDisp} Pcs</p>
             </div>
         </div>
         <button onclick="document.getElementById('remalLuxuryBanner').remove()" class="text-stone-400 hover:text-white p-1 text-base">✕</button>
@@ -64,12 +89,10 @@ function showLuxuryNotificationBanner(order) {
 
     document.body.appendChild(banner);
 
-    // Animation d'apparition
     requestAnimationFrame(() => {
         banner.classList.remove('-translate-y-10', 'opacity-0');
     });
 
-    // Masquage automatique après 7 secondes
     setTimeout(() => {
         if (banner && banner.parentNode) {
             banner.classList.add('-translate-y-10', 'opacity-0');
@@ -80,8 +103,9 @@ function showLuxuryNotificationBanner(order) {
 
 // 3. Écouteur Realtime Supabase
 function initGuestRequestsRealtime() {
-    if (typeof supabaseClient === 'undefined') {
-        console.error("Supabase client non défini dans Laundry OS.");
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        console.warn("Abonnement Realtime en attente de l'initialisation de Supabase...");
+        setTimeout(initGuestRequestsRealtime, 500);
         return;
     }
 
@@ -93,14 +117,15 @@ function initGuestRequestsRealtime() {
             table: 'guest_laundry_requests' 
         }, payload => {
             const newOrder = payload.new;
+            console.log("🔔 Nouvelle demande en temps réel reçue :", newOrder);
 
-            // 1. Jouer la sonnerie élégante
+            // 1. Jouer la sonnerie
             playLuxuryHotelChime();
 
-            // 2. Afficher la bannière
+            // 2. Afficher la bannière VIP
             showLuxuryNotificationBanner(newOrder);
 
-            // 3. Mettre à jour l'interface Active Room (Appelle ui.js ou laundry.js)
+            // 3. Passer la main à ui.js
             if (typeof window.onNewGuestRequestReceived === 'function') {
                 window.onNewGuestRequestReceived(newOrder);
             }
@@ -110,7 +135,7 @@ function initGuestRequestsRealtime() {
         });
 }
 
-// Lancement automatique de l'écouteur au chargement
+// Lancement automatique
 document.addEventListener('DOMContentLoaded', () => {
     initGuestRequestsRealtime();
 });
