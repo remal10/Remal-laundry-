@@ -513,13 +513,17 @@ function chargerLiveOrders() {
 
         let badgeText = 'Hotel Count';
         let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
-        if(entry.is_spa) {
+        
+        if (entry.status === 'pickup_alert') {
+            badgeText = '⚡ GUEST REQ';
+            badgeClass = 'bg-emerald-950 text-emerald-300 border border-emerald-600 animate-pulse';
+        } else if (entry.is_spa) {
             badgeText = 'SPA Daily Sheet';
             badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        } else if(entry.count_type === 'quota_extra') {
+        } else if (entry.count_type === 'quota_extra') {
             badgeText = 'Hotel & Extra';
             badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        } else if(entry.count_type === 'guest') {
+        } else if (entry.count_type === 'guest') {
             badgeText = 'Guest Count';
             badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
         }
@@ -1548,3 +1552,73 @@ async function supprimerBordereauActuel() {
         }
     }
 }
+
+// ==========================================================================
+// INTEGRATION REALTIME: Handling Guest Online Requests
+// ==========================================================================
+
+window.onNewGuestRequestReceived = function(newOrder) {
+    if (!newOrder) return;
+
+    console.log("📥 Nouvelle commande client reçue en temps réel :", newOrder);
+
+    // 1. Normalisation du format de la commande client vers la structure de laundry_slips
+    const slipRecord = {
+        id: newOrder.id || Date.now(),
+        room: String(newOrder.room_number || newOrder.room || '---'),
+        guest_name: newOrder.guest_name || 'Online Guest',
+        count_type: 'guest', // Les demandes en ligne directes sont traitées comme Guest Count
+        created_at: newOrder.created_at || new Date().toISOString(),
+        total_clothes: parseInt(newOrder.total_items || newOrder.total_clothes) || 0,
+        total: parseFloat(newOrder.total_price || newOrder.total) || 0,
+        status: newOrder.status || 'pickup_alert', // Statut spécial pour marquer l'urgence
+        is_spa: false,
+        created_by: 'Guest App',
+        note: newOrder.special_instructions || newOrder.note || 'Demande reçue via app client',
+        items: newOrder.items || {},
+        options: {
+            service_style: newOrder.service_type || 'Express / Regular',
+            express: newOrder.is_express || false
+        }
+    };
+
+    // 2. Mise à jour du cache local
+    chargerDonneesLocalStorage();
+    
+    // Vérifier si la commande existe déjà pour éviter les doublons
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
+    if (existingIndex !== -1) {
+        cachedSlips[existingIndex] = slipRecord;
+    } else {
+        cachedSlips.unshift(slipRecord); // Ajouter en haut de tableau
+    }
+    
+    sauvegarderDonneesLocalStorage();
+
+    // 3. Rafraîchissement direct de l'UI si l'utilisateur est sur la section Active Room
+    const liveSection = document.getElementById('sectionLiveRecord');
+    if (liveSection && !liveSection.classList.contains('hidden')) {
+        chargerLiveOrders();
+    } else {
+        // Mettre à jour le badge sans changer de vue si l'agent est sur une autre section
+        const activeTodaySlips = cachedSlips.filter(entry => {
+            if (!entry.created_at) return false;
+            const todayStr = new Date().toISOString().split('T')[0];
+            return entry.created_at.split('T')[0] === todayStr || entry.status === 'pickup_alert';
+        });
+        const badge = document.getElementById('activeRoomsCountBadge');
+        if (badge) badge.innerText = activeTodaySlips.length;
+    }
+
+    // 4. Mettre en évidence la carte dans l'onglet Active Room si elle existe
+    setTimeout(() => {
+        const checkbox = document.querySelector(`.room-checkbox[data-id="${slipRecord.id}"]`);
+        if (checkbox) {
+            const card = checkbox.closest('.remal-card');
+            if (card) {
+                card.classList.add('ring-2', 'ring-amber-500', 'bg-amber-950/30', 'animate-pulse');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, 200);
+};
