@@ -42,13 +42,17 @@ function playLuxuryHotelChime() {
     }
 }
 
-// Affichage sécurisé de la bannière VIP
+// Affichage sécurisé de la bannière VIP en Anglais
 function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
 
+    const roomNum = normalizedData.room || normalizedData.room_number || '---';
+    const guestName = normalizedData.guest_name || 'Guest';
+    const totalPcs = normalizedData.total_clothes || normalizedData.total_pieces || 0;
+
     if (bannerText) {
-        bannerText.innerText = `Chambre ${normalizedData.room} (${normalizedData.guest_name}) - ${normalizedData.total_clothes} pièce(s).`;
+        bannerText.innerText = `Room ${roomNum} (${guestName}) — ${totalPcs} piece(s) submitted.`;
     }
 
     if (banner) {
