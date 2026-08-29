@@ -538,7 +538,7 @@ function chargerLiveOrders() {
 
         itemDiv.innerHTML = `
             <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[#DCA773] cursor-pointer" onchange="updatePrintButtonCount()">
-            <div class="flex-1" onclick="ouvrirModalDetails(${entry.id})">
+            <div class="flex-1" onclick="ouvrirModalDetails('${entry.id}')">
                 <div class="flex justify-between items-start">
                     <div>
                         <div class="flex items-center gap-2">
@@ -651,14 +651,14 @@ function updatePrintButtonCount() {
 
 async function imprimerToutesLesChambresDuJour() {
     chargerDonneesLocalStorage();
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
     if (selectedIds.length === 0) {
         alert("⚠️ Aucune sélection pour l'impression.");
         return;
     }
 
-    const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(s.id));
+    const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
     slipsToPrint.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
 
     const batchContainer = document.getElementById('batchPrintContainer');
@@ -820,14 +820,14 @@ async function imprimerToutesLesChambresDuJour() {
 
 async function telechargerToutesLesChambresDuJour() {
     chargerDonneesLocalStorage();
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
     if (selectedIds.length === 0) {
         alert("⚠️ Aucun élément sélectionné.");
         return;
     }
 
-    const slipsToDownload = cachedSlips.filter(s => selectedIds.includes(s.id));
+    const slipsToDownload = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
     
     for (const entry of slipsToDownload) {
         await genererPDF(entry.id);
@@ -914,7 +914,7 @@ function afficherListeBordereauxLocal() {
             }) : '---';
 
             html += `
-                <div onclick="ouvrirModalDetails(${entry.id})" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
+                <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${entry.room} (${entry.guest_name || 'Guest'})</span>
                         <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
@@ -952,7 +952,7 @@ function afficherListeBordereauxLocal() {
             }) : '---';
 
             html += `
-                <div onclick="ouvrirModalDetails(${entry.id})" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
+                <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
                     <div>
                         <span class="font-serif-luxury font-bold text-purple-300 text-sm sm:text-base">SPA Sheet #${entry.spa_serial || '---'} — ${entry.guest_name || 'Spa Agent'}</span>
                         <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-950 text-purple-200 border border-purple-800">SPA Daily Sheet</span>
@@ -1215,9 +1215,9 @@ async function exportSpaToPDF() {
 }
 
 function ouvrirModalDetails(id) {
-    selectedIdForModal = id;
+    selectedIdForModal = String(id);
     chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(e => e.id == id);
+    const entry = cachedSlips.find(e => String(e.id) === String(id));
     if (!entry) return;
 
     entry.receipt_id = genererIdentifiantBordereau(entry);
@@ -1379,7 +1379,7 @@ function ouvrirModalDetails(id) {
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(e => e.id == selectedIdForModal);
+    const entry = cachedSlips.find(e => String(e.id) === String(selectedIdForModal));
     if (!entry) return;
 
     fermerModal();
@@ -1448,7 +1448,7 @@ async function genererPDF(entryId = null) {
     }
 
     chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(e => e.id == targetId);
+    const entry = cachedSlips.find(e => String(e.id) === String(targetId));
     if (!entry) return;
 
     if (entry.is_spa) {
@@ -1538,7 +1538,7 @@ async function supprimerBordereauActuel() {
     if (!selectedIdForModal) return;
     if (confirm(`Delete this record?`)) {
         chargerDonneesLocalStorage();
-        cachedSlips = cachedSlips.filter(e => e.id != selectedIdForModal);
+        cachedSlips = cachedSlips.filter(e => String(e.id) !== String(selectedIdForModal));
         sauvegarderDonneesLocalStorage();
 
         if (supabaseClient) {
@@ -1562,45 +1562,48 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     console.log("📥 Nouvelle commande client reçue en temps réel :", newOrder);
 
-    // 1. Normalisation du format de la commande client vers la structure de laundry_slips
+    const roomNum = String(newOrder.room || newOrder.room_number || '---');
+    const totalPcs = parseInt(newOrder.total_clothes || newOrder.total_items) || 0;
+    const grandTotal = parseFloat(newOrder.total || newOrder.total_price) || 0;
+
     const slipRecord = {
-        id: newOrder.id || Date.now(),
-        room: String(newOrder.room_number || newOrder.room || '---'),
+        id: String(newOrder.id || Date.now()),
+        room: roomNum,
         guest_name: newOrder.guest_name || 'Online Guest',
-        count_type: 'guest', // Les demandes en ligne directes sont traitées comme Guest Count
+        count_type: newOrder.count_type || 'guest',
         created_at: newOrder.created_at || new Date().toISOString(),
-        total_clothes: parseInt(newOrder.total_items || newOrder.total_clothes) || 0,
-        total: parseFloat(newOrder.total_price || newOrder.total) || 0,
-        status: newOrder.status || 'pickup_alert', // Statut spécial pour marquer l'urgence
+        total_clothes: totalPcs,
+        total: grandTotal,
+        status: newOrder.status || 'pickup_alert',
         is_spa: false,
-        created_by: 'Guest App',
-        note: newOrder.special_instructions || newOrder.note || 'Demande reçue via app client',
+        created_by: newOrder.created_by || 'Guest App',
+        note: newOrder.note || newOrder.special_instructions || 'Demande reçue via App Client',
         items: newOrder.items || {},
-        options: {
-            service_style: newOrder.service_type || 'Express / Regular',
-            express: newOrder.is_express || false
+        options: newOrder.options || {
+            service_style: newOrder.service_type || 'Express / Regular'
         }
     };
 
-    // 2. Mise à jour du cache local
     chargerDonneesLocalStorage();
     
-    // Vérifier si la commande existe déjà pour éviter les doublons
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
     } else {
-        cachedSlips.unshift(slipRecord); // Ajouter en haut de tableau
+        cachedSlips.unshift(slipRecord);
     }
     
     sauvegarderDonneesLocalStorage();
 
-    // 3. Rafraîchissement direct de l'UI si l'utilisateur est sur la section Active Room
+    const bannerText = document.getElementById('guestBannerText');
+    if (bannerText) {
+        bannerText.innerText = `Chambre ${roomNum} (${slipRecord.guest_name}) — ${totalPcs} article(s)`;
+    }
+
     const liveSection = document.getElementById('sectionLiveRecord');
     if (liveSection && !liveSection.classList.contains('hidden')) {
         chargerLiveOrders();
     } else {
-        // Mettre à jour le badge sans changer de vue si l'agent est sur une autre section
         const activeTodaySlips = cachedSlips.filter(entry => {
             if (!entry.created_at) return false;
             const todayStr = new Date().toISOString().split('T')[0];
@@ -1610,7 +1613,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
         if (badge) badge.innerText = activeTodaySlips.length;
     }
 
-    // 4. Mettre en évidence la carte dans l'onglet Active Room si elle existe
     setTimeout(() => {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${slipRecord.id}"]`);
         if (checkbox) {
