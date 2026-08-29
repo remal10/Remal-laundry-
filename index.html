@@ -37,6 +37,18 @@
 </head>
 <body class="min-h-screen pb-16">
 
+    <!-- BANNIÈRE NOTIFICATION TEMPS RÉEL (GUEST REQUEST) -->
+    <div id="guestRequestNotificationBanner" class="hidden fixed top-0 left-0 right-0 z-[200] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce flex justify-between items-center no-print">
+        <div class="flex items-center gap-4">
+            <span class="text-2xl">🔔</span>
+            <div>
+                <p class="text-sm font-black uppercase tracking-wider">Nouvelle Demande Client en Direct !</p>
+                <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Chambre --- vient de passer une commande.</p>
+            </div>
+        </div>
+        <button onclick="document.getElementById('guestRequestNotificationBanner').classList.add('hidden')" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs">✕</button>
+    </div>
+
     <div id="pwaInstallBanner" class="hidden bg-[#181614] border-b border-[#DCA773] px-6 py-3 flex justify-between items-center no-print">
         <div class="flex items-center gap-3">
             <span class="text-xl">📱</span>
@@ -700,12 +712,13 @@
     <script>
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v27';
+                const CACHE_NAME = 'remal-pwa-v28';
                 const ASSETS = [
                     './',
                     'style.css',
                     'js/config.js',
                     'js/laundry.js',
+                    'js/realtime-listener.js',
                     'js/ui.js',
                     'https://cdn.tailwindcss.com',
                     'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap',
@@ -751,6 +764,7 @@
     <!-- CHARGEMENT DES SCRIPTS DE L'APPLICATION (DANS L'ORDRE STRICT) -->
     <script src="js/config.js"></script>
     <script src="js/laundry.js"></script>
+    <script src="js/realtime-listener.js"></script>
     <script src="js/ui.js"></script>
 </body>
-                            </html>
+</html>
