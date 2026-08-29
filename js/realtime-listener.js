@@ -2,19 +2,18 @@
 // REALTIME LISTENER & NOTIFICATIONS (REMAL LAUNDRY OS)
 // ==========================================
 
-// 1. Jouer un carillon Web Audio "Luxury Hotel"
+// Jouer le carillon avec gestion sécurisée de l'AudioContext mobile
 function playLuxuryHotelChime() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         const ctx = new AudioContext();
 
-        // Si le contexte est en pause (sécurité navigateur), on le relance
         if (ctx.state === 'suspended') {
             ctx.resume();
         }
 
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // Do, Mi, Sol, Do (Aptement luxueux)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         let now = ctx.currentTime;
 
         notes.forEach((freq, idx) => {
@@ -25,109 +24,123 @@ function playLuxuryHotelChime() {
             osc.frequency.setValueAtTime(freq, now + idx * 0.15);
 
             gain.gain.setValueAtTime(0, now + idx * 0.15);
-            gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.15 + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.15 + 1.2);
+            gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.15 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.15 + 1.1);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
 
             osc.start(now + idx * 0.15);
-            osc.stop(now + idx * 0.15 + 1.3);
+            osc.stop(now + idx * 0.15 + 1.2);
         });
 
-        // Vibration smartphone si supportée
         if ("vibrate" in navigator) {
             navigator.vibrate([200, 100, 200, 100, 400]);
         }
     } catch (e) {
-        console.warn("Erreur AudioContext:", e);
+        console.warn("Audio Context Warning:", e);
     }
 }
 
-// 2. Afficher la bannière de notification VIP en haut
-function showLuxuryNotificationBanner(reqData) {
+// Affichage sécurisé de la bannière VIP
+function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
 
-    // Récupération intelligente des champs (compatibilité Guest Portal)
-    const roomNum = reqData.room_number || reqData.room || '---';
-    const guestName = reqData.guest_name || 'Guest';
-    const totalPcs = reqData.total_pieces || reqData.total_clothes || 0;
-
     if (bannerText) {
-        bannerText.innerText = `Chambre ${roomNum} (${guestName}) vient de demander ${totalPcs} pièce(s).`;
+        bannerText.innerText = `Chambre ${normalizedData.room} (${normalizedData.guest_name}) - ${normalizedData.total_clothes} pièce(s).`;
     }
 
     if (banner) {
         banner.classList.remove('hidden');
     }
 
-    // Jouer le son
     playLuxuryHotelChime();
 }
 
-// 3. Initialiser l'abonnement Supabase Realtime
+// Normalisation des données envoyées par le Guest Portal
+function processIncomingPayload(rawData) {
+    if (!rawData) return;
+
+    const normalizedRequest = {
+        id: rawData.id || Date.now(),
+        room: rawData.room_number || rawData.room || '---',
+        guest_name: rawData.guest_name || 'Guest',
+        service: rawData.service_type || 'Laundry',
+        items: rawData.items || [],
+        total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
+        subtotal: rawData.subtotal || 0,
+        vat: rawData.vat || 0,
+        total: rawData.grand_total || rawData.total || 0,
+        note: rawData.special_notes || rawData.note || 'None',
+        pms_quota: rawData.pms_quota || 'Standard',
+        extra_charged: rawData.extra_charged || false,
+        status: 'pickup_alert',
+        is_guest_request: true,
+        created_at: rawData.created_at || new Date().toISOString()
+    };
+
+    // 1. Afficher la bannière et jouer le son
+    showLuxuryNotificationBanner(normalizedRequest);
+
+    // 2. Transmettre à l'interface graphique UI
+    if (typeof window.onNewGuestRequestReceived === 'function') {
+        window.onNewGuestRequestReceived(normalizedRequest);
+    }
+}
+
+// Synchronisation de secours (Polling toutes les 5 secondes en cas de rupture de réseau)
+let lastProcessedId = null;
+
+async function syncFallbackGuestRequests() {
+    if (!supabaseClient) return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('guest_laundry_requests')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error || !data || data.length === 0) return;
+
+        const latest = data[0];
+        if (lastProcessedId && latest.id !== lastProcessedId) {
+            console.log("🔄 Nouvelle requête détectée via le système de secours :", latest);
+            processIncomingPayload(latest);
+        }
+        lastProcessedId = latest.id;
+    } catch (err) {
+        console.warn("Fallback sync warning:", err);
+    }
+}
+
+// Initialisation du listener Realtime
 function initRealtimeGuestRequests() {
     if (!supabaseClient) {
-        console.warn("⚠️ supabaseClient non initialisé. Realtime désactivé.");
+        console.warn("⚠️ Client Supabase non prêt pour Realtime.");
         return;
     }
 
-    console.log("⚡ Activation du canal Realtime sur la table guest_laundry_requests...");
+    console.log("⚡ Écoute en temps réel activée sur guest_laundry_requests...");
 
-    const channel = supabaseClient
-        .channel('laundry_os_guest_requests_channel')
+    supabaseClient
+        .channel('public:guest_laundry_requests')
         .on(
             'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'guest_laundry_requests'
-            },
+            { event: 'INSERT', schema: 'public', table: 'guest_laundry_requests' },
             (payload) => {
-                console.log("🔔 NOUVELLE DEMANDE EN DIRECT REÇUE :", payload.new);
-
-                const rawData = payload.new;
-
-                // Normalisation des données pour l'interface de Laundry OS
-                const normalizedRequest = {
-                    id: rawData.id || Date.now(),
-                    room: rawData.room_number || rawData.room || '---',
-                    guest_name: rawData.guest_name || 'Guest',
-                    service: rawData.service_type || 'Laundry',
-                    items: rawData.items || [],
-                    total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
-                    total: rawData.grand_total || rawData.total || rawData.subtotal || 0,
-                    note: rawData.special_notes || rawData.note || 'None',
-                    status: 'pickup_alert',
-                    pms_quota: rawData.pms_quota || 'Standard',
-                    extra_charged: rawData.extra_charged || false,
-                    is_guest_request: true,
-                    created_at: rawData.created_at || new Date().toISOString()
-                };
-
-                // Notification visuelle et sonore
-                showLuxuryNotificationBanner(normalizedRequest);
-
-                // Transmission à l'UI globale
-                if (typeof window.onNewGuestRequestReceived === 'function') {
-                    window.onNewGuestRequestReceived(normalizedRequest);
-                } else if (typeof afficherListeBordereauxLocal === 'function') {
-                    afficherListeBordereauxLocal();
-                }
+                console.log("🔔 NOUVELLE REQUÊTE REÇUE EN DIRECT :", payload.new);
+                processIncomingPayload(payload.new);
             }
         )
-        .subscribe((status, err) => {
-            if (status === 'SUBSCRIBED') {
-                console.log("✅ Connecté au temps réel Supabase avec succès !");
-            } else if (status === 'CHANNEL_ERROR') {
-                console.error("❌ Erreur d'abonnement Realtime :", err);
-            }
+        .subscribe((status) => {
+            console.log("📡 Statut canal Supabase :", status);
         });
+
+    // Activer la vérification automatique toutes les 5 secondes
+    setInterval(syncFallbackGuestRequests, 5000);
 }
 
-// Lancement automatique au chargement
 document.addEventListener('DOMContentLoaded', () => {
-    // Petit délai pour s'assurer du chargement de Supabase SDK
-    setTimeout(initRealtimeGuestRequests, 1000);
+    setTimeout(initRealtimeGuestRequests, 800);
 });
