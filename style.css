@@ -66,6 +66,19 @@ details summary::-webkit-details-marker { display: none; }
 details summary { list-style: none; }
 
 /* =========================================================
+   ANIMATIONS & BADGES TEMPS RÉEL (REALTIME GUEST REQUESTS)
+   ========================================================= */
+
+@keyframes pulse-slow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.01); }
+}
+
+.animate-pulse-request {
+    animation: pulse-slow 2s infinite ease-in-out;
+}
+
+/* =========================================================
    FIX TABLEAU PMS (VISIBILITÉ TOTALE DES COLONNES)
    ========================================================= */
 
@@ -149,6 +162,12 @@ body.light-mode span[class*="bg-rose-950"] {
     border-color: #fecdd3 !important;
 }
 
+body.light-mode span[class*="bg-emerald-950"] {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    border-color: #a7f3d0 !important;
+}
+
 /* Titres, dorures et typographie luxe */
 body.light-mode h1,
 body.light-mode h2, 
@@ -204,7 +223,7 @@ body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
         background: #ffffff !important;
         color: #000000 !important;
     }
-    header, #mainNavContainer, .max-w-7xl, #detailModal, #activeRoomsListModal, .no-print {
+    header, #mainNavContainer, .max-w-7xl, #detailModal, #activeRoomsListModal, #guestRequestNotificationBanner, .no-print {
         display: none !important;
     }
     #batchPrintContainer {
