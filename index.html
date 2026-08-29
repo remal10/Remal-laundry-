@@ -708,11 +708,23 @@
         </div>
     </div>
 
+    <!-- BIBLIOTHÈQUES EXTERNES -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- CHARGEMENT DES SCRIPTS DE L'APPLICATION (DANS L'ORDRE STRICT) -->
+    <script src="js/config.js"></script>
+    <script src="js/laundry.js"></script>
+    <script src="js/realtime-listener.js"></script>
+    <script src="js/ui.js"></script>
+
     <!-- SCRIPT DU SERVICE WORKER INLINE -->
     <script>
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v28';
+                const CACHE_NAME = 'remal-pwa-v29';
                 const ASSETS = [
                     './',
                     'style.css',
@@ -754,17 +766,5 @@
             document.getElementById('pwaInstallBanner').classList.remove('hidden');
         });
     </script>
-
-    <!-- BIBLIOTHÈQUES EXTERNES -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- CHARGEMENT DES SCRIPTS DE L'APPLICATION (DANS L'ORDRE STRICT) -->
-    <script src="js/config.js"></script>
-    <script src="js/laundry.js"></script>
-    <script src="js/realtime-listener.js"></script>
-    <script src="js/ui.js"></script>
 </body>
 </html>
