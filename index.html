@@ -766,5 +766,34 @@
             document.getElementById('pwaInstallBanner').classList.remove('hidden');
         });
     </script>
+    <!-- SCREEN LOCK / PIN LOGIN MODAL FOR LAUNDRY OS -->
+<div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
+        <div>
+            <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">
+                🔐
+            </div>
+            <h2 class="font-serif-luxury text-2xl font-bold text-[#DCA773]">Staff Authentication</h2>
+            <p class="text-xs text-stone-400 mt-1">Enter your 4-digit PIN code to access Laundry OS.</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <input type="password" id="staffPinInput" maxlength="6" placeholder="••••" class="w-full text-center tracking-[1em] text-2xl py-4 remal-input rounded-2xl font-bold outline-none border border-[#2f2820] focus:border-[#DCA773]">
+            </div>
+            <div id="loginErrorMsg" class="text-xs text-rose-400 font-semibold hidden">Invalid PIN code. Please try again.</div>
+            
+            <button onclick="verifyStaffPin()" class="w-full py-4 bg-[#DCA773] hover:c-hover text-stone-950 font-bold rounded-2xl transition shadow-lg text-sm">
+                Unlock Session
+            </button>
+        </div>
+
+        <div class="pt-2 border-t border-[#2f2820] flex justify-between items-center text-[10px] text-stone-500">
+            <span>Remal Laundry OS v2.6</span>
+            <span id="currentLoggedStaff" class="text-stone-400">Locked</span>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
