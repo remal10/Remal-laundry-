@@ -1,17 +1,30 @@
-// Configuration & Variables Globales
+// Configuration & Variables Globales (Remal Hotel & Villas)
 let deferredPrompt;
 let globalDirHandle = null;
 
+// URL et Clé Anon Supabase
 const SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
 
 let supabaseClient = null;
 try {
-    if (typeof supabase !== 'undefined') {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            realtime: {
+                params: {
+                    eventsPerSecond: 10
+                }
+            }
+        });
+        console.log("✅ Client Supabase initialisé avec succès.");
+    } else {
+        console.warn("⚠️ SDK Supabase non détecté au chargement de js/config.js.");
     }
-} catch(err) { console.warn("Supabase local mode fallback:", err); }
+} catch(err) { 
+    console.warn("Supabase local mode fallback:", err); 
+}
 
+// Variables d'état de l'application
 let currentLang = 'en';
 let cachedSlips = [];
 let pmsDatabase = {}; 
@@ -26,6 +39,7 @@ let cart = {};
 let currentImageData = null;
 let selectedIdForModal = null;
 
+// Mots-clés pour l'identification des agences/compagnies dans le rapport PMS
 const companyKeywords = [
     'llc', 'inc', 'w.l.l', 'wll', 'corp', 'corporation', 'company', 'co.',
     'ltd', 'limited', 'energy', 'systems', 'services', 'tourism', 'travel',
@@ -35,6 +49,7 @@ const companyKeywords = [
     'gulf', 'international', 'global', 'solutions', 'enterprises', 'hunter'
 ];
 
+// Traductions d'interface
 const i18n = {
     en: {
         txtBtnNewRecord: "New Record", lblFormTitle: "New Record", lblRoomNum: "Room Number",
@@ -88,13 +103,14 @@ const i18n = {
         pdfAgency: "एजेंसी:", pdfQuota: "लॉन्ड्री कोटा:", pdfAgent: "कर्मचारी:", pdfPackaging: "पैकेजिंग:",
         pdfItem: "आइटम", pdfQty: "मात्रा", pdfTotal: "कुल", pdfTotalPieces: "कुल पीस:",
         pdfGrandTotalText: "कुल योग:", pdfNotes: "कपड़े के नोट्स / दोष:", pdfProofPhoto: "प्रमाण फोटो:",
-        pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटल काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
+        pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटل काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
         pdfGuestCount: "अतिथि काउंट (पूर्ण)", pdfSpaSheet: "वी एलिमेंट स्पा लॉन्ड्रि शीट",
         pdfGivenBy: "द्वारा दिया गया (स्पा):", pdfCollectedBy: "द्वारा एकत्रित:", pdfDeliveredBy: "द्वारा वितरित:",
-        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रसीद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड"
+        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रسيद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड"
     }
 };
 
+// Grille tarifaire de la blanchisserie
 const database = {
     laundry: {
         "GENTLEMEN": [
