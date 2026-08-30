@@ -1747,18 +1747,95 @@ window.onNewGuestRequestReceived = function(newOrder) {
     // 6. Jouer le son d'alerte
     try {
         if (typeof playNotificationSound === 'function') playNotificationSound();
+// -------------------------------------------------------------
+// GUEST NOTIFICATION MANAGEMENT (LAUNDRY OS)
+// -------------------------------------------------------------
+
+// Function called when a guest submits a new order
+window.onNewGuestRequestReceived = function(newOrder) {
+    if (!newOrder) return;
+
+    console.log("📥 New guest request received:", newOrder);
+
+    // 1. Safe extraction of variables
+    const roomNum = String(newOrder.room_number || newOrder.room || '---');
+    const guestName = newOrder.guest_name || 'Guest';
+    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
+    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
+    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
+    const pmsQuotaText = newOrder.pms_quota || 'Standard';
+    const isExtra = newOrder.extra_charged || false;
+
+    // 2. Structure slip record for Active list
+    const slipRecord = {
+        id: String(newOrder.id || Date.now()),
+        room: roomNum,
+        guest_name: guestName,
+        count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
+        created_at: newOrder.created_at || new Date().toISOString(),
+        total_clothes: totalPcs,
+        total: grandTotal,
+        subtotal: parseFloat(newOrder.subtotal) || grandTotal,
+        vat: parseFloat(newOrder.vat) || 0,
+        status: 'Collected',
+        is_spa: false,
+        created_by: 'Guest App',
+        note: specialNotes,
+        quota: pmsQuotaText,
+        items: newOrder.items || [],
+        options: {
+            service_style: newOrder.service_type || 'Laundry Collection'
+        }
+    };
+
+    // 3. Update local cache and insert into Active list
+    if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
+    
+    if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
+        const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
+        if (existingIndex !== -1) {
+            cachedSlips[existingIndex] = slipRecord;
+        } else {
+            cachedSlips.unshift(slipRecord); // Insert at top of Active list
+        }
+        if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
+    }
+
+    // 4. Immediately update Active grid UI
+    if (typeof chargerLiveOrders === 'function') {
+        chargerLiveOrders();
+    }
+
+    // 5. Update notification banner in English
+    const bannerContainer = document.getElementById('guestBannerContainer');
+    const bannerText = document.getElementById('guestBannerText');
+    
+    const formattedMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
+
+    if (bannerText) {
+        bannerText.innerText = formattedMessage;
+    }
+
+    if (bannerContainer) {
+        bannerContainer.classList.remove('hidden');
+        bannerContainer.style.display = 'flex';
+    }
+
+    // 6. Play notification sound
+    try {
+        if (typeof playNotificationSound === 'function') playNotificationSound();
     } catch (e) {}
 };
 
-// Fonction déclenchée au clic sur le bouton "OK / VU"
+// Function triggered on clicking "ACKNOWLEDGE" button
 function dismissGuestNotificationBanner() {
     const bannerContainer = document.getElementById('guestBannerContainer');
     if (bannerContainer) {
         bannerContainer.classList.add('hidden');
-        bannerContainer.style.display = 'none'; // Stoppe le clignotement et masque la bannière
+        bannerContainer.style.display = 'none'; // Stop flashing and hide banner
     }
 
-    // Arrêter les animations de clignotement résiduelles sur les cartes
+    // Remove residual flashing animations on cards
     document.querySelectorAll('.remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
