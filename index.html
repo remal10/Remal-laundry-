@@ -794,6 +794,31 @@
         </div>
     </div>
 </div>
+    <!-- Modale pour changer le statut en lot -->
+<div id="batchStatusModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#181614] border border-[#2f2820] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+        <h3 class="text-base font-bold text-[#DCA773] text-center">🔄 Update Status for Selected Rooms</h3>
+        <p id="batchStatusCountLabel" class="text-xs text-stone-400 text-center font-medium">0 items selected</p>
+        
+        <div class="grid grid-cols-2 gap-2 pt-2">
+            <button onclick="appliquerStatutEnLot('Collected')" class="py-3 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl transition border border-stone-700">
+                🧺 Collected
+            </button>
+            <button onclick="appliquerStatutEnLot('Washing')" class="py-3 px-2 bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 text-xs font-bold rounded-xl transition">
+                🧼 Washing
+            </button>
+            <button onclick="appliquerStatutEnLot('Ready')" class="py-3 px-2 bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs font-bold rounded-xl transition">
+                ✨ Ready
+            </button>
+            <button onclick="appliquerStatutEnLot('Delivered')" class="py-3 px-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-bold rounded-xl transition">
+                🚚 Delivered
+            </button>
+        </div>
 
+        <button onclick="fermerModalBatchStatus()" class="w-full py-2.5 bg-stone-900 text-stone-400 font-bold text-xs rounded-xl hover:bg-stone-800 transition mt-2 border border-[#2f2820]">
+            Cancel
+        </button>
+    </div>
+</div>
 </body>
 </html>
