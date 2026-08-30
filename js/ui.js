@@ -320,6 +320,7 @@ function switchService(service) {
 
 function renderItems() {
     const container = document.getElementById('itemsContainer');
+    if(!container) return;
     container.innerHTML = '';
     const serviceData = database[currentService];
     for (const [catName, items] of Object.entries(serviceData)) {
@@ -488,7 +489,7 @@ function chargerLiveOrders() {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
         const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-        return entryDateStr === todayStr || entry.status === 'pickup_alert';
+        return entryDateStr === todayStr || entry.status === 'pickup_alert' || entry.status === 'Collected';
     });
 
     activeTodaySlips.sort((a, b) => {
@@ -587,7 +588,7 @@ function ouvrirModalActiveRoomsList() {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
         const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-        return entryDateStr === todayStr || entry.status === 'pickup_alert';
+        return entryDateStr === todayStr || entry.status === 'pickup_alert' || entry.status === 'Collected';
     });
 
     activeLaundrySlips.sort((a, b) => {
@@ -602,7 +603,7 @@ function ouvrirModalActiveRoomsList() {
     let totalPieces = 0;
 
     if (activeLaundrySlips.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-stone-400 font-semibold">Aucune chambre d'hôtel active aujourd'hui.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-stone-400 font-semibold">No active hotel room records today.</td></tr>`;
     } else {
         activeLaundrySlips.forEach(s => {
             let quotaLabel = 'Hotel Count (Free)';
@@ -655,7 +656,7 @@ async function exportActiveRoomsListToPDF() {
         await html2pdf().set(opt).from(printArea).save();
     } catch (e) {
         console.error("Erreur génération PDF Active Rooms List:", e);
-        alert("⚠️ Erreur lors de l'export du PDF.");
+        alert("⚠️ Error exporting PDF.");
     }
 }
 
@@ -675,7 +676,7 @@ async function imprimerToutesLesChambresDuJour() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
     if (selectedIds.length === 0) {
-        alert("⚠️ Aucune sélection pour l'impression.");
+        alert("⚠️ No items selected for printing.");
         return;
     }
 
@@ -844,7 +845,7 @@ async function telechargerToutesLesChambresDuJour() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
     if (selectedIds.length === 0) {
-        alert("⚠️ Aucun élément sélectionné.");
+        alert("⚠️ No items selected.");
         return;
     }
 
@@ -855,7 +856,7 @@ async function telechargerToutesLesChambresDuJour() {
         await new Promise(resolve => setTimeout(resolve, 300));
     }
     
-    alert(`✅ ${slipsToDownload.length} bordereaux téléchargés avec succès.`);
+    alert(`✅ ${slipsToDownload.length} receipts downloaded successfully.`);
 }
 
 function switchArchiveFilter(filter) {
@@ -895,8 +896,10 @@ function afficherListeBordereauxLocal() {
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
     const container = document.getElementById('laundryList');
+    if (!container) return;
+
     if (filtered.length === 0) {
-        container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Aucun bordereau trouvé pour ces critères.</p>`;
+        container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">No records found matching criteria.</p>`;
         return;
     }
 
@@ -930,7 +933,7 @@ function afficherListeBordereauxLocal() {
                 badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
             }
 
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('fr-FR', {
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
 
@@ -968,7 +971,7 @@ function afficherListeBordereauxLocal() {
         `;
 
         spaEntries.forEach(entry => {
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('fr-FR', {
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
 
@@ -1139,58 +1142,68 @@ function renderManagementDashboard() {
         }
     });
 
-    document.getElementById('kpiRevenue').innerText = `${totalRevenue.toFixed(2)} AED`;
-    document.getElementById('kpiOrders').innerText = cachedSlips.length;
-    document.getElementById('kpiGarments').innerText = `${totalGarments} pcs`;
+    const kpiRev = document.getElementById('kpiRevenue');
+    const kpiOrd = document.getElementById('kpiOrders');
+    const kpiGar = document.getElementById('kpiGarments');
+
+    if(kpiRev) kpiRev.innerText = `${totalRevenue.toFixed(2)} AED`;
+    if(kpiOrd) kpiOrd.innerText = cachedSlips.length;
+    if(kpiGar) kpiGar.innerText = `${totalGarments} pcs`;
 
     requestAnimationFrame(() => {
-        const ctxDoughnut = document.getElementById('statusDoughnutChart').getContext('2d');
-        if (doughnutChartInstance) doughnutChartInstance.destroy();
+        const ctxDoughnutEl = document.getElementById('statusDoughnutChart');
+        if (ctxDoughnutEl) {
+            const ctxDoughnut = ctxDoughnutEl.getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
 
-        doughnutChartInstance = new Chart(ctxDoughnut, {
-            type: 'doughnut',
-            data: {
-                labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
-                datasets: [{
-                    data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
-                    backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#d6d3d1' } } }
-            }
-        });
+            doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
+                    datasets: [{
+                        data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
+                        backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#d6d3d1' } } }
+                }
+            });
+        }
 
         const dates = Object.keys(revenueByDate).sort();
         const revenues = dates.map(d => revenueByDate[d]);
 
-        const ctxBar = document.getElementById('revenueBarChart').getContext('2d');
-        if (barChartInstance) barChartInstance.destroy();
+        const ctxBarEl = document.getElementById('revenueBarChart');
+        if (ctxBarEl) {
+            const ctxBar = ctxBarEl.getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
 
-        barChartInstance = new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: dates.length > 0 ? dates : ['No Data'],
-                datasets: [{
-                    label: 'Revenue (AED)',
-                    data: revenues.length > 0 ? revenues : [0],
-                    backgroundColor: '#DCA773',
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { ticks: { font: { size: 11 }, color: '#d6d3d1' } },
-                    x: { ticks: { font: { size: 11 }, color: '#d6d3d1' } }
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: dates.length > 0 ? dates : ['No Data'],
+                    datasets: [{
+                        label: 'Revenue (AED)',
+                        data: revenues.length > 0 ? revenues : [0],
+                        backgroundColor: '#DCA773',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { font: { size: 11 }, color: '#d6d3d1' } },
+                        x: { ticks: { font: { size: 11 }, color: '#d6d3d1' } }
+                    }
                 }
-            }
-        });
+            });
+        }
     });
 }
 
@@ -1228,7 +1241,7 @@ async function exportSpaToPDF() {
         await html2pdf().set(opt).from(spaArea).save();
     } catch (e) {
         console.error("Erreur PDF SPA:", e);
-        alert("⚠️ Erreur lors de la génération du PDF du SPA.");
+        alert("⚠️ Error generating SPA PDF.");
     } finally {
         if (actionButtons) actionButtons.style.display = '';
         if (isHidden) spaArea.classList.add('hidden');
@@ -1247,11 +1260,7 @@ function fermerNotificationGuestReq(id) {
         }
     }
     
-    const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestBannerText');
-    if (banner) {
-        const parentBanner = banner.closest('.remal-card') || banner.parentElement;
-        if (parentBanner) parentBanner.classList.add('hidden');
-    }
+    dismissGuestNotificationBanner();
 }
 
 function ouvrirModalDetails(id) {
@@ -1323,7 +1332,7 @@ function ouvrirModalDetails(id) {
     const itemsList = Array.isArray(itemsObj) ? itemsObj : Object.values(itemsObj);
 
     if (itemsList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">Aucun article sélectionné.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">No items selected.</td></tr>`;
     } else {
         itemsList.forEach(item => {
             let name = item.name || 'Article';
@@ -1490,7 +1499,7 @@ function modifierBordereauActuel() {
 async function genererPDF(entryId = null) {
     const targetId = entryId || selectedIdForModal;
     if (!targetId) {
-        alert("⚠️ Aucun élément sélectionné.");
+        alert("⚠️ No item selected.");
         return;
     }
 
@@ -1528,7 +1537,7 @@ async function genererPDF(entryId = null) {
             await html2pdf().set(opt).from(printArea).save();
         } catch (e) {
             console.error("Erreur génération PDF SPA:", e);
-            alert("⚠️ Erreur lors de la création du PDF SPA.");
+            alert("⚠️ Error generating SPA PDF.");
         } finally {
             noPrintElements.forEach(el => el.style.display = '');
             fermerModal();
@@ -1570,7 +1579,7 @@ async function genererPDF(entryId = null) {
         await html2pdf().set(opt).from(printArea).save();
     } catch (e) {
         console.error("Erreur génération PDF:", e);
-        alert("⚠️ Erreur lors de la création du PDF.");
+        alert("⚠️ Error generating PDF.");
     } finally {
         noPrintElements.forEach(el => el.style.display = '');
         if (modalWasHidden) {
@@ -1671,21 +1680,21 @@ async function appliquerStatutEnLot(nouveauStatut) {
 }
 
 // -------------------------------------------------------------
-// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS
+// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS (EN ENGLISH)
 // -------------------------------------------------------------
 
 // Fonction appelée lorsqu'un client passe une commande
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
 
-    console.log("📥 Nouvelle demande client reçue :", newOrder);
+    console.log("📥 New guest request received:", newOrder);
 
     // 1. Extraction sécurisée des données
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
-    const guestName = newOrder.guest_name || 'Inconnu';
+    const guestName = newOrder.guest_name || 'Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
     const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
-    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Demande via Portail Guest';
+    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
@@ -1712,101 +1721,30 @@ window.onNewGuestRequestReceived = function(newOrder) {
     };
 
     // 3. Insertion dans le cache local et affichage dans la liste Active
-    if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
-    
-    if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
-        const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
-        if (existingIndex !== -1) {
-            cachedSlips[existingIndex] = slipRecord;
-        } else {
-            cachedSlips.unshift(slipRecord); // Insère en haut de la liste Active
+    try {
+        if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
+        
+        if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
+            const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
+            if (existingIndex !== -1) {
+                cachedSlips[existingIndex] = slipRecord;
+            } else {
+                cachedSlips.unshift(slipRecord); // Insère en haut de la liste Active
+            }
+            if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
         }
-        if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
+    } catch (e) {
+        console.warn("Mise à jour du stockage local reportée:", e);
     }
 
     // 4. Mettre à jour l'affichage de la grille Active immédiatement
-    if (typeof chargerLiveOrders === 'function') {
-        chargerLiveOrders();
-    }
+    try {
+        if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
+    } catch (e) {}
 
     // 5. Mettre à jour la bannière de notification
-    const bannerContainer = document.getElementById('guestBannerContainer');
-    const bannerText = document.getElementById('guestBannerText');
-    
-    const messageFormate = `⚡ NOUVELLE DEMANDE : Chambre ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
-
-    if (bannerText) {
-        bannerText.innerText = messageFormate;
-    }
-
-    if (bannerContainer) {
-        bannerContainer.classList.remove('hidden');
-        bannerContainer.style.display = 'flex'; // Affiche la bannière
-    }
-
-    // 6. Jouer le son d'alerte
-    try {
-        if (typeof playNotificationSound === 'function') playNotificationSound();
-// -------------------------------------------------------------
-// GUEST NOTIFICATION MANAGEMENT (LAUNDRY OS)
-// -------------------------------------------------------------
-
-// Function called when a guest submits a new order
-window.onNewGuestRequestReceived = function(newOrder) {
-    if (!newOrder) return;
-
-    console.log("📥 New guest request received:", newOrder);
-
-    // 1. Safe extraction of variables
-    const roomNum = String(newOrder.room_number || newOrder.room || '---');
-    const guestName = newOrder.guest_name || 'Guest';
-    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
-    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
-    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
-    const pmsQuotaText = newOrder.pms_quota || 'Standard';
-    const isExtra = newOrder.extra_charged || false;
-
-    // 2. Structure slip record for Active list
-    const slipRecord = {
-        id: String(newOrder.id || Date.now()),
-        room: roomNum,
-        guest_name: guestName,
-        count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
-        created_at: newOrder.created_at || new Date().toISOString(),
-        total_clothes: totalPcs,
-        total: grandTotal,
-        subtotal: parseFloat(newOrder.subtotal) || grandTotal,
-        vat: parseFloat(newOrder.vat) || 0,
-        status: 'Collected',
-        is_spa: false,
-        created_by: 'Guest App',
-        note: specialNotes,
-        quota: pmsQuotaText,
-        items: newOrder.items || [],
-        options: {
-            service_style: newOrder.service_type || 'Laundry Collection'
-        }
-    };
-
-    // 3. Update local cache and insert into Active list
-    if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
-    
-    if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
-        const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
-        if (existingIndex !== -1) {
-            cachedSlips[existingIndex] = slipRecord;
-        } else {
-            cachedSlips.unshift(slipRecord); // Insert at top of Active list
-        }
-        if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
-    }
-
-    // 4. Immediately update Active grid UI
-    if (typeof chargerLiveOrders === 'function') {
-        chargerLiveOrders();
-    }
-
-    // 5. Update notification banner in English
     const bannerContainer = document.getElementById('guestBannerContainer');
     const bannerText = document.getElementById('guestBannerText');
     
@@ -1818,24 +1756,24 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     if (bannerContainer) {
         bannerContainer.classList.remove('hidden');
-        bannerContainer.style.display = 'flex';
+        bannerContainer.style.display = 'flex'; // Affiche la bannière
     }
 
-    // 6. Play notification sound
+    // 6. Jouer le son d'alerte
     try {
         if (typeof playNotificationSound === 'function') playNotificationSound();
     } catch (e) {}
 };
 
-// Function triggered on clicking "ACKNOWLEDGE" button
+// Fonction déclenchée au clic sur le bouton "ACKNOWLEDGE"
 function dismissGuestNotificationBanner() {
     const bannerContainer = document.getElementById('guestBannerContainer');
     if (bannerContainer) {
         bannerContainer.classList.add('hidden');
-        bannerContainer.style.display = 'none'; // Stop flashing and hide banner
+        bannerContainer.style.display = 'none'; // Stoppe le clignotement et masque la bannière
     }
 
-    // Remove residual flashing animations on cards
+    // Arrêter les animations de clignotement résiduelles sur les cartes
     document.querySelectorAll('.remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
@@ -1879,7 +1817,7 @@ async function verifyStaffPin() {
             saveAndUnlockSession();
             return;
         } else {
-            errorMsg.classList.remove('hidden');
+            if(errorMsg) errorMsg.classList.remove('hidden');
             return;
         }
     }
@@ -1893,8 +1831,8 @@ async function verifyStaffPin() {
             .single();
 
         if (error || !data) {
-            errorMsg.classList.remove('hidden');
-            pinInput.value = '';
+            if(errorMsg) errorMsg.classList.remove('hidden');
+            if(pinInput) pinInput.value = '';
             return;
         }
 
@@ -1908,7 +1846,7 @@ async function verifyStaffPin() {
 
     } catch (err) {
         console.error("Erreur authentification staff:", err);
-        errorMsg.classList.remove('hidden');
+        if(errorMsg) errorMsg.classList.remove('hidden');
     }
 }
 
@@ -1918,7 +1856,7 @@ function saveAndUnlockSession() {
     if (loginModal) loginModal.classList.add('hidden');
     
     updateStaffUIIndicator();
-    console.log(`✅ Session déverrouillée par : ${currentStaffUser.name} (${currentStaffUser.role})`);
+    console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
 function updateStaffUIIndicator() {
