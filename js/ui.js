@@ -1616,67 +1616,39 @@ async function supprimerBordereauActuel() {
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     if (!requestId) return;
 
+    // 1. Mise à jour prioritaire de la mémoire locale pour un retour visuel instantané
+    chargerDonneesLocalStorage();
+    const local = cachedSlips.find(s => String(s.id) === String(requestId));
+    if (local) {
+        local.status = nouveauStatut;
+        sauvegarderDonneesLocalStorage();
+    }
+
+    // 2. Synchronisation Cloud Supabase sécurisée avec gestion d'erreurs
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).eq('id', requestId);
-            await supabaseClient.from('laundry_slips').update({ status: nouveauStatut }).eq('id', requestId);
+            const res1 = await supabaseClient
+                .from('laundry_slips')
+                .update({ status: nouveauStatut })
+                .eq('id', requestId);
+
+            const res2 = await supabaseClient
+                .from('guest_laundry_requests')
+                .update({ status: nouveauStatut })
+                .eq('id', requestId);
+
+            if (res1.error) console.warn("Supabase laundry_slips error:", res1.error.message);
+            if (res2.error) console.warn("Supabase guest_laundry_requests error:", res2.error.message);
         } catch (e) {
-            console.error("Erreur mise à jour statut Supabase :", e);
+            console.error("Erreur critique sync statut Supabase :", e);
         }
     }
 
-    chargerDonneesLocalStorage();
-    const local = cachedSlips.find(s => String(s.id) === String(requestId));
-    if (local) local.status = nouveauStatut;
-    sauvegarderDonneesLocalStorage();
-
+    // 3. Rafraîchissement propre des vues
     fermerModal();
     chargerLiveOrders();
-}
-
-function ouvrirModalBatchStatus() {
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) {
-        alert("⚠️ Please select at least one room checkbox.");
-        return;
-    }
-    const countLabel = document.getElementById('batchStatusCountLabel');
-    if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
-    
-    const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-function fermerModalBatchStatus() {
-    const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-async function appliquerStatutEnLot(nouveauStatut) {
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) return;
-
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        alert("⚠️ Supabase client not connected.");
-        return;
-    }
-
-    try {
-        await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', selectedIds);
-        await supabaseClient.from('laundry_slips').update({ status: nouveauStatut }).in('id', selectedIds);
-
-        chargerDonneesLocalStorage();
-        cachedSlips.forEach(s => {
-            if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
-        });
-        sauvegarderDonneesLocalStorage();
-
-        fermerModalBatchStatus();
-        chargerLiveOrders();
-        alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
-    } catch (err) {
-        console.error("Erreur lors de la mise à jour en lot :", err);
-        alert("⚠️ Error updating batch status.");
+    if (!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+        afficherListeBordereauxLocal();
     }
 }
 
