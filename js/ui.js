@@ -78,6 +78,9 @@ function initTheme() {
     }
 }
 
+// Drapeaux pour empêcher la boucle infinie et le gel du navigateur
+let isLocalUpdating = false;
+
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -119,18 +122,19 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
+        // Ecouteur temps réel sécurisé (Evite le freeze de la boucle de rafraîchissement)
         supabaseClient.channel('realtime_laundry')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async () => {
-                const { data } = await supabaseClient.from('guest_laundry_requests').select('*');
-                if (data && data.length > 0) {
-                    const slipMap = new Map();
-                    cachedSlips.forEach(s => slipMap.set(String(s.id), s));
-                    data.forEach(s => {
-                        const existing = slipMap.get(String(s.id));
-                        slipMap.set(String(s.id), { ...existing, ...s });
-                    });
-                    
-                    cachedSlips = Array.from(slipMap.values());
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
+                if (isLocalUpdating) return; // Stoppe le rechargement si la modification vient de cette IHM
+                
+                if (payload.new && payload.new.id) {
+                    const idStr = String(payload.new.id);
+                    const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
+                    if (idx !== -1) {
+                        cachedSlips[idx] = { ...cachedSlips[idx], ...payload.new };
+                    } else {
+                        cachedSlips.unshift(payload.new);
+                    }
                     sauvegarderDonneesLocalStorage();
                     chargerLiveOrders();
                     if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
@@ -1590,6 +1594,7 @@ function fermerModal() { document.getElementById('detailModal').classList.add('h
 async function supprimerBordereauActuel() {
     if (!selectedIdForModal) return;
     if (confirm(`Delete this record?`)) {
+        isLocalUpdating = true;
         chargerDonneesLocalStorage();
         cachedSlips = cachedSlips.filter(e => String(e.id) !== String(selectedIdForModal));
         sauvegarderDonneesLocalStorage();
@@ -1608,57 +1613,57 @@ async function supprimerBordereauActuel() {
         if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
             afficherListeBordereauxLocal();
         }
+        setTimeout(() => { isLocalUpdating = false; }, 1000);
     }
 }
 
 // -------------------------------------------------------------
-// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (TABLE: guest_laundry_requests)
+// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SÉCURISÉE SANS GEL)
 // -------------------------------------------------------------
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
-    if (!requestId) return;
+    const targetId = requestId || selectedIdForModal;
+    if (!targetId) return;
 
-    const idStr = String(requestId);
-    const idNum = Number(requestId);
+    isLocalUpdating = true; // Activer le verrou local pour stopper la boucle Realtime
 
-    // 1. Mise à jour immédiate dans le LocalStorage
+    const idStr = String(targetId).trim();
+    const idNum = Number(targetId);
+
+    // 1. Mise à jour instantanée du LocalStorage
     chargerDonneesLocalStorage();
-    const localEntry = cachedSlips.find(s => String(s.id) === idStr);
-    if (localEntry) {
-        localEntry.status = nouveauStatut;
-        sauvegarderDonneesLocalStorage();
-    }
+    cachedSlips.forEach(s => {
+        if (String(s.id).trim() === idStr) s.status = nouveauStatut;
+    });
+    sauvegarderDonneesLocalStorage();
 
-    // 2. Synchronisation prioritaire vers Supabase guest_laundry_requests pour le Guest Portal
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            let resGuest = await supabaseClient
-                .from('guest_laundry_requests')
-                .update({ status: nouveauStatut })
-                .eq('id', idStr);
-
-            if (resGuest.error && !isNaN(idNum)) {
-                resGuest = await supabaseClient
-                    .from('guest_laundry_requests')
-                    .update({ status: nouveauStatut })
-                    .eq('id', idNum);
-            }
-
-            if (resGuest.error) {
-                console.error("⚠️ Supabase UPDATE error on guest_laundry_requests:", resGuest.error.message);
-            } else {
-                console.log(`✅ Status successfully updated to "${nouveauStatut}" in guest_laundry_requests for Guest Portal.`);
-            }
-
-        } catch (e) {
-            console.error("Erreur critique synchronisation Supabase:", e);
-        }
-    }
-
+    // 2. Mise à jour fluide des vues de l'application
     fermerModal();
     chargerLiveOrders();
     if (!document.getElementById('sectionPdfList').classList.contains('hidden')) {
         afficherListeBordereauxLocal();
     }
+
+    // 3. Envoi à Supabase en arrière-plan (Sans bloquer l'IHM)
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            let res = await supabaseClient
+                .from('guest_laundry_requests')
+                .update({ status: nouveauStatut })
+                .eq('id', idStr);
+
+            if (res.error && !isNaN(idNum)) {
+                await supabaseClient
+                    .from('guest_laundry_requests')
+                    .update({ status: nouveauStatut })
+                    .eq('id', idNum);
+            }
+        } catch (e) {
+            console.error("Erreur sync Supabase:", e);
+        }
+    }
+
+    // Libération du verrou après 1 seconde
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
 }
 
 function ouvrirModalBatchStatus() {
@@ -1683,11 +1688,16 @@ async function appliquerStatutEnLot(nouveauStatut) {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     if (selectedIds.length === 0) return;
 
+    isLocalUpdating = true;
+
     chargerDonneesLocalStorage();
     cachedSlips.forEach(s => {
         if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
     });
     sauvegarderDonneesLocalStorage();
+
+    fermerModalBatchStatus();
+    chargerLiveOrders();
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
@@ -1697,8 +1707,7 @@ async function appliquerStatutEnLot(nouveauStatut) {
         }
     }
 
-    fermerModalBatchStatus();
-    chargerLiveOrders();
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
     alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
 }
 
@@ -1715,6 +1724,8 @@ async function supprimerBordereauxEnLot() {
 
     const confirmation = confirm(`⚠️ Are you sure you want to permanently delete ${selectedIds.length} selected record(s)?`);
     if (!confirmation) return;
+
+    isLocalUpdating = true;
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
@@ -1735,6 +1746,7 @@ async function supprimerBordereauxEnLot() {
     }
 
     chargerLiveOrders();
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
     alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
 }
 
@@ -1915,5 +1927,4 @@ function logoutStaff() {
     localStorage.removeItem('remal_current_staff');
     currentStaffUser = null;
     location.reload();
-}
 }
