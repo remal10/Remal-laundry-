@@ -1748,3 +1748,47 @@ function logoutStaff() {
     currentStaffUser = null;
     location.reload();
 }
+// Mise à jour du statut d'une demande client depuis Laundry OS
+async function mettreAJourStatutCommande(requestId, nouveauStatut) {
+    if (!supabaseClient || !requestId) {
+        alert("⚠️ Client Supabase non connecté.");
+        return;
+    }
+
+    try {
+        // 1. Mise à jour dans la table guest_laundry_requests
+        const { error: reqErr } = await supabaseClient
+            .from('guest_laundry_requests')
+            .update({ status: nouveauStatut })
+            .eq('id', requestId);
+
+        // 2. Mise à jour dans laundry_slips si présent
+        const { error: slipErr } = await supabaseClient
+            .from('laundry_slips')
+            .update({ status: nouveauStatut })
+            .eq('id', requestId);
+
+        if (reqErr && slipErr) {
+            console.error("Erreur maj statut:", reqErr || slipErr);
+            alert("⚠️ Impossible de mettre à jour le statut.");
+            return;
+        }
+
+        // 3. Mise à jour du cache local
+        chargerDonneesLocalStorage();
+        const localSlip = cachedSlips.find(s => String(s.id) === String(requestId));
+        if (localSlip) {
+            localSlip.status = nouveauStatut;
+            sauvegarderDonneesLocalStorage();
+        }
+
+        // 4. Rafraîchir l'affichage
+        chargerLiveOrders();
+        fermerModal();
+
+        console.log(`✅ Statut mis à jour avec succès : ${nouveauStatut}`);
+
+    } catch (e) {
+        console.error("Exception lors du changement de statut:", e);
+    }
+}
