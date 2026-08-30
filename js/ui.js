@@ -1670,20 +1670,26 @@ async function appliquerStatutEnLot(nouveauStatut) {
     }
 }
 
-// INTEGRATION REALTIME & CONVERSION GUEST PORTAL EN BORDEREAU ÉDITABLE
+// -------------------------------------------------------------
+// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS
+// -------------------------------------------------------------
+
+// Fonction appelée lorsqu'un client passe une commande
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
 
     console.log("📥 Nouvelle demande client reçue :", newOrder);
 
+    // 1. Extraction sécurisée des données
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
-    const guestName = newOrder.guest_name || 'Online Guest';
+    const guestName = newOrder.guest_name || 'Inconnu';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
     const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
-    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
+    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Demande via Portail Guest';
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
+    // 2. Structuration du bordereau pour la liste "Active" (Live Records)
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
@@ -1694,7 +1700,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
         total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: 'pickup_alert',
+        status: 'Collected',
         is_spa: false,
         created_by: 'Guest App',
         note: specialNotes,
@@ -1705,55 +1711,58 @@ window.onNewGuestRequestReceived = function(newOrder) {
         }
     };
 
-    chargerDonneesLocalStorage();
+    // 3. Insertion dans le cache local et affichage dans la liste Active
+    if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
     
-    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
-    if (existingIndex !== -1) {
-        cachedSlips[existingIndex] = slipRecord;
-    } else {
-        cachedSlips.unshift(slipRecord);
+    if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
+        const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
+        if (existingIndex !== -1) {
+            cachedSlips[existingIndex] = slipRecord;
+        } else {
+            cachedSlips.unshift(slipRecord); // Insère en haut de la liste Active
+        }
+        if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
     }
-    
-    sauvegarderDonneesLocalStorage();
 
-    // 🛑 MISE À JOUR DU TEXTE ET AFFICHAGE DE LA BANNIÈRE
-    const bannerText = document.getElementById('guestBannerText');
-    const bannerContainer = document.getElementById('guestBannerContainer');
-    
-    if (bannerText) {
-        bannerText.innerText = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} pcs submitted!`;
+    // 4. Mettre à jour l'affichage de la grille Active immédiatement
+    if (typeof chargerLiveOrders === 'function') {
+        chargerLiveOrders();
     }
+
+    // 5. Mettre à jour la bannière de notification
+    const bannerContainer = document.getElementById('guestBannerContainer');
+    const bannerText = document.getElementById('guestBannerText');
+    
+    const messageFormate = `⚡ NOUVELLE DEMANDE : Chambre ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
+
+    if (bannerText) {
+        bannerText.innerText = messageFormate;
+    }
+
     if (bannerContainer) {
         bannerContainer.classList.remove('hidden');
+        bannerContainer.style.display = 'flex'; // Affiche la bannière
     }
 
-    const liveSection = document.getElementById('sectionLiveRecord');
-    if (liveSection && !liveSection.classList.contains('hidden')) {
-        chargerLiveOrders();
-    } else {
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const activeTodaySlips = cachedSlips.filter(entry => {
-            if (!entry.created_at) return false;
-            const entryDate = new Date(entry.created_at);
-            const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-            return entryDateStr === todayStr || entry.status === 'pickup_alert';
-        });
-        const badge = document.getElementById('activeRoomsCountBadge');
-        if (badge) badge.innerText = activeTodaySlips.length;
-    }
-
-    setTimeout(() => {
-        const checkbox = document.querySelector(`.room-checkbox[data-id="${slipRecord.id}"]`);
-        if (checkbox) {
-            const card = checkbox.closest('.remal-card');
-            if (card) {
-                card.classList.add('ring-2', 'ring-amber-500', 'bg-amber-950/30', 'animate-pulse');
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }, 200);
+    // 6. Jouer le son d'alerte
+    try {
+        if (typeof playNotificationSound === 'function') playNotificationSound();
+    } catch (e) {}
 };
+
+// Fonction déclenchée au clic sur le bouton "OK / VU"
+function dismissGuestNotificationBanner() {
+    const bannerContainer = document.getElementById('guestBannerContainer');
+    if (bannerContainer) {
+        bannerContainer.classList.add('hidden');
+        bannerContainer.style.display = 'none'; // Stoppe le clignotement et masque la bannière
+    }
+
+    // Arrêter les animations de clignotement résiduelles sur les cartes
+    document.querySelectorAll('.remal-card').forEach(card => {
+        card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
+    });
+}
 
 // LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 let currentStaffUser = null;
