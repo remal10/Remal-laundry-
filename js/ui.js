@@ -1674,7 +1674,7 @@ async function appliquerStatutEnLot(nouveauStatut) {
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
 
-    console.log("📥 Nouvelle demande client convertie en bordereau éditable :", newOrder);
+    console.log("📥 Nouvelle demande client reçue :", newOrder);
 
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Online Guest';
@@ -1716,9 +1716,15 @@ window.onNewGuestRequestReceived = function(newOrder) {
     
     sauvegarderDonneesLocalStorage();
 
+    // 🛑 MISE À JOUR DU TEXTE ET AFFICHAGE DE LA BANNIÈRE
     const bannerText = document.getElementById('guestBannerText');
+    const bannerContainer = document.getElementById('guestBannerContainer');
+    
     if (bannerText) {
-        bannerText.innerText = `Room ${roomNum} (${guestName}) — ${totalPcs} piece(s) submitted.`;
+        bannerText.innerText = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} pcs submitted!`;
+    }
+    if (bannerContainer) {
+        bannerContainer.classList.remove('hidden');
     }
 
     const liveSection = document.getElementById('sectionLiveRecord');
