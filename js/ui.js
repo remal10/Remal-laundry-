@@ -1215,6 +1215,15 @@ async function exportSpaToPDF() {
 }
 
 function ouvrirModalDetails(id) {
+    // 🛡️ STOP CLIGNOTEMENT AU CLIC (Intégré sans casser l'existant)
+    const clickedCheckbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
+    if (clickedCheckbox) {
+        const card = clickedCheckbox.closest('.remal-card');
+        if (card) {
+            card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
+        }
+    }
+
     selectedIdForModal = String(id);
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(e => String(e.id) === String(id));
@@ -1409,7 +1418,6 @@ function modifierBordereauActuel() {
         calculateSpaTotal();
 
     } else {
-        // Formulaire de saisie pour bordereau standard ou commande Guest Portal
         switchMainSection('newRecord');
         document.getElementById('editingRecordId').value = entry.id;
         document.getElementById('lblFormTitle').innerText = `✏️ Edit / Validate Record - Room ${entry.room}`;
@@ -1420,7 +1428,6 @@ function modifierBordereauActuel() {
         document.getElementById('recordOptionalNote').value = entry.note || '';
 
         cart = {};
-        let customIndex = 0;
 
         if (entry.items) {
             const itemsList = Array.isArray(entry.items) ? entry.items : Object.values(entry.items);
@@ -1568,7 +1575,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     console.log("📥 Nouvelle demande client convertie en bordereau éditable :", newOrder);
 
-    // Extraction et normalisation robuste des variables
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Online Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
@@ -1577,7 +1583,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
-    // Transformation au format bordereau d'équipe Laundry OS
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
@@ -1588,7 +1593,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
         total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: 'pickup_alert', // Conserve le badge clignotant ⚡ GUEST REQ
+        status: 'pickup_alert',
         is_spa: false,
         created_by: 'Guest App',
         note: specialNotes,
@@ -1601,7 +1606,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     chargerDonneesLocalStorage();
     
-    // Insertion ou mise à jour sans doublons
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
@@ -1611,13 +1615,11 @@ window.onNewGuestRequestReceived = function(newOrder) {
     
     sauvegarderDonneesLocalStorage();
 
-        // Update VIP notification banner in English
     const bannerText = document.getElementById('guestBannerText');
     if (bannerText) {
         bannerText.innerText = `Room ${roomNum} (${guestName}) — ${totalPcs} piece(s) submitted.`;
     }
 
-    // Actualisation de l'affichage dans la section Active Rooms
     const liveSection = document.getElementById('sectionLiveRecord');
     if (liveSection && !liveSection.classList.contains('hidden')) {
         chargerLiveOrders();
@@ -1631,7 +1633,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
         if (badge) badge.innerText = activeTodaySlips.length;
     }
 
-    // Surbrillance automatique de la carte reçue
     setTimeout(() => {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${slipRecord.id}"]`);
         if (checkbox) {
@@ -1643,11 +1644,9 @@ window.onNewGuestRequestReceived = function(newOrder) {
         }
     }, 200);
 };
-// (Fin de votre code existant dans js/ui.js...)
-// ...
 
 // ==========================================================================
-// LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY (COLLER TOUT EN BAS)
+// LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 // ==========================================================================
 
 let currentStaffUser = null;
