@@ -78,7 +78,7 @@ function initTheme() {
     }
 }
 
-// Drapeaux pour empêcher la boucle infinie et le gel du navigateur
+// Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
 
 async function chargerDonneesEtAbonnementCloud() {
@@ -95,7 +95,10 @@ async function chargerDonneesEtAbonnementCloud() {
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
-            slips.forEach(s => slipMap.set(String(s.id), s));
+            slips.forEach(s => {
+                const roomClean = s.room || s.room_number || s.room_no || '---';
+                slipMap.set(String(s.id), { ...s, room: roomClean, room_number: roomClean });
+            });
             
             cachedSlips = Array.from(slipMap.values());
             sauvegarderDonneesLocalStorage();
@@ -122,18 +125,21 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        // Ecouteur temps réel sécurisé (Evite le freeze de la boucle de rafraîchissement)
+        // Ecouteur temps réel (Realtime) sécurisé
         supabaseClient.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
-                if (isLocalUpdating) return; // Stoppe le rechargement si la modification vient de cette IHM
+                if (isLocalUpdating) return;
                 
                 if (payload.new && payload.new.id) {
                     const idStr = String(payload.new.id);
+                    const roomClean = payload.new.room || payload.new.room_number || payload.new.room_no || '---';
+                    const formattedData = { ...payload.new, room: roomClean, room_number: roomClean };
+
                     const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
                     if (idx !== -1) {
-                        cachedSlips[idx] = { ...cachedSlips[idx], ...payload.new };
+                        cachedSlips[idx] = { ...cachedSlips[idx], ...formattedData };
                     } else {
-                        cachedSlips.unshift(payload.new);
+                        cachedSlips.unshift(formattedData);
                     }
                     sauvegarderDonneesLocalStorage();
                     chargerLiveOrders();
@@ -503,7 +509,9 @@ function chargerLiveOrders() {
     activeTodaySlips.sort((a, b) => {
         if (a.is_spa && !b.is_spa) return -1;
         if (!a.is_spa && b.is_spa) return 1;
-        return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
+        const roomA = parseInt(a.room || a.room_number || a.room_no) || 0;
+        const roomB = parseInt(b.room || b.room_number || b.room_no) || 0;
+        return roomA - roomB;
     });
 
     const badge = document.getElementById('activeRoomsCountBadge');
@@ -554,7 +562,8 @@ function chargerLiveOrders() {
             badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
         }
 
-        let identifierDisplay = `Room ${entry.room}`;
+        const roomNum = entry.room || entry.room_number || entry.room_no || '---';
+        let identifierDisplay = `Room ${roomNum}`;
         if (entry.is_spa) {
             const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
             identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
@@ -599,7 +608,7 @@ function ouvrirModalActiveRoomsList() {
         return entryDateStr === todayStr || ['pickup_alert', 'Collected', 'Washing', 'Ready'].includes(entry.status);
     });
 
-    activeLaundrySlips.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
+    activeLaundrySlips.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
 
     const tbody = document.getElementById('activeRoomsTableBody');
     tbody.innerHTML = '';
@@ -614,7 +623,7 @@ function ouvrirModalActiveRoomsList() {
             if (s.count_type === 'quota_extra') quotaLabel = 'Hotel & Extra';
             if (s.count_type === 'guest') quotaLabel = 'Guest Count (Full)';
 
-            const roomDisp = s.room;
+            const roomDisp = s.room || s.room_number || s.room_no || '---';
             const pkgDisp = s.options?.service_style || 'F — Folding';
             const guestDisp = s.guest_name || 'Guest';
             const pcs = s.total_clothes || 0;
@@ -685,7 +694,7 @@ async function imprimerToutesLesChambresDuJour() {
     }
 
     const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
-    slipsToPrint.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
+    slipsToPrint.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
 
     const batchContainer = document.getElementById('batchPrintContainer');
     batchContainer.innerHTML = '';
@@ -693,7 +702,8 @@ async function imprimerToutesLesChambresDuJour() {
     slipsToPrint.forEach(entry => {
         entry.receipt_id = genererIdentifiantBordereau(entry);
         const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
-        
+        const roomNum = entry.room || entry.room_number || entry.room_no || '---';
+
         let badgeText = 'Hotel Count (Free)';
         if (entry.count_type === 'quota_extra') {
             badgeText = 'Hotel & Extra';
@@ -784,7 +794,7 @@ async function imprimerToutesLesChambresDuJour() {
                     <div style="display: flex; justify-between; align-items: center; margin-bottom: 6px;">
                         <div>
                             <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
-                            <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : entry.room}</span>
+                            <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : roomNum}</span>
                         </div>
                         <div style="text-align: right;">
                             <span style="color: #6b7280; font-weight: 700;">Date: ${dateFormatted}</span><br>
@@ -878,8 +888,9 @@ function afficherListeBordereauxLocal() {
     const searchDateVal = document.getElementById('searchDate').value;
 
     let filtered = cachedSlips.filter(entry => {
+        const roomNum = String(entry.room || entry.room_number || entry.room_no || '').toLowerCase();
         const matchRoom = !searchVal || 
-            String(entry.room).toLowerCase().includes(searchVal) || 
+            roomNum.includes(searchVal) || 
             String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
             String(entry.spa_serial || '').toLowerCase().includes(searchVal) ||
             (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
@@ -937,6 +948,7 @@ function afficherListeBordereauxLocal() {
                 badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
             }
 
+            const roomNum = entry.room || entry.room_number || entry.room_no || '---';
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
@@ -944,7 +956,7 @@ function afficherListeBordereauxLocal() {
             html += `
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
                     <div>
-                        <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${entry.room} (${entry.guest_name || 'Guest'})</span>
+                        <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span>
                         <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
                         <div class="text-[10px] text-stone-400 mt-1">📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
                     </div>
@@ -1276,6 +1288,7 @@ function ouvrirModalDetails(id) {
 
     entry.receipt_id = genererIdentifiantBordereau(entry);
     const t = i18n[currentLang] || i18n.en;
+    const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
     document.getElementById('modalPdfHotelName').innerText = t.pdfHotelName;
     document.getElementById('modalPdfHotelSub').innerText = t.pdfHotelSub;
@@ -1304,10 +1317,10 @@ function ouvrirModalDetails(id) {
     document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;
     
     if (entry.is_spa) {
-        const serialClean = String(entry.spa_serial || entry.room || '').replace(/SPA\s*#?/gi, '').trim();
+        const serialClean = String(entry.spa_serial || roomNum || '').replace(/SPA\s*#?/gi, '').trim();
         document.getElementById('modalRoomNumDisplay').innerText = `#${serialClean}`;
     } else {
-        document.getElementById('modalRoomNumDisplay').innerText = entry.room;
+        document.getElementById('modalRoomNumDisplay').innerText = roomNum;
     }
     
     const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
@@ -1424,7 +1437,7 @@ function ouvrirModalDetails(id) {
         pContainer.innerHTML = '';
     }
 
-    const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + entry.room}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
+    const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
     document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
     document.getElementById('detailModal').classList.remove('hidden');
@@ -1462,10 +1475,11 @@ function modifierBordereauActuel() {
         calculateSpaTotal();
 
     } else {
+        const roomNum = entry.room || entry.room_number || entry.room_no || '---';
         switchMainSection('newRecord');
         document.getElementById('editingRecordId').value = entry.id;
-        document.getElementById('lblFormTitle').innerText = `✏️ Edit / Validate Record - Room ${entry.room}`;
-        document.getElementById('roomNumber').value = entry.room;
+        document.getElementById('lblFormTitle').innerText = `✏️ Edit / Validate Record - Room ${roomNum}`;
+        document.getElementById('roomNumber').value = roomNum;
         onRoomNumberInput();
 
         selectCountType(entry.count_type || 'hotel');
@@ -1508,9 +1522,10 @@ async function genererPDF(entryId = null) {
     const entry = cachedSlips.find(e => String(e.id) === String(targetId));
     if (!entry) return;
 
+    const roomNum = entry.room || entry.room_number || entry.room_no || '---';
+
     if (entry.is_spa) {
         ouvrirModalDetails(targetId);
-        const modalEl = document.getElementById('detailModal');
         const printArea = document.getElementById('pdfExportArea');
         const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
         const fileTargetName = `REMAL_${dateIso}_SPA-${entry.spa_serial || '0000'}`;
@@ -1554,7 +1569,7 @@ async function genererPDF(entryId = null) {
 
     entry.receipt_id = genererIdentifiantBordereau(entry);
     const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-    const fileTargetName = `REMAL_${dateIso}_RM-${entry.room}`;
+    const fileTargetName = `REMAL_${dateIso}_RM-${roomNum}`;
 
     const printArea = document.getElementById('pdfExportArea');
     const noPrintElements = printArea.querySelectorAll('.no-print');
@@ -1618,13 +1633,13 @@ async function supprimerBordereauActuel() {
 }
 
 // -------------------------------------------------------------
-// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SÉCURISÉE SANS GEL)
+// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SYNCHRO SUPABASE)
 // -------------------------------------------------------------
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     const targetId = requestId || selectedIdForModal;
     if (!targetId) return;
 
-    isLocalUpdating = true; // Activer le verrou local pour stopper la boucle Realtime
+    isLocalUpdating = true;
 
     const idStr = String(targetId).trim();
     const idNum = Number(targetId);
@@ -1636,14 +1651,14 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     });
     sauvegarderDonneesLocalStorage();
 
-    // 2. Mise à jour fluide des vues de l'application
+    // 2. Mise à jour fluide des vues
     fermerModal();
     chargerLiveOrders();
     if (!document.getElementById('sectionPdfList').classList.contains('hidden')) {
         afficherListeBordereauxLocal();
     }
 
-    // 3. Envoi à Supabase en arrière-plan (Sans bloquer l'IHM)
+    // 3. Envoi asynchrone vers Supabase guest_laundry_requests
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             let res = await supabaseClient
@@ -1662,7 +1677,6 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
         }
     }
 
-    // Libération du verrou après 1 seconde
     setTimeout(() => { isLocalUpdating = false; }, 1000);
 }
 
@@ -1758,7 +1772,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
 
     console.log("📥 New guest request received:", newOrder);
 
-    const roomNum = String(newOrder.room_number || newOrder.room || '---');
+    const roomNum = String(newOrder.room_number || newOrder.room || newOrder.room_no || '---');
     const guestName = newOrder.guest_name || 'Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
     const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
@@ -1769,6 +1783,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
+        room_number: roomNum,
         guest_name: guestName,
         count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
         created_at: newOrder.created_at || new Date().toISOString(),
