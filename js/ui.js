@@ -481,7 +481,7 @@ function chargerLiveOrders() {
 
     chargerDonneesLocalStorage();
     
-    // Date locale UAE (YYYY-MM-DD)
+    // Date locale UAE (YYYY-MM-DD) -> Bascule automatique à minuit
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
@@ -504,13 +504,14 @@ function chargerLiveOrders() {
     // 1. Vider le conteneur principal
     container.innerHTML = '';
 
-    // 2. AFFICHER LA BARRE D'OUTILS ET LE BOUTON BATCH STATUS
+    // 2. AFFICHER LA BARRE D'OUTILS, BATCH STATUS ET BULK DELETE
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
     controlsDiv.innerHTML = `
         <button onclick="toggleAllSelections(true)" class="text-xs font-bold text-[#DCA773] bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">✅ Select All</button>
         <button onclick="toggleAllSelections(false)" class="text-xs font-bold text-stone-400 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">❌ Deselect All</button>
         <button onclick="ouvrirModalBatchStatus()" class="text-xs font-bold text-amber-300 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition flex items-center gap-1.5">🔄 Update Selected Status</button>
+        <button onclick="supprimerBordereauxEnLot()" class="text-xs font-bold text-rose-400 bg-rose-950/40 hover:bg-rose-900/60 px-3.5 py-2 rounded-xl border border-rose-800/80 shadow transition flex items-center gap-1.5">🗑️ Delete Selected</button>
     `;
     container.appendChild(controlsDiv);
 
@@ -1677,6 +1678,46 @@ async function appliquerStatutEnLot(nouveauStatut) {
         console.error("Erreur lors de la mise à jour en lot :", err);
         alert("⚠️ Error updating batch status.");
     }
+}
+
+// -------------------------------------------------------------
+// SUPPRESSION EN LOT (BULK DELETE) DES BORDEREAUX SÉLECTIONNÉS
+// -------------------------------------------------------------
+async function supprimerBordereauxEnLot() {
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    
+    if (selectedIds.length === 0) {
+        alert("⚠️ Please select at least one record to delete.");
+        return;
+    }
+
+    const confirmation = confirm(`⚠️ Are you sure you want to permanently delete ${selectedIds.length} selected record(s)?`);
+    if (!confirmation) return;
+
+    // 1. Suppression dans Supabase Cloud (si connecté)
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient.from('guest_laundry_requests').delete().in('id', selectedIds);
+            await supabaseClient.from('laundry_slips').delete().in('id', selectedIds);
+        } catch (err) {
+            console.error("Error deleting bulk items from Supabase:", err);
+        }
+    }
+
+    // 2. Suppression dans la mémoire locale (LocalStorage)
+    try {
+        chargerDonneesLocalStorage();
+        if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
+            cachedSlips = cachedSlips.filter(s => !selectedIds.includes(String(s.id)));
+            sauvegarderDonneesLocalStorage();
+        }
+    } catch (e) {
+        console.error("Error updating local storage:", e);
+    }
+
+    // 3. Rafraîchissement de l'affichage
+    chargerLiveOrders();
+    alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
 }
 
 // -------------------------------------------------------------
