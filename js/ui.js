@@ -1214,28 +1214,15 @@ async function exportSpaToPDF() {
     }
 }
 
-// FERMETURE ET NETTOYAGE DES NOTIFICATIONS (DESACTIVE LE CLIGNOTEMENT)
-function fermerNotificationGuestReq(id) {
-    if (id) {
-        const checkbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
-        if (checkbox) {
-            const card = checkbox.closest('.remal-card');
-            if (card) {
-                card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
-            }
+function ouvrirModalDetails(id) {
+    // 🛡️ STOP CLIGNOTEMENT AU CLIC (Intégré sans casser l'existant)
+    const clickedCheckbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
+    if (clickedCheckbox) {
+        const card = clickedCheckbox.closest('.remal-card');
+        if (card) {
+            card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
         }
     }
-    
-    const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestBannerText');
-    if (banner) {
-        const parentBanner = banner.closest('.remal-card') || banner.parentElement;
-        if (parentBanner) parentBanner.classList.add('hidden');
-    }
-}
-
-function ouvrirModalDetails(id) {
-    // 🛑 ARRETE LE CLIGNOTEMENT DE LA CARTE AU CLIC
-    fermerNotificationGuestReq(id);
 
     selectedIdForModal = String(id);
     chargerDonneesLocalStorage();
@@ -1579,7 +1566,10 @@ async function supprimerBordereauActuel() {
     }
 }
 
+// ==========================================================================
 // INTEGRATION REALTIME & CONVERSION GUEST PORTAL EN BORDEREAU ÉDITABLE
+// ==========================================================================
+
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
 
@@ -1655,7 +1645,10 @@ window.onNewGuestRequestReceived = function(newOrder) {
     }, 200);
 };
 
+// ==========================================================================
 // LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
+// ==========================================================================
+
 let currentStaffUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
