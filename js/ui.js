@@ -120,12 +120,16 @@ async function chargerDonneesEtAbonnementCloud() {
         }
 
         supabaseClient.channel('realtime_laundry')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'laundry_slips' }, async (payload) => {
                 const { data } = await supabaseClient.from('laundry_slips').select('*');
                 if (data && data.length > 0) {
                     const slipMap = new Map();
                     cachedSlips.forEach(s => slipMap.set(String(s.id), s));
-                    data.forEach(s => slipMap.set(String(s.id), s));
+                    data.forEach(s => {
+                        const existing = slipMap.get(String(s.id));
+                        // Fusionne en conservant le statut local le plus récent si besoin
+                        slipMap.set(String(s.id), { ...existing, ...s });
+                    });
                     
                     cachedSlips = Array.from(slipMap.values());
                     sauvegarderDonneesLocalStorage();
@@ -481,15 +485,17 @@ function chargerLiveOrders() {
 
     chargerDonneesLocalStorage();
     
-    // Date locale UAE (YYYY-MM-DD) -> Bascule automatique à minuit
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
+    // Garde en vue tous les statuts actifs en cours de traitement
     const activeTodaySlips = cachedSlips.filter(entry => {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
         const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-        return entryDateStr === todayStr || entry.status === 'pickup_alert' || entry.status === 'Collected';
+        
+        const activeStatuses = ['pickup_alert', 'Collected', 'Washing', 'Ready', 'Delivered'];
+        return entryDateStr === todayStr || activeStatuses.includes(entry.status);
     });
 
     activeTodaySlips.sort((a, b) => {
@@ -501,10 +507,8 @@ function chargerLiveOrders() {
     const badge = document.getElementById('activeRoomsCountBadge');
     if (badge) badge.innerText = activeTodaySlips.length;
 
-    // 1. Vider le conteneur principal
     container.innerHTML = '';
 
-    // 2. AFFICHER LA BARRE D'OUTILS, BATCH STATUS ET BULK DELETE
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
     controlsDiv.innerHTML = `
@@ -515,7 +519,6 @@ function chargerLiveOrders() {
     `;
     container.appendChild(controlsDiv);
 
-    // 3. Message si aucune commande n'est présente aujourd'hui
     if (activeTodaySlips.length === 0) {
         const emptyMsg = document.createElement('p');
         emptyMsg.className = 'text-xs text-stone-500 text-center py-6 col-span-full';
@@ -525,26 +528,28 @@ function chargerLiveOrders() {
         return;
     }
 
-    // 4. Génération des cartes de chambres
     activeTodaySlips.forEach(entry => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'remal-card p-4 rounded-2xl flex items-center gap-3.5 hover:border-[#DCA773] transition cursor-pointer';
 
-        let badgeText = 'Hotel Count';
+        let badgeText = entry.status || 'Collected';
         let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
         
         if (entry.status === 'pickup_alert') {
             badgeText = '⚡ GUEST REQ';
             badgeClass = 'bg-emerald-950 text-emerald-300 border border-emerald-600 animate-pulse';
+        } else if (entry.status === 'Washing') {
+            badgeText = '🧼 Washing';
+            badgeClass = 'bg-blue-950 text-blue-200 border border-blue-800';
+        } else if (entry.status === 'Ready') {
+            badgeText = '✨ Ready';
+            badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
+        } else if (entry.status === 'Delivered') {
+            badgeText = '✅ Delivered';
+            badgeClass = 'bg-emerald-950 text-emerald-200 border border-emerald-800';
         } else if (entry.is_spa) {
             badgeText = 'SPA Daily Sheet';
             badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        } else if (entry.count_type === 'quota_extra') {
-            badgeText = 'Hotel & Extra';
-            badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        } else if (entry.count_type === 'guest') {
-            badgeText = 'Guest Count';
-            badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
         }
 
         let identifierDisplay = `Room ${entry.room}`;
@@ -589,14 +594,10 @@ function ouvrirModalActiveRoomsList() {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
         const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-        return entryDateStr === todayStr || entry.status === 'pickup_alert' || entry.status === 'Collected';
+        return entryDateStr === todayStr || ['pickup_alert', 'Collected', 'Washing', 'Ready'].includes(entry.status);
     });
 
-    activeLaundrySlips.sort((a, b) => {
-        const roomA = parseInt(a.room) || 0;
-        const roomB = parseInt(b.room) || 0;
-        return roomA - roomB;
-    });
+    activeLaundrySlips.sort((a, b) => (parseInt(a.room) || 0) - (parseInt(b.room) || 0));
 
     const tbody = document.getElementById('activeRoomsTableBody');
     tbody.innerHTML = '';
@@ -1249,7 +1250,6 @@ async function exportSpaToPDF() {
     }
 }
 
-// FERMETURE ET NETTOYAGE DES NOTIFICATIONS (DESACTIVE LE CLIGNOTEMENT)
 function fermerNotificationGuestReq(id) {
     if (id) {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
@@ -1265,7 +1265,6 @@ function fermerNotificationGuestReq(id) {
 }
 
 function ouvrirModalDetails(id) {
-    // 🛑 ARRETE LE CLIGNOTEMENT DE LA CARTE AU CLIC
     fermerNotificationGuestReq(id);
 
     selectedIdForModal = String(id);
@@ -1429,7 +1428,6 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
-// MODIFICATION DU BORDEREAU (GÈRE AUSSI LES DEMANDES GUEST PORTAL)
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -1611,40 +1609,42 @@ async function supprimerBordereauActuel() {
 }
 
 // -------------------------------------------------------------
-// GESTION INDIVIDUELLE ET EN LOT DES STATUTS
+// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SÉCURISÉE & ROBUSTE)
 // -------------------------------------------------------------
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     if (!requestId) return;
 
-    // 1. Mise à jour prioritaire de la mémoire locale pour un retour visuel instantané
+    const targetIdStr = String(requestId);
+
+    // 1. Mise à jour prioritaire du LocalStorage (rendu instantané sans latence)
     chargerDonneesLocalStorage();
-    const local = cachedSlips.find(s => String(s.id) === String(requestId));
-    if (local) {
-        local.status = nouveauStatut;
+    const localEntry = cachedSlips.find(s => String(s.id) === targetIdStr);
+    if (localEntry) {
+        localEntry.status = nouveauStatut;
         sauvegarderDonneesLocalStorage();
     }
 
-    // 2. Synchronisation Cloud Supabase sécurisée avec gestion d'erreurs
+    // 2. Mise à jour Cloud Supabase sécurisée avec gestion d'erreurs
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const res1 = await supabaseClient
                 .from('laundry_slips')
                 .update({ status: nouveauStatut })
-                .eq('id', requestId);
+                .eq('id', targetIdStr);
 
             const res2 = await supabaseClient
                 .from('guest_laundry_requests')
                 .update({ status: nouveauStatut })
-                .eq('id', requestId);
+                .eq('id', targetIdStr);
 
-            if (res1.error) console.warn("Supabase laundry_slips error:", res1.error.message);
-            if (res2.error) console.warn("Supabase guest_laundry_requests error:", res2.error.message);
+            if (res1.error) console.warn("Supabase laundry_slips update error:", res1.error.message);
+            if (res2.error) console.warn("Supabase guest_laundry_requests update error:", res2.error.message);
         } catch (e) {
-            console.error("Erreur critique sync statut Supabase :", e);
+            console.error("Erreur critique synchronisation Supabase:", e);
         }
     }
 
-    // 3. Rafraîchissement propre des vues
+    // 3. Rafraîchissement des interfaces visuelles
     fermerModal();
     chargerLiveOrders();
     if (!document.getElementById('sectionPdfList').classList.contains('hidden')) {
@@ -1652,8 +1652,52 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     }
 }
 
+function ouvrirModalBatchStatus() {
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    if (selectedIds.length === 0) {
+        alert("⚠️ Please select at least one room checkbox.");
+        return;
+    }
+    const countLabel = document.getElementById('batchStatusCountLabel');
+    if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
+    
+    const modal = document.getElementById('batchStatusModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function fermerModalBatchStatus() {
+    const modal = document.getElementById('batchStatusModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function appliquerStatutEnLot(nouveauStatut) {
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    if (selectedIds.length === 0) return;
+
+    // 1. Mise à jour locale immédiate
+    chargerDonneesLocalStorage();
+    cachedSlips.forEach(s => {
+        if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
+    });
+    sauvegarderDonneesLocalStorage();
+
+    // 2. Synchronisation Cloud Supabase
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient.from('laundry_slips').update({ status: nouveauStatut }).in('id', selectedIds);
+            await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', selectedIds);
+        } catch (err) {
+            console.error("Erreur lors de la mise à jour en lot Supabase :", err);
+        }
+    }
+
+    fermerModalBatchStatus();
+    chargerLiveOrders();
+    alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
+}
+
 // -------------------------------------------------------------
-// SUPPRESSION EN LOT (BULK DELETE) DES BORDEREAUX SÉLECTIONNÉS
+// SUPPRESSION EN LOT (BULK DELETE)
 // -------------------------------------------------------------
 async function supprimerBordereauxEnLot() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
@@ -1666,7 +1710,7 @@ async function supprimerBordereauxEnLot() {
     const confirmation = confirm(`⚠️ Are you sure you want to permanently delete ${selectedIds.length} selected record(s)?`);
     if (!confirmation) return;
 
-    // 1. Suppression dans Supabase Cloud (si connecté)
+    // 1. Suppression cloud Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             await supabaseClient.from('guest_laundry_requests').delete().in('id', selectedIds);
@@ -1676,7 +1720,7 @@ async function supprimerBordereauxEnLot() {
         }
     }
 
-    // 2. Suppression dans la mémoire locale (LocalStorage)
+    // 2. Suppression LocalStorage
     try {
         chargerDonneesLocalStorage();
         if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
@@ -1687,22 +1731,19 @@ async function supprimerBordereauxEnLot() {
         console.error("Error updating local storage:", e);
     }
 
-    // 3. Rafraîchissement de l'affichage
+    // 3. Rechargement des vues
     chargerLiveOrders();
     alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
 }
 
 // -------------------------------------------------------------
-// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS (EN ENGLISH)
+// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS
 // -------------------------------------------------------------
-
-// Fonction appelée lorsqu'un client passe une commande
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
 
     console.log("📥 New guest request received:", newOrder);
 
-    // 1. Extraction sécurisée des données
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
@@ -1711,7 +1752,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
-    // 2. Structuration du bordereau pour la liste "Active" (Live Records)
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
@@ -1733,7 +1773,6 @@ window.onNewGuestRequestReceived = function(newOrder) {
         }
     };
 
-    // 3. Insertion dans le cache local et affichage dans la liste Active
     try {
         if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
         
@@ -1742,51 +1781,42 @@ window.onNewGuestRequestReceived = function(newOrder) {
             if (existingIndex !== -1) {
                 cachedSlips[existingIndex] = slipRecord;
             } else {
-                cachedSlips.unshift(slipRecord); // Insère en haut de la liste Active
+                cachedSlips.unshift(slipRecord);
             }
             if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
         }
     } catch (e) {
-        console.warn("Mise à jour du stockage local reportée:", e);
+        console.warn("Local storage write delayed:", e);
     }
 
-    // 4. Mettre à jour l'affichage de la grille Active immédiatement
     try {
-        if (typeof chargerLiveOrders === 'function') {
-            chargerLiveOrders();
-        }
+        if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     } catch (e) {}
 
-    // 5. Mettre à jour la bannière de notification
     const bannerContainer = document.getElementById('guestBannerContainer');
     const bannerText = document.getElementById('guestBannerText');
     
     const formattedMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
 
-    if (bannerText) {
-        bannerText.innerText = formattedMessage;
-    }
+    if (bannerText) bannerText.innerText = formattedMessage;
 
     if (bannerContainer) {
         bannerContainer.classList.remove('hidden');
-        bannerContainer.style.display = 'flex'; // Affiche la bannière
+        bannerContainer.style.display = 'flex';
     }
 
-    // 6. Jouer le son d'alerte
     try {
         if (typeof playNotificationSound === 'function') playNotificationSound();
     } catch (e) {}
 };
 
-// Fonction déclenchée au clic sur le bouton "ACKNOWLEDGE"
 function dismissGuestNotificationBanner() {
     const bannerContainer = document.getElementById('guestBannerContainer');
     if (bannerContainer) {
         bannerContainer.classList.add('hidden');
-        bannerContainer.style.display = 'none'; // Stoppe le clignotement et masque la bannière
+        bannerContainer.style.display = 'none';
     }
 
-    // Arrêter les animations de clignotement résiduelles sur les cartes
     document.querySelectorAll('.remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
