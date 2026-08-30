@@ -475,11 +475,19 @@ function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
     chargerDonneesLocalStorage();
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Obtenir la date locale du jour (Format YYYY-MM-DD)
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
+    // FILTRE DE MINUIT : Conserve uniquement les bordereaux créés aujourd'hui
     const activeTodaySlips = cachedSlips.filter(entry => {
         if (!entry.created_at) return false;
-        const entryDateStr = entry.created_at.split('T')[0];
+        
+        // Convertit la date du bordereau en heure locale pour la comparaison
+        const entryDate = new Date(entry.created_at);
+        const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
+        
+        // Affiche uniquement si c'est aujourd'hui OU s'il y a une alerte non traitée
         return entryDateStr === todayStr || entry.status === 'pickup_alert';
     });
 
