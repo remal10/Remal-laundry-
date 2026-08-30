@@ -540,6 +540,83 @@ function chargerLiveOrders() {
         if (entry.is_spa) {
             const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
             identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
+function chargerLiveOrders() {
+    const container = document.getElementById('liveOrdersList');
+    chargerDonneesLocalStorage();
+    
+    // Obtenir la date locale du jour (Format YYYY-MM-DD)
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    // FILTRE DE MINUIT : Conserve uniquement les demandes du jour ou alerte guest
+    const activeTodaySlips = cachedSlips.filter(entry => {
+        if (!entry.created_at) return false;
+        
+        // Convertit la date du bordereau en heure locale
+        const entryDate = new Date(entry.created_at);
+        const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
+        
+        return entryDateStr === todayStr || entry.status === 'pickup_alert';
+    });
+
+    activeTodaySlips.sort((a, b) => {
+        if (a.is_spa && !b.is_spa) return -1;
+        if (!a.is_spa && b.is_spa) return 1;
+        return (parseInt(a.room) || 0) - (parseInt(b.room) || 0);
+    });
+
+    const badgeCount = document.getElementById('activeRoomsCountBadge');
+    if (badgeCount) badgeCount.innerText = activeTodaySlips.length;
+
+    // 1. Vider le conteneur principal
+    container.innerHTML = '';
+
+    // 2. AFFICHER D'ABORD LA BARRE D'OUTILS ET LE BOUTON BATCH STATUS
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
+    controlsDiv.innerHTML = `
+        <button onclick="toggleAllSelections(true)" class="text-xs font-bold text-[#DCA773] bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">✅ Select All</button>
+        <button onclick="toggleAllSelections(false)" class="text-xs font-bold text-stone-400 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">❌ Deselect All</button>
+        <button onclick="ouvrirModalBatchStatus()" class="text-xs font-bold text-amber-300 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition flex items-center gap-1.5">🔄 Update Selected Status</button>
+    `;
+    container.appendChild(controlsDiv);
+
+    // 3. Message si la liste est vide (affiché EN DESSOUS des boutons)
+    if (activeTodaySlips.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.className = 'text-xs text-stone-500 text-center py-6 col-span-full';
+        emptyMsg.innerText = 'No active room or SPA records for today.';
+        container.appendChild(emptyMsg);
+        updatePrintButtonCount();
+        return;
+    }
+
+    // 4. Génération des cartes de chambres
+    activeTodaySlips.forEach(entry => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'remal-card p-4 rounded-2xl flex items-center gap-3.5 hover:border-[#DCA773] transition cursor-pointer';
+
+        let badgeText = 'Hotel Count';
+        let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
+        
+        if (entry.status === 'pickup_alert') {
+            badgeText = '⚡ GUEST REQ';
+            badgeClass = 'bg-emerald-950 text-emerald-300 border border-emerald-600 animate-pulse';
+        } else if (entry.is_spa) {
+            badgeText = 'SPA Daily Sheet';
+            badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
+        } else if (entry.count_type === 'quota_extra') {
+            badgeText = 'Hotel & Extra';
+            badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
+        } else if (entry.count_type === 'guest') {
+            badgeText = 'Guest Count';
+            badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
+        }
+
+        let identifierDisplay = `Room ${entry.room}`;
+        if (entry.is_spa) {
+            const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
+            identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
         }
 
         const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${entry.total_clothes} pcs` : `👤 ${entry.guest_name || 'Guest'} · 📦 ${entry.total_clothes} pcs`;
@@ -567,6 +644,50 @@ function chargerLiveOrders() {
 
     updatePrintButtonCount();
 }
+
+// -------------------------------------------------------------
+// FONCTIONS DE GESTION DU STATUT EN LOT (À ajouter en bas de ui.js)
+// -------------------------------------------------------------
+
+function ouvrirModalBatchStatus() {
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    if (selectedIds.length === 0) {
+        alert("⚠️ Please select at least one room checkbox.");
+        return;
+    }
+    const countLabel = document.getElementById('batchStatusCountLabel');
+    if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
+    document.getElementById('batchStatusModal').classList.remove('hidden');
+}
+
+function fermerModalBatchStatus() {
+    const modal = document.getElementById('batchStatusModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function appliquerStatutEnLot(nouveauStatut) {
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    if (selectedIds.length === 0 || !supabaseClient) return;
+
+    try {
+        await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', selectedIds);
+        await supabaseClient.from('laundry_slips').update({ status: nouveauStatut }).in('id', selectedIds);
+
+        chargerDonneesLocalStorage();
+        cachedSlips.forEach(s => {
+            if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
+        });
+        sauvegarderDonneesLocalStorage();
+
+        fermerModalBatchStatus();
+        chargerLiveOrders();
+        alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
+    } catch (err) {
+        console.error("Erreur mise à jour en lot :", err);
+        alert("⚠️ Error updating status.");
+    }
+}
+
 
 function ouvrirModalActiveRoomsList() {
     chargerDonneesLocalStorage();
