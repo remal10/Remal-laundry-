@@ -824,7 +824,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         options: { service_style: newOrder.service_type || 'Laundry Collection' }
     };
 
-    try {
+        try {
         chargerDonneesLocalStorage();
         if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
             const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
@@ -840,21 +840,31 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     }
 
     try {
-        if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+        if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
     } catch (e) {}
 
-    const bannerContainer = document.getElementById('guestBannerContainer');
+    // Affichage forcé de la bannière VIP
+    const bannerContainer = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
     const formattedMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
 
-    if (bannerText) bannerText.innerText = formattedMessage;
+    if (bannerText) {
+        bannerText.innerText = formattedMessage;
+    }
+    
     if (bannerContainer) {
         bannerContainer.classList.remove('hidden');
+        bannerContainer.classList.add('animate-bounce');
         bannerContainer.style.display = 'flex';
     }
 
+    // Déclenchement du vrai carillon audio
     try {
-        if (typeof playNotificationSound === 'function') playNotificationSound();
+        if (typeof playLuxuryHotelChime === 'function') {
+            playLuxuryHotelChime();
+        }
     } catch (e) {}
 };
 
