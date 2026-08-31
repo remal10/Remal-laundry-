@@ -622,6 +622,121 @@ async function handlePDFUpload(event) {
 }
 
 // -------------------------------------------------------------
+// ENREGISTREMENT ET MODIFICATION DES BORDEREAUX DANS SUPABASE ET LOCALSTORAGE
+// -------------------------------------------------------------
+async function sauvegarderBordereauDepuisFormulaire() {
+    const roomNum = document.getElementById('roomNumber').value.trim();
+    if (!roomNum || !isRoomNumberValid(roomNum)) {
+        alert("Please enter a valid room number.");
+        return;
+    }
+
+    const editingId = document.getElementById('editingRecordId').value;
+    const recordId = editingId ? String(editingId) : String(Date.now());
+    
+    const itemsArray = Object.values(cart);
+    if (itemsArray.length === 0) {
+        alert("Please select at least one garment before saving.");
+        return;
+    }
+
+    let totalPcs = 0;
+    let grandTotal = 0;
+    
+    itemsArray.forEach(item => {
+        const qty = parseInt(item.qty, 10) || 0;
+        const price = parseFloat(item.price) || 0;
+        const freeQty = parseInt(item.freeQty, 10) || 0;
+        totalPcs += qty;
+
+        if (currentCountType === 'guest') {
+            grandTotal += qty * price;
+        } else if (currentCountType === 'quota_extra') {
+            const chargeable = Math.max(0, qty - freeQty);
+            grandTotal += chargeable * price;
+        }
+    });
+
+    const foldingRadio = document.querySelector('input[name="foldingOption"]:checked');
+    const serviceStyle = foldingRadio ? foldingRadio.value : 'F — Folding';
+    const noteVal = document.getElementById('recordOptionalNote').value.trim();
+
+    const pmsInfo = pmsDatabase[roomNum] || {};
+
+    const slipRecord = {
+        id: recordId,
+        room: roomNum,
+        room_number: roomNum,
+        guest_name: pmsInfo.guestName || 'Guest',
+        room_typ: pmsInfo.roomTyp || 'DLXR',
+        agency: pmsInfo.agency || 'Direct',
+        quota: pmsInfo.quotaText || 'Chargeable',
+        count_type: currentCountType,
+        created_at: new Date().toISOString(),
+        total_clothes: totalPcs,
+        total: grandTotal,
+        status: 'Collected',
+        is_spa: false,
+        created_by: currentStaffUser ? currentStaffUser.name : 'Staff',
+        note: noteVal,
+        photo: currentImageData || null,
+        items: itemsArray,
+        options: {
+            service_style: serviceStyle
+        }
+    };
+
+    isLocalUpdating = true;
+
+    // 1. Sauvegarde dans le localStorage
+    chargerDonneesLocalStorage();
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+    if (existingIndex !== -1) {
+        cachedSlips[existingIndex] = slipRecord;
+    } else {
+        cachedSlips.unshift(slipRecord);
+    }
+    sauvegarderDonneesLocalStorage();
+
+    // 2. Envoi / Synchronisation vers Supabase
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient
+                .from('guest_laundry_requests')
+                .upsert({
+                    id: recordId,
+                    room: roomNum,
+                    room_number: roomNum,
+                    guest_name: slipRecord.guest_name,
+                    room_typ: slipRecord.room_typ,
+                    agency: slipRecord.agency,
+                    quota: slipRecord.quota,
+                    count_type: slipRecord.count_type,
+                    total_clothes: slipRecord.total_clothes,
+                    total: slipRecord.total,
+                    status: slipRecord.status,
+                    is_spa: false,
+                    created_by: slipRecord.created_by,
+                    note: slipRecord.note,
+                    photo: slipRecord.photo,
+                    items: JSON.stringify(slipRecord.items),
+                    options: slipRecord.options,
+                    updated_at: new Date().toISOString()
+                });
+        } catch (e) {
+            console.error("Erreur d'enregistrement Supabase :", e);
+        }
+    }
+
+    reinitialiserFormulaire();
+    switchMainSection('liveRecord');
+    chargerLiveOrders();
+
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    alert("✅ Laundry record saved and synchronized successfully!");
+}
+
+// -------------------------------------------------------------
 // AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS - DEPUIS 00H00)
 // -------------------------------------------------------------
 function chargerLiveOrders() {
@@ -1933,13 +2048,14 @@ async function supprimerBordereauxEnLot() {
 }
 
 // -------------------------------------------------------------
-// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS
+// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS (SUPABASE + LOCALSTORAGE SYNCHRO)
 // -------------------------------------------------------------
-window.onNewGuestRequestReceived = function(newOrder) {
+window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
     console.log("📥 New guest request received:", newOrder);
 
+    const recordId = String(newOrder.id || Date.now());
     const roomNum = String(newOrder.room_number || newOrder.room || newOrder.room_no || '---');
     const guestName = newOrder.guest_name || 'Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
@@ -1954,33 +2070,38 @@ window.onNewGuestRequestReceived = function(newOrder) {
     }
     const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
 
+    const pmsInfo = pmsDatabase[roomNum] || {};
+
     const slipRecord = {
-        id: String(newOrder.id || Date.now()),
+        id: recordId,
         room: roomNum,
         room_number: roomNum,
         guest_name: guestName,
+        room_typ: pmsInfo.roomTyp || 'DLXR',
+        agency: pmsInfo.agency || 'Direct',
+        quota: pmsQuotaText,
         count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
         created_at: newOrder.created_at || new Date().toISOString(),
         total_clothes: totalPcs,
         total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: 'Collected',
+        status: newOrder.status || 'pickup_alert',
         is_spa: false,
         created_by: 'Guest App',
         note: specialNotes,
-        quota: pmsQuotaText,
         items: parsedItemsList,
         options: {
             service_style: newOrder.service_type || 'Laundry Collection'
         }
     };
 
+    // 1. Sauvegarde instantanée dans le LocalStorage
     try {
         if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
         
         if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
-            const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(slipRecord.id));
+            const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
             if (existingIndex !== -1) {
                 cachedSlips[existingIndex] = slipRecord;
             } else {
@@ -1989,7 +2110,36 @@ window.onNewGuestRequestReceived = function(newOrder) {
             if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
         }
     } catch (e) {
-        console.warn("Local storage write delayed:", e);
+        console.warn("Local storage write error:", e);
+    }
+
+    // 2. Persistance dans la table Supabase `guest_laundry_requests` pour la pérennité après Refresh
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient
+                .from('guest_laundry_requests')
+                .upsert({
+                    id: recordId,
+                    room: roomNum,
+                    room_number: roomNum,
+                    guest_name: guestName,
+                    room_typ: slipRecord.room_typ,
+                    agency: slipRecord.agency,
+                    quota: slipRecord.quota,
+                    count_type: slipRecord.count_type,
+                    total_clothes: totalPcs,
+                    total: grandTotal,
+                    status: slipRecord.status,
+                    is_spa: false,
+                    created_by: 'Guest App',
+                    note: specialNotes,
+                    items: JSON.stringify(parsedItemsList),
+                    options: slipRecord.options,
+                    created_at: slipRecord.created_at
+                });
+        } catch (e) {
+            console.error("Erreur de persistance de la demande Guest sur Supabase:", e);
+        }
     }
 
     try {
