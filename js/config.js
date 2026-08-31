@@ -39,6 +39,12 @@ let cart = {};
 let currentImageData = null;
 let selectedIdForModal = null;
 
+// Helper global pour l'extraction propre du Receipt ID (#REC-XXXXXX)
+function obtenirReceiptId(order) {
+    if (!order) return '---';
+    return order.receipt_id || order.receipt_no || order.slip_no || order.receipt_number || `REC-${String(order.id).slice(-6).toUpperCase()}`;
+}
+
 // Mots-clés pour l'identification des agences/compagnies dans le rapport PMS
 const companyKeywords = [
     'llc', 'inc', 'w.l.l', 'wll', 'corp', 'corporation', 'company', 'co.',
@@ -103,10 +109,10 @@ const i18n = {
         pdfAgency: "एजेंसी:", pdfQuota: "लॉन्ड्री कोटा:", pdfAgent: "कर्मचारी:", pdfPackaging: "पैकेजिंग:",
         pdfItem: "आइटम", pdfQty: "मात्रा", pdfTotal: "कुल", pdfTotalPieces: "कुल पीस:",
         pdfGrandTotalText: "कुल योग:", pdfNotes: "कपड़े के नोट्स / दोष:", pdfProofPhoto: "प्रमाण फोटो:",
-        pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटل काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
+        pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटल काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
         pdfGuestCount: "अतिथि काउंट (पूर्ण)", pdfSpaSheet: "वी एलिमेंट स्पा लॉन्ड्रि शीट",
         pdfGivenBy: "द्वारा दिया गया (स्पा):", pdfCollectedBy: "द्वारा एकत्रित:", pdfDeliveredBy: "द्वारा वितरित:",
-        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रسيद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड"
+        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रसीद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड"
     }
 };
 
