@@ -2206,16 +2206,22 @@ async function supprimerBordereauxEnLot() {
 }
 
 function dismissGuestNotificationBanner() {
-    const bannerContainer = document.getElementById('guestBannerContainer');
+    const bannerContainer = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     if (bannerContainer) {
+        // Stopper immédiatement l'animation de clignotement / rebond
+        bannerContainer.classList.remove('animate-bounce', 'animate-pulse');
+        
+        // Masquer proprement la bannière
         bannerContainer.classList.add('hidden');
         bannerContainer.style.display = 'none';
     }
 
+    // Retirer les effets visuels de clignotement sur les cartes de chambres
     document.querySelectorAll('.remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
 }
+
 
 // LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 let currentStaffUser = null;
