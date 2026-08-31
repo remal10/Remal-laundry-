@@ -84,23 +84,6 @@ function initTheme() {
 // Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
 
-// Convertisseur/Normalisateur universel d'articles
-function normaliserItemsTableau(rawItems) {
-    let parsed = rawItems;
-    if (typeof parsed === 'string') {
-        try { parsed = JSON.parse(parsed); } catch(e) { parsed = []; }
-    }
-    let itemsList = Array.isArray(parsed) ? parsed : (typeof parsed === 'object' && parsed !== null ? Object.values(parsed) : []);
-    
-    return itemsList.map(item => ({
-        name: item.name || item.item_name || item.title || 'Article',
-        qty: parseInt(item.qty || item.quantity || item.count, 10) || 0,
-        price: parseFloat(item.price || item.unit_price || item.rate) || 0,
-        freeQty: parseInt(item.freeQty || item.free_quantity, 10) || 0,
-        service: item.service || 'laundry'
-    })).filter(item => item.qty > 0);
-}
-
 // -------------------------------------------------------------
 // TIMER REINITIALISATION AUTOMATIQUE A 00H00 (ACTIVE ROOMS)
 // -------------------------------------------------------------
@@ -142,25 +125,28 @@ async function chargerDonneesEtAbonnementCloud() {
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
-            // Charger les bordereaux locaux existants d'abord
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
             
             slips.forEach(s => {
-                const idStr = String(s.id);
                 const roomClean = s.room || s.room_number || s.room_no || '---';
-                const normalizedItems = normaliserItemsTableau(s.items);
-
-                // Si le bordereau existe déjà dans LocalStorage et contient des articles, ON GARDE LA VERSION LOCALE
-                const existingLocal = slipMap.get(idStr);
-                if (existingLocal && existingLocal.items && existingLocal.items.length > 0) {
-                    return; // Conserve la donnée locale pour éviter le retour à zéro
+                
+                // NORMALISATION DES ARTICLES DÈS LE CHARGEMENT SUPABASE
+                let parsedItems = s.items;
+                if (typeof parsedItems === 'string') {
+                    try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
+                }
+                if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
+                    parsedItems = Object.values(parsedItems);
+                }
+                if (!Array.isArray(parsedItems)) {
+                    parsedItems = [];
                 }
 
-                slipMap.set(idStr, { 
+                slipMap.set(String(s.id), { 
                     ...s, 
                     room: roomClean, 
                     room_number: roomClean,
-                    items: normalizedItems
+                    items: parsedItems
                 });
             });
             
@@ -197,13 +183,20 @@ async function chargerDonneesEtAbonnementCloud() {
                 if (payload.new && payload.new.id) {
                     const idStr = String(payload.new.id);
                     const roomClean = payload.new.room || payload.new.room_number || payload.new.room_no || '---';
-                    const normalizedItems = normaliserItemsTableau(payload.new.items);
+                    
+                    let parsedItems = payload.new.items;
+                    if (typeof parsedItems === 'string') {
+                        try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
+                    }
+                    if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
+                        parsedItems = Object.values(parsedItems);
+                    }
 
                     const formattedData = { 
                         ...payload.new, 
                         room: roomClean, 
                         room_number: roomClean,
-                        items: normalizedItems
+                        items: Array.isArray(parsedItems) ? parsedItems : []
                     };
 
                     const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
@@ -788,14 +781,19 @@ async function imprimerToutesLesChambresDuJour() {
         const isHangerFolding = (entry.options?.service_style || '').includes('H/F') || (entry.options?.service_style || '').includes('Hanger');
         const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
 
-        const itemsList = normaliserItemsTableau(entry.items);
+        let rawItems = entry.items || [];
+        if (typeof rawItems === 'string') {
+            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+        }
+        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+        
         let tableRowsHtml = '';
 
         itemsList.forEach(item => {
-            let name = item.name;
-            let qty = item.qty;
-            let price = item.price;
-            let freeQty = item.freeQty;
+            let name = item.name || item.item_name || 'Article';
+            let qty = parseInt(item.qty || item.quantity, 10) || 0;
+            let price = parseFloat(item.price || item.unit_price) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1421,16 +1419,21 @@ function ouvrirModalDetails(id) {
     const tbody = document.getElementById('modalTableBody'); 
     tbody.innerHTML = '';
 
-    const itemsList = normaliserItemsTableau(entry.items);
+    // PARSING ET NORMALISATION ROBUSTE DE 'ITEMS'
+    let rawItems = entry.items || [];
+    if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
 
     if (itemsList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">No items selected.</td></tr>`;
     } else {
         itemsList.forEach(item => {
-            let name = item.name;
-            let qty = item.qty;
-            let price = item.price;
-            let freeQty = item.freeQty;
+            let name = item.name || item.item_name || 'Article';
+            let qty = parseInt(item.qty || item.quantity, 10) || 0;
+            let price = parseFloat(item.price || item.unit_price) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1520,7 +1523,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
-// EDIT BORDEREAU - RECONSTRUCTION PARFAITE DU PANIER
+// EDIT BORDEREAU - CHARGEMENT SECURE DU PANIER
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -1570,13 +1573,17 @@ function modifierBordereauActuel() {
 
         cart = {};
 
-        const itemsList = normaliserItemsTableau(entry.items);
+        let rawItems = entry.items || [];
+        if (typeof rawItems === 'string') {
+            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+        }
+        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
 
         itemsList.forEach(item => {
-            const itemName = item.name;
-            const itemQty = item.qty;
-            const itemPrice = item.price;
-            const freeQty = item.freeQty;
+            const itemName = item.name || item.item_name || 'Article';
+            const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
+            const itemPrice = parseFloat(item.price || item.unit_price) || 0;
+            const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
             
             let servicePrefix = item.service || currentService || 'laundry';
             if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
@@ -1584,7 +1591,6 @@ function modifierBordereauActuel() {
             }
 
             if (itemQty > 0) {
-                // CLE ABSOLUMENT ESSENTIELLE POUR INTERFACE LAUNDRY OS
                 const key = `${servicePrefix}_${itemName}`;
                 cart[key] = {
                     name: itemName,
@@ -1854,7 +1860,7 @@ async function supprimerBordereauxEnLot() {
 }
 
 // -------------------------------------------------------------
-// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS (ENREGISTREMENT LOCAL DIRECT)
+// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS
 // -------------------------------------------------------------
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
@@ -1869,7 +1875,11 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
-    const parsedItemsList = normaliserItemsTableau(newOrder.items);
+    let rawItems = newOrder.items || [];
+    if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
 
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
@@ -2033,4 +2043,4 @@ function logoutStaff() {
     localStorage.removeItem('remal_current_staff');
     currentStaffUser = null;
     location.reload();
-}
+                }
