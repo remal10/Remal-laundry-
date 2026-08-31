@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Démarrage du timer de réinitialisation automatique à 00h00
     programmerTimerReinitialisationMinuit();
+
+    checkStaffSession();
 });
 
 // -------------------------------------------------------------
@@ -573,7 +575,8 @@ function reinitialiserFormulaire() {
     localStorage.removeItem('remal_draft_cart');
 
     currentImageData = null;
-    document.getElementById('imagePreview').classList.add('hidden'); document.getElementById('photoInput').value = '';
+    document.getElementById('imagePreview').classList.add('hidden'); 
+    document.getElementById('photoInput').value = '';
     
     selectCountType('hotel'); 
     renderItems(); 
@@ -679,6 +682,16 @@ async function sauvegarderBordereauDepuisFormulaire() {
     const vat = Number((subtotal * 0.05).toFixed(2));
     const grandTotal = Number((subtotal + vat).toFixed(2));
 
+    // Déterminer le statut à conserver
+    chargerDonneesLocalStorage();
+    let currentStatus = 'Collected';
+    if (editingId) {
+        const existingRecord = cachedSlips.find(s => String(s.id) === String(editingId));
+        if (existingRecord && existingRecord.status) {
+            currentStatus = existingRecord.status;
+        }
+    }
+
     const payloadSupabase = {
         room_number: roomNum,
         guest_name: pmsInfo.guestName || 'Guest',
@@ -691,9 +704,8 @@ async function sauvegarderBordereauDepuisFormulaire() {
         vat: vat,
         grand_total: grandTotal,
         special_notes: noteVal,
-        status: 'Collected',
-        accepted_policy: true,
-        created_by: currentStaffUser ? currentStaffUser.name : 'Staff'
+        status: currentStatus,
+        accepted_policy: true
     };
 
     isLocalUpdating = true;
@@ -744,7 +756,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
         created_at: new Date().toISOString()
     };
 
-    chargerDonneesLocalStorage();
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
@@ -2056,36 +2067,65 @@ async function supprimerBordereauActuel() {
 // GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SYNCHRO SUPABASE)
 // -------------------------------------------------------------
 async function changerStatutBordereau(recordId, nouveauStatut) {
-    if (!recordId) return;
+    const targetId = recordId || selectedIdForModal;
+    if (!targetId) return;
 
+    const idStr = String(targetId).trim();
+    isLocalUpdating = true;
+
+    // 1. Mise à jour Supabase si connecté
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            const { error } = await supabaseClient
-                .from('guest_laundry_requests')
-                .update({ status: nouveauStatut }) // 👈 Clé Supabase : "status"
-                .eq('id', recordId);
+            if (idStr.length === 36) {
+                const { error } = await supabaseClient
+                    .from('guest_laundry_requests')
+                    .update({ status: nouveauStatut })
+                    .eq('id', idStr);
 
-            if (error) {
-                console.error("❌ Erreur mise à jour statut Supabase :", error.message);
-                alert("Erreur Supabase: " + error.message);
-                return;
+                if (error) {
+                    console.error("❌ Erreur mise à jour statut Supabase :", error.message);
+                    alert("Erreur Supabase: " + error.message);
+                    return;
+                }
+                console.log(`✅ Statut Supabase mis à jour : '${nouveauStatut}' (ID: ${idStr})`);
             }
-            console.log(`✅ Statut mis à jour dans Supabase : '${nouveauStatut}'`);
         } catch (e) {
             console.error("Exception changement statut :", e);
         }
     }
 
-    // Mise à jour du cache local
+    // 2. Mise à jour du cache local
     chargerDonneesLocalStorage();
-    const item = cachedSlips.find(s => String(s.id) === String(recordId));
+    const item = cachedSlips.find(s => String(s.id).trim() === idStr);
     if (item) {
         item.status = nouveauStatut;
         sauvegarderDonneesLocalStorage();
     }
 
+    // 3. Rafraîchissement des vues
+    if (typeof fermerModal === 'function') fermerModal();
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
+
+    setTimeout(() => { isLocalUpdating = false; }, 800);
+}
+
+// Alias de sécurité pour compatibilité avec le HTML
+async function mettreAJourStatutCommande(requestId, nouveauStatut) {
+    await changerStatutBordereau(requestId, nouveauStatut);
+}
+
+function ouvrirModalBatchStatus() {
+    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    if (selectedIds.length === 0) {
+        alert("⚠️ Please select at least one room checkbox.");
+        return;
+    }
+    const countLabel = document.getElementById('batchStatusCountLabel');
+    if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
+    
+    const modal = document.getElementById('batchStatusModal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 function fermerModalBatchStatus() {
@@ -2110,7 +2150,10 @@ async function appliquerStatutEnLot(nouveauStatut) {
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', selectedIds);
+            const uuidBatch = selectedIds.filter(id => id.length === 36);
+            if (uuidBatch.length > 0) {
+                await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', uuidBatch);
+            }
         } catch (err) {
             console.error("Erreur mise à jour en lot Supabase :", err);
         }
@@ -2138,7 +2181,10 @@ async function supprimerBordereauxEnLot() {
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            await supabaseClient.from('guest_laundry_requests').delete().in('id', selectedIds);
+            const uuidBatch = selectedIds.filter(id => id.length === 36);
+            if (uuidBatch.length > 0) {
+                await supabaseClient.from('guest_laundry_requests').delete().in('id', uuidBatch);
+            }
         } catch (err) {
             console.error("Error deleting bulk items from Supabase:", err);
         }
@@ -2173,10 +2219,6 @@ function dismissGuestNotificationBanner() {
 
 // LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 let currentStaffUser = null;
-
-document.addEventListener('DOMContentLoaded', () => {
-    checkStaffSession();
-});
 
 function checkStaffSession() {
     const savedStaff = localStorage.getItem('remal_current_staff');
