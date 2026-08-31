@@ -8,12 +8,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     switchMainSection('liveRecord');
     setLang('en');
-    selectCountType('hotel');
+
+    // 1. Charger le panier temporaire sauvegardé (Draft Cart)
+    chargerPanierLocal();
+
+    // 2. Initialiser le type et afficher les articles sans perte de sélection
+    selectCountType(currentCountType || 'hotel');
     renderItems();
-    
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+
     chargerPmsLocalStorage();
     await chargerDonneesEtAbonnementCloud();
-    
+
     if (Object.keys(pmsDatabase).length > 0) {
         renderMassPreviewTable();
     }
@@ -41,6 +47,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Démarrage du timer de réinitialisation automatique à 00h00
     programmerTimerReinitialisationMinuit();
 });
+
+// -------------------------------------------------------------
+// GESTION ET PERSISTANCE DU PANIER TEMPORAIRE (DRAFT CART)
+// -------------------------------------------------------------
+function sauvegarderPanierLocal() {
+    try {
+        localStorage.setItem('remal_draft_cart', JSON.stringify(cart));
+        localStorage.setItem('remal_draft_count_type', currentCountType);
+        localStorage.setItem('remal_draft_service', currentService);
+    } catch (e) {
+        console.error("Erreur sauvegarde panier local:", e);
+    }
+}
+
+function chargerPanierLocal() {
+    try {
+        const savedCart = localStorage.getItem('remal_draft_cart');
+        const savedType = localStorage.getItem('remal_draft_count_type');
+        const savedService = localStorage.getItem('remal_draft_service');
+
+        if (savedCart) {
+            cart = JSON.parse(savedCart);
+        }
+        if (savedType) {
+            currentCountType = savedType;
+        }
+        if (savedService) {
+            currentService = savedService;
+        }
+    } catch (e) {
+        console.error("Erreur chargement panier local:", e);
+        cart = {};
+    }
+}
+
+function updateQty(key, name, price, delta) {
+    if (!cart[key]) {
+        cart[key] = { qty: 0, freeQty: 0, price: price, name: name };
+    }
+    
+    cart[key].qty += delta;
+    
+    if (cart[key].qty <= 0) {
+        delete cart[key];
+    }
+
+    sauvegarderPanierLocal();
+    renderItems();
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+}
+
+function updateFreeQty(key, delta) {
+    if (cart[key]) {
+        cart[key].freeQty = Math.max(0, (cart[key].freeQty || 0) + delta);
+        sauvegarderPanierLocal();
+        renderItems();
+        if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+    }
+}
 
 function installPWA() {
     if (deferredPrompt) {
@@ -383,8 +448,9 @@ function selectCountType(type) {
     document.getElementById('btn-count-quota-extra').className = type === 'quota_extra' ? 'py-3 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold leading-tight' : 'py-3 px-1 rounded-xl text-stone-400 leading-tight';
     document.getElementById('btn-count-guest').className = type === 'guest' ? 'py-3 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold leading-tight' : 'py-3 px-1 rounded-xl text-stone-400 leading-tight';
 
+    sauvegarderPanierLocal();
     renderItems(); 
-    calculateGlobalTotals();
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 }
 
 function switchService(service) {
@@ -392,6 +458,7 @@ function switchService(service) {
     ['laundry', 'dry', 'pressing'].forEach(s => {
         document.getElementById(`tab-service-${s}`).className = s === service ? "flex-1 py-3 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold" : "flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]";
     });
+    sauvegarderPanierLocal();
     renderItems();
 }
 
@@ -502,12 +569,17 @@ function reinitialiserFormulaire() {
     if(notesDetails) notesDetails.open = false;
 
     validateRoomNumber();
-    cart = {}; currentImageData = null;
+    
+    // Réinitialisation du panier et suppression du brouillon local
+    cart = {}; 
+    localStorage.removeItem('remal_draft_cart');
+
+    currentImageData = null;
     document.getElementById('imagePreview').classList.add('hidden'); document.getElementById('photoInput').value = '';
     
     selectCountType('hotel'); 
     renderItems(); 
-    calculateGlobalTotals();
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 }
 
 async function handlePDFUpload(event) {
@@ -1601,8 +1673,9 @@ function modifierBordereauActuel() {
             }
         });
 
+        sauvegarderPanierLocal();
         renderItems();
-        calculateGlobalTotals();
+        if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
     }
 }
 
@@ -2043,4 +2116,4 @@ function logoutStaff() {
     localStorage.removeItem('remal_current_staff');
     currentStaffUser = null;
     location.reload();
-                }
+}
