@@ -753,7 +753,7 @@ async function imprimerToutesLesChambresDuJour() {
         let tableRowsHtml = '';
 
         itemsList.forEach(item => {
-            let name = item.name || 'Article';
+            let name = item.name || item.item_name || 'Article';
             let qty = parseInt(item.qty || item.quantity) || 0;
             let price = parseFloat(item.price || item.unit_price) || 0;
             let freeQty = parseInt(item.freeQty || item.free_quantity) || 0;
@@ -1389,7 +1389,7 @@ function ouvrirModalDetails(id) {
         tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">No items selected.</td></tr>`;
     } else {
         itemsList.forEach(item => {
-            let name = item.name || 'Article';
+            let name = item.name || item.item_name || 'Article';
             let qty = parseInt(item.qty || item.quantity) || 0;
             let price = parseFloat(item.price || item.unit_price) || 0;
             let freeQty = parseInt(item.freeQty || item.free_quantity) || 0;
@@ -1482,6 +1482,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
+// CORRECTION : MAPPING COMPLET DES ARTICLES LORS DU CHARGEMENT / REFRESH
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -1504,9 +1505,9 @@ function modifierBordereauActuel() {
         const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
         rows.forEach(row => {
             const input = row.querySelector('.spa-qty-input');
-            const itemName = row.querySelector('td').innerText;
+            const itemName = row.querySelector('td').innerText.trim();
             if (input && entry.items && entry.items[itemName]) {
-                input.value = entry.items[itemName].qty;
+                input.value = entry.items[itemName].qty || entry.items[itemName].quantity || 0;
             } else if (input) {
                 input.value = '';
             }
@@ -1524,24 +1525,33 @@ function modifierBordereauActuel() {
         selectCountType(entry.count_type || 'hotel');
         document.getElementById('recordOptionalNote').value = entry.note || '';
 
+        // Réinitialisation et reconstruction du Panier (cart) avec correspondance universelle
         cart = {};
 
         if (entry.items) {
             const itemsList = Array.isArray(entry.items) ? entry.items : Object.values(entry.items);
             
             itemsList.forEach(item => {
-                const itemName = item.name || 'Article';
-                const itemQty = parseInt(item.quantity || item.qty, 10) || 1;
-                const itemPrice = parseFloat(item.unit_price || item.price) || 0;
-                const freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+                const itemName = item.name || item.item_name || 'Article';
+                const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
+                const itemPrice = parseFloat(item.price || item.unit_price) || 0;
+                const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+                
+                // Extraction intelligente du service (laundry, dry, ou pressing)
+                let servicePrefix = item.service || currentService || 'laundry';
+                if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
+                    servicePrefix = 'laundry';
+                }
 
-                const key = `${currentService}_${itemName}`;
-                cart[key] = {
-                    name: itemName,
-                    price: itemPrice,
-                    qty: itemQty,
-                    freeQty: freeQty
-                };
+                if (itemQty > 0) {
+                    const key = `${servicePrefix}_${itemName}`;
+                    cart[key] = {
+                        name: itemName,
+                        price: itemPrice,
+                        qty: itemQty,
+                        freeQty: freeQty
+                    };
+                }
             });
         }
 
