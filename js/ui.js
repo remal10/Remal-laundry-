@@ -1,6 +1,4 @@
-// =============================================================
-// GLOBAL VARIABLES & INITIALIZATION
-// =============================================================
+// Interactions Interface Utilisateur, Modals & Initialisation (Remal Hotel & Villas)
 let cart = {};
 let currentService = 'laundry';
 let currentCountType = 'hotel';
@@ -14,8 +12,10 @@ let currentArchiveFilter = 'all';
 let deferredPrompt = null;
 let doughnutChartInstance = null;
 let barChartInstance = null;
+let isLocalUpdating = false;
+let currentStaffUser = null;
 
-// Mock database fallbacks
+// Mock database fallbacks si non définis globalement
 if (typeof database === 'undefined') {
     var database = {
         laundry: {
@@ -75,10 +75,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     switchMainSection('liveRecord');
     setLang('en');
 
+    // 1. Charger le panier temporaire sauvegardé (Draft Cart)
     chargerPanierLocal();
+
+    // 2. Initialiser le type et afficher les articles sans perte de sélection
     selectCountType(currentCountType || 'hotel');
     renderItems();
-    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+    calculateGlobalTotals();
 
     chargerPmsLocalStorage();
     await chargerDonneesEtAbonnementCloud();
@@ -89,9 +92,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const spaDateEl = document.getElementById('spa-current-date');
-    if(spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
+    if (spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
     const serialEl = document.getElementById('spa-serial-no');
-    if(serialEl && !serialEl.value) serialEl.value = String(23).padStart(4, '0');
+    if (serialEl && !serialEl.value) serialEl.value = String(23).padStart(4, '0');
 
     const now = new Date();
     const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -102,22 +105,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const delDate = document.getElementById('spa-delivery-date');
     const delTime = document.getElementById('spa-delivery-time');
 
-    if(colDate && !colDate.value) colDate.value = todayIso;
-    if(colTime && !colTime.value) colTime.value = timeIso;
-    if(delDate && !delDate.value) delDate.value = todayIso;
-    if(delTime && !delTime.value) delTime.value = timeIso;
+    if (colDate && !colDate.value) colDate.value = todayIso;
+    if (colTime && !colTime.value) colTime.value = timeIso;
+    if (delDate && !delDate.value) delDate.value = todayIso;
+    if (delTime && !delTime.value) delTime.value = timeIso;
 
+    // Démarrage du timer de réinitialisation automatique à 00h00
     programmerTimerReinitialisationMinuit();
     checkStaffSession();
 });
 
-// =============================================================
-// LOCAL STORAGE HELPERS
-// =============================================================
+// -------------------------------------------------------------
+// GESTION LOCALSTORAGE & DEPOSIT
+// -------------------------------------------------------------
 function chargerDonneesLocalStorage() {
     try {
         const stored = localStorage.getItem('remal_laundry_slips');
-        if (stored) cachedSlips = JSON.parse(stored);
+        cachedSlips = stored ? JSON.parse(stored) : [];
     } catch (e) {
         console.error("Erreur chargement local slips:", e);
         cachedSlips = [];
@@ -135,7 +139,7 @@ function sauvegarderDonneesLocalStorage() {
 function chargerPmsLocalStorage() {
     try {
         const stored = localStorage.getItem('remal_pms_database');
-        if (stored) pmsDatabase = JSON.parse(stored);
+        pmsDatabase = stored ? JSON.parse(stored) : {};
     } catch (e) { pmsDatabase = {}; }
 }
 
@@ -151,23 +155,26 @@ function isRoomNumberValid(room) {
 }
 
 function obtenirReceiptId(entry) {
+    if (!entry) return 'REC-000000';
     if (entry.receipt_id) return entry.receipt_id;
     if (entry.id) {
         const cleanId = String(entry.id).replace(/\D/g, '');
-        return `REC-${cleanId.slice(-6).toUpperCase()}`;
+        return `REC-${cleanId.slice(-6).toUpperCase() || '000000'}`;
     }
     return `REC-${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
-// =============================================================
-// PANIER & THEME
-// =============================================================
+// -------------------------------------------------------------
+// GESTION ET PERSISTANCE DU PANIER TEMPORAIRE (DRAFT CART)
+// -------------------------------------------------------------
 function sauvegarderPanierLocal() {
     try {
         localStorage.setItem('remal_draft_cart', JSON.stringify(cart));
         localStorage.setItem('remal_draft_count_type', currentCountType);
         localStorage.setItem('remal_draft_service', currentService);
-    } catch (e) {}
+    } catch (e) {
+        console.error("Erreur sauvegarde panier local:", e);
+    }
 }
 
 function chargerPanierLocal() {
@@ -179,7 +186,10 @@ function chargerPanierLocal() {
         if (savedCart) cart = JSON.parse(savedCart);
         if (savedType) currentCountType = savedType;
         if (savedService) currentService = savedService;
-    } catch (e) { cart = {}; }
+    } catch (e) {
+        console.error("Erreur chargement panier local:", e);
+        cart = {};
+    }
 }
 
 function updateQty(key, name, price, delta) {
@@ -201,6 +211,31 @@ function updateFreeQty(key, delta) {
         renderItems();
         calculateGlobalTotals();
     }
+}
+
+function calculateGlobalTotals() {
+    let subtotal = 0;
+    let totalPcs = 0;
+
+    Object.values(cart).forEach(item => {
+        const qty = parseInt(item.qty, 10) || 0;
+        const price = parseFloat(item.price) || 0;
+        const freeQty = parseInt(item.freeQty, 10) || 0;
+        totalPcs += qty;
+
+        if (currentCountType === 'guest') {
+            subtotal += qty * price;
+        } else if (currentCountType === 'quota_extra') {
+            const chargeable = Math.max(0, qty - freeQty);
+            subtotal += chargeable * price;
+        }
+    });
+
+    const subEl = document.getElementById('lblSubTotalVal');
+    const grandEl = document.getElementById('lblGrandTotalVal');
+
+    if (subEl) subEl.innerText = `${subtotal.toFixed(2)} AED`;
+    if (grandEl) grandEl.innerText = `${subtotal.toFixed(2)} AED`;
 }
 
 function installPWA() {
@@ -248,36 +283,9 @@ function initTheme() {
     }
 }
 
-function calculateGlobalTotals() {
-    let subtotal = 0;
-    let totalPcs = 0;
-
-    Object.values(cart).forEach(item => {
-        const qty = parseInt(item.qty, 10) || 0;
-        const price = parseFloat(item.price) || 0;
-        const freeQty = parseInt(item.freeQty, 10) || 0;
-        totalPcs += qty;
-
-        if (currentCountType === 'guest') {
-            subtotal += qty * price;
-        } else if (currentCountType === 'quota_extra') {
-            const chargeable = Math.max(0, qty - freeQty);
-            subtotal += chargeable * price;
-        }
-    });
-
-    const subEl = document.getElementById('lblSubTotalVal');
-    const grandEl = document.getElementById('lblGrandTotalVal');
-
-    if (subEl) subEl.innerText = `${subtotal.toFixed(2)} AED`;
-    if (grandEl) grandEl.innerText = `${subtotal.toFixed(2)} AED`;
-}
-
-let isLocalUpdating = false;
-
-// =============================================================
-// RESET MINUIT
-// =============================================================
+// -------------------------------------------------------------
+// TIMER REINITIALISATION AUTOMATIQUE A 00H00 (ACTIVE ROOMS)
+// -------------------------------------------------------------
 function programmerTimerReinitialisationMinuit() {
     function verifierFinDeJournee() {
         const maintenant = new Date();
@@ -297,13 +305,14 @@ function programmerTimerReinitialisationMinuit() {
         const timerEl = document.getElementById('midnightTimer');
         if (timerEl) timerEl.innerText = `${hrs}:${mins}:${secs}`;
     }
+
     verifierFinDeJournee();
     setInterval(verifierFinDeJournee, 1000);
 }
 
-// =============================================================
-// SUPABASE SYNC & REALTIME
-// =============================================================
+// -------------------------------------------------------------
+// SYNCHRONISATION SUPABASE & REALTIME
+// -------------------------------------------------------------
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -342,6 +351,8 @@ async function chargerDonneesEtAbonnementCloud() {
             cachedSlips = Array.from(slipMap.values());
             sauvegarderDonneesLocalStorage();
             chargerLiveOrders();
+        } else if (slipsErr) {
+            console.warn("Erreur lecture guest_laundry_requests sur Supabase:", slipsErr.message);
         }
 
         const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
@@ -393,7 +404,9 @@ async function chargerDonneesEtAbonnementCloud() {
                     }
                     sauvegarderDonneesLocalStorage();
                     chargerLiveOrders();
-                    if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
+                    
+                    const pdfSec = document.getElementById('sectionPdfList');
+                    if (pdfSec && !pdfSec.classList.contains('hidden')) {
                         afficherListeBordereauxLocal();
                     }
                 }
@@ -401,7 +414,7 @@ async function chargerDonneesEtAbonnementCloud() {
             .subscribe();
 
     } catch (e) {
-        console.error("Exception synchronisation Cloud:", e);
+        console.error("Exception lors de la synchronisation cloud:", e);
     }
 }
 
@@ -413,7 +426,7 @@ function renderMassPreviewTable() {
     if (!container || Object.keys(pmsDatabase).length === 0) return;
 
     let html = ``;
-    const rooms = Object.keys(pmsDatabase).sort((a, b) => parseInt(a) - parseInt(b));
+    const rooms = Object.keys(pmsDatabase).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
     
     rooms.forEach(room => {
         const item = pmsDatabase[room];
@@ -421,9 +434,7 @@ function renderMassPreviewTable() {
         let rowClass = hasLaundry ? "laundry-row" : "";
         
         const isMissingAgency = (!item.agency || item.agency === "---" || item.agency === "Direct" || item.agency === "N/A");
-        if (isMissingAgency) {
-            rowClass += " bg-yellow-950/30 text-yellow-200 border-yellow-800";
-        }
+        if (isMissingAgency) rowClass += " bg-yellow-950/30 text-yellow-200 border-yellow-800";
 
         let statusHTML = item.isChargeable ? `<span class="badge-chargeable">Chargeable</span>` : `<span class="badge-green">Included (${item.quotaText})</span>`;
 
@@ -447,7 +458,10 @@ function renderMassPreviewTable() {
 
 function onRoomNumberInput() {
     validateRoomNumber();
-    const roomVal = document.getElementById('roomNumber').value.trim();
+    const roomInput = document.getElementById('roomNumber');
+    if (!roomInput) return;
+    const roomVal = roomInput.value.trim();
+
     const infoBox = document.getElementById('roomPmsInfoBox');
     const guestSpan = document.getElementById('pmsInfoGuest');
     const typSpan = document.getElementById('pmsInfoTyp');
@@ -491,56 +505,60 @@ function validateRoomNumber() {
 function setLang(lang) {
     currentLang = lang;
     const t = i18n[lang] || i18n.en;
-    document.getElementById('htmlRoot').setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-    document.getElementById('langSelect').value = lang;
+    const root = document.getElementById('htmlRoot');
+    if (root) root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    
+    const langSel = document.getElementById('langSelect');
+    if (langSel) langSel.value = lang;
 
-    document.getElementById('txtBtnNewRecord').innerText = t.txtBtnNewRecord;
-    document.getElementById('lblFormTitle').innerText = t.lblFormTitle;
-    document.getElementById('lblRoomNum').innerText = t.lblRoomNum;
-    document.getElementById('lblSelectedGarments').innerText = t.lblSelectedGarments;
-    document.getElementById('lblSubTotal').innerText = t.lblSubTotal;
-    document.getElementById('lblGrandTotal').innerText = t.lblGrandTotal;
-    document.getElementById('btnPhotoProof').innerHTML = `<span>📷</span> ${t.btnPhotoProof}`;
-    document.getElementById('btnSaveRecord').innerText = t.btnSaveRecord;
-    document.getElementById('lblArchiveTitle').innerText = t.lblArchiveTitle;
-    document.getElementById('lblRoomError').innerText = t.lblRoomError;
-    document.getElementById('lblActiveRoomsHeader').innerText = t.lblActiveRoomsHeader;
+    const ids = ['txtBtnNewRecord', 'lblFormTitle', 'lblRoomNum', 'lblSelectedGarments', 'lblSubTotal', 'lblGrandTotal', 'btnSaveRecord', 'lblArchiveTitle', 'lblRoomError', 'lblActiveRoomsHeader'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && t[id]) el.innerText = t[id];
+    });
+
+    const photoBtn = document.getElementById('btnPhotoProof');
+    if (photoBtn) photoBtn.innerHTML = `<span>📷</span> ${t.btnPhotoProof}`;
 
     renderItems();
 }
 
 function switchMainSection(section) {
-    if (section === 'newRecord') reinitialiserFormulaire();
+    if (section === 'newRecord') {
+        reinitialiserFormulaire();
+    }
 
     ['newRecord', 'massEntry', 'liveRecord', 'spa', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
         const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
-        if(el) el.classList.add('hidden');
+        if (el) el.classList.add('hidden');
     });
 
     const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
-    if(targetSection) targetSection.classList.remove('hidden');
+    if (targetSection) targetSection.classList.remove('hidden');
 
     const navButtons = {
-        'liveRecord': 'navBtnLiveRecord', 'spa': 'navBtnSpa', 'lostfound': 'navBtnLostfound',
-        'pdfList': 'navBtnPdfList', 'massEntry': 'navBtnMassEntry', 'dashboard': 'navBtnDashboard'
+        'liveRecord': 'navBtnLiveRecord',
+        'spa': 'navBtnSpa',
+        'lostfound': 'navBtnLostfound',
+        'pdfList': 'navBtnPdfList',
+        'massEntry': 'navBtnMassEntry',
+        'dashboard': 'navBtnDashboard'
     };
 
     Object.entries(navButtons).forEach(([key, btnId]) => {
         const btn = document.getElementById(btnId);
         if (!btn) return;
-        if (key === section) {
-            btn.className = "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow";
-        } else {
-            btn.className = "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]";
-        }
+        btn.className = (key === section)
+            ? "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow"
+            : "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]";
     });
 
     const quickActionButtons = document.getElementById('quickActionButtons');
     if (section === 'liveRecord') {
         if (quickActionButtons) quickActionButtons.classList.remove('hidden');
         chargerLiveOrders();
-    } else {
-        if (quickActionButtons) quickActionButtons.classList.add('hidden');
+    } else if (quickActionButtons) {
+        quickActionButtons.classList.add('hidden');
     }
 
     if (section === 'pdfList') afficherListeBordereauxLocal();
@@ -575,7 +593,7 @@ function switchService(service) {
 
 function renderItems() {
     const container = document.getElementById('itemsContainer');
-    if(!container) return;
+    if (!container) return;
     container.innerHTML = '';
     const serviceData = database[currentService] || {};
 
@@ -655,18 +673,18 @@ function previewImage(event) {
 }
 
 function reinitialiserFormulaire() {
-    const rInput = document.getElementById('roomNumber');
-    const eInput = document.getElementById('editingRecordId');
-    const nInput = document.getElementById('recordOptionalNote');
-    const pBox = document.getElementById('roomPmsInfoBox');
+    const roomInput = document.getElementById('roomNumber');
+    const editingInput = document.getElementById('editingRecordId');
+    const noteInput = document.getElementById('recordOptionalNote');
+    const pmsBox = document.getElementById('roomPmsInfoBox');
 
-    if (rInput) rInput.value = ''; 
-    if (eInput) eInput.value = '';
-    if (nInput) nInput.value = '';
-    if (pBox) pBox.classList.add('hidden');
+    if (roomInput) roomInput.value = ''; 
+    if (editingInput) editingInput.value = '';
+    if (noteInput) noteInput.value = '';
+    if (pmsBox) pmsBox.classList.add('hidden');
     
-    const defaultFolding = document.querySelector('input[name="foldingOption"][value="F — Folding"]');
-    if (defaultFolding) defaultFolding.checked = true;
+    const defaultFoldingRadio = document.querySelector('input[name="foldingOption"][value="F — Folding"]');
+    if (defaultFoldingRadio) defaultFoldingRadio.checked = true;
 
     for (let i = 0; i < 3; i++) {
         const cName = document.getElementById(`customName${i}`);
@@ -676,6 +694,11 @@ function reinitialiserFormulaire() {
         if (cPrice) cPrice.value = '';
         if (cQty) cQty.value = '';
     }
+
+    const customDetails = document.getElementById('detailsCustomItems');
+    const notesDetails = document.getElementById('detailsGarmentNotes');
+    if (customDetails) customDetails.open = false;
+    if (notesDetails) notesDetails.open = false;
 
     validateRoomNumber();
     cart = {}; 
@@ -690,6 +713,36 @@ function reinitialiserFormulaire() {
     selectCountType('hotel'); 
     renderItems(); 
     calculateGlobalTotals();
+}
+
+// -------------------------------------------------------------
+// TRAITEMENT DES FICHIERS ET TEXTE DE MASSE (PMS / PDF)
+// -------------------------------------------------------------
+function processTextData(text) {
+    if (!text || text.trim() === '') return;
+    pmsDatabase = {};
+    const lines = text.split('\n');
+
+    lines.forEach(line => {
+        const parts = line.split('\t').map(p => p.trim()).filter(p => p !== '');
+        if (parts.length >= 2) {
+            const roomCandidate = parts[0];
+            if (isRoomNumberValid(roomCandidate)) {
+                pmsDatabase[roomCandidate] = {
+                    guestName: parts[1] || 'Guest',
+                    roomTyp: parts[2] || 'DLXR',
+                    arrival: parts[3] || '',
+                    departure: parts[4] || '',
+                    agency: parts[5] || 'Direct',
+                    quotaText: parts[6] || 'Chargeable',
+                    isChargeable: parts[6] ? parts[6].toLowerCase().includes('charge') : true
+                };
+            }
+        }
+    });
+
+    sauvegarderPmsLocalStorage();
+    renderMassPreviewTable();
 }
 
 async function handlePDFUpload(event) {
@@ -724,7 +777,7 @@ async function handlePDFUpload(event) {
 
         const pmsArea = document.getElementById('pmsPasteArea');
         if (pmsArea) pmsArea.value = extractedText;
-        if (typeof processTextData === 'function') processTextData(extractedText);
+        processTextData(extractedText);
 
     } catch (error) {
         console.error("Error reading PDF:", error);
@@ -732,20 +785,24 @@ async function handlePDFUpload(event) {
     }
 }
 
-// =============================================================
+// -------------------------------------------------------------
 // ENREGISTREMENT ET MODIFICATION DANS SUPABASE ET LOCALSTORAGE
-// =============================================================
+// -------------------------------------------------------------
 async function sauvegarderBordereauDepuisFormulaire() {
-    const roomNum = document.getElementById('roomNumber').value.trim();
+    const roomEl = document.getElementById('roomNumber');
+    if (!roomEl) return;
+    const roomNum = roomEl.value.trim();
+
     if (!roomNum || !isRoomNumberValid(roomNum)) {
         alert("Please enter a valid room number.");
         return;
     }
 
-    const editingId = document.getElementById('editingRecordId').value;
+    const editingIdEl = document.getElementById('editingRecordId');
+    const editingId = editingIdEl ? editingIdEl.value : '';
     const recordId = editingId ? String(editingId) : String(Date.now());
     
-    // Inclure les éléments personnalisés s'ils existent
+    // Ingestion des articles personnalisés
     for (let i = 0; i < 3; i++) {
         const cName = document.getElementById(`customName${i}`)?.value.trim();
         const cPrice = parseFloat(document.getElementById(`customPrice${i}`)?.value) || 0;
@@ -782,7 +839,9 @@ async function sauvegarderBordereauDepuisFormulaire() {
 
     const foldingRadio = document.querySelector('input[name="foldingOption"]:checked');
     const serviceStyle = foldingRadio ? foldingRadio.value : 'F — Folding';
-    const noteVal = document.getElementById('recordOptionalNote').value.trim();
+    const noteEl = document.getElementById('recordOptionalNote');
+    const noteVal = noteEl ? noteEl.value.trim() : '';
+
     const pmsInfo = pmsDatabase[roomNum] || {};
 
     chargerDonneesLocalStorage();
@@ -825,7 +884,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
     }
     sauvegarderDonneesLocalStorage();
 
-    // 2. MODIFICATION DE TOUTES LES COLONNES DANS SUPABASE
+    // 2. Synchronisation Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const payloadSupabase = {
@@ -853,18 +912,18 @@ async function sauvegarderBordereauDepuisFormulaire() {
                 updated_at: new Date().toISOString()
             };
 
-            let { error: errUpdate } = await supabaseClient
+            let { error: err1 } = await supabaseClient
                 .from('guest_laundry_requests')
                 .upsert(payloadSupabase, { onConflict: 'id' });
 
-            if (errUpdate && !isNaN(Number(recordId))) {
+            if (err1 && !isNaN(Number(recordId))) {
                 payloadSupabase.id = Number(recordId);
                 await supabaseClient
                     .from('guest_laundry_requests')
                     .upsert(payloadSupabase, { onConflict: 'id' });
             }
         } catch (e) {
-            console.error("Erreur de mise à jour des colonnes sur Supabase :", e);
+            console.error("Erreur réécriture dans Supabase :", e);
         }
     }
 
@@ -876,13 +935,11 @@ async function sauvegarderBordereauDepuisFormulaire() {
     alert("✅ Record updated in LocalStorage and synced to Supabase!");
 }
 
-// =============================================================
-// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS
-// =============================================================
+// -------------------------------------------------------------
+// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS (SUPABASE + LOCALSTORAGE)
+// -------------------------------------------------------------
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
-
-    console.log("📥 New guest request received:", newOrder);
 
     const recordId = String(newOrder.id || Date.now());
     const roomNum = String(newOrder.room_number || newOrder.room || newOrder.room_no || '---');
@@ -898,7 +955,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
     }
     const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
-
     const pmsInfo = pmsDatabase[roomNum] || {};
 
     const slipRecord = {
@@ -971,7 +1027,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     }
 
     try {
-        if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+        chargerLiveOrders();
     } catch (e) {}
 
     const bannerContainer = document.getElementById('guestBannerContainer');
@@ -989,9 +1045,115 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     } catch (e) {}
 };
 
-// =============================================================
-// LIVE ORDERS & DISPLAY
-// =============================================================
+// -------------------------------------------------------------
+// GESTION SPA (FONCTIONS COMPLÈTES DE CALCUL ET SAUVEGARDE)
+// -------------------------------------------------------------
+function calculateSpaTotal() {
+    let totalPcs = 0;
+    const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
+    rows.forEach(row => {
+        const input = row.querySelector('.spa-qty-input');
+        if (input) {
+            const qty = parseInt(input.value, 10) || 0;
+            totalPcs += qty;
+        }
+    });
+
+    const pcsEl = document.getElementById('spa-total-pieces');
+    if (pcsEl) pcsEl.innerText = `${totalPcs} pcs`;
+    return totalPcs;
+}
+
+async function validateAndSaveSpaReceipt() {
+    const serialNo = document.getElementById('spa-serial-no')?.value.trim();
+    if (!serialNo) {
+        alert("Please enter a SPA sheet serial number.");
+        return false;
+    }
+
+    const givenBy = document.getElementById('spa-given-by')?.value.trim() || 'SPA Staff';
+    const collectedBy = document.getElementById('spa-collected-by')?.value.trim() || 'Laundry Staff';
+    const deliveredBy = document.getElementById('spa-delivered-by')?.value.trim() || 'Laundry Staff';
+
+    const colDate = document.getElementById('spa-collection-date')?.value || new Date().toISOString().split('T')[0];
+    const editingId = document.getElementById('editingSpaId')?.value;
+    const recordId = editingId ? String(editingId) : String(Date.now());
+
+    const itemsObj = {};
+    let totalPcs = 0;
+
+    const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
+    rows.forEach(row => {
+        const input = row.querySelector('.spa-qty-input');
+        const nameTd = row.querySelector('td');
+        if (input && nameTd) {
+            const qty = parseInt(input.value, 10) || 0;
+            const itemName = nameTd.innerText.trim();
+            if (qty > 0) {
+                itemsObj[itemName] = { qty: qty, name: itemName, price: 0 };
+                totalPcs += qty;
+            }
+        }
+    });
+
+    if (totalPcs === 0) {
+        alert("Please enter at least one item quantity for the SPA receipt.");
+        return false;
+    }
+
+    const spaRecord = {
+        id: recordId,
+        spa_serial: serialNo,
+        room: `SPA #${serialNo}`,
+        room_number: `SPA #${serialNo}`,
+        guest_name: givenBy,
+        total_clothes: totalPcs,
+        total: 0,
+        subtotal: 0,
+        status: 'Delivered',
+        is_spa: true,
+        created_at: new Date().toISOString(),
+        created_by: currentStaffUser ? currentStaffUser.name : 'Staff',
+        items: itemsObj,
+        options: {
+            collection_date: colDate,
+            collected_by: collectedBy,
+            delivered_by: deliveredBy
+        }
+    };
+
+    isLocalUpdating = true;
+    chargerDonneesLocalStorage();
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+    if (existingIndex !== -1) cachedSlips[existingIndex] = spaRecord;
+    else cachedSlips.unshift(spaRecord);
+    sauvegarderDonneesLocalStorage();
+
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient.from('guest_laundry_requests').upsert({
+                id: recordId,
+                room: spaRecord.room,
+                guest_name: givenBy,
+                total_clothes: totalPcs,
+                total: 0,
+                status: 'Delivered',
+                is_spa: true,
+                items: JSON.stringify(itemsObj),
+                options: spaRecord.options
+            }, { onConflict: 'id' });
+        } catch (e) {
+            console.error("Erreur sauvegarde SPA Supabase:", e);
+        }
+    }
+
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    return true;
+}
+
+// -------------------------------------------------------------
+// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS)
+// -------------------------------------------------------------
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
     if (!container) return;
@@ -1010,8 +1172,8 @@ function chargerLiveOrders() {
     activeTodaySlips.sort((a, b) => {
         if (a.is_spa && !b.is_spa) return -1;
         if (!a.is_spa && b.is_spa) return 1;
-        const roomA = parseInt(a.room || a.room_number || a.room_no) || 0;
-        const roomB = parseInt(b.room || b.room_number || b.room_no) || 0;
+        const roomA = parseInt(a.room || a.room_number || a.room_no, 10) || 0;
+        const roomB = parseInt(b.room || b.room_number || b.room_no, 10) || 0;
         return roomA - roomB;
     });
 
@@ -1064,7 +1226,7 @@ function chargerLiveOrders() {
         }
 
         const roomNum = entry.room || entry.room_number || entry.room_no || '---';
-        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+        const receiptId = obtenirReceiptId(entry);
 
         let identifierDisplay = `Room ${roomNum}`;
         if (entry.is_spa) {
@@ -1112,7 +1274,7 @@ function ouvrirModalActiveRoomsList() {
         return entryDate >= debutJournee;
     });
 
-    activeLaundrySlips.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
+    activeLaundrySlips.sort((a, b) => (parseInt(a.room || a.room_number, 10) || 0) - (parseInt(b.room || b.room_number, 10) || 0));
 
     const tbody = document.getElementById('activeRoomsTableBody');
     if (!tbody) return;
@@ -1147,16 +1309,15 @@ function ouvrirModalActiveRoomsList() {
         });
     }
 
-    const tCount = document.getElementById('activeRoomsTotalCount');
-    const tPieces = document.getElementById('activeRoomsTotalPieces');
-    const pDate = document.getElementById('activeRoomsPdfDate');
+    const countEl = document.getElementById('activeRoomsTotalCount');
+    const pcsEl = document.getElementById('activeRoomsTotalPieces');
+    const pdfDateEl = document.getElementById('activeRoomsPdfDate');
+    const modalEl = document.getElementById('activeRoomsListModal');
 
-    if (tCount) tCount.innerText = activeLaundrySlips.length;
-    if (tPieces) tPieces.innerText = `${totalPieces} pcs`;
-    if (pDate) pDate.innerText = `Date: ${new Date().toLocaleDateString('en-GB')}`;
-
-    const modal = document.getElementById('activeRoomsListModal');
-    if (modal) modal.classList.remove('hidden');
+    if (countEl) countEl.innerText = activeLaundrySlips.length;
+    if (pcsEl) pcsEl.innerText = `${totalPieces} pcs`;
+    if (pdfDateEl) pdfDateEl.innerText = `Date: ${new Date().toLocaleDateString('en-GB')}`;
+    if (modalEl) modalEl.classList.remove('hidden');
 }
 
 function fermerModalActiveRoomsList() {
@@ -1166,6 +1327,7 @@ function fermerModalActiveRoomsList() {
 
 async function exportActiveRoomsListToPDF() {
     const printArea = document.getElementById('activeRoomsPdfExportArea');
+    if (!printArea) return;
     const todayStr = new Date().toISOString().split('T')[0];
 
     const opt = {
@@ -1205,14 +1367,14 @@ async function imprimerToutesLesChambresDuJour() {
     }
 
     const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
-    slipsToPrint.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
+    slipsToPrint.sort((a, b) => (parseInt(a.room || a.room_number, 10) || 0) - (parseInt(b.room || b.room_number, 10) || 0));
 
     const batchContainer = document.getElementById('batchPrintContainer');
     if (!batchContainer) return;
     batchContainer.innerHTML = '';
 
     slipsToPrint.forEach(entry => {
-        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+        const receiptId = obtenirReceiptId(entry);
         entry.receipt_id = receiptId;
         const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
         const roomNum = entry.room || entry.room_number || entry.room_no || '---';
@@ -1308,7 +1470,7 @@ async function imprimerToutesLesChambresDuJour() {
                 </div>
 
                 <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
-                    <div style="display: flex; justify-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <div>
                             <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
                             <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : roomNum}</span>
@@ -1328,7 +1490,7 @@ async function imprimerToutesLesChambresDuJour() {
                     </div>
                 </div>
 
-                <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-between;">
+                <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between;">
                     <span style="color: #374151;">Packaging:</span>
                     <span style="color: #b45309;">${entry.options?.service_style || 'F — Folding'}</span>
                 </div>
@@ -1345,11 +1507,11 @@ async function imprimerToutesLesChambresDuJour() {
                 </table>
 
                 <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
-                    <div style="display: flex; justify-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
                         <span>Total Pieces:</span>
                         <span>${entry.total_clothes || 0} pieces</span>
                     </div>
-                    <div style="display: flex; justify-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
                         <span>Grand Total:</span>
                         <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${(entry.total || 0).toFixed(2)} AED</span>
                     </div>
@@ -1393,11 +1555,11 @@ async function telechargerToutesLesChambresDuJour() {
 function switchArchiveFilter(filter) {
     currentArchiveFilter = filter;
     const btnAll = document.getElementById('archiveFilterAll');
-    const btnLau = document.getElementById('archiveFilterLaundry');
+    const btnLaundry = document.getElementById('archiveFilterLaundry');
     const btnSpa = document.getElementById('archiveFilterSpa');
 
     if (btnAll) btnAll.className = filter === 'all' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
-    if (btnLau) btnLau.className = filter === 'laundry' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
+    if (btnLaundry) btnLaundry.className = filter === 'laundry' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
     if (btnSpa) btnSpa.className = filter === 'spa' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
     
     afficherListeBordereauxLocal();
@@ -1405,15 +1567,12 @@ function switchArchiveFilter(filter) {
 
 function afficherListeBordereauxLocal() {
     chargerDonneesLocalStorage();
-    const sRoom = document.getElementById('searchRoom');
-    const sDate = document.getElementById('searchDate');
-
-    const searchVal = sRoom ? sRoom.value.toLowerCase().trim() : '';
-    const searchDateVal = sDate ? sDate.value : '';
+    const searchVal = (document.getElementById('searchRoom')?.value || '').toLowerCase().trim();
+    const searchDateVal = document.getElementById('searchDate')?.value || '';
 
     let filtered = cachedSlips.filter(entry => {
         const roomNum = String(entry.room || entry.room_number || entry.room_no || '').toLowerCase();
-        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry).toLowerCase() : '';
+        const receiptId = obtenirReceiptId(entry).toLowerCase();
         const matchRoom = !searchVal || 
             roomNum.includes(searchVal) || 
             receiptId.includes(searchVal) ||
@@ -1466,16 +1625,16 @@ function afficherListeBordereauxLocal() {
         hotelEntries.forEach(entry => {
             let badgeLabel = 'Hotel Count';
             let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
-            if(entry.count_type === 'quota_extra') {
+            if (entry.count_type === 'quota_extra') {
                 badgeLabel = 'Quota + Extra';
                 badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-            } else if(entry.count_type === 'guest') {
+            } else if (entry.count_type === 'guest') {
                 badgeLabel = 'Chargeable';
                 badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
             }
 
             const roomNum = entry.room || entry.room_number || entry.room_no || '---';
-            const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+            const receiptId = obtenirReceiptId(entry);
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
@@ -1595,17 +1754,14 @@ async function saveLostFoundItem() {
     items.unshift(newItem);
     localStorage.setItem('remal_lost_found', JSON.stringify(items));
 
-    if (typeof writeRecordToFile === 'function') {
-        await writeRecordToFile(newItem);
-    }
-
     if (nameEl) nameEl.value = '';
     if (locEl) locEl.value = '';
     if (noteEl) noteEl.value = '';
     const photoEl = document.getElementById('lfItemPhoto');
+    const prevEl = document.getElementById('lfImagePreview');
     if (photoEl) photoEl.value = '';
-    const previewEl = document.getElementById('lfImagePreview');
-    if (previewEl) previewEl.classList.add('hidden');
+    if (prevEl) prevEl.classList.add('hidden');
+    
     currentLFPhotoData = null;
     const formCard = document.getElementById('lfFormCard');
     if (formCard) formCard.classList.add('hidden');
@@ -1651,9 +1807,7 @@ function renderLostFoundItems() {
 function toggleLFStatus(id) {
     let items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
     items = items.map(i => {
-        if (i.id === id) {
-            i.status = i.status === 'Unclaimed' ? 'Claimed' : 'Unclaimed';
-        }
+        if (i.id === id) i.status = i.status === 'Unclaimed' ? 'Claimed' : 'Unclaimed';
         return i;
     });
     localStorage.setItem('remal_lost_found', JSON.stringify(items));
@@ -1694,13 +1848,15 @@ function renderManagementDashboard() {
     const kpiOrd = document.getElementById('kpiOrders');
     const kpiGar = document.getElementById('kpiGarments');
 
-    if(kpiRev) kpiRev.innerText = `${totalRevenue.toFixed(2)} AED`;
-    if(kpiOrd) kpiOrd.innerText = cachedSlips.length;
-    if(kpiGar) kpiGar.innerText = `${totalGarments} pcs`;
+    if (kpiRev) kpiRev.innerText = `${totalRevenue.toFixed(2)} AED`;
+    if (kpiOrd) kpiOrd.innerText = cachedSlips.length;
+    if (kpiGar) kpiGar.innerText = `${totalGarments} pcs`;
 
     requestAnimationFrame(() => {
+        if (typeof Chart === 'undefined') return;
+
         const ctxDoughnutEl = document.getElementById('statusDoughnutChart');
-        if (ctxDoughnutEl && typeof Chart !== 'undefined') {
+        if (ctxDoughnutEl) {
             const ctxDoughnut = ctxDoughnutEl.getContext('2d');
             if (doughnutChartInstance) doughnutChartInstance.destroy();
 
@@ -1726,7 +1882,7 @@ function renderManagementDashboard() {
         const revenues = dates.map(d => revenueByDate[d]);
 
         const ctxBarEl = document.getElementById('revenueBarChart');
-        if (ctxBarEl && typeof Chart !== 'undefined') {
+        if (ctxBarEl) {
             const ctxBar = ctxBarEl.getContext('2d');
             if (barChartInstance) barChartInstance.destroy();
 
@@ -1756,18 +1912,15 @@ function renderManagementDashboard() {
 }
 
 async function exportSpaToPDF() {
-    if (typeof validateAndSaveSpaReceipt === 'function') {
-        const isValid = await validateAndSaveSpaReceipt();
-        if (!isValid) return;
-    }
+    const isValid = await validateAndSaveSpaReceipt();
+    if (!isValid) return;
 
-    const serialEl = document.getElementById('spa-serial-no');
-    const serialNo = serialEl ? serialEl.value.trim() : '0000';
-    const dateEl = document.getElementById('spa-collection-date');
-    const colDate = dateEl && dateEl.value ? dateEl.value : new Date().toISOString().split('T')[0];
+    const serialNo = document.getElementById('spa-serial-no')?.value.trim();
+    const colDate = document.getElementById('spa-collection-date')?.value || new Date().toISOString().split('T')[0];
     const spaArea = document.getElementById('spa-laundry-section');
 
     if (!spaArea) return;
+
     const isHidden = spaArea.classList.contains('hidden');
     if (isHidden) spaArea.classList.remove('hidden');
 
@@ -1822,21 +1975,36 @@ function ouvrirModalDetails(id) {
     const entry = cachedSlips.find(e => String(e.id) === String(id));
     if (!entry) return;
 
-    const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+    const receiptId = obtenirReceiptId(entry);
     entry.receipt_id = receiptId;
 
     const t = i18n[currentLang] || i18n.en;
     const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
-    const hName = document.getElementById('modalPdfHotelName');
-    const hSub = document.getElementById('modalPdfHotelSub');
-    const hService = document.getElementById('modalPdfLaundryService');
-    const rDisplay = document.getElementById('modalReceiptIdDisplay');
+    const elHotelName = document.getElementById('modalPdfHotelName');
+    const elHotelSub = document.getElementById('modalPdfHotelSub');
+    const elService = document.getElementById('modalPdfLaundryService');
+    const elReceipt = document.getElementById('modalReceiptIdDisplay');
 
-    if (hName) hName.innerText = t.pdfHotelName;
-    if (hSub) hSub.innerText = t.pdfHotelSub;
-    if (hService) hService.innerText = entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService;
-    if (rDisplay) rDisplay.innerText = `#${receiptId}`;
+    if (elHotelName) elHotelName.innerText = t.pdfHotelName;
+    if (elHotelSub) elHotelSub.innerText = t.pdfHotelSub;
+    if (elService) elService.innerText = entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService;
+    if (elReceipt) elReceipt.innerText = `#${receiptId}`;
+
+    const setTxt = (elId, txt) => { const el = document.getElementById(elId); if (el) el.innerText = txt; };
+
+    setTxt('modalThItem', t.pdfItem);
+    setTxt('modalThQty', t.pdfQty);
+    setTxt('modalThTotal', t.pdfTotal);
+    setTxt('modalLblTotalPieces', t.pdfTotalPieces);
+    setTxt('modalLblGrandTotal', t.pdfGrandTotalText);
+    setTxt('modalLblGarmentNotes', t.pdfNotes);
+    setTxt('modalLblGuestName', t.pdfGuest);
+    setTxt('modalLblRoomTyp', t.pdfRoomTyp);
+    setTxt('modalLblAgency', t.pdfAgency);
+    setTxt('modalLblQuota', t.pdfQuota);
+    setTxt('modalLblAgent', t.pdfAgent);
+    setTxt('modalLblPackaging', t.pdfPackaging);
 
     let badgeText = t.pdfHotelCountFree;
     if (entry.count_type === 'quota_extra') {
@@ -1845,42 +2013,28 @@ function ouvrirModalDetails(id) {
         badgeText = t.pdfGuestCount;
     }
 
-    const idLabel = document.getElementById('modalIdentifierLabel');
-    const roomDisplay = document.getElementById('modalRoomNumDisplay');
-
-    if (idLabel) idLabel.innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;
-    if (roomDisplay) {
-        if (entry.is_spa) {
-            const serialClean = String(entry.spa_serial || roomNum || '').replace(/SPA\s*#?/gi, '').trim();
-            roomDisplay.innerText = `#${serialClean}`;
-        } else {
-            roomDisplay.innerText = roomNum;
-        }
+    setTxt('modalIdentifierLabel', entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom);
+    
+    if (entry.is_spa) {
+        const serialClean = String(entry.spa_serial || roomNum || '').replace(/SPA\s*#?/gi, '').trim();
+        setTxt('modalRoomNumDisplay', `#${serialClean}`);
+    } else {
+        setTxt('modalRoomNumDisplay', roomNum);
     }
     
     const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
-    const mDate = document.getElementById('modalDate');
-    const mBadge = document.getElementById('modalTypeBadgeInline');
-    const mPack = document.getElementById('modalPackagingStyle');
-
-    if (mDate) mDate.innerText = `${t.pdfDate} ${dateFormatted}`;
-    if (mBadge) mBadge.innerText = entry.is_spa ? t.pdfSpaRecord : badgeText;
-    if (mPack) mPack.innerText = entry.options?.service_style || 'F — Folding';
+    setTxt('modalDate', `${t.pdfDate} ${dateFormatted}`);
+    setTxt('modalTypeBadgeInline', entry.is_spa ? t.pdfSpaRecord : badgeText);
+    setTxt('modalPackagingStyle', entry.options?.service_style || 'F — Folding');
 
     const agencyBox = document.getElementById('modalAgencyQuotaBox');
     if (agencyBox) {
         if (entry.guest_name || entry.agency || entry.quota) {
-            const gDisp = document.getElementById('modalGuestDisplay');
-            const tDisp = document.getElementById('modalTypDisplay');
-            const aDisp = document.getElementById('modalAgencyDisplay');
-            const qDisp = document.getElementById('modalQuotaDisplay');
-            const cDisp = document.getElementById('modalCreatedByDisplay');
-
-            if (gDisp) gDisp.innerText = entry.guest_name || 'Unknown';
-            if (tDisp) tDisp.innerText = entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR');
-            if (aDisp) aDisp.innerText = entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct');
-            if (qDisp) qDisp.innerText = entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
-            if (cDisp) cDisp.innerText = entry.created_by || 'Staff';
+            setTxt('modalGuestDisplay', entry.guest_name || 'Unknown');
+            setTxt('modalTypDisplay', entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR'));
+            setTxt('modalAgencyDisplay', entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct'));
+            setTxt('modalQuotaDisplay', entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText));
+            setTxt('modalCreatedByDisplay', entry.created_by || 'Staff');
             agencyBox.classList.remove('hidden');
         } else {
             agencyBox.classList.add('hidden');
@@ -1890,6 +2044,7 @@ function ouvrirModalDetails(id) {
     const tbody = document.getElementById('modalTableBody'); 
     if (tbody) {
         tbody.innerHTML = '';
+
         let rawItems = entry.items || [];
         if (typeof rawItems === 'string') {
             try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
@@ -1969,20 +2124,16 @@ function ouvrirModalDetails(id) {
         }
     }
 
-    const cCount = document.getElementById('modalClothesCount');
-    const mTot = document.getElementById('modalTotal');
-    if (cCount) cCount.innerText = `${entry.total_clothes || 0} pieces`;
-    if (mTot) mTot.innerText = `${(entry.total || 0).toFixed(2)} AED`;
+    setTxt('modalClothesCount', `${entry.total_clothes || 0} pieces`);
+    setTxt('modalTotal', `${(entry.total || 0).toFixed(2)} AED`);
 
     const noteBox = document.getElementById('modalNoteBox');
     const noteText = document.getElementById('modalNoteText');
-    if (noteBox && noteText) {
-        if (entry.note && entry.note.trim() !== '') {
-            noteText.innerText = entry.note;
-            noteBox.classList.remove('hidden');
-        } else {
-            noteBox.classList.add('hidden');
-        }
+    if (noteText && entry.note && entry.note.trim() !== '') {
+        noteText.innerText = entry.note;
+        if (noteBox) noteBox.classList.remove('hidden');
+    } else if (noteBox) {
+        noteBox.classList.add('hidden');
     }
 
     const pContainer = document.getElementById('modalPhotoContainer');
@@ -1994,16 +2145,17 @@ function ouvrirModalDetails(id) {
         }
     }
 
-    const waBtn = document.getElementById('btnWhatsappShare');
-    if (waBtn) {
+    const btnWa = document.getElementById('btnWhatsappShare');
+    if (btnWa) {
         const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
-        waBtn.href = `https://wa.me/?text=${whatsappMsg}`;
+        btnWa.href = `https://wa.me/?text=${whatsappMsg}`;
     }
 
     const modal = document.getElementById('detailModal');
     if (modal) modal.classList.remove('hidden');
 }
 
+// EDIT BORDEREAU - CHARGEMENT DU PANIER POUR MODIFICATION
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -2014,23 +2166,23 @@ function modifierBordereauActuel() {
 
     if (entry.is_spa) {
         switchMainSection('spa');
-        const eId = document.getElementById('editingSpaId');
+        const sId = document.getElementById('editingSpaId');
         const sTitle = document.getElementById('spaFormTitleLabel');
-        const bSave = document.getElementById('btnSaveSpa');
+        const sBtn = document.getElementById('btnSaveSpa');
 
-        if (eId) eId.value = entry.id;
+        if (sId) sId.value = entry.id;
         if (sTitle) sTitle.innerText = `✏️ Edit SPA Receipt #${entry.spa_serial}`;
-        if (bSave) bSave.innerHTML = `<i class="fas fa-save"></i> Update SPA Receipt`;
+        if (sBtn) sBtn.innerHTML = `<i class="fas fa-save"></i> Update SPA Receipt`;
 
-        const sNo = document.getElementById('spa-serial-no');
-        const sGiven = document.getElementById('spa-given-by');
-        const sCol = document.getElementById('spa-collected-by');
-        const sDel = document.getElementById('spa-delivered-by');
+        const elSerial = document.getElementById('spa-serial-no');
+        const elGiven = document.getElementById('spa-given-by');
+        const elColl = document.getElementById('spa-collected-by');
+        const elDeliv = document.getElementById('spa-delivered-by');
 
-        if (sNo) sNo.value = entry.spa_serial || '';
-        if (sGiven) sGiven.value = entry.guest_name || '';
-        if (sCol) sCol.value = entry.options?.collected_by || '';
-        if (sDel) sDel.value = entry.options?.delivered_by || '';
+        if (elSerial) elSerial.value = entry.spa_serial || '';
+        if (elGiven) elGiven.value = entry.guest_name || '';
+        if (elColl) elColl.value = entry.options?.collected_by || '';
+        if (elDeliv) elDeliv.value = entry.options?.delivered_by || '';
 
         let rawItems = entry.items || {};
         if (typeof rawItems === 'string') {
@@ -2040,26 +2192,30 @@ function modifierBordereauActuel() {
         const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
         rows.forEach(row => {
             const input = row.querySelector('.spa-qty-input');
-            const itemName = row.querySelector('td').innerText.trim();
-            if (input && rawItems[itemName]) {
-                input.value = rawItems[itemName].qty || rawItems[itemName].quantity || 0;
-            } else if (input) {
-                input.value = '';
+            const itemNameTd = row.querySelector('td');
+            if (input && itemNameTd) {
+                const itemName = itemNameTd.innerText.trim();
+                if (rawItems[itemName]) {
+                    input.value = rawItems[itemName].qty || rawItems[itemName].quantity || 0;
+                } else {
+                    input.value = '';
+                }
             }
         });
-        if (typeof calculateSpaTotal === 'function') calculateSpaTotal();
+        calculateSpaTotal();
 
     } else {
         const roomNum = entry.room || entry.room_number || entry.room_no || '---';
         switchMainSection('newRecord');
+        
         const eId = document.getElementById('editingRecordId');
         const fTitle = document.getElementById('lblFormTitle');
-        const rNum = document.getElementById('roomNumber');
+        const rInput = document.getElementById('roomNumber');
         const rNote = document.getElementById('recordOptionalNote');
 
         if (eId) eId.value = entry.id;
         if (fTitle) fTitle.innerText = `✏️ Edit / Validate Record - Room ${roomNum}`;
-        if (rNum) rNum.value = roomNum;
+        if (rInput) rInput.value = roomNum;
         onRoomNumberInput();
 
         selectCountType(entry.count_type || 'hotel');
@@ -2117,10 +2273,11 @@ async function genererPDF(entryId = null) {
     if (entry.is_spa) {
         ouvrirModalDetails(targetId);
         const printArea = document.getElementById('pdfExportArea');
+        if (!printArea) return;
         const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
         const fileTargetName = `REMAL_${dateIso}_SPA-${entry.spa_serial || '0000'}`;
 
-        const noPrintElements = printArea ? printArea.querySelectorAll('.no-print') : [];
+        const noPrintElements = printArea.querySelectorAll('.no-print');
         noPrintElements.forEach(el => el.style.display = 'none');
 
         const opt = {
@@ -2157,12 +2314,14 @@ async function genererPDF(entryId = null) {
         ouvrirModalDetails(targetId);
     }
 
-    entry.receipt_id = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+    entry.receipt_id = obtenirReceiptId(entry);
     const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
     const fileTargetName = `REMAL_${dateIso}_RM-${roomNum}`;
 
     const printArea = document.getElementById('pdfExportArea');
-    const noPrintElements = printArea ? printArea.querySelectorAll('.no-print') : [];
+    if (!printArea) return;
+
+    const noPrintElements = printArea.querySelectorAll('.no-print');
     noPrintElements.forEach(el => el.style.display = 'none');
 
     const opt = {
@@ -2213,23 +2372,23 @@ async function supprimerBordereauActuel() {
             const idNum = Number(selectedIdForModal);
             try { 
                 let res = await supabaseClient.from('guest_laundry_requests').delete().eq('id', idStr); 
-                if(res.error && !isNaN(idNum)) await supabaseClient.from('guest_laundry_requests').delete().eq('id', idNum);
+                if (res.error && !isNaN(idNum)) await supabaseClient.from('guest_laundry_requests').delete().eq('id', idNum);
             } catch(e) {}
         }
 
         fermerModal();
         chargerLiveOrders();
-        const pdfListSec = document.getElementById('sectionPdfList');
-        if(pdfListSec && !pdfListSec.classList.contains('hidden')) {
+        const pdfSec = document.getElementById('sectionPdfList');
+        if (pdfSec && !pdfSec.classList.contains('hidden')) {
             afficherListeBordereauxLocal();
         }
         setTimeout(() => { isLocalUpdating = false; }, 1000);
     }
 }
 
-// =============================================================
-// STATUTS EN LOT ET INDIVIDUELS
-// =============================================================
+// -------------------------------------------------------------
+// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SYNCHRO SUPABASE)
+// -------------------------------------------------------------
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     const targetId = requestId || selectedIdForModal;
     if (!targetId) return;
@@ -2239,22 +2398,22 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     const idStr = String(targetId).trim();
     const idNum = Number(targetId);
 
-    // 1. LocalStorage
+    // 1. Mise à jour instantanée du LocalStorage
     chargerDonneesLocalStorage();
     cachedSlips.forEach(s => {
         if (String(s.id).trim() === idStr) s.status = nouveauStatut;
     });
     sauvegarderDonneesLocalStorage();
 
-    // 2. UI Updates
+    // 2. Mise à jour fluide des vues
     fermerModal();
     chargerLiveOrders();
-    const pdfListSec = document.getElementById('sectionPdfList');
-    if (pdfListSec && !pdfListSec.classList.contains('hidden')) {
+    const pdfSec = document.getElementById('sectionPdfList');
+    if (pdfSec && !pdfSec.classList.contains('hidden')) {
         afficherListeBordereauxLocal();
     }
 
-    // 3. Supabase Sync
+    // 3. Envoi asynchrone vers Supabase guest_laundry_requests
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             let res = await supabaseClient
@@ -2321,9 +2480,9 @@ async function appliquerStatutEnLot(nouveauStatut) {
     alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
 }
 
-// =============================================================
-// BULK DELETE
-// =============================================================
+// -------------------------------------------------------------
+// SUPPRESSION EN LOT (BULK DELETE)
+// -------------------------------------------------------------
 async function supprimerBordereauxEnLot() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     
@@ -2372,11 +2531,7 @@ function dismissGuestNotificationBanner() {
     });
 }
 
-// =============================================================
-// STAFF AUTHENTICATION
-// =============================================================
-let currentStaffUser = null;
-
+// LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 function checkStaffSession() {
     const savedStaff = localStorage.getItem('remal_current_staff');
     const loginModal = document.getElementById('staffLoginModal');
@@ -2408,7 +2563,7 @@ async function verifyStaffPin() {
             saveAndUnlockSession();
             return;
         } else {
-            if(errorMsg) errorMsg.classList.remove('hidden');
+            if (errorMsg) errorMsg.classList.remove('hidden');
             return;
         }
     }
@@ -2422,8 +2577,8 @@ async function verifyStaffPin() {
             .single();
 
         if (error || !data) {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            if(pinInput) pinInput.value = '';
+            if (errorMsg) errorMsg.classList.remove('hidden');
+            if (pinInput) pinInput.value = '';
             return;
         }
 
@@ -2437,7 +2592,7 @@ async function verifyStaffPin() {
 
     } catch (err) {
         console.error("Erreur authentification staff:", err);
-        if(errorMsg) errorMsg.classList.remove('hidden');
+        if (errorMsg) errorMsg.classList.remove('hidden');
     }
 }
 
@@ -2447,7 +2602,6 @@ function saveAndUnlockSession() {
     if (loginModal) loginModal.classList.add('hidden');
     
     updateStaffUIIndicator();
-    console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
 function updateStaffUIIndicator() {
