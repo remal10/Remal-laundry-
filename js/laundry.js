@@ -202,7 +202,7 @@ async function sauvegarderBordereauLocal() {
         vat: vat,
         grand_total: grandTotal,
         special_notes: optionalNote,
-        status: currentStatus,
+        status: currentStatus, // Clé "status" en anglais
         accepted_policy: true
     };
 
