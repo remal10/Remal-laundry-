@@ -146,7 +146,6 @@ function initTheme() {
     }
 }
 
-// Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
 
 // -------------------------------------------------------------
@@ -177,6 +176,9 @@ function programmerTimerReinitialisationMinuit() {
     setInterval(verifierFinDeJournee, 1000);
 }
 
+// -------------------------------------------------------------
+// SYNCHRONISATION INITIALE ET REALTIME DEPUIS SUPABASE
+// -------------------------------------------------------------
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -190,11 +192,10 @@ async function chargerDonneesEtAbonnementCloud() {
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
-            // Restaure d'abord les éléments existants du LocalStorage
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
             
             slips.forEach(s => {
-                const roomClean = s.room_number || s.room || '---';
+                const roomClean = s.room_number || '---';
                 
                 let parsedItems = s.items;
                 if (typeof parsedItems === 'string') {
@@ -203,34 +204,27 @@ async function chargerDonneesEtAbonnementCloud() {
                 if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
                     parsedItems = Object.values(parsedItems);
                 }
-                if (!Array.isArray(parsedItems)) {
-                    parsedItems = [];
-                }
+                if (!Array.isArray(parsedItems)) parsedItems = [];
 
-                // Normalisation selon le schéma DB Supabase
                 const normalizedSlip = {
                     ...s,
+                    id: String(s.id),
                     room: roomClean,
                     room_number: roomClean,
                     guest_name: s.guest_name || 'Guest',
                     total_clothes: s.total_pieces || 0,
+                    total_pieces: s.total_pieces || 0,
                     subtotal: Number(s.subtotal || 0),
                     vat: Number(s.vat || 0),
                     total: Number(s.grand_total || 0),
                     grand_total: Number(s.grand_total || 0),
                     note: s.special_notes || '',
+                    special_notes: s.special_notes || '',
                     items: parsedItems,
-                    options: {
-                        service_style: s.service_type || 'Folding'
-                    }
+                    options: { service_style: s.service_type || 'Folding' }
                 };
 
-                // Fusionne en conservant la version la plus à jour
-                const existing = slipMap.get(String(s.id));
-                slipMap.set(String(s.id), { 
-                    ...existing,
-                    ...normalizedSlip
-                });
+                slipMap.set(String(s.id), normalizedSlip);
             });
             
             cachedSlips = Array.from(slipMap.values());
@@ -258,7 +252,6 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        // Écouteur temps réel (Realtime)
         supabaseClient.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
                 if (isLocalUpdating) return;
@@ -277,17 +270,18 @@ async function chargerDonneesEtAbonnementCloud() {
 
                     const formattedData = { 
                         ...payload.new, 
+                        id: idStr,
                         room: roomClean, 
                         room_number: roomClean,
                         guest_name: payload.new.guest_name || 'Guest',
                         total_clothes: payload.new.total_pieces || 0,
+                        total_pieces: payload.new.total_pieces || 0,
                         total: Number(payload.new.grand_total || 0),
                         grand_total: Number(payload.new.grand_total || 0),
                         note: payload.new.special_notes || '',
+                        special_notes: payload.new.special_notes || '',
                         items: Array.isArray(parsedItems) ? parsedItems : [],
-                        options: {
-                            service_style: payload.new.service_type || 'Folding'
-                        }
+                        options: { service_style: payload.new.service_type || 'Folding' }
                     };
 
                     const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
@@ -647,7 +641,7 @@ async function handlePDFUpload(event) {
 }
 
 // -------------------------------------------------------------
-// ENREGISTREMENT ET MODIFICATION DANS SUPABASE ET LOCALSTORAGE
+// ENREGISTREMENT ET MODIFICATION COMPATIBLE TABLE SUPABASE GUEST
 // -------------------------------------------------------------
 async function sauvegarderBordereauDepuisFormulaire() {
     const roomNum = document.getElementById('roomNumber').value.trim();
@@ -656,28 +650,45 @@ async function sauvegarderBordereauDepuisFormulaire() {
         return;
     }
 
-    const editingId = document.getElementById('editingRecordId').value;
-    const itemsArray = Object.values(cart);
-    if (itemsArray.length === 0) {
+    const editingId = document.getElementById('editingRecordId').value.trim();
+    const cartEntries = Object.values(cart);
+    if (cartEntries.length === 0) {
         alert("Please select at least one garment before saving.");
         return;
     }
 
     let totalPcs = 0;
-    let grandTotal = 0;
-    
-    itemsArray.forEach(item => {
+    let subtotalCalc = 0;
+    const itemsArray = [];
+
+    cartEntries.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
         const price = parseFloat(item.price) || 0;
         const freeQty = parseInt(item.freeQty, 10) || 0;
+        if (qty <= 0) return;
+
         totalPcs += qty;
+        let extraQty = Math.max(0, qty - freeQty);
+        let totalPrice = 0;
 
         if (currentCountType === 'guest') {
-            grandTotal += qty * price;
+            totalPrice = qty * price;
         } else if (currentCountType === 'quota_extra') {
-            const chargeable = Math.max(0, qty - freeQty);
-            grandTotal += chargeable * price;
+            totalPrice = extraQty * price;
         }
+
+        subtotalCalc += totalPrice;
+
+        // Structure d'article standardisée identique au Guest Portal
+        itemsArray.push({
+            name: item.name,
+            category: item.category || '',
+            quantity: qty,
+            free_quantity: freeQty,
+            extra_quantity: extraQty,
+            unit_price: price,
+            total_price: totalPrice
+        });
     });
 
     const foldingRadio = document.querySelector('input[name="foldingOption"]:checked');
@@ -685,34 +696,35 @@ async function sauvegarderBordereauDepuisFormulaire() {
     const noteVal = document.getElementById('recordOptionalNote').value.trim();
     const pmsInfo = pmsDatabase[roomNum] || {};
 
-    // 1. Définition du Payload adapté au schéma public.guest_laundry_requests
-    const subtotalVal = Number(grandTotal.toFixed(2));
-    const vatVal = Number((subtotalVal * 0.05).toFixed(2)); // TVA 5% si applicable
-    const grandTotalVal = Number((subtotalVal + vatVal).toFixed(2));
+    const subtotal = Number(subtotalCalc.toFixed(2));
+    const vat = Number((subtotal * 0.05).toFixed(2));
+    const grandTotal = Number((subtotal + vat).toFixed(2));
 
+    // Construction du payload aligné sur guest_laundry_requests
     const payloadSupabase = {
         room_number: roomNum,
         guest_name: pmsInfo.guestName || 'Guest',
         pms_quota: pmsInfo.quotaText || 'Standard',
         extra_charged: currentCountType === 'quota_extra',
         service_type: serviceStyle,
-        items: itemsArray, // Supabase le gère nativement en jsonb
+        items: itemsArray,
         total_pieces: totalPcs,
-        subtotal: subtotalVal,
-        vat: vatVal,
-        grand_total: grandTotalVal,
+        subtotal: subtotal,
+        vat: vat,
+        grand_total: grandTotal,
         special_notes: noteVal,
-        status: 'Pending',
+        status: 'Collected',
         accepted_policy: true
     };
 
-    if (editingId) {
+    // On inclut l'ID uniquement s'il s'agit d'un UUID existant pour la modification
+    if (editingId && editingId.length === 36) {
         payloadSupabase.id = editingId;
     }
 
     isLocalUpdating = true;
+    let assignedId = editingId;
 
-    // 2. ÉCRITURE DANS SUPABASE
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const { data, error } = await supabaseClient
@@ -722,34 +734,33 @@ async function sauvegarderBordereauDepuisFormulaire() {
                 .single();
 
             if (error) {
-                console.error("Erreur écriture Supabase :", error.message);
+                console.error("❌ Erreur écriture Supabase :", error.message);
+                alert("Erreur Supabase: " + error.message);
             } else if (data) {
-                payloadSupabase.id = data.id;
-                payloadSupabase.created_at = data.created_at;
+                assignedId = String(data.id);
             }
         } catch (e) {
-            console.error("Exception réécriture Supabase :", e);
+            console.error("Exception écriture Supabase :", e);
         }
     }
 
-    // Assignation d'un id local de secours si le réseau/Supabase échoue en mode hors ligne
-    const recordId = payloadSupabase.id || editingId || String(Date.now());
-    payloadSupabase.id = recordId;
+    if (!assignedId) assignedId = String(Date.now());
 
-    // 3. Sauvegarde de synchronisation dans le LocalStorage
-    chargerDonneesLocalStorage();
+    // Sauvegarde miroir locale
     const slipRecord = {
         ...payloadSupabase,
+        id: assignedId,
         room: roomNum,
         total_clothes: totalPcs,
-        total: grandTotalVal,
+        total: grandTotal,
         note: noteVal,
         options: { service_style: serviceStyle },
         created_by: currentStaffUser ? currentStaffUser.name : 'Staff',
-        photo: currentImageData || null
+        created_at: new Date().toISOString()
     };
 
-    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(recordId));
+    chargerDonneesLocalStorage();
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
     } else {
@@ -762,11 +773,11 @@ async function sauvegarderBordereauDepuisFormulaire() {
     chargerLiveOrders();
 
     setTimeout(() => { isLocalUpdating = false; }, 1000);
-    alert("✅ Record saved & synced with guest_laundry_requests table!");
+    alert("✅ Bordereau synchronisé avec Supabase !");
 }
 
 // -------------------------------------------------------------
-// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS (SUPABASE + LOCALSTORAGE)
+// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS
 // -------------------------------------------------------------
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
@@ -809,18 +820,15 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         grand_total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: newOrder.status || 'Pending',
+        status: newOrder.status || 'Collected',
         is_spa: false,
         created_by: 'Guest App',
         note: specialNotes,
         special_notes: specialNotes,
         items: parsedItemsList,
-        options: {
-            service_style: newOrder.service_type || 'Laundry Collection'
-        }
+        options: { service_style: newOrder.service_type || 'Laundry Collection' }
     };
 
-    // 1. Sauvegarde locale immédiate
     try {
         chargerDonneesLocalStorage();
         if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
@@ -834,32 +842,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         }
     } catch (e) {
         console.warn("Local storage write error:", e);
-    }
-
-    // 2. Persistance/Mise à jour dans la table Supabase guest_laundry_requests
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            await supabaseClient
-                .from('guest_laundry_requests')
-                .upsert({
-                    id: recordId,
-                    room_number: roomNum,
-                    guest_name: guestName,
-                    pms_quota: pmsQuotaText,
-                    extra_charged: isExtra,
-                    service_type: slipRecord.service_type,
-                    items: parsedItemsList,
-                    total_pieces: totalPcs,
-                    subtotal: slipRecord.subtotal,
-                    vat: slipRecord.vat,
-                    grand_total: grandTotal,
-                    special_notes: specialNotes,
-                    status: slipRecord.status,
-                    accepted_policy: true
-                }, { onConflict: 'id' });
-        } catch (e) {
-            console.error("Erreur de persistance initiale Supabase :", e);
-        }
     }
 
     try {
@@ -882,7 +864,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
 };
 
 // -------------------------------------------------------------
-// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS)
+// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS)
 // -------------------------------------------------------------
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -902,8 +884,8 @@ function chargerLiveOrders() {
     activeTodaySlips.sort((a, b) => {
         if (a.is_spa && !b.is_spa) return -1;
         if (!a.is_spa && b.is_spa) return 1;
-        const roomA = parseInt(a.room || a.room_number) || 0;
-        const roomB = parseInt(b.room || b.room_number) || 0;
+        const roomA = parseInt(a.room_number || a.room) || 0;
+        const roomB = parseInt(b.room_number || b.room) || 0;
         return roomA - roomB;
     });
 
@@ -935,7 +917,7 @@ function chargerLiveOrders() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'remal-card p-4 rounded-2xl flex items-center gap-3.5 hover:border-[#DCA773] transition cursor-pointer';
 
-        let badgeText = entry.status || 'Pending';
+        let badgeText = entry.status || 'Collected';
         let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
         
         if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
@@ -993,7 +975,7 @@ function chargerLiveOrders() {
     updatePrintButtonCount();
 }
 
-function ouvrirModalActiveRoomsList() {
+function abrirModalActiveRoomsList() {
     chargerDonneesLocalStorage();
     
     const debutJournee = new Date();
@@ -1124,9 +1106,9 @@ async function imprimerToutesLesChambresDuJour() {
 
         itemsList.forEach(item => {
             let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.qty || item.quantity, 10) || 0;
-            let price = parseFloat(item.price || item.unit_price) || 0;
-            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            let qty = parseInt(item.quantity || item.qty, 10) || 0;
+            let price = parseFloat(item.unit_price || item.price) || 0;
+            let freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1569,11 +1551,11 @@ function renderManagementDashboard() {
         totalRevenue += rev;
         totalGarments += garments;
         
-        let st = slip.status || 'Pending';
+        let st = slip.status || 'Collected';
         if (statusCounts[st] !== undefined) {
             statusCounts[st]++;
         } else {
-            statusCounts.Pending++;
+            statusCounts.Collected++;
         }
 
         if (slip.created_at) {
@@ -1599,10 +1581,10 @@ function renderManagementDashboard() {
             doughnutChartInstance = new Chart(ctxDoughnut, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Pending', 'Washing', 'Ready', 'Delivered'],
+                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
                     datasets: [{
                         data: [
-                            statusCounts.Pending + statusCounts.Collected, 
+                            statusCounts.Collected + statusCounts.Pending, 
                             statusCounts.Washing, 
                             statusCounts.Ready, 
                             statusCounts.Delivered
@@ -1785,9 +1767,9 @@ function ouvrirModalDetails(id) {
     } else {
         itemsList.forEach(item => {
             let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.qty || item.quantity, 10) || 0;
-            let price = parseFloat(item.price || item.unit_price) || 0;
-            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            let qty = parseInt(item.quantity || item.qty, 10) || 0;
+            let price = parseFloat(item.unit_price || item.price) || 0;
+            let freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1940,9 +1922,9 @@ function modifierBordereauActuel() {
 
         itemsList.forEach(item => {
             const itemName = item.name || item.item_name || 'Article';
-            const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
-            const itemPrice = parseFloat(item.price || item.unit_price) || 0;
-            const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            const itemQty = parseInt(item.quantity || item.qty, 10) || 0;
+            const itemPrice = parseFloat(item.unit_price || item.price) || 0;
+            const freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
             
             let servicePrefix = item.service || currentService || 'laundry';
             if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
