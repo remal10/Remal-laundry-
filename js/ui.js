@@ -126,9 +126,28 @@ async function chargerDonneesEtAbonnementCloud() {
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
+            
             slips.forEach(s => {
                 const roomClean = s.room || s.room_number || s.room_no || '---';
-                slipMap.set(String(s.id), { ...s, room: roomClean, room_number: roomClean });
+                
+                // NORMALISATION DES ARTICLES DÈS LE CHARGEMENT SUPABASE
+                let parsedItems = s.items;
+                if (typeof parsedItems === 'string') {
+                    try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
+                }
+                if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
+                    parsedItems = Object.values(parsedItems);
+                }
+                if (!Array.isArray(parsedItems)) {
+                    parsedItems = [];
+                }
+
+                slipMap.set(String(s.id), { 
+                    ...s, 
+                    room: roomClean, 
+                    room_number: roomClean,
+                    items: parsedItems
+                });
             });
             
             cachedSlips = Array.from(slipMap.values());
@@ -156,7 +175,7 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        // Écouteur temps réel (Realtime) sécurisé
+        // Écouteur temps réel (Realtime)
         supabaseClient.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
                 if (isLocalUpdating) return;
@@ -164,7 +183,21 @@ async function chargerDonneesEtAbonnementCloud() {
                 if (payload.new && payload.new.id) {
                     const idStr = String(payload.new.id);
                     const roomClean = payload.new.room || payload.new.room_number || payload.new.room_no || '---';
-                    const formattedData = { ...payload.new, room: roomClean, room_number: roomClean };
+                    
+                    let parsedItems = payload.new.items;
+                    if (typeof parsedItems === 'string') {
+                        try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
+                    }
+                    if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
+                        parsedItems = Object.values(parsedItems);
+                    }
+
+                    const formattedData = { 
+                        ...payload.new, 
+                        room: roomClean, 
+                        room_number: roomClean,
+                        items: Array.isArray(parsedItems) ? parsedItems : []
+                    };
 
                     const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
                     if (idx !== -1) {
@@ -748,15 +781,19 @@ async function imprimerToutesLesChambresDuJour() {
         const isHangerFolding = (entry.options?.service_style || '').includes('H/F') || (entry.options?.service_style || '').includes('Hanger');
         const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
 
-        const itemsObj = entry.items || {};
-        const itemsList = Array.isArray(itemsObj) ? itemsObj : Object.values(itemsObj);
+        let rawItems = entry.items || [];
+        if (typeof rawItems === 'string') {
+            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+        }
+        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+        
         let tableRowsHtml = '';
 
         itemsList.forEach(item => {
             let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.qty || item.quantity) || 0;
+            let qty = parseInt(item.qty || item.quantity, 10) || 0;
             let price = parseFloat(item.price || item.unit_price) || 0;
-            let freeQty = parseInt(item.freeQty || item.free_quantity) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1382,17 +1419,21 @@ function ouvrirModalDetails(id) {
     const tbody = document.getElementById('modalTableBody'); 
     tbody.innerHTML = '';
 
-    const itemsObj = entry.items || {};
-    const itemsList = Array.isArray(itemsObj) ? itemsObj : Object.values(itemsObj);
+    // PARSING ET NORMALISATION ROBUSTE DE 'ITEMS'
+    let rawItems = entry.items || [];
+    if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
 
     if (itemsList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">No items selected.</td></tr>`;
     } else {
         itemsList.forEach(item => {
             let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.qty || item.quantity) || 0;
+            let qty = parseInt(item.qty || item.quantity, 10) || 0;
             let price = parseFloat(item.price || item.unit_price) || 0;
-            let freeQty = parseInt(item.freeQty || item.free_quantity) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1482,7 +1523,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
-// CORRECTION : MAPPING COMPLET DES ARTICLES LORS DU CHARGEMENT / REFRESH
+// EDIT BORDEREAU - CHARGEMENT SECURE DU PANIER
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -1502,12 +1543,17 @@ function modifierBordereauActuel() {
         document.getElementById('spa-collected-by').value = entry.options?.collected_by || '';
         document.getElementById('spa-delivered-by').value = entry.options?.delivered_by || '';
 
+        let rawItems = entry.items || {};
+        if (typeof rawItems === 'string') {
+            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = {}; }
+        }
+
         const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
         rows.forEach(row => {
             const input = row.querySelector('.spa-qty-input');
             const itemName = row.querySelector('td').innerText.trim();
-            if (input && entry.items && entry.items[itemName]) {
-                input.value = entry.items[itemName].qty || entry.items[itemName].quantity || 0;
+            if (input && rawItems[itemName]) {
+                input.value = rawItems[itemName].qty || rawItems[itemName].quantity || 0;
             } else if (input) {
                 input.value = '';
             }
@@ -1525,35 +1571,35 @@ function modifierBordereauActuel() {
         selectCountType(entry.count_type || 'hotel');
         document.getElementById('recordOptionalNote').value = entry.note || '';
 
-        // Réinitialisation et reconstruction du Panier (cart) avec correspondance universelle
         cart = {};
 
-        if (entry.items) {
-            const itemsList = Array.isArray(entry.items) ? entry.items : Object.values(entry.items);
-            
-            itemsList.forEach(item => {
-                const itemName = item.name || item.item_name || 'Article';
-                const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
-                const itemPrice = parseFloat(item.price || item.unit_price) || 0;
-                const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
-                
-                // Extraction intelligente du service (laundry, dry, ou pressing)
-                let servicePrefix = item.service || currentService || 'laundry';
-                if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
-                    servicePrefix = 'laundry';
-                }
-
-                if (itemQty > 0) {
-                    const key = `${servicePrefix}_${itemName}`;
-                    cart[key] = {
-                        name: itemName,
-                        price: itemPrice,
-                        qty: itemQty,
-                        freeQty: freeQty
-                    };
-                }
-            });
+        let rawItems = entry.items || [];
+        if (typeof rawItems === 'string') {
+            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
         }
+        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+        itemsList.forEach(item => {
+            const itemName = item.name || item.item_name || 'Article';
+            const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
+            const itemPrice = parseFloat(item.price || item.unit_price) || 0;
+            const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            
+            let servicePrefix = item.service || currentService || 'laundry';
+            if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
+                servicePrefix = 'laundry';
+            }
+
+            if (itemQty > 0) {
+                const key = `${servicePrefix}_${itemName}`;
+                cart[key] = {
+                    name: itemName,
+                    price: itemPrice,
+                    qty: itemQty,
+                    freeQty: freeQty
+                };
+            }
+        });
 
         renderItems();
         calculateGlobalTotals();
@@ -1829,6 +1875,12 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
+    let rawItems = newOrder.items || [];
+    if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
         room: roomNum,
@@ -1845,7 +1897,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
         created_by: 'Guest App',
         note: specialNotes,
         quota: pmsQuotaText,
-        items: newOrder.items || [],
+        items: parsedItemsList,
         options: {
             service_style: newOrder.service_type || 'Laundry Collection'
         }
