@@ -2055,41 +2055,39 @@ async function supprimerBordereauActuel() {
 // -------------------------------------------------------------
 // GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SYNCHRO SUPABASE)
 // -------------------------------------------------------------
-async function mettreAJourStatutCommande(requestId, nouveauStatut) {
-    const targetId = requestId || selectedIdForModal;
-    if (!targetId) return;
+async function changerStatutBordereau(recordId, nouveauStatut) {
+    if (!recordId) return;
 
-    isLocalUpdating = true;
-
-    const idStr = String(targetId).trim();
-
-    // 1. Mise à jour instantanée du LocalStorage
-    chargerDonneesLocalStorage();
-    cachedSlips.forEach(s => {
-        if (String(s.id).trim() === idStr) s.status = nouveauStatut;
-    });
-    sauvegarderDonneesLocalStorage();
-
-    // 2. Mise à jour fluide des vues
-    fermerModal();
-    chargerLiveOrders();
-    if (!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-        afficherListeBordereauxLocal();
-    }
-
-    // 3. Envoi asynchrone vers Supabase guest_laundry_requests
+    // 1. Mise à jour Supabase si connecté
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            await supabaseClient
+            const { error } = await supabaseClient
                 .from('guest_laundry_requests')
                 .update({ status: nouveauStatut })
-                .eq('id', idStr);
+                .eq('id', recordId);
+
+            if (error) {
+                console.error("❌ Erreur mise à jour statut Supabase :", error.message);
+                alert("Erreur Supabase: " + error.message);
+                return;
+            }
+            console.log(`✅ Statut Supabase mis à jour : '${nouveauStatut}' (ID: ${recordId})`);
         } catch (e) {
-            console.error("Erreur sync Supabase:", e);
+            console.error("Exception changement statut :", e);
         }
     }
 
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    // 2. Mise à jour du cache local
+    chargerDonneesLocalStorage();
+    const item = cachedSlips.find(s => String(s.id) === String(recordId));
+    if (item) {
+        item.status = nouveauStatut;
+        sauvegarderDonneesLocalStorage();
+    }
+
+    // 3. Rafraîchissement des vues
+    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+    if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
 }
 
 function ouvrirModalBatchStatus() {
