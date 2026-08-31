@@ -53,7 +53,7 @@ function obtenirReceiptId(order) {
     const rawId = String(order.id || '');
     if (!rawId) return '---';
     
-    // Si c'est un UUID v4 (36 caractères), prendre les 6 derniers caractères nettoyés
+    // Traitement propre des UUID v4 de 36 caractères de Supabase
     const cleanId = rawId.replace(/-/g, '').toUpperCase();
     return `REC-${cleanId.slice(-6)}`;
 }
@@ -124,10 +124,10 @@ const i18n = {
         pdfAgency: "एजेंसी:", pdfQuota: "लॉन्ड्री कोटा:", pdfAgent: "कर्मचारी:", pdfPackaging: "पैकेजिंग:",
         pdfItem: "आइटम", pdfQty: "मात्रा", pdfTotal: "कुल", pdfTotalPieces: "कुल पीस:",
         pdfGrandTotalText: "कुल योग:", pdfNotes: "कपड़े के नोट्स / दोष:", pdfProofPhoto: "प्रमाण फोटो:",
-        pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटल काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
+        pdfHotelCount: "होटل काउंट", pdfHotelCountFree: "होटل काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
         pdfGuestCount: "अतिथि काउंट (पूर्ण)", pdfSpaSheet: "वी एलिमेंट स्पा लॉन्ड्रि शीट",
         pdfGivenBy: "द्वारा दिया गया (स्पा):", pdfCollectedBy: "द्वारा एकत्रित:", pdfDeliveredBy: "द्वारा वितरित:",
-        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रسيद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड",
+        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रसीद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड",
         statusPending: "अतिथि अनुरोध लंबित"
     }
 };
