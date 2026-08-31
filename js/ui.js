@@ -1,4 +1,4 @@
-// Interactions Interface Utilisateur, Modals & Initialisation
+// Interactions Interface Utilisateur, Modals & Initialisation (Remal Hotel & Villas)
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
 
@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(colTime && !colTime.value) colTime.value = timeIso;
     if(delDate && !delDate.value) delDate.value = todayIso;
     if(delTime && !delTime.value) delTime.value = timeIso;
+
+    // Démarrage du timer de réinitialisation automatique à 00h00
+    programmerTimerReinitialisationMinuit();
 });
 
 function installPWA() {
@@ -80,6 +83,34 @@ function initTheme() {
 
 // Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
+
+// -------------------------------------------------------------
+// TIMER REINITIALISATION AUTOMATIQUE A 00H00 (ACTIVE ROOMS)
+// -------------------------------------------------------------
+function programmerTimerReinitialisationMinuit() {
+    function verifierFinDeJournee() {
+        const maintenant = new Date();
+        const minuit = new Date();
+        minuit.setHours(24, 0, 0, 0);
+
+        const diff = minuit.getTime() - maintenant.getTime();
+
+        if (diff <= 0) {
+            chargerLiveOrders();
+            return;
+        }
+
+        const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+        const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+
+        const timerEl = document.getElementById('midnightTimer');
+        if (timerEl) timerEl.innerText = `${hrs}:${mins}:${secs}`;
+    }
+
+    verifierFinDeJournee();
+    setInterval(verifierFinDeJournee, 1000);
+}
 
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
@@ -125,7 +156,7 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        // Ecouteur temps réel (Realtime) sécurisé
+        // Écouteur temps réel (Realtime) sécurisé
         supabaseClient.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
                 if (isLocalUpdating) return;
@@ -486,7 +517,7 @@ async function handlePDFUpload(event) {
 }
 
 // -------------------------------------------------------------
-// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS)
+// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS - DEPUIS 00H00)
 // -------------------------------------------------------------
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -494,16 +525,15 @@ function chargerLiveOrders() {
 
     chargerDonneesLocalStorage();
     
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
+    // Définition de 00:00:00 du jour même
+    const debutJournee = new Date();
+    debutJournee.setHours(0, 0, 0, 0);
+
+    // Filtre les bordereaux enregistrés depuis 00h00 aujourd'hui
     const activeTodaySlips = cachedSlips.filter(entry => {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
-        const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-        
-        const activeStatuses = ['pickup_alert', 'Collected', 'Washing', 'Ready', 'Delivered'];
-        return entryDateStr === todayStr || activeStatuses.includes(entry.status);
+        return entryDate >= debutJournee;
     });
 
     activeTodaySlips.sort((a, b) => {
@@ -532,7 +562,7 @@ function chargerLiveOrders() {
     if (activeTodaySlips.length === 0) {
         const emptyMsg = document.createElement('p');
         emptyMsg.className = 'text-xs text-stone-500 text-center py-6 col-span-full';
-        emptyMsg.innerText = 'No active room or SPA records for today.';
+        emptyMsg.innerText = 'No active room or SPA records for today. Auto-cleared at 00:00.';
         container.appendChild(emptyMsg);
         updatePrintButtonCount();
         return;
@@ -563,13 +593,16 @@ function chargerLiveOrders() {
         }
 
         const roomNum = entry.room || entry.room_number || entry.room_no || '---';
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+
         let identifierDisplay = `Room ${roomNum}`;
         if (entry.is_spa) {
+            const todayStr = new Date().toISOString().split('T')[0];
             const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
             identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
         }
 
-        const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${entry.total_clothes || 0} pcs` : `👤 ${entry.guest_name || 'Guest'} · 📦 ${entry.total_clothes || 0} pcs`;
+        const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${entry.total_clothes || 0} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${entry.total_clothes || 0} pcs`;
 
         itemDiv.innerHTML = `
             <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[#DCA773] cursor-pointer" onchange="updatePrintButtonCount()">
@@ -597,15 +630,15 @@ function chargerLiveOrders() {
 
 function ouvrirModalActiveRoomsList() {
     chargerDonneesLocalStorage();
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
+    const debutJournee = new Date();
+    debutJournee.setHours(0, 0, 0, 0);
+
     let activeLaundrySlips = cachedSlips.filter(entry => {
         if (entry.is_spa) return false;
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
-        const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
-        return entryDateStr === todayStr || ['pickup_alert', 'Collected', 'Washing', 'Ready'].includes(entry.status);
+        return entryDate >= debutJournee;
     });
 
     activeLaundrySlips.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
@@ -700,7 +733,8 @@ async function imprimerToutesLesChambresDuJour() {
     batchContainer.innerHTML = '';
 
     slipsToPrint.forEach(entry => {
-        entry.receipt_id = genererIdentifiantBordereau(entry);
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+        entry.receipt_id = receiptId;
         const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
         const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
@@ -787,7 +821,7 @@ async function imprimerToutesLesChambresDuJour() {
                     <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #09090b; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.05em;">REMAL HOTEL & VILLAS</h2>
                     <p style="font-size: 8px; color: #6b7280; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
                     <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'LAUNDRY SERVICE'}</p>
-                    <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 2px 0;">Receipt ID: <strong style="color: #111827;">${entry.receipt_id}</strong></p>
+                    <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 2px 0;">Receipt ID: <strong style="color: #111827;">#${receiptId}</strong></p>
                 </div>
 
                 <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
@@ -889,8 +923,10 @@ function afficherListeBordereauxLocal() {
 
     let filtered = cachedSlips.filter(entry => {
         const roomNum = String(entry.room || entry.room_number || entry.room_no || '').toLowerCase();
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry).toLowerCase() : '';
         const matchRoom = !searchVal || 
             roomNum.includes(searchVal) || 
+            receiptId.includes(searchVal) ||
             String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
             String(entry.spa_serial || '').toLowerCase().includes(searchVal) ||
             (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
@@ -949,6 +985,7 @@ function afficherListeBordereauxLocal() {
             }
 
             const roomNum = entry.room || entry.room_number || entry.room_no || '---';
+            const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
@@ -958,7 +995,7 @@ function afficherListeBordereauxLocal() {
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span>
                         <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
-                        <div class="text-[10px] text-stone-400 mt-1">📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
+                        <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
                         <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> 
@@ -1286,14 +1323,16 @@ function ouvrirModalDetails(id) {
     const entry = cachedSlips.find(e => String(e.id) === String(id));
     if (!entry) return;
 
-    entry.receipt_id = genererIdentifiantBordereau(entry);
+    const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+    entry.receipt_id = receiptId;
+
     const t = i18n[currentLang] || i18n.en;
     const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
     document.getElementById('modalPdfHotelName').innerText = t.pdfHotelName;
     document.getElementById('modalPdfHotelSub').innerText = t.pdfHotelSub;
     document.getElementById('modalPdfLaundryService').innerText = entry.is_spa ? t.pdfSpaSheet : t.pdfLaundryService;
-    document.getElementById('modalReceiptIdDisplay').innerText = entry.receipt_id;
+    document.getElementById('modalReceiptIdDisplay').innerText = `#${receiptId}`;
     document.getElementById('modalThItem').innerText = t.pdfItem;
     document.getElementById('modalThQty').innerText = t.pdfQty;
     document.getElementById('modalThTotal').innerText = t.pdfTotal;
@@ -1437,7 +1476,7 @@ function ouvrirModalDetails(id) {
         pContainer.innerHTML = '';
     }
 
-    const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
+    const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
     document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
     document.getElementById('detailModal').classList.remove('hidden');
@@ -1567,7 +1606,7 @@ async function genererPDF(entryId = null) {
         ouvrirModalDetails(targetId);
     }
 
-    entry.receipt_id = genererIdentifiantBordereau(entry);
+    entry.receipt_id = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
     const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
     const fileTargetName = `REMAL_${dateIso}_RM-${roomNum}`;
 
