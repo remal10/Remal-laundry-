@@ -52,16 +52,20 @@ function showLuxuryNotificationBanner(normalizedData) {
     const totalPcs = normalizedData.total_clothes || normalizedData.total_pieces || 0;
 
     if (bannerText) {
-        bannerText.innerText = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} piece(s) submitted.`;
+        bannerText.innerText = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs`;
     }
 
     if (banner) {
+        // Forcer le retrait du masquage
         banner.classList.remove('hidden');
+        banner.classList.add('animate-bounce');
         banner.style.display = 'flex';
     }
 
+    // Jouer le son
     playLuxuryHotelChime();
 }
+
 
 // Normalisation des données envoyées par le Guest Portal
 function processIncomingPayload(rawData) {
