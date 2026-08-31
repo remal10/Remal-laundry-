@@ -35,19 +35,19 @@
     <!-- STYLES EXTRAITS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen pb-16">
+<body class="min-h-screen pb-16 bg-[#12100e] text-stone-200">
 
-   <!-- VIP REALTIME NOTIFICATION BANNER (ENGLISH) -->
-<div id="guestRequestNotificationBanner" class="hidden fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce flex justify-between items-center no-print">
-    <div class="flex items-center gap-4">
-        <span class="text-2xl">🔔</span>
-        <div>
-            <p class="text-sm font-black uppercase tracking-wider">New Live Guest Request!</p>
-            <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Room --- just submitted a laundry order.</p>
+    <!-- VIP REALTIME NOTIFICATION BANNER (ALiGNÉE AVEC LE SCRIPT REALTIME) -->
+    <div id="guestBannerContainer" class="hidden fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce flex justify-between items-center no-print">
+        <div class="flex items-center gap-4">
+            <span class="text-2xl">🔔</span>
+            <div>
+                <p class="text-sm font-black uppercase tracking-wider">New Live Guest Request!</p>
+                <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Room --- just submitted a laundry order.</p>
+            </div>
         </div>
+        <button onclick="dismissGuestNotificationBanner()" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">✕</button>
     </div>
-    <button onclick="document.getElementById('guestRequestNotificationBanner').classList.add('hidden')" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">✕</button>
-</div>
 
     <div id="pwaInstallBanner" class="hidden bg-[#181614] border-b border-[#DCA773] px-6 py-3 flex justify-between items-center no-print">
         <div class="flex items-center gap-3">
@@ -245,7 +245,7 @@
                         <input type="file" id="photoInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)">
                         <img id="imagePreview" class="hidden w-full max-h-48 object-cover rounded-2xl mt-2 border border-[#2f2820]" alt="Preuve">
 
-                        <button onclick="sauvegarderBordereauLocal()" id="btnSaveRecord" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 rounded-2xl text-sm shadow-lg transition tracking-wider uppercase">💾 Save Record</button>
+                        <button onclick="sauvegarderBordereauDepuisFormulaire()" id="btnSaveRecord" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 rounded-2xl text-sm shadow-lg transition tracking-wider uppercase">💾 Save Record</button>
                     </div>
                 </div>
 
@@ -634,6 +634,7 @@
         </div>
     </div>
 
+    <!-- MODALE DETAILS RECEIPT -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
             
@@ -708,23 +709,79 @@
         </div>
     </div>
 
+    <!-- AUTHENTICATION STAFF MODAL -->
+    <div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
+            <div>
+                <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">
+                    🔐
+                </div>
+                <h2 class="font-serif-luxury text-2xl font-bold text-[#DCA773]">Staff Authentication</h2>
+                <p class="text-xs text-stone-400 mt-1">Enter your 4-digit PIN code to access Laundry OS.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <input type="password" id="staffPinInput" maxlength="6" placeholder="••••" class="w-full text-center tracking-[1em] text-2xl py-4 remal-input rounded-2xl font-bold outline-none border border-[#2f2820] focus:border-[#DCA773]">
+                </div>
+                <div id="loginErrorMsg" class="text-xs text-rose-400 font-semibold hidden">Invalid PIN code. Please try again.</div>
+                
+                <button onclick="verifyStaffPin()" class="w-full py-4 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-2xl transition shadow-lg text-sm">
+                    Unlock Session
+                </button>
+            </div>
+
+            <div class="pt-2 border-t border-[#2f2820] flex justify-between items-center text-[10px] text-stone-500">
+                <span>Remal Laundry OS v2.6</span>
+                <span id="currentLoggedStaff" class="text-stone-400">Locked</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE STATUT EN LOT -->
+    <div id="batchStatusModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#181614] border border-[#2f2820] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-[#DCA773] text-center">🔄 Update Status for Selected Rooms</h3>
+            <p id="batchStatusCountLabel" class="text-xs text-stone-400 text-center font-medium">0 items selected</p>
+            
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="appliquerStatutEnLot('Collected')" class="py-3 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl transition border border-stone-700">
+                    🧺 Collected
+                </button>
+                <button onclick="appliquerStatutEnLot('Washing')" class="py-3 px-2 bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 text-xs font-bold rounded-xl transition">
+                    🧼 Washing
+                </button>
+                <button onclick="appliquerStatutEnLot('Ready')" class="py-3 px-2 bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs font-bold rounded-xl transition">
+                    ✨ Ready
+                </button>
+                <button onclick="appliquerStatutEnLot('Delivered')" class="py-3 px-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-bold rounded-xl transition">
+                    🚚 Delivered
+                </button>
+            </div>
+
+            <button onclick="fermerModalBatchStatus()" class="w-full py-2.5 bg-stone-900 text-stone-400 font-bold text-xs rounded-xl hover:bg-stone-800 transition mt-2 border border-[#2f2820]">
+                Cancel
+            </button>
+        </div>
+    </div>
+
     <!-- BIBLIOTHÈQUES EXTERNES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- CHARGEMENT DES SCRIPTS DE L'APPLICATION (DANS L'ORDRE STRICT) -->
+    <!-- CHARGEMENT DES SCRIPTS DE L'APPLICATION (ORDRE STRICT) -->
     <script src="js/config.js"></script>
     <script src="js/laundry.js"></script>
     <script src="js/realtime-listener.js"></script>
     <script src="js/ui.js"></script>
 
-    <!-- SCRIPT DU SERVICE WORKER INLINE -->
+    <!-- SERVICE WORKER PWA INLINE -->
     <script>
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v29';
+                const CACHE_NAME = 'remal-pwa-v30';
                 const ASSETS = [
                     './',
                     'style.css',
@@ -762,63 +819,11 @@
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e;
-            document.getElementById('pwaInstallBanner').classList.remove('hidden');
+            e.preventDefault(); 
+            deferredPrompt = e;
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.classList.remove('hidden');
         });
     </script>
-    <!-- SCREEN LOCK / PIN LOGIN MODAL FOR LAUNDRY OS -->
-<div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
-        <div>
-            <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">
-                🔐
-            </div>
-            <h2 class="font-serif-luxury text-2xl font-bold text-[#DCA773]">Staff Authentication</h2>
-            <p class="text-xs text-stone-400 mt-1">Enter your 4-digit PIN code to access Laundry OS.</p>
-        </div>
-
-        <div class="space-y-4">
-            <div>
-                <input type="password" id="staffPinInput" maxlength="6" placeholder="••••" class="w-full text-center tracking-[1em] text-2xl py-4 remal-input rounded-2xl font-bold outline-none border border-[#2f2820] focus:border-[#DCA773]">
-            </div>
-            <div id="loginErrorMsg" class="text-xs text-rose-400 font-semibold hidden">Invalid PIN code. Please try again.</div>
-            
-            <button onclick="verifyStaffPin()" class="w-full py-4 bg-[#DCA773] hover:c-hover text-stone-950 font-bold rounded-2xl transition shadow-lg text-sm">
-                Unlock Session
-            </button>
-        </div>
-
-        <div class="pt-2 border-t border-[#2f2820] flex justify-between items-center text-[10px] text-stone-500">
-            <span>Remal Laundry OS v2.6</span>
-            <span id="currentLoggedStaff" class="text-stone-400">Locked</span>
-        </div>
-    </div>
-</div>
-    <!-- Modale pour changer le statut en lot -->
-<div id="batchStatusModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#181614] border border-[#2f2820] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
-        <h3 class="text-base font-bold text-[#DCA773] text-center">🔄 Update Status for Selected Rooms</h3>
-        <p id="batchStatusCountLabel" class="text-xs text-stone-400 text-center font-medium">0 items selected</p>
-        
-        <div class="grid grid-cols-2 gap-2 pt-2">
-            <button onclick="appliquerStatutEnLot('Collected')" class="py-3 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl transition border border-stone-700">
-                🧺 Collected
-            </button>
-            <button onclick="appliquerStatutEnLot('Washing')" class="py-3 px-2 bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 text-xs font-bold rounded-xl transition">
-                🧼 Washing
-            </button>
-            <button onclick="appliquerStatutEnLot('Ready')" class="py-3 px-2 bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs font-bold rounded-xl transition">
-                ✨ Ready
-            </button>
-            <button onclick="appliquerStatutEnLot('Delivered')" class="py-3 px-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-bold rounded-xl transition">
-                🚚 Delivered
-            </button>
-        </div>
-
-        <button onclick="fermerModalBatchStatus()" class="w-full py-2.5 bg-stone-900 text-stone-400 font-bold text-xs rounded-xl hover:bg-stone-800 transition mt-2 border border-[#2f2820]">
-            Cancel
-        </button>
-    </div>
-</div>
 </body>
 </html>
