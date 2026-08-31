@@ -2058,12 +2058,11 @@ async function supprimerBordereauActuel() {
 async function changerStatutBordereau(recordId, nouveauStatut) {
     if (!recordId) return;
 
-    // 1. Mise à jour Supabase si connecté
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const { error } = await supabaseClient
                 .from('guest_laundry_requests')
-                .update({ status: nouveauStatut })
+                .update({ status: nouveauStatut }) // 👈 Clé Supabase : "status"
                 .eq('id', recordId);
 
             if (error) {
@@ -2071,13 +2070,13 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
                 alert("Erreur Supabase: " + error.message);
                 return;
             }
-            console.log(`✅ Statut Supabase mis à jour : '${nouveauStatut}' (ID: ${recordId})`);
+            console.log(`✅ Statut mis à jour dans Supabase : '${nouveauStatut}'`);
         } catch (e) {
             console.error("Exception changement statut :", e);
         }
     }
 
-    // 2. Mise à jour du cache local
+    // Mise à jour du cache local
     chargerDonneesLocalStorage();
     const item = cachedSlips.find(s => String(s.id) === String(recordId));
     if (item) {
@@ -2085,22 +2084,8 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
         sauvegarderDonneesLocalStorage();
     }
 
-    // 3. Rafraîchissement des vues
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
-}
-
-function ouvrirModalBatchStatus() {
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) {
-        alert("⚠️ Please select at least one room checkbox.");
-        return;
-    }
-    const countLabel = document.getElementById('batchStatusCountLabel');
-    if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
-    
-    const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.remove('hidden');
 }
 
 function fermerModalBatchStatus() {
