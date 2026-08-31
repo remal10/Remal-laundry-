@@ -44,7 +44,7 @@ function playLuxuryHotelChime() {
 
 // Affichage sécurisé de la bannière VIP en Anglais
 function showLuxuryNotificationBanner(normalizedData) {
-    const banner = document.getElementById('guestRequestNotificationBanner') || document.getElementById('guestBannerContainer');
+    const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
 
     const roomNum = normalizedData.room || normalizedData.room_number || '---';
