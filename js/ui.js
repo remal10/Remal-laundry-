@@ -84,6 +84,23 @@ function initTheme() {
 // Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
 
+// Helper universel de normalisation des articles (Guest App <-> Laundry OS)
+function normaliserItemsTableau(rawItems) {
+    let parsed = rawItems;
+    if (typeof parsed === 'string') {
+        try { parsed = JSON.parse(parsed); } catch(e) { parsed = []; }
+    }
+    let itemsList = Array.isArray(parsed) ? parsed : (typeof parsed === 'object' && parsed !== null ? Object.values(parsed) : []);
+    
+    return itemsList.map(item => ({
+        name: item.name || item.item_name || item.title || 'Article',
+        qty: parseInt(item.qty || item.quantity || item.count, 10) || 0,
+        price: parseFloat(item.price || item.unit_price || item.rate) || 0,
+        freeQty: parseInt(item.freeQty || item.free_quantity, 10) || 0,
+        service: item.service || 'laundry'
+    }));
+}
+
 // -------------------------------------------------------------
 // TIMER REINITIALISATION AUTOMATIQUE A 00H00 (ACTIVE ROOMS)
 // -------------------------------------------------------------
@@ -129,24 +146,13 @@ async function chargerDonneesEtAbonnementCloud() {
             
             slips.forEach(s => {
                 const roomClean = s.room || s.room_number || s.room_no || '---';
-                
-                // NORMALISATION DES ARTICLES DÈS LE CHARGEMENT SUPABASE
-                let parsedItems = s.items;
-                if (typeof parsedItems === 'string') {
-                    try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
-                }
-                if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
-                    parsedItems = Object.values(parsedItems);
-                }
-                if (!Array.isArray(parsedItems)) {
-                    parsedItems = [];
-                }
+                const normalizedItems = normaliserItemsTableau(s.items);
 
                 slipMap.set(String(s.id), { 
                     ...s, 
                     room: roomClean, 
                     room_number: roomClean,
-                    items: parsedItems
+                    items: normalizedItems
                 });
             });
             
@@ -183,20 +189,13 @@ async function chargerDonneesEtAbonnementCloud() {
                 if (payload.new && payload.new.id) {
                     const idStr = String(payload.new.id);
                     const roomClean = payload.new.room || payload.new.room_number || payload.new.room_no || '---';
-                    
-                    let parsedItems = payload.new.items;
-                    if (typeof parsedItems === 'string') {
-                        try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
-                    }
-                    if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
-                        parsedItems = Object.values(parsedItems);
-                    }
+                    const normalizedItems = normaliserItemsTableau(payload.new.items);
 
                     const formattedData = { 
                         ...payload.new, 
                         room: roomClean, 
                         room_number: roomClean,
-                        items: Array.isArray(parsedItems) ? parsedItems : []
+                        items: normalizedItems
                     };
 
                     const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
@@ -781,19 +780,14 @@ async function imprimerToutesLesChambresDuJour() {
         const isHangerFolding = (entry.options?.service_style || '').includes('H/F') || (entry.options?.service_style || '').includes('Hanger');
         const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
 
-        let rawItems = entry.items || [];
-        if (typeof rawItems === 'string') {
-            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
-        }
-        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
-        
+        const itemsList = normaliserItemsTableau(entry.items);
         let tableRowsHtml = '';
 
         itemsList.forEach(item => {
-            let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.qty || item.quantity, 10) || 0;
-            let price = parseFloat(item.price || item.unit_price) || 0;
-            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            let name = item.name;
+            let qty = item.qty;
+            let price = item.price;
+            let freeQty = item.freeQty;
 
             if (qty <= 0) return;
 
@@ -1419,21 +1413,16 @@ function ouvrirModalDetails(id) {
     const tbody = document.getElementById('modalTableBody'); 
     tbody.innerHTML = '';
 
-    // PARSING ET NORMALISATION ROBUSTE DE 'ITEMS'
-    let rawItems = entry.items || [];
-    if (typeof rawItems === 'string') {
-        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
-    }
-    const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+    const itemsList = normaliserItemsTableau(entry.items);
 
     if (itemsList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-stone-400 font-semibold">No items selected.</td></tr>`;
     } else {
         itemsList.forEach(item => {
-            let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.qty || item.quantity, 10) || 0;
-            let price = parseFloat(item.price || item.unit_price) || 0;
-            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            let name = item.name;
+            let qty = item.qty;
+            let price = item.price;
+            let freeQty = item.freeQty;
 
             if (qty <= 0) return;
 
@@ -1573,17 +1562,13 @@ function modifierBordereauActuel() {
 
         cart = {};
 
-        let rawItems = entry.items || [];
-        if (typeof rawItems === 'string') {
-            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
-        }
-        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+        const itemsList = normaliserItemsTableau(entry.items);
 
         itemsList.forEach(item => {
-            const itemName = item.name || item.item_name || 'Article';
-            const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
-            const itemPrice = parseFloat(item.price || item.unit_price) || 0;
-            const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
+            const itemName = item.name;
+            const itemQty = item.qty;
+            const itemPrice = item.price;
+            const freeQty = item.freeQty;
             
             let servicePrefix = item.service || currentService || 'laundry';
             if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
@@ -1875,11 +1860,7 @@ window.onNewGuestRequestReceived = function(newOrder) {
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
-    let rawItems = newOrder.items || [];
-    if (typeof rawItems === 'string') {
-        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
-    }
-    const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+    const parsedItemsList = normaliserItemsTableau(newOrder.items);
 
     const slipRecord = {
         id: String(newOrder.id || Date.now()),
