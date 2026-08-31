@@ -180,6 +180,16 @@ async function sauvegarderBordereauLocal() {
 
     const pmsData = pmsDatabase[roomNum] || { guestName: 'Unknown Guest', roomTyp: 'DLXR', agency: 'Direct', quotaText: 'Chargeable', isChargeable: true };
 
+    // Conserver le statut existant s'il s'agit d'une modification, sinon mettre 'Collected'
+    chargerDonneesLocalStorage();
+    let currentStatus = 'Collected';
+    if (editingId) {
+        const existingRecord = cachedSlips.find(s => String(s.id) === String(editingId));
+        if (existingRecord && existingRecord.status) {
+            currentStatus = existingRecord.status;
+        }
+    }
+
     const payloadSupabase = {
         room_number: roomNum,
         guest_name: pmsData.guestName,
@@ -192,27 +202,23 @@ async function sauvegarderBordereauLocal() {
         vat: vat,
         grand_total: grandTotal,
         special_notes: optionalNote,
-        status: 'Collected',
-        accepted_policy: true,
-        created_by: currentStaffUser ? currentStaffUser.name : 'Staff'
+        status: currentStatus,
+        accepted_policy: true
     };
 
     isLocalUpdating = true;
     let assignedId = editingId;
 
-    // Envoi vers Supabase (guest_laundry_requests) sans forcer d'ID local lors de la création
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             let res;
             if (editingId && editingId.length === 36) {
-                // UPDATE sur l'UUID existant
                 res = await supabaseClient
                     .from('guest_laundry_requests')
                     .update(payloadSupabase)
                     .eq('id', editingId)
                     .select();
             } else {
-                // INSERT sans ID (PostgreSQL génère l'UUID v4 automatiquement)
                 res = await supabaseClient
                     .from('guest_laundry_requests')
                     .insert([payloadSupabase])
@@ -232,7 +238,6 @@ async function sauvegarderBordereauLocal() {
 
     if (!assignedId) assignedId = String(Date.now());
 
-    // Format Miroir Local (Rétrocompatible)
     const slipRecord = {
         ...payloadSupabase,
         id: assignedId,
@@ -250,7 +255,6 @@ async function sauvegarderBordereauLocal() {
     };
     slipRecord.receipt_id = obtenirReceiptId(slipRecord);
 
-    chargerDonneesLocalStorage();
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
@@ -514,8 +518,7 @@ async function validateAndSaveSpaReceipt() {
         grand_total: grandTotalValue,
         special_notes: `Collected by: ${collectedBy} | Delivered by: ${deliveredBy}`,
         status: 'Collected',
-        accepted_policy: true,
-        created_by: 'Staff'
+        accepted_policy: true
     };
 
     isLocalUpdating = true;
@@ -566,7 +569,7 @@ async function validateAndSaveSpaReceipt() {
         cachedSlips[index] = targetRecord;
         alert(`✅ SPA Receipt #${serialNo} updated!`);
     } else {
-        cachedSlips.unshift(slipRecord);
+        cachedSlips.unshift(targetRecord);
         alert(`✅ SPA Receipt #${serialNo} saved!`);
     }
 
