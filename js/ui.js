@@ -190,12 +190,12 @@ async function chargerDonneesEtAbonnementCloud() {
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
+            // Restaure d'abord les éléments existants du LocalStorage
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
             
             slips.forEach(s => {
                 const roomClean = s.room || s.room_number || s.room_no || '---';
                 
-                // NORMALISATION DES ARTICLES DÈS LE CHARGEMENT SUPABASE
                 let parsedItems = s.items;
                 if (typeof parsedItems === 'string') {
                     try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
@@ -207,7 +207,10 @@ async function chargerDonneesEtAbonnementCloud() {
                     parsedItems = [];
                 }
 
+                // Fusionne en conservant la version la plus à jour
+                const existing = slipMap.get(String(s.id));
                 slipMap.set(String(s.id), { 
+                    ...existing,
                     ...s, 
                     room: roomClean, 
                     room_number: roomClean,
@@ -570,7 +573,6 @@ function reinitialiserFormulaire() {
 
     validateRoomNumber();
     
-    // Réinitialisation du panier et suppression du brouillon local
     cart = {}; 
     localStorage.removeItem('remal_draft_cart');
 
@@ -622,7 +624,7 @@ async function handlePDFUpload(event) {
 }
 
 // -------------------------------------------------------------
-// ENREGISTREMENT ET MODIFICATION DES BORDEREAUX DANS SUPABASE ET LOCALSTORAGE
+// ENREGISTREMENT ET MODIFICATION DANS SUPABASE ET LOCALSTORAGE
 // -------------------------------------------------------------
 async function sauvegarderBordereauDepuisFormulaire() {
     const roomNum = document.getElementById('roomNumber').value.trim();
@@ -663,33 +665,39 @@ async function sauvegarderBordereauDepuisFormulaire() {
 
     const pmsInfo = pmsDatabase[roomNum] || {};
 
+    // Récupérer le bordereau existant pour ne pas perdre created_at ou l'ID Supabase
+    chargerDonneesLocalStorage();
+    const originalEntry = cachedSlips.find(s => String(s.id) === recordId) || {};
+
     const slipRecord = {
+        ...originalEntry,
         id: recordId,
         room: roomNum,
         room_number: roomNum,
-        guest_name: pmsInfo.guestName || 'Guest',
-        room_typ: pmsInfo.roomTyp || 'DLXR',
-        agency: pmsInfo.agency || 'Direct',
-        quota: pmsInfo.quotaText || 'Chargeable',
+        guest_name: originalEntry.guest_name || pmsInfo.guestName || 'Guest',
+        room_typ: originalEntry.room_typ || pmsInfo.roomTyp || 'DLXR',
+        agency: originalEntry.agency || pmsInfo.agency || 'Direct',
+        quota: originalEntry.quota || pmsInfo.quotaText || 'Chargeable',
         count_type: currentCountType,
-        created_at: new Date().toISOString(),
+        created_at: originalEntry.created_at || new Date().toISOString(),
         total_clothes: totalPcs,
         total: grandTotal,
-        status: 'Collected',
+        subtotal: grandTotal,
+        status: originalEntry.status || 'Collected',
         is_spa: false,
-        created_by: currentStaffUser ? currentStaffUser.name : 'Staff',
+        created_by: currentStaffUser ? currentStaffUser.name : (originalEntry.created_by || 'Staff'),
         note: noteVal,
-        photo: currentImageData || null,
+        photo: currentImageData || originalEntry.photo || null,
         items: itemsArray,
         options: {
+            ...(originalEntry.options || {}),
             service_style: serviceStyle
         }
     };
 
     isLocalUpdating = true;
 
-    // 1. Sauvegarde dans le localStorage
-    chargerDonneesLocalStorage();
+    // 1. Sauvegarde instantanée dans LocalStorage
     const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
@@ -698,33 +706,47 @@ async function sauvegarderBordereauDepuisFormulaire() {
     }
     sauvegarderDonneesLocalStorage();
 
-    // 2. Envoi / Synchronisation vers Supabase
+    // 2. ÉCRITURE DANS SUPABASE (S'assure que le Guest voit aussi la modification)
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            await supabaseClient
+            const payloadSupabase = {
+                id: recordId,
+                room: roomNum,
+                room_number: roomNum,
+                guest_name: slipRecord.guest_name,
+                room_typ: slipRecord.room_typ,
+                agency: slipRecord.agency,
+                quota: slipRecord.quota,
+                count_type: slipRecord.count_type,
+                total_clothes: totalPcs,
+                total_pieces: totalPcs,
+                total: grandTotal,
+                grand_total: grandTotal,
+                subtotal: grandTotal,
+                status: slipRecord.status,
+                is_spa: false,
+                created_by: slipRecord.created_by,
+                note: noteVal,
+                special_notes: noteVal,
+                photo: slipRecord.photo,
+                items: JSON.stringify(itemsArray),
+                options: slipRecord.options,
+                updated_at: new Date().toISOString()
+            };
+
+            // Essai d'écriture avec ID sous forme de texte et sous forme de nombre si nécessaire
+            let { error: err1 } = await supabaseClient
                 .from('guest_laundry_requests')
-                .upsert({
-                    id: recordId,
-                    room: roomNum,
-                    room_number: roomNum,
-                    guest_name: slipRecord.guest_name,
-                    room_typ: slipRecord.room_typ,
-                    agency: slipRecord.agency,
-                    quota: slipRecord.quota,
-                    count_type: slipRecord.count_type,
-                    total_clothes: slipRecord.total_clothes,
-                    total: slipRecord.total,
-                    status: slipRecord.status,
-                    is_spa: false,
-                    created_by: slipRecord.created_by,
-                    note: slipRecord.note,
-                    photo: slipRecord.photo,
-                    items: JSON.stringify(slipRecord.items),
-                    options: slipRecord.options,
-                    updated_at: new Date().toISOString()
-                });
+                .upsert(payloadSupabase, { onConflict: 'id' });
+
+            if (err1 && !isNaN(Number(recordId))) {
+                payloadSupabase.id = Number(recordId);
+                await supabaseClient
+                    .from('guest_laundry_requests')
+                    .upsert(payloadSupabase, { onConflict: 'id' });
+            }
         } catch (e) {
-            console.error("Erreur d'enregistrement Supabase :", e);
+            console.error("Erreur réécriture dans Supabase :", e);
         }
     }
 
@@ -733,11 +755,126 @@ async function sauvegarderBordereauDepuisFormulaire() {
     chargerLiveOrders();
 
     setTimeout(() => { isLocalUpdating = false; }, 1000);
-    alert("✅ Laundry record saved and synchronized successfully!");
+    alert("✅ Record updated in LocalStorage and synced to Supabase!");
 }
 
 // -------------------------------------------------------------
-// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS - DEPUIS 00H00)
+// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS (SUPABASE + LOCALSTORAGE)
+// -------------------------------------------------------------
+window.onNewGuestRequestReceived = async function(newOrder) {
+    if (!newOrder) return;
+
+    console.log("📥 New guest request received:", newOrder);
+
+    const recordId = String(newOrder.id || Date.now());
+    const roomNum = String(newOrder.room_number || newOrder.room || newOrder.room_no || '---');
+    const guestName = newOrder.guest_name || 'Guest';
+    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
+    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
+    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
+    const pmsQuotaText = newOrder.pms_quota || 'Standard';
+    const isExtra = newOrder.extra_charged || false;
+
+    let rawItems = newOrder.items || [];
+    if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+    const pmsInfo = pmsDatabase[roomNum] || {};
+
+    const slipRecord = {
+        id: recordId,
+        room: roomNum,
+        room_number: roomNum,
+        guest_name: guestName,
+        room_typ: pmsInfo.roomTyp || 'DLXR',
+        agency: pmsInfo.agency || 'Direct',
+        quota: pmsQuotaText,
+        count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
+        created_at: newOrder.created_at || new Date().toISOString(),
+        total_clothes: totalPcs,
+        total: grandTotal,
+        subtotal: parseFloat(newOrder.subtotal) || grandTotal,
+        vat: parseFloat(newOrder.vat) || 0,
+        status: newOrder.status || 'pickup_alert',
+        is_spa: false,
+        created_by: 'Guest App',
+        note: specialNotes,
+        items: parsedItemsList,
+        options: {
+            service_style: newOrder.service_type || 'Laundry Collection'
+        }
+    };
+
+    // 1. Sauvegarde locale immédiate
+    try {
+        chargerDonneesLocalStorage();
+        if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
+            const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+            if (existingIndex !== -1) {
+                cachedSlips[existingIndex] = { ...cachedSlips[existingIndex], ...slipRecord };
+            } else {
+                cachedSlips.unshift(slipRecord);
+            }
+            sauvegarderDonneesLocalStorage();
+        }
+    } catch (e) {
+        console.warn("Local storage write error:", e);
+    }
+
+    // 2. Assurer la présence dans la table Supabase guest_laundry_requests
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient
+                .from('guest_laundry_requests')
+                .upsert({
+                    id: recordId,
+                    room: roomNum,
+                    room_number: roomNum,
+                    guest_name: guestName,
+                    room_typ: slipRecord.room_typ,
+                    agency: slipRecord.agency,
+                    quota: slipRecord.quota,
+                    count_type: slipRecord.count_type,
+                    total_clothes: totalPcs,
+                    total_pieces: totalPcs,
+                    total: grandTotal,
+                    grand_total: grandTotal,
+                    status: slipRecord.status,
+                    is_spa: false,
+                    created_by: 'Guest App',
+                    note: specialNotes,
+                    items: JSON.stringify(parsedItemsList),
+                    options: slipRecord.options,
+                    created_at: slipRecord.created_at
+                }, { onConflict: 'id' });
+        } catch (e) {
+            console.error("Erreur de persistance initiale Supabase :", e);
+        }
+    }
+
+    try {
+        if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+    } catch (e) {}
+
+    const bannerContainer = document.getElementById('guestBannerContainer');
+    const bannerText = document.getElementById('guestBannerText');
+    const formattedMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
+
+    if (bannerText) bannerText.innerText = formattedMessage;
+    if (bannerContainer) {
+        bannerContainer.classList.remove('hidden');
+        bannerContainer.style.display = 'flex';
+    }
+
+    try {
+        if (typeof playNotificationSound === 'function') playNotificationSound();
+    } catch (e) {}
+};
+
+// -------------------------------------------------------------
+// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS)
 // -------------------------------------------------------------
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -745,11 +882,9 @@ function chargerLiveOrders() {
 
     chargerDonneesLocalStorage();
     
-    // Définition de 00:00:00 du jour même
     const debutJournee = new Date();
     debutJournee.setHours(0, 0, 0, 0);
 
-    // Filtre les bordereaux enregistrés depuis 00h00 aujourd'hui
     const activeTodaySlips = cachedSlips.filter(entry => {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
@@ -1606,7 +1741,6 @@ function ouvrirModalDetails(id) {
     const tbody = document.getElementById('modalTableBody'); 
     tbody.innerHTML = '';
 
-    // PARSING ET NORMALISATION ROBUSTE DE 'ITEMS'
     let rawItems = entry.items || [];
     if (typeof rawItems === 'string') {
         try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
@@ -1710,7 +1844,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
-// EDIT BORDEREAU - CHARGEMENT SECURE DU PANIER
+// EDIT BORDEREAU - CHARGEMENT DU PANIER POUR MODIFICATION
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -2046,122 +2180,6 @@ async function supprimerBordereauxEnLot() {
     setTimeout(() => { isLocalUpdating = false; }, 1000);
     alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
 }
-
-// -------------------------------------------------------------
-// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS (SUPABASE + LOCALSTORAGE SYNCHRO)
-// -------------------------------------------------------------
-window.onNewGuestRequestReceived = async function(newOrder) {
-    if (!newOrder) return;
-
-    console.log("📥 New guest request received:", newOrder);
-
-    const recordId = String(newOrder.id || Date.now());
-    const roomNum = String(newOrder.room_number || newOrder.room || newOrder.room_no || '---');
-    const guestName = newOrder.guest_name || 'Guest';
-    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
-    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
-    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
-    const pmsQuotaText = newOrder.pms_quota || 'Standard';
-    const isExtra = newOrder.extra_charged || false;
-
-    let rawItems = newOrder.items || [];
-    if (typeof rawItems === 'string') {
-        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
-    }
-    const parsedItemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
-
-    const pmsInfo = pmsDatabase[roomNum] || {};
-
-    const slipRecord = {
-        id: recordId,
-        room: roomNum,
-        room_number: roomNum,
-        guest_name: guestName,
-        room_typ: pmsInfo.roomTyp || 'DLXR',
-        agency: pmsInfo.agency || 'Direct',
-        quota: pmsQuotaText,
-        count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
-        created_at: newOrder.created_at || new Date().toISOString(),
-        total_clothes: totalPcs,
-        total: grandTotal,
-        subtotal: parseFloat(newOrder.subtotal) || grandTotal,
-        vat: parseFloat(newOrder.vat) || 0,
-        status: newOrder.status || 'pickup_alert',
-        is_spa: false,
-        created_by: 'Guest App',
-        note: specialNotes,
-        items: parsedItemsList,
-        options: {
-            service_style: newOrder.service_type || 'Laundry Collection'
-        }
-    };
-
-    // 1. Sauvegarde instantanée dans le LocalStorage
-    try {
-        if (typeof chargerDonneesLocalStorage === 'function') chargerDonneesLocalStorage();
-        
-        if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
-            const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
-            if (existingIndex !== -1) {
-                cachedSlips[existingIndex] = slipRecord;
-            } else {
-                cachedSlips.unshift(slipRecord);
-            }
-            if (typeof sauvegarderDonneesLocalStorage === 'function') sauvegarderDonneesLocalStorage();
-        }
-    } catch (e) {
-        console.warn("Local storage write error:", e);
-    }
-
-    // 2. Persistance dans la table Supabase `guest_laundry_requests` pour la pérennité après Refresh
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            await supabaseClient
-                .from('guest_laundry_requests')
-                .upsert({
-                    id: recordId,
-                    room: roomNum,
-                    room_number: roomNum,
-                    guest_name: guestName,
-                    room_typ: slipRecord.room_typ,
-                    agency: slipRecord.agency,
-                    quota: slipRecord.quota,
-                    count_type: slipRecord.count_type,
-                    total_clothes: totalPcs,
-                    total: grandTotal,
-                    status: slipRecord.status,
-                    is_spa: false,
-                    created_by: 'Guest App',
-                    note: specialNotes,
-                    items: JSON.stringify(parsedItemsList),
-                    options: slipRecord.options,
-                    created_at: slipRecord.created_at
-                });
-        } catch (e) {
-            console.error("Erreur de persistance de la demande Guest sur Supabase:", e);
-        }
-    }
-
-    try {
-        if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
-    } catch (e) {}
-
-    const bannerContainer = document.getElementById('guestBannerContainer');
-    const bannerText = document.getElementById('guestBannerText');
-    
-    const formattedMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
-
-    if (bannerText) bannerText.innerText = formattedMessage;
-
-    if (bannerContainer) {
-        bannerContainer.classList.remove('hidden');
-        bannerContainer.style.display = 'flex';
-    }
-
-    try {
-        if (typeof playNotificationSound === 'function') playNotificationSound();
-    } catch (e) {}
-};
 
 function dismissGuestNotificationBanner() {
     const bannerContainer = document.getElementById('guestBannerContainer');
