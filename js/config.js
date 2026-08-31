@@ -1,8 +1,11 @@
-// Configuration & Variables Globales (Remal Hotel & Villas)
+// ==========================================
+// CONFIGURATION & VARIABLES GLOBALES (REMAL LAUNDRY OS)
+// ==========================================
+
 let deferredPrompt;
 let globalDirHandle = null;
 
-// URL et Clé Anon Supabase
+// URL et Clé Anon Supabase (Alignées avec Guest Portal)
 const SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
 
@@ -16,7 +19,7 @@ try {
                 }
             }
         });
-        console.log("✅ Client Supabase initialisé avec succès.");
+        console.log("✅ Client Supabase initialisé avec succès dans config.js.");
     } else {
         console.warn("⚠️ SDK Supabase non détecté au chargement de js/config.js.");
     }
@@ -24,7 +27,7 @@ try {
     console.warn("Supabase local mode fallback:", err); 
 }
 
-// Variables d'état de l'application
+// Variables d'état global de l'application
 let currentLang = 'en';
 let cachedSlips = [];
 let pmsDatabase = {}; 
@@ -39,10 +42,20 @@ let cart = {};
 let currentImageData = null;
 let selectedIdForModal = null;
 
-// Helper global pour l'extraction propre du Receipt ID (#REC-XXXXXX)
+// Helper global pour l'extraction propre et sécurisée du Receipt ID (#REC-XXXXXX)
 function obtenirReceiptId(order) {
     if (!order) return '---';
-    return order.receipt_id || order.receipt_no || order.slip_no || order.receipt_number || `REC-${String(order.id).slice(-6).toUpperCase()}`;
+    if (order.receipt_id) return order.receipt_id;
+    if (order.receipt_no) return order.receipt_no;
+    if (order.slip_no) return order.slip_no;
+    if (order.receipt_number) return order.receipt_number;
+
+    const rawId = String(order.id || '');
+    if (!rawId) return '---';
+    
+    // Si c'est un UUID v4 (36 caractères), prendre les 6 derniers caractères nettoyés
+    const cleanId = rawId.replace(/-/g, '').toUpperCase();
+    return `REC-${cleanId.slice(-6)}`;
 }
 
 // Mots-clés pour l'identification des agences/compagnies dans le rapport PMS
@@ -55,7 +68,7 @@ const companyKeywords = [
     'gulf', 'international', 'global', 'solutions', 'enterprises', 'hunter'
 ];
 
-// Traductions d'interface
+// Traductions d'interface complètes avec gestion du statut Pending du Guest Portal
 const i18n = {
     en: {
         txtBtnNewRecord: "New Record", lblFormTitle: "New Record", lblRoomNum: "Room Number",
@@ -74,7 +87,8 @@ const i18n = {
         pdfHotelCount: "Hotel Count", pdfHotelCountFree: "Hotel Count (Free)", pdfHotelExtra: "Hotel & Extra",
         pdfGuestCount: "Guest Count (Full)", pdfSpaSheet: "V ELEMENT SPA LAUNDRY SHEET",
         pdfGivenBy: "Given By (Spa):", pdfCollectedBy: "Collected By:", pdfDeliveredBy: "Delivered By:",
-        pdfSheetSerial: "Sheet Serial:", pdfReceiptNo: "Receipt No:", pdfDownloaded: "Downloaded:", pdfSpaRecord: "SPA Record"
+        pdfSheetSerial: "Sheet Serial:", pdfReceiptNo: "Receipt No:", pdfDownloaded: "Downloaded:", pdfSpaRecord: "SPA Record",
+        statusPending: "Pending Guest Request"
     },
     ar: {
         txtBtnNewRecord: "سجل جديد", lblFormTitle: "سجل جديد", lblRoomNum: "رقم الغرفة",
@@ -93,7 +107,8 @@ const i18n = {
         pdfHotelCount: "عداد الفندق", pdfHotelCountFree: "عداد الفندق (مجاني)", pdfHotelExtra: "الفندق وإضافي",
         pdfGuestCount: "عداد الضيف (كامل)", pdfSpaSheet: "ورقة مغسلة سبا في إيلمنت",
         pdfGivenBy: "مقدم من (السبا):", pdfCollectedBy: "تم الاستلام بواسطة:", pdfDeliveredBy: "تم التسليم بواسطة:",
-        pdfSheetSerial: "رقم السجل:", pdfReceiptNo: "رقم الإيصال:", pdfDownloaded: "تم التحميل:", pdfSpaRecord: "سجل السبا"
+        pdfSheetSerial: "رقم السجل:", pdfReceiptNo: "رقم الإيصال:", pdfDownloaded: "تم التحميل:", pdfSpaRecord: "سجل السبا",
+        statusPending: "طلب ضيف قيد الانتظار"
     },
     hi: {
         txtBtnNewRecord: "नया रिकॉर्ड", lblFormTitle: "नया रिकॉर्ड", lblRoomNum: "कमरा नंबर",
@@ -112,11 +127,12 @@ const i18n = {
         pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटल काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
         pdfGuestCount: "अतिथि काउंट (पूर्ण)", pdfSpaSheet: "वी एलिमेंट स्पा लॉन्ड्रि शीट",
         pdfGivenBy: "द्वारा दिया गया (स्पा):", pdfCollectedBy: "द्वारा एकत्रित:", pdfDeliveredBy: "द्वारा वितरित:",
-        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रसीद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड"
+        pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रسيद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड",
+        statusPending: "अतिथि अनुरोध लंबित"
     }
 };
 
-// Grille tarifaire de la blanchisserie
+// Grille tarifaire de la blanchisserie (Strictement alignée avec la grille Guest Portal)
 const database = {
     laundry: {
         "GENTLEMEN": [
