@@ -2284,4 +2284,4 @@ function logoutStaff() {
     localStorage.removeItem('remal_current_staff');
     currentStaffUser = null;
     location.reload();
-}
+            }
