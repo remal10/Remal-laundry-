@@ -146,6 +146,7 @@ function initTheme() {
     }
 }
 
+// Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
 
 // -------------------------------------------------------------
@@ -176,9 +177,6 @@ function programmerTimerReinitialisationMinuit() {
     setInterval(verifierFinDeJournee, 1000);
 }
 
-// -------------------------------------------------------------
-// SYNCHRONISATION INITIALE ET REALTIME DEPUIS SUPABASE
-// -------------------------------------------------------------
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -192,10 +190,11 @@ async function chargerDonneesEtAbonnementCloud() {
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
+            // Restaure d'abord les éléments existants du LocalStorage
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
             
             slips.forEach(s => {
-                const roomClean = s.room_number || '---';
+                const roomClean = s.room || s.room_number || s.room_no || '---';
                 
                 let parsedItems = s.items;
                 if (typeof parsedItems === 'string') {
@@ -204,27 +203,19 @@ async function chargerDonneesEtAbonnementCloud() {
                 if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
                     parsedItems = Object.values(parsedItems);
                 }
-                if (!Array.isArray(parsedItems)) parsedItems = [];
+                if (!Array.isArray(parsedItems)) {
+                    parsedItems = [];
+                }
 
-                const normalizedSlip = {
-                    ...s,
-                    id: String(s.id),
-                    room: roomClean,
+                // Fusionne en conservant la version la plus à jour
+                const existing = slipMap.get(String(s.id));
+                slipMap.set(String(s.id), { 
+                    ...existing,
+                    ...s, 
+                    room: roomClean, 
                     room_number: roomClean,
-                    guest_name: s.guest_name || 'Guest',
-                    total_clothes: s.total_pieces || 0,
-                    total_pieces: s.total_pieces || 0,
-                    subtotal: Number(s.subtotal || 0),
-                    vat: Number(s.vat || 0),
-                    total: Number(s.grand_total || 0),
-                    grand_total: Number(s.grand_total || 0),
-                    note: s.special_notes || '',
-                    special_notes: s.special_notes || '',
-                    items: parsedItems,
-                    options: { service_style: s.service_type || 'Folding' }
-                };
-
-                slipMap.set(String(s.id), normalizedSlip);
+                    items: parsedItems
+                });
             });
             
             cachedSlips = Array.from(slipMap.values());
@@ -252,13 +243,14 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
+        // Écouteur temps réel (Realtime)
         supabaseClient.channel('realtime_laundry')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
                 if (isLocalUpdating) return;
                 
                 if (payload.new && payload.new.id) {
                     const idStr = String(payload.new.id);
-                    const roomClean = payload.new.room_number || '---';
+                    const roomClean = payload.new.room || payload.new.room_number || payload.new.room_no || '---';
                     
                     let parsedItems = payload.new.items;
                     if (typeof parsedItems === 'string') {
@@ -270,18 +262,9 @@ async function chargerDonneesEtAbonnementCloud() {
 
                     const formattedData = { 
                         ...payload.new, 
-                        id: idStr,
                         room: roomClean, 
                         room_number: roomClean,
-                        guest_name: payload.new.guest_name || 'Guest',
-                        total_clothes: payload.new.total_pieces || 0,
-                        total_pieces: payload.new.total_pieces || 0,
-                        total: Number(payload.new.grand_total || 0),
-                        grand_total: Number(payload.new.grand_total || 0),
-                        note: payload.new.special_notes || '',
-                        special_notes: payload.new.special_notes || '',
-                        items: Array.isArray(parsedItems) ? parsedItems : [],
-                        options: { service_style: payload.new.service_type || 'Folding' }
+                        items: Array.isArray(parsedItems) ? parsedItems : []
                     };
 
                     const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
@@ -641,7 +624,7 @@ async function handlePDFUpload(event) {
 }
 
 // -------------------------------------------------------------
-// ENREGISTREMENT ET MODIFICATION COMPATIBLE TABLE SUPABASE GUEST
+// ENREGISTREMENT ET MODIFICATION DANS SUPABASE ET LOCALSTORAGE
 // -------------------------------------------------------------
 async function sauvegarderBordereauDepuisFormulaire() {
     const roomNum = document.getElementById('roomNumber').value.trim();
@@ -650,117 +633,72 @@ async function sauvegarderBordereauDepuisFormulaire() {
         return;
     }
 
-    const editingId = document.getElementById('editingRecordId').value.trim();
-    const cartEntries = Object.values(cart);
-    if (cartEntries.length === 0) {
+    const editingId = document.getElementById('editingRecordId').value;
+    const recordId = editingId ? String(editingId) : String(Date.now());
+    
+    const itemsArray = Object.values(cart);
+    if (itemsArray.length === 0) {
         alert("Please select at least one garment before saving.");
         return;
     }
 
     let totalPcs = 0;
-    let subtotalCalc = 0;
-    const itemsArray = [];
-
-    cartEntries.forEach(item => {
+    let grandTotal = 0;
+    
+    itemsArray.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
         const price = parseFloat(item.price) || 0;
         const freeQty = parseInt(item.freeQty, 10) || 0;
-        if (qty <= 0) return;
-
         totalPcs += qty;
-        let extraQty = Math.max(0, qty - freeQty);
-        let totalPrice = 0;
 
         if (currentCountType === 'guest') {
-            totalPrice = qty * price;
+            grandTotal += qty * price;
         } else if (currentCountType === 'quota_extra') {
-            totalPrice = extraQty * price;
+            const chargeable = Math.max(0, qty - freeQty);
+            grandTotal += chargeable * price;
         }
-
-        subtotalCalc += totalPrice;
-
-        // Structure d'article standardisée identique au Guest Portal
-        itemsArray.push({
-            name: item.name,
-            category: item.category || '',
-            quantity: qty,
-            free_quantity: freeQty,
-            extra_quantity: extraQty,
-            unit_price: price,
-            total_price: totalPrice
-        });
     });
 
     const foldingRadio = document.querySelector('input[name="foldingOption"]:checked');
     const serviceStyle = foldingRadio ? foldingRadio.value : 'F — Folding';
     const noteVal = document.getElementById('recordOptionalNote').value.trim();
+
     const pmsInfo = pmsDatabase[roomNum] || {};
 
-    const subtotal = Number(subtotalCalc.toFixed(2));
-    const vat = Number((subtotal * 0.05).toFixed(2));
-    const grandTotal = Number((subtotal + vat).toFixed(2));
+    // Récupérer le bordereau existant pour ne pas perdre created_at ou l'ID Supabase
+    chargerDonneesLocalStorage();
+    const originalEntry = cachedSlips.find(s => String(s.id) === recordId) || {};
 
-    // Construction du payload aligné sur guest_laundry_requests
-    const payloadSupabase = {
-        room_number: roomNum,
-        guest_name: pmsInfo.guestName || 'Guest',
-        pms_quota: pmsInfo.quotaText || 'Standard',
-        extra_charged: currentCountType === 'quota_extra',
-        service_type: serviceStyle,
-        items: itemsArray,
-        total_pieces: totalPcs,
-        subtotal: subtotal,
-        vat: vat,
-        grand_total: grandTotal,
-        special_notes: noteVal,
-        status: 'Collected',
-        accepted_policy: true
-    };
-
-    // On inclut l'ID uniquement s'il s'agit d'un UUID existant pour la modification
-    if (editingId && editingId.length === 36) {
-        payloadSupabase.id = editingId;
-    }
-
-    isLocalUpdating = true;
-    let assignedId = editingId;
-
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            const { data, error } = await supabaseClient
-                .from('guest_laundry_requests')
-                .upsert(payloadSupabase, { onConflict: 'id' })
-                .select()
-                .single();
-
-            if (error) {
-                console.error("❌ Erreur écriture Supabase :", error.message);
-                alert("Erreur Supabase: " + error.message);
-            } else if (data) {
-                assignedId = String(data.id);
-            }
-        } catch (e) {
-            console.error("Exception écriture Supabase :", e);
-        }
-    }
-
-    if (!assignedId) assignedId = String(Date.now());
-
-    // Sauvegarde miroir locale
     const slipRecord = {
-        ...payloadSupabase,
-        id: assignedId,
+        ...originalEntry,
+        id: recordId,
         room: roomNum,
+        room_number: roomNum,
+        guest_name: originalEntry.guest_name || pmsInfo.guestName || 'Guest',
+        room_typ: originalEntry.room_typ || pmsInfo.roomTyp || 'DLXR',
+        agency: originalEntry.agency || pmsInfo.agency || 'Direct',
+        quota: originalEntry.quota || pmsInfo.quotaText || 'Chargeable',
+        count_type: currentCountType,
+        created_at: originalEntry.created_at || new Date().toISOString(),
         total_clothes: totalPcs,
         total: grandTotal,
+        subtotal: grandTotal,
+        status: originalEntry.status || 'Collected',
+        is_spa: false,
+        created_by: currentStaffUser ? currentStaffUser.name : (originalEntry.created_by || 'Staff'),
         note: noteVal,
-        options: { service_style: serviceStyle },
-        created_by: currentStaffUser ? currentStaffUser.name : 'Staff',
-        created_at: new Date().toISOString()
+        photo: currentImageData || originalEntry.photo || null,
+        items: itemsArray,
+        options: {
+            ...(originalEntry.options || {}),
+            service_style: serviceStyle
+        }
     };
 
-    chargerDonneesLocalStorage();
-    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
+    isLocalUpdating = true;
+
+    // 1. Sauvegarde instantanée dans LocalStorage
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
     if (existingIndex !== -1) {
         cachedSlips[existingIndex] = slipRecord;
     } else {
@@ -768,16 +706,60 @@ async function sauvegarderBordereauDepuisFormulaire() {
     }
     sauvegarderDonneesLocalStorage();
 
+    // 2. ÉCRITURE DANS SUPABASE (S'assure que le Guest voit aussi la modification)
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const payloadSupabase = {
+                id: recordId,
+                room: roomNum,
+                room_number: roomNum,
+                guest_name: slipRecord.guest_name,
+                room_typ: slipRecord.room_typ,
+                agency: slipRecord.agency,
+                quota: slipRecord.quota,
+                count_type: slipRecord.count_type,
+                total_clothes: totalPcs,
+                total_pieces: totalPcs,
+                total: grandTotal,
+                grand_total: grandTotal,
+                subtotal: grandTotal,
+                status: slipRecord.status,
+                is_spa: false,
+                created_by: slipRecord.created_by,
+                note: noteVal,
+                special_notes: noteVal,
+                photo: slipRecord.photo,
+                items: JSON.stringify(itemsArray),
+                options: slipRecord.options,
+                updated_at: new Date().toISOString()
+            };
+
+            // Essai d'écriture avec ID sous forme de texte et sous forme de nombre si nécessaire
+            let { error: err1 } = await supabaseClient
+                .from('guest_laundry_requests')
+                .upsert(payloadSupabase, { onConflict: 'id' });
+
+            if (err1 && !isNaN(Number(recordId))) {
+                payloadSupabase.id = Number(recordId);
+                await supabaseClient
+                    .from('guest_laundry_requests')
+                    .upsert(payloadSupabase, { onConflict: 'id' });
+            }
+        } catch (e) {
+            console.error("Erreur réécriture dans Supabase :", e);
+        }
+    }
+
     reinitialiserFormulaire();
     switchMainSection('liveRecord');
     chargerLiveOrders();
 
     setTimeout(() => { isLocalUpdating = false; }, 1000);
-    alert("✅ Bordereau synchronisé avec Supabase !");
+    alert("✅ Record updated in LocalStorage and synced to Supabase!");
 }
 
 // -------------------------------------------------------------
-// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS
+// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS (SUPABASE + LOCALSTORAGE)
 // -------------------------------------------------------------
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
@@ -785,11 +767,11 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     console.log("📥 New guest request received:", newOrder);
 
     const recordId = String(newOrder.id || Date.now());
-    const roomNum = String(newOrder.room_number || newOrder.room || '---');
+    const roomNum = String(newOrder.room_number || newOrder.room || newOrder.room_no || '---');
     const guestName = newOrder.guest_name || 'Guest';
-    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes, 10) || 0;
-    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total) || 0;
-    const specialNotes = newOrder.special_notes || newOrder.note || 'Request from Guest Portal';
+    const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes || newOrder.total_items, 10) || 0;
+    const grandTotal = parseFloat(newOrder.grand_total || newOrder.total || newOrder.subtotal) || 0;
+    const specialNotes = newOrder.special_notes || newOrder.note || newOrder.special_instructions || 'Request from Guest Portal';
     const pmsQuotaText = newOrder.pms_quota || 'Standard';
     const isExtra = newOrder.extra_charged || false;
 
@@ -806,29 +788,26 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         room: roomNum,
         room_number: roomNum,
         guest_name: guestName,
-        pms_quota: pmsQuotaText,
-        extra_charged: isExtra,
-        service_type: newOrder.service_type || 'Laundry Collection',
         room_typ: pmsInfo.roomTyp || 'DLXR',
         agency: pmsInfo.agency || 'Direct',
         quota: pmsQuotaText,
         count_type: isExtra ? 'quota_extra' : (newOrder.count_type || 'guest'),
         created_at: newOrder.created_at || new Date().toISOString(),
         total_clothes: totalPcs,
-        total_pieces: totalPcs,
         total: grandTotal,
-        grand_total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: newOrder.status || 'Collected',
+        status: newOrder.status || 'pickup_alert',
         is_spa: false,
         created_by: 'Guest App',
         note: specialNotes,
-        special_notes: specialNotes,
         items: parsedItemsList,
-        options: { service_style: newOrder.service_type || 'Laundry Collection' }
+        options: {
+            service_style: newOrder.service_type || 'Laundry Collection'
+        }
     };
 
+    // 1. Sauvegarde locale immédiate
     try {
         chargerDonneesLocalStorage();
         if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
@@ -842,6 +821,37 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         }
     } catch (e) {
         console.warn("Local storage write error:", e);
+    }
+
+    // 2. Assurer la présence dans la table Supabase guest_laundry_requests
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            await supabaseClient
+                .from('guest_laundry_requests')
+                .upsert({
+                    id: recordId,
+                    room: roomNum,
+                    room_number: roomNum,
+                    guest_name: guestName,
+                    room_typ: slipRecord.room_typ,
+                    agency: slipRecord.agency,
+                    quota: slipRecord.quota,
+                    count_type: slipRecord.count_type,
+                    total_clothes: totalPcs,
+                    total_pieces: totalPcs,
+                    total: grandTotal,
+                    grand_total: grandTotal,
+                    status: slipRecord.status,
+                    is_spa: false,
+                    created_by: 'Guest App',
+                    note: specialNotes,
+                    items: JSON.stringify(parsedItemsList),
+                    options: slipRecord.options,
+                    created_at: slipRecord.created_at
+                }, { onConflict: 'id' });
+        } catch (e) {
+            console.error("Erreur de persistance initiale Supabase :", e);
+        }
     }
 
     try {
@@ -864,7 +874,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
 };
 
 // -------------------------------------------------------------
-// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS)
+// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS / ACTIVE ROOMS)
 // -------------------------------------------------------------
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -884,8 +894,8 @@ function chargerLiveOrders() {
     activeTodaySlips.sort((a, b) => {
         if (a.is_spa && !b.is_spa) return -1;
         if (!a.is_spa && b.is_spa) return 1;
-        const roomA = parseInt(a.room_number || a.room) || 0;
-        const roomB = parseInt(b.room_number || b.room) || 0;
+        const roomA = parseInt(a.room || a.room_number || a.room_no) || 0;
+        const roomB = parseInt(b.room || b.room_number || b.room_no) || 0;
         return roomA - roomB;
     });
 
@@ -920,16 +930,16 @@ function chargerLiveOrders() {
         let badgeText = entry.status || 'Collected';
         let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
         
-        if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
+        if (entry.status === 'pickup_alert') {
             badgeText = '⚡ GUEST REQ';
             badgeClass = 'bg-emerald-950 text-emerald-300 border border-emerald-600 animate-pulse';
-        } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
+        } else if (entry.status === 'Washing') {
             badgeText = '🧼 Washing';
             badgeClass = 'bg-blue-950 text-blue-200 border border-blue-800';
         } else if (entry.status === 'Ready') {
             badgeText = '✨ Ready';
             badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        } else if (entry.status === 'Delivered' || entry.status === 'Completed') {
+        } else if (entry.status === 'Delivered') {
             badgeText = '✅ Delivered';
             badgeClass = 'bg-emerald-950 text-emerald-200 border border-emerald-800';
         } else if (entry.is_spa) {
@@ -937,7 +947,7 @@ function chargerLiveOrders() {
             badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
         }
 
-        const roomNum = entry.room_number || entry.room || '---';
+        const roomNum = entry.room || entry.room_number || entry.room_no || '---';
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
 
         let identifierDisplay = `Room ${roomNum}`;
@@ -947,9 +957,7 @@ function chargerLiveOrders() {
             identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
         }
 
-        const totalPcs = entry.total_pieces || entry.total_clothes || 0;
-        const totalAmount = entry.grand_total || entry.total || 0;
-        const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
+        const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${entry.total_clothes || 0} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${entry.total_clothes || 0} pcs`;
 
         itemDiv.innerHTML = `
             <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[#DCA773] cursor-pointer" onchange="updatePrintButtonCount()">
@@ -963,8 +971,8 @@ function chargerLiveOrders() {
                         <p class="text-[10px] text-stone-400 mt-1 flex items-center gap-1">${subDesc}</p>
                     </div>
                     <div class="text-right">
-                        <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[#DCA773]'} text-sm">${totalAmount.toFixed(2)} AED</p>
-                        <p class="text-[9px] text-stone-500 font-semibold">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.service_type || entry.options?.service_style || 'Folding')}</p>
+                        <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[#DCA773]'} text-sm">${(entry.total || 0).toFixed(2)} AED</p>
+                        <p class="text-[9px] text-stone-500 font-semibold">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.options?.service_style || 'Folding')}</p>
                     </div>
                 </div>
             </div>
@@ -975,7 +983,7 @@ function chargerLiveOrders() {
     updatePrintButtonCount();
 }
 
-function abrirModalActiveRoomsList() {
+function ouvrirModalActiveRoomsList() {
     chargerDonneesLocalStorage();
     
     const debutJournee = new Date();
@@ -988,7 +996,7 @@ function abrirModalActiveRoomsList() {
         return entryDate >= debutJournee;
     });
 
-    activeLaundrySlips.sort((a, b) => (parseInt(a.room_number || a.room) || 0) - (parseInt(b.room_number || b.room) || 0));
+    activeLaundrySlips.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
 
     const tbody = document.getElementById('activeRoomsTableBody');
     tbody.innerHTML = '';
@@ -1000,13 +1008,13 @@ function abrirModalActiveRoomsList() {
     } else {
         activeLaundrySlips.forEach(s => {
             let quotaLabel = 'Hotel Count (Free)';
-            if (s.extra_charged || s.count_type === 'quota_extra') quotaLabel = 'Hotel & Extra';
+            if (s.count_type === 'quota_extra') quotaLabel = 'Hotel & Extra';
             if (s.count_type === 'guest') quotaLabel = 'Guest Count (Full)';
 
-            const roomDisp = s.room_number || s.room || '---';
-            const pkgDisp = s.service_type || s.options?.service_style || 'F — Folding';
+            const roomDisp = s.room || s.room_number || s.room_no || '---';
+            const pkgDisp = s.options?.service_style || 'F — Folding';
             const guestDisp = s.guest_name || 'Guest';
-            const pcs = s.total_pieces || s.total_clothes || 0;
+            const pcs = s.total_clothes || 0;
             totalPieces += pcs;
 
             const tr = document.createElement('tr');
@@ -1074,7 +1082,7 @@ async function imprimerToutesLesChambresDuJour() {
     }
 
     const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
-    slipsToPrint.sort((a, b) => (parseInt(a.room_number || a.room) || 0) - (parseInt(b.room_number || b.room) || 0));
+    slipsToPrint.sort((a, b) => (parseInt(a.room || a.room_number) || 0) - (parseInt(b.room || b.room_number) || 0));
 
     const batchContainer = document.getElementById('batchPrintContainer');
     batchContainer.innerHTML = '';
@@ -1083,17 +1091,16 @@ async function imprimerToutesLesChambresDuJour() {
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
         entry.receipt_id = receiptId;
         const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
-        const roomNum = entry.room_number || entry.room || '---';
+        const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
         let badgeText = 'Hotel Count (Free)';
-        if (entry.extra_charged || entry.count_type === 'quota_extra') {
+        if (entry.count_type === 'quota_extra') {
             badgeText = 'Hotel & Extra';
         } else if (entry.count_type === 'guest') {
             badgeText = 'Guest Count (Full)';
         }
 
-        const serviceStyleText = entry.service_type || entry.options?.service_style || '';
-        const isHangerFolding = serviceStyleText.includes('H/F') || serviceStyleText.includes('Hanger');
+        const isHangerFolding = (entry.options?.service_style || '').includes('H/F') || (entry.options?.service_style || '').includes('Hanger');
         const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
 
         let rawItems = entry.items || [];
@@ -1106,9 +1113,9 @@ async function imprimerToutesLesChambresDuJour() {
 
         itemsList.forEach(item => {
             let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.quantity || item.qty, 10) || 0;
-            let price = parseFloat(item.unit_price || item.price) || 0;
-            let freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+            let qty = parseInt(item.qty || item.quantity, 10) || 0;
+            let price = parseFloat(item.price || item.unit_price) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1116,12 +1123,12 @@ async function imprimerToutesLesChambresDuJour() {
                 const rowTotal = qty * price;
                 tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${rowTotal.toFixed(2)} AED</td></tr>`;
             } else {
-                if (!entry.extra_charged && entry.count_type !== 'guest') {
+                if (entry.count_type === 'hotel') {
                     tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px; color: #047857;">0.00 AED</td></tr>`;
                 } else if (entry.count_type === 'guest') {
                     const rowTotal = qty * price;
                     tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${rowTotal.toFixed(2)} AED</td></tr>`;
-                } else if (entry.extra_charged || entry.count_type === 'quota_extra') {
+                } else if (entry.count_type === 'quota_extra') {
                     let chargeableQty = qty - freeQty;
                     if (chargeableQty < 0) chargeableQty = 0;
 
@@ -1136,11 +1143,10 @@ async function imprimerToutesLesChambresDuJour() {
             }
         });
 
-        const noteText = entry.special_notes || entry.note || '';
-        const noteHtml = (noteText && noteText.trim() !== '') ? `
+        const noteHtml = (entry.note && entry.note.trim() !== '') ? `
             <div style="background-color: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 12px; margin-top: 10px; font-size: 11px;">
                 <p style="font-weight: 700; color: #78350f; text-transform: uppercase; margin: 0 0 4px 0; font-size: 9px;">Garment Notes / Defects:</p>
-                <p style="margin: 0; color: #1f2937; font-weight: 500;">${noteText}</p>
+                <p style="margin: 0; color: #1f2937; font-weight: 500;">${entry.note}</p>
             </div>
         ` : '';
 
@@ -1150,9 +1156,6 @@ async function imprimerToutesLesChambresDuJour() {
                 <img src="${entry.photo}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 12px; border: 1px solid #d1d5db;">
             </div>
         ` : '';
-
-        const grandTotalVal = entry.grand_total || entry.total || 0;
-        const totalPiecesVal = entry.total_pieces || entry.total_clothes || 0;
 
         copiesToPrint.forEach((copyLabel) => {
             const card = document.createElement('div');
@@ -1196,14 +1199,14 @@ async function imprimerToutesLesChambresDuJour() {
                         <div><span style="color: #6b7280; font-weight: 500;">Guest Name:</span> <span style="color: #111827;">${entry.guest_name || 'Unknown'}</span></div>
                         <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Room Typ:</span> <span style="color: #111827;">${entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR')}</span></div>
                         <div><span style="color: #6b7280; font-weight: 500;">Agency:</span> <span style="color: #111827;">${entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct')}</span></div>
-                        <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.pms_quota || entry.quota || badgeText}</span></div>
+                        <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText)}</span></div>
                         <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${entry.created_by || 'Staff'}</span></div>
                     </div>
                 </div>
 
                 <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-between;">
                     <span style="color: #374151;">Packaging:</span>
-                    <span style="color: #b45309;">${serviceStyleText || 'F — Folding'}</span>
+                    <span style="color: #b45309;">${entry.options?.service_style || 'F — Folding'}</span>
                 </div>
 
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
@@ -1220,11 +1223,11 @@ async function imprimerToutesLesChambresDuJour() {
                 <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
                     <div style="display: flex; justify-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
                         <span>Total Pieces:</span>
-                        <span>${totalPiecesVal} pieces</span>
+                        <span>${entry.total_clothes || 0} pieces</span>
                     </div>
                     <div style="display: flex; justify-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
                         <span>Grand Total:</span>
-                        <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${grandTotalVal.toFixed(2)} AED</span>
+                        <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${(entry.total || 0).toFixed(2)} AED</span>
                     </div>
                 </div>
 
@@ -1278,7 +1281,7 @@ function afficherListeBordereauxLocal() {
     const searchDateVal = document.getElementById('searchDate').value;
 
     let filtered = cachedSlips.filter(entry => {
-        const roomNum = String(entry.room_number || entry.room || '').toLowerCase();
+        const roomNum = String(entry.room || entry.room_number || entry.room_no || '').toLowerCase();
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry).toLowerCase() : '';
         const matchRoom = !searchVal || 
             roomNum.includes(searchVal) || 
@@ -1332,7 +1335,7 @@ function afficherListeBordereauxLocal() {
         hotelEntries.forEach(entry => {
             let badgeLabel = 'Hotel Count';
             let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
-            if(entry.extra_charged || entry.count_type === 'quota_extra') {
+            if(entry.count_type === 'quota_extra') {
                 badgeLabel = 'Quota + Extra';
                 badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
             } else if(entry.count_type === 'guest') {
@@ -1340,14 +1343,11 @@ function afficherListeBordereauxLocal() {
                 badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
             }
 
-            const roomNum = entry.room_number || entry.room || '---';
+            const roomNum = entry.room || entry.room_number || entry.room_no || '---';
             const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
-
-            const totalPcs = entry.total_pieces || entry.total_clothes || 0;
-            const totalAmount = entry.grand_total || entry.total || 0;
 
             html += `
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
@@ -1357,8 +1357,8 @@ function afficherListeBordereauxLocal() {
                         <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
-                        <small class="text-stone-400 font-normal">(${totalPcs} pcs)</small> 
-                        <span class="text-[#DCA773] font-serif-luxury text-base sm:text-lg ml-1.5">${totalAmount.toFixed(2)} AED</span> 
+                        <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> 
+                        <span class="text-[#DCA773] font-serif-luxury text-base sm:text-lg ml-1.5">${(entry.total || 0).toFixed(2)} AED</span> 
                         ${entry.photo ? '📸' : ''}
                     </div>
                 </div>
@@ -1387,9 +1387,6 @@ function afficherListeBordereauxLocal() {
                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : '---';
 
-            const totalPcs = entry.total_pieces || entry.total_clothes || 0;
-            const totalAmount = entry.grand_total || entry.total || 0;
-
             html += `
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
                     <div>
@@ -1398,8 +1395,8 @@ function afficherListeBordereauxLocal() {
                         <div class="text-[10px] text-stone-400 mt-1">📅 ${dateFormatted} | Delivered by: ${entry.options?.delivered_by || 'Staff'}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
-                        <small class="text-stone-400 font-normal">(${totalPcs} pcs)</small> 
-                        <span class="text-purple-300 font-serif-luxury text-base sm:text-lg ml-1.5">${totalAmount.toFixed(2)} AED</span> 
+                        <small class="text-stone-400 font-normal">(${entry.total_clothes} pcs)</small> 
+                        <span class="text-purple-300 font-serif-luxury text-base sm:text-lg ml-1.5">${(entry.total || 0).toFixed(2)} AED</span> 
                     </div>
                 </div>
             `;
@@ -1541,26 +1538,19 @@ function renderManagementDashboard() {
 
     let totalRevenue = 0;
     let totalGarments = 0;
-    let statusCounts = { Collected: 0, Washing: 0, Ready: 0, Delivered: 0, Pending: 0 };
+    let statusCounts = { Collected: 0, Washing: 0, Ready: 0, Delivered: 0 };
     let revenueByDate = {};
 
     cachedSlips.forEach(slip => {
-        const rev = Number(slip.grand_total || slip.total || 0);
-        const garments = Number(slip.total_pieces || slip.total_clothes || 0);
-        
-        totalRevenue += rev;
-        totalGarments += garments;
+        totalRevenue += (slip.total || 0);
+        totalGarments += (slip.total_clothes || 0);
         
         let st = slip.status || 'Collected';
-        if (statusCounts[st] !== undefined) {
-            statusCounts[st]++;
-        } else {
-            statusCounts.Collected++;
-        }
+        if (statusCounts[st] !== undefined) statusCounts[st]++;
 
         if (slip.created_at) {
             let dStr = slip.created_at.split('T')[0];
-            revenueByDate[dStr] = (revenueByDate[dStr] || 0) + rev;
+            revenueByDate[dStr] = (revenueByDate[dStr] || 0) + (slip.total || 0);
         }
     });
 
@@ -1583,12 +1573,7 @@ function renderManagementDashboard() {
                 data: {
                     labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
                     datasets: [{
-                        data: [
-                            statusCounts.Collected + statusCounts.Pending, 
-                            statusCounts.Washing, 
-                            statusCounts.Ready, 
-                            statusCounts.Delivered
-                        ],
+                        data: [statusCounts.Collected, statusCounts.Washing, statusCounts.Ready, statusCounts.Delivered],
                         backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
                         borderWidth: 0
                     }]
@@ -1701,7 +1686,7 @@ function ouvrirModalDetails(id) {
     entry.receipt_id = receiptId;
 
     const t = i18n[currentLang] || i18n.en;
-    const roomNum = entry.room_number || entry.room || '---';
+    const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
     document.getElementById('modalPdfHotelName').innerText = t.pdfHotelName;
     document.getElementById('modalPdfHotelSub').innerText = t.pdfHotelSub;
@@ -1721,7 +1706,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('modalLblPackaging').innerText = t.pdfPackaging;
 
     let badgeText = t.pdfHotelCountFree;
-    if (entry.extra_charged || entry.count_type === 'quota_extra') {
+    if (entry.count_type === 'quota_extra') {
         badgeText = t.pdfHotelExtra;
     } else if (entry.count_type === 'guest') {
         badgeText = t.pdfGuestCount;
@@ -1739,14 +1724,14 @@ function ouvrirModalDetails(id) {
     const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
     document.getElementById('modalDate').innerText = `${t.pdfDate} ${dateFormatted}`;
     document.getElementById('modalTypeBadgeInline').innerText = entry.is_spa ? t.pdfSpaRecord : badgeText;
-    document.getElementById('modalPackagingStyle').innerText = entry.service_type || entry.options?.service_style || 'F — Folding';
+    document.getElementById('modalPackagingStyle').innerText = entry.options?.service_style || 'F — Folding';
 
     const agencyBox = document.getElementById('modalAgencyQuotaBox');
-    if (entry.guest_name || entry.agency || entry.quota || entry.pms_quota) {
+    if (entry.guest_name || entry.agency || entry.quota) {
         document.getElementById('modalGuestDisplay').innerText = entry.guest_name || 'Unknown';
         document.getElementById('modalTypDisplay').innerText = entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR');
         document.getElementById('modalAgencyDisplay').innerText = entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct');
-        document.getElementById('modalQuotaDisplay').innerText = entry.pms_quota || entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
+        document.getElementById('modalQuotaDisplay').innerText = entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
         document.getElementById('modalCreatedByDisplay').innerText = entry.created_by || 'Staff';
         agencyBox.classList.remove('hidden');
     } else {
@@ -1767,9 +1752,9 @@ function ouvrirModalDetails(id) {
     } else {
         itemsList.forEach(item => {
             let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.quantity || item.qty, 10) || 0;
-            let price = parseFloat(item.unit_price || item.price) || 0;
-            let freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+            let qty = parseInt(item.qty || item.quantity, 10) || 0;
+            let price = parseFloat(item.price || item.unit_price) || 0;
+            let freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
 
             if (qty <= 0) return;
 
@@ -1784,7 +1769,7 @@ function ouvrirModalDetails(id) {
                 `;
                 tbody.appendChild(tr);
             } else {
-                if (!entry.extra_charged && entry.count_type !== 'guest') {
+                if (entry.count_type === 'hotel') {
                     const trHotel = document.createElement('tr');
                     trHotel.className = "py-1.5 border-b border-stone-200 text-stone-900";
                     trHotel.innerHTML = `
@@ -1803,7 +1788,7 @@ function ouvrirModalDetails(id) {
                         <td class="text-right font-bold p-1.5">${rowTotal.toFixed(2)} AED</td>
                     `;
                     tbody.appendChild(trGuest);
-                } else if (entry.extra_charged || entry.count_type === 'quota_extra') {
+                } else if (entry.count_type === 'quota_extra') {
                     let chargeableQty = qty - freeQty;
                     if (chargeableQty < 0) chargeableQty = 0;
 
@@ -1834,18 +1819,13 @@ function ouvrirModalDetails(id) {
         });
     }
 
-    const totalPcsVal = entry.total_pieces || entry.total_clothes || 0;
-    const grandTotalVal = entry.grand_total || entry.total || 0;
-
-    document.getElementById('modalClothesCount').innerText = `${totalPcsVal} pieces`;
-    document.getElementById('modalTotal').innerText = `${grandTotalVal.toFixed(2)} AED`;
+    document.getElementById('modalClothesCount').innerText = `${entry.total_clothes || 0} pieces`;
+    document.getElementById('modalTotal').innerText = `${(entry.total || 0).toFixed(2)} AED`;
 
     const noteBox = document.getElementById('modalNoteBox');
     const noteText = document.getElementById('modalNoteText');
-    const noteContent = entry.special_notes || entry.note || '';
-
-    if (noteContent && noteContent.trim() !== '') {
-        noteText.innerText = noteContent;
+    if (entry.note && entry.note.trim() !== '') {
+        noteText.innerText = entry.note;
         noteBox.classList.remove('hidden');
     } else {
         noteBox.classList.add('hidden');
@@ -1858,7 +1838,7 @@ function ouvrirModalDetails(id) {
         pContainer.innerHTML = '';
     }
 
-    const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${totalPcsVal} pcs\n*Grand Total:* ${grandTotalVal.toFixed(2)} AED`);
+    const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${entry.total_clothes} pcs\n*Grand Total:* ${(entry.total || 0).toFixed(2)} AED`);
     document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
     document.getElementById('detailModal').classList.remove('hidden');
@@ -1902,15 +1882,15 @@ function modifierBordereauActuel() {
         calculateSpaTotal();
 
     } else {
-        const roomNum = entry.room_number || entry.room || '---';
+        const roomNum = entry.room || entry.room_number || entry.room_no || '---';
         switchMainSection('newRecord');
         document.getElementById('editingRecordId').value = entry.id;
         document.getElementById('lblFormTitle').innerText = `✏️ Edit / Validate Record - Room ${roomNum}`;
         document.getElementById('roomNumber').value = roomNum;
         onRoomNumberInput();
 
-        selectCountType(entry.extra_charged ? 'quota_extra' : (entry.count_type || 'hotel'));
-        document.getElementById('recordOptionalNote').value = entry.special_notes || entry.note || '';
+        selectCountType(entry.count_type || 'hotel');
+        document.getElementById('recordOptionalNote').value = entry.note || '';
 
         cart = {};
 
@@ -1922,9 +1902,9 @@ function modifierBordereauActuel() {
 
         itemsList.forEach(item => {
             const itemName = item.name || item.item_name || 'Article';
-            const itemQty = parseInt(item.quantity || item.qty, 10) || 0;
-            const itemPrice = parseFloat(item.unit_price || item.price) || 0;
-            const freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+            const itemQty = parseInt(item.qty || item.quantity, 10) || 0;
+            const itemPrice = parseFloat(item.price || item.unit_price) || 0;
+            const freeQty = parseInt(item.freeQty || item.free_quantity, 10) || 0;
             
             let servicePrefix = item.service || currentService || 'laundry';
             if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
@@ -1959,7 +1939,7 @@ async function genererPDF(entryId = null) {
     const entry = cachedSlips.find(e => String(e.id) === String(targetId));
     if (!entry) return;
 
-    const roomNum = entry.room_number || entry.room || '---';
+    const roomNum = entry.room || entry.room_number || entry.room_no || '---';
 
     if (entry.is_spa) {
         ouvrirModalDetails(targetId);
@@ -2052,11 +2032,12 @@ async function supprimerBordereauActuel() {
         sauvegarderDonneesLocalStorage();
 
         if (supabaseClient) {
+            const idStr = String(selectedIdForModal);
+            const idNum = Number(selectedIdForModal);
             try { 
-                await supabaseClient.from('guest_laundry_requests').delete().eq('id', selectedIdForModal); 
-            } catch(e) {
-                console.error("Erreur de suppression Supabase :", e);
-            }
+                let res = await supabaseClient.from('guest_laundry_requests').delete().eq('id', idStr); 
+                if(res.error && !isNaN(idNum)) await supabaseClient.from('guest_laundry_requests').delete().eq('id', idNum);
+            } catch(e) {}
         }
 
         fermerModal();
@@ -2076,7 +2057,9 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     if (!targetId) return;
 
     isLocalUpdating = true;
+
     const idStr = String(targetId).trim();
+    const idNum = Number(targetId);
 
     // 1. Mise à jour instantanée du LocalStorage
     chargerDonneesLocalStorage();
@@ -2095,10 +2078,17 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     // 3. Envoi asynchrone vers Supabase guest_laundry_requests
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            await supabaseClient
+            let res = await supabaseClient
                 .from('guest_laundry_requests')
                 .update({ status: nouveauStatut })
                 .eq('id', idStr);
+
+            if (res.error && !isNaN(idNum)) {
+                await supabaseClient
+                    .from('guest_laundry_requests')
+                    .update({ status: nouveauStatut })
+                    .eq('id', idNum);
+            }
         } catch (e) {
             console.error("Erreur sync Supabase:", e);
         }
