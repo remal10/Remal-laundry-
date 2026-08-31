@@ -84,7 +84,7 @@ function initTheme() {
 // Verrou pour éviter le gel du navigateur en boucle Realtime
 let isLocalUpdating = false;
 
-// Helper universel de normalisation des articles (Guest App <-> Laundry OS)
+// Convertisseur/Normalisateur universel d'articles
 function normaliserItemsTableau(rawItems) {
     let parsed = rawItems;
     if (typeof parsed === 'string') {
@@ -98,7 +98,7 @@ function normaliserItemsTableau(rawItems) {
         price: parseFloat(item.price || item.unit_price || item.rate) || 0,
         freeQty: parseInt(item.freeQty || item.free_quantity, 10) || 0,
         service: item.service || 'laundry'
-    }));
+    })).filter(item => item.qty > 0);
 }
 
 // -------------------------------------------------------------
@@ -142,13 +142,21 @@ async function chargerDonneesEtAbonnementCloud() {
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
+            // Charger les bordereaux locaux existants d'abord
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
             
             slips.forEach(s => {
+                const idStr = String(s.id);
                 const roomClean = s.room || s.room_number || s.room_no || '---';
                 const normalizedItems = normaliserItemsTableau(s.items);
 
-                slipMap.set(String(s.id), { 
+                // Si le bordereau existe déjà dans LocalStorage et contient des articles, ON GARDE LA VERSION LOCALE
+                const existingLocal = slipMap.get(idStr);
+                if (existingLocal && existingLocal.items && existingLocal.items.length > 0) {
+                    return; // Conserve la donnée locale pour éviter le retour à zéro
+                }
+
+                slipMap.set(idStr, { 
                     ...s, 
                     room: roomClean, 
                     room_number: roomClean,
@@ -1512,7 +1520,7 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
-// EDIT BORDEREAU - CHARGEMENT SECURE DU PANIER
+// EDIT BORDEREAU - RECONSTRUCTION PARFAITE DU PANIER
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -1576,6 +1584,7 @@ function modifierBordereauActuel() {
             }
 
             if (itemQty > 0) {
+                // CLE ABSOLUMENT ESSENTIELLE POUR INTERFACE LAUNDRY OS
                 const key = `${servicePrefix}_${itemName}`;
                 cart[key] = {
                     name: itemName,
@@ -1845,7 +1854,7 @@ async function supprimerBordereauxEnLot() {
 }
 
 // -------------------------------------------------------------
-// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS
+// GESTION DES NOTIFICATIONS CLIENTS DANS LAUNDRY OS (ENREGISTREMENT LOCAL DIRECT)
 // -------------------------------------------------------------
 window.onNewGuestRequestReceived = function(newOrder) {
     if (!newOrder) return;
