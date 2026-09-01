@@ -82,6 +82,18 @@ function showLuxuryNotificationBanner(normalizedData) {
 function processIncomingPayload(rawData) {
     if (!rawData) return;
 
+    // ⛔ BLOQUAGE NOTIFICATION SI CRÉÉ PAR LE STAFF / LAUNDRY OS
+    if (rawData.created_by && rawData.created_by !== 'Guest App' && rawData.created_by !== 'Guest' && rawData.created_by !== 'Guest Portal') {
+        if (typeof window.onNewGuestRequestReceived === 'function') {
+            window.onNewGuestRequestReceived(rawData);
+        } else if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        } else if (typeof loadOrders === 'function') {
+            loadOrders();
+        }
+        return; // Stoppe l'exécution : Pas de son ni de bannière pour le staff
+    }
+
     const normalizedRequest = {
         id: String(rawData.id),
         room: rawData.room_number || rawData.room || '---',
@@ -104,7 +116,7 @@ function processIncomingPayload(rawData) {
         created_at: rawData.created_at || new Date().toISOString()
     };
 
-    // 1. Trigger notification banner & audio chime
+    // 1. Trigger notification banner & audio chime only for real guest requests
     showLuxuryNotificationBanner(normalizedRequest);
 
     // 2. Transmit to Laundry OS interface to refresh active orders
