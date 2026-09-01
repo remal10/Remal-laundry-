@@ -634,8 +634,20 @@ async function sauvegarderBordereauDepuisFormulaire() {
 
     const editingId = document.getElementById('editingRecordId').value.trim();
     const cartEntries = Object.values(cart);
-    if (cartEntries.length === 0) {
-        alert("Please select at least one garment before saving.");
+
+    // Vérifier s'il y a des custom items renseignés
+    let hasCustomItems = false;
+    for (let i = 0; i < 3; i++) {
+        const nameVal = document.getElementById(`customName${i}`)?.value.trim() || '';
+        const qtyVal = parseInt(document.getElementById(`customQty${i}`)?.value) || 0;
+        if (nameVal !== '' && qtyVal > 0) {
+            hasCustomItems = true;
+            break;
+        }
+    }
+
+    if (cartEntries.length === 0 && !hasCustomItems && !currentImageData) {
+        alert("Please select at least one garment or custom item before saving.");
         return;
     }
 
@@ -643,6 +655,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
     let subtotalCalc = 0;
     const itemsArray = [];
 
+    // 1. Ingestion des articles du catalogue standard
     cartEntries.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
         const price = parseFloat(item.price) || 0;
@@ -672,6 +685,40 @@ async function sauvegarderBordereauDepuisFormulaire() {
         });
     });
 
+    // 2. EXTRACTION DES CUSTOM ITEMS (0, 1, 2)
+    for (let i = 0; i < 3; i++) {
+        const customNameEl = document.getElementById(`customName${i}`);
+        const customPriceEl = document.getElementById(`customPrice${i}`);
+        const customQtyEl = document.getElementById(`customQty${i}`);
+
+        if (customNameEl && customQtyEl) {
+            const nameVal = customNameEl.value.trim();
+            const priceVal = parseFloat(customPriceEl ? customPriceEl.value : 0) || 0;
+            const qtyVal = parseInt(customQtyEl.value, 10) || 0;
+
+            if (nameVal !== '' && qtyVal > 0) {
+                totalPcs += qtyVal;
+                let totalPrice = 0;
+
+                if (currentCountType === 'guest' || currentCountType === 'quota_extra') {
+                    totalPrice = qtyVal * priceVal;
+                }
+
+                subtotalCalc += totalPrice;
+
+                itemsArray.push({
+                    name: nameVal,
+                    category: 'Custom Item',
+                    quantity: qtyVal,
+                    free_quantity: 0,
+                    extra_quantity: qtyVal,
+                    unit_price: priceVal,
+                    total_price: totalPrice
+                });
+            }
+        }
+    }
+
     const foldingRadio = document.querySelector('input[name="foldingOption"]:checked');
     const serviceStyle = foldingRadio ? foldingRadio.value : 'F — Folding';
     const noteVal = document.getElementById('recordOptionalNote').value.trim();
@@ -682,7 +729,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
     const vat = Number((subtotal * 0.05).toFixed(2));
     const grandTotal = Number((subtotal + vat).toFixed(2));
 
-    // Déterminer le statut à conserver
     chargerDonneesLocalStorage();
     let currentStatus = 'Collected';
     if (editingId) {
@@ -705,6 +751,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
         grand_total: grandTotal,
         special_notes: noteVal,
         status: currentStatus,
+        created_by: 'Staff Laundry OS',
         accepted_policy: true
     };
 
@@ -715,14 +762,12 @@ async function sauvegarderBordereauDepuisFormulaire() {
         try {
             let res;
             if (editingId && editingId.length === 36) {
-                // UPDATE pour un UUID valide de 36 caractères
                 res = await supabaseClient
                     .from('guest_laundry_requests')
                     .update(payloadSupabase)
                     .eq('id', editingId)
                     .select();
             } else {
-                // INSERT sans ID pour laisser PostgreSQL générer l'UUID v4
                 res = await supabaseClient
                     .from('guest_laundry_requests')
                     .insert([payloadSupabase])
@@ -744,7 +789,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
 
     if (!assignedId) assignedId = String(Date.now());
 
-    // Mise à jour miroir en LocalStorage
     const slipRecord = {
         ...payloadSupabase,
         id: assignedId,
@@ -824,7 +868,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         options: { service_style: newOrder.service_type || 'Laundry Collection' }
     };
 
-        try {
+    try {
         chargerDonneesLocalStorage();
         if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
             const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
@@ -845,7 +889,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         }
     } catch (e) {}
 
-    // Affichage forcé de la bannière VIP
     const bannerContainer = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
     const formattedMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
@@ -860,7 +903,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         bannerContainer.style.display = 'flex';
     }
 
-    // Déclenchement du vrai carillon audio
     try {
         if (typeof playLuxuryHotelChime === 'function') {
             playLuxuryHotelChime();
@@ -1925,25 +1967,38 @@ function modifierBordereauActuel() {
         }
         const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
 
+        let customIdx = 0;
         itemsList.forEach(item => {
             const itemName = item.name || item.item_name || 'Article';
             const itemQty = parseInt(item.quantity || item.qty, 10) || 0;
             const itemPrice = parseFloat(item.unit_price || item.price) || 0;
             const freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
             
-            let servicePrefix = item.service || currentService || 'laundry';
-            if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
-                servicePrefix = 'laundry';
-            }
+            if (item.category === 'Custom Item' && customIdx < 3) {
+                const nameInput = document.getElementById(`customName${customIdx}`);
+                const priceInput = document.getElementById(`customPrice${customIdx}`);
+                const qtyInput = document.getElementById(`customQty${customIdx}`);
+                if (nameInput) nameInput.value = itemName;
+                if (priceInput) priceInput.value = itemPrice;
+                if (qtyInput) qtyInput.value = itemQty;
+                customIdx++;
+                const customDetails = document.getElementById('detailsCustomItems');
+                if (customDetails) customDetails.open = true;
+            } else {
+                let servicePrefix = item.service || currentService || 'laundry';
+                if (!['laundry', 'dry', 'pressing'].includes(servicePrefix)) {
+                    servicePrefix = 'laundry';
+                }
 
-            if (itemQty > 0) {
-                const key = `${servicePrefix}_${itemName}`;
-                cart[key] = {
-                    name: itemName,
-                    price: itemPrice,
-                    qty: itemQty,
-                    freeQty: freeQty
-                };
+                if (itemQty > 0) {
+                    const key = `${servicePrefix}_${itemName}`;
+                    cart[key] = {
+                        name: itemName,
+                        price: itemPrice,
+                        qty: itemQty,
+                        freeQty: freeQty
+                    };
+                }
             }
         });
 
@@ -2083,7 +2138,6 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
     const idStr = String(targetId).trim();
     isLocalUpdating = true;
 
-    // 1. Mise à jour Supabase si connecté
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             if (idStr.length === 36) {
@@ -2104,7 +2158,6 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
         }
     }
 
-    // 2. Mise à jour du cache local
     chargerDonneesLocalStorage();
     const item = cachedSlips.find(s => String(s.id).trim() === idStr);
     if (item) {
@@ -2112,7 +2165,6 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
         sauvegarderDonneesLocalStorage();
     }
 
-    // 3. Rafraîchissement des vues
     if (typeof fermerModal === 'function') fermerModal();
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
@@ -2120,7 +2172,6 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
     setTimeout(() => { isLocalUpdating = false; }, 800);
 }
 
-// Alias de sécurité pour compatibilité avec le HTML
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     await changerStatutBordereau(requestId, nouveauStatut);
 }
@@ -2218,20 +2269,15 @@ async function supprimerBordereauxEnLot() {
 function dismissGuestNotificationBanner() {
     const bannerContainer = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     if (bannerContainer) {
-        // Stopper immédiatement l'animation de clignotement / rebond
         bannerContainer.classList.remove('animate-bounce', 'animate-pulse');
-        
-        // Masquer proprement la bannière
         bannerContainer.classList.add('hidden');
         bannerContainer.style.display = 'none';
     }
 
-    // Retirer les effets visuels de clignotement sur les cartes de chambres
     document.querySelectorAll('.remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
 }
-
 
 // LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 let currentStaffUser = null;
