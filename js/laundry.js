@@ -135,7 +135,19 @@ async function sauvegarderBordereauLocal() {
     }
 
     const cartEntries = Object.values(cart);
-    if (cartEntries.length === 0 && !currentImageData) {
+
+    // Vérifier s'il y a des custom items renseignés
+    let hasCustomItems = false;
+    for (let i = 0; i < 3; i++) {
+        const nameVal = document.getElementById(`customName${i}`)?.value.trim() || '';
+        const qtyVal = parseInt(document.getElementById(`customQty${i}`)?.value) || 0;
+        if (nameVal !== '' && qtyVal > 0) {
+            hasCustomItems = true;
+            break;
+        }
+    }
+
+    if (cartEntries.length === 0 && !hasCustomItems && !currentImageData) {
         alert('Please select at least one garment or take a proof photo.');
         return;
     }
@@ -144,6 +156,7 @@ async function sauvegarderBordereauLocal() {
     let subtotalCalc = 0;
     const itemsArray = [];
 
+    // 1. Extraction des articles du panier standard
     cartEntries.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
         const price = parseFloat(item.price) || 0;
@@ -173,6 +186,40 @@ async function sauvegarderBordereauLocal() {
         });
     });
 
+    // 2. EXTRACTION SÉCURISÉE DES CUSTOM ITEMS (0, 1, 2)
+    for (let i = 0; i < 3; i++) {
+        const customNameEl = document.getElementById(`customName${i}`);
+        const customPriceEl = document.getElementById(`customPrice${i}`);
+        const customQtyEl = document.getElementById(`customQty${i}`);
+
+        if (customNameEl && customQtyEl) {
+            const nameVal = customNameEl.value.trim();
+            const priceVal = parseFloat(customPriceEl ? customPriceEl.value : 0) || 0;
+            const qtyVal = parseInt(customQtyEl.value, 10) || 0;
+
+            if (nameVal !== '' && qtyVal > 0) {
+                totalPcs += qtyVal;
+                let totalPrice = 0;
+
+                if (currentCountType === 'guest' || currentCountType === 'quota_extra') {
+                    totalPrice = qtyVal * priceVal;
+                }
+
+                subtotalCalc += totalPrice;
+
+                itemsArray.push({
+                    name: nameVal,
+                    category: 'Custom Item',
+                    quantity: qtyVal,
+                    free_quantity: 0,
+                    extra_quantity: qtyVal,
+                    unit_price: priceVal,
+                    total_price: totalPrice
+                });
+            }
+        }
+    }
+
     const selectedOption = document.querySelector('input[name="foldingOption"]:checked')?.value || 'F — Folding';
     const subtotal = Number(subtotalCalc.toFixed(2));
     const vat = Number((subtotal * 0.05).toFixed(2));
@@ -180,7 +227,6 @@ async function sauvegarderBordereauLocal() {
 
     const pmsData = pmsDatabase[roomNum] || { guestName: 'Unknown Guest', roomTyp: 'DLXR', agency: 'Direct', quotaText: 'Chargeable', isChargeable: true };
 
-    // Conserver le statut existant s'il s'agit d'une modification, sinon mettre 'Collected'
     chargerDonneesLocalStorage();
     let currentStatus = 'Collected';
     if (editingId) {
@@ -202,7 +248,8 @@ async function sauvegarderBordereauLocal() {
         vat: vat,
         grand_total: grandTotal,
         special_notes: optionalNote,
-        status: currentStatus, // Clé "status" en anglais
+        status: currentStatus,
+        created_by: 'Staff Laundry OS', // Marqueur pour désactiver le auto-trigger notification
         accepted_policy: true
     };
 
@@ -518,6 +565,7 @@ async function validateAndSaveSpaReceipt() {
         grand_total: grandTotalValue,
         special_notes: `Collected by: ${collectedBy} | Delivered by: ${deliveredBy}`,
         status: 'Collected',
+        created_by: 'Staff Laundry OS',
         accepted_policy: true
     };
 
