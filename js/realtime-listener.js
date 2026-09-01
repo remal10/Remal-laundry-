@@ -42,7 +42,7 @@ function playLuxuryHotelChime() {
     }
 }
 
-// Affichage sécurisé de la bannière VIP en Anglais
+// Affichage sécurisé de la bannière VIP
 function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
@@ -51,30 +51,28 @@ function showLuxuryNotificationBanner(normalizedData) {
     const guestName = normalizedData.guest_name || 'Guest';
     const totalPcs = normalizedData.total_clothes || normalizedData.total_pieces || 0;
 
+    const textMessage = `⚡ NEW LAUNDRY REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs`;
+
     if (bannerText) {
-        bannerText.innerText = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs`;
+        bannerText.innerText = textMessage;
     }
 
     if (banner) {
-        // Forcer le retrait du masquage
         banner.classList.remove('hidden');
-        banner.classList.add('animate-bounce');
         banner.style.display = 'flex';
+        banner.classList.add('animate-bounce');
+    } else {
+        // Alerte visuelle de secours universelle si l'élément HTML banner n'existe pas
+        console.log("🔔 NOTIFICATION :", textMessage);
     }
 
-    // Jouer le son
+    // Jouer le son du carillon
     playLuxuryHotelChime();
 }
-
 
 // Normalisation des données envoyées par le Guest Portal
 function processIncomingPayload(rawData) {
     if (!rawData) return;
-
-    // IGNORER SI C'EST UNE CRÉATION PAR LE STAFF DE LAUNDRY OS (Évite l'auto-trigger)
-    if (rawData.created_by && rawData.created_by !== 'Guest App' && rawData.created_by !== 'Guest') {
-        return;
-    }
 
     const normalizedRequest = {
         id: String(rawData.id),
@@ -93,30 +91,35 @@ function processIncomingPayload(rawData) {
         special_notes: rawData.special_notes || rawData.note || 'None',
         pms_quota: rawData.pms_quota || 'Standard',
         extra_charged: rawData.extra_charged || false,
-        status: rawData.status || 'Pending',
+        status: rawData.status || 'Collected',
         is_guest_request: true,
         created_at: rawData.created_at || new Date().toISOString()
     };
 
-    // 1. Afficher la bannière et jouer le carillon VIP uniquement pour les vrais guests
+    // 1. Déclencher la bannière et le son
     showLuxuryNotificationBanner(normalizedRequest);
 
-    // 2. Transmettre à l'UI
+    // 2. Transmettre à l'interface de Laundry OS pour recharger le tableau
     if (typeof window.onNewGuestRequestReceived === 'function') {
         window.onNewGuestRequestReceived(normalizedRequest);
+    } else if (typeof chargerLiveOrders === 'function') {
+        chargerLiveOrders();
+    } else if (typeof loadOrders === 'function') {
+        loadOrders();
     }
 }
 
-// Synchronisation de secours intelligente (Déclenchée uniquement si inactive)
+// Synchronisation de secours (Surveille toutes les nouvelles requêtes)
 let lastProcessedId = null;
 
 async function syncFallbackGuestRequests() {
-    if (!supabaseClient || isLocalUpdating) return;
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+    if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) return;
+
     try {
         const { data, error } = await supabaseClient
             .from('guest_laundry_requests')
             .select('*')
-            .eq('status', 'Pending') // Ne surveiller que les vraies requêtes clients en attente
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -130,7 +133,7 @@ async function syncFallbackGuestRequests() {
 
         if (String(latest.id) !== lastProcessedId) {
             lastProcessedId = String(latest.id);
-            console.log("🔄 Nouvelle requête client détectée via fallback :", latest);
+            console.log("🔄 Nouvelle requête détectée via fallback :", latest);
             processIncomingPayload(latest);
         }
     } catch (err) {
@@ -138,9 +141,9 @@ async function syncFallbackGuestRequests() {
     }
 }
 
-// Initialisation unique du Listener Realtime
+// Initialisation unique du Listener Realtime Supabase
 function initRealtimeGuestRequests() {
-    if (!supabaseClient) {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         console.warn("⚠️ Client Supabase non prêt pour Realtime.");
         return;
     }
@@ -153,17 +156,17 @@ function initRealtimeGuestRequests() {
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'guest_laundry_requests' },
             (payload) => {
-                if (isLocalUpdating) return;
+                if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) return;
                 console.log("🔔 NOUVELLE REQUÊTE CLIENT DIRECTE :", payload.new);
                 processIncomingPayload(payload.new);
             }
         )
         .subscribe((status) => {
-            console.log("📡 Statut canal Supabase :", status);
+            console.log("📡 Statut canal Supabase Realtime :", status);
         });
 
-    // Polling de secours toutes les 10 secondes (filtré sur 'Pending')
-    setInterval(syncFallbackGuestRequests, 10000);
+    // Polling de secours toutes les 8 secondes
+    setInterval(syncFallbackGuestRequests, 8000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
