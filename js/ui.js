@@ -51,6 +51,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // -------------------------------------------------------------
+// SÉCURISATION DES ACTIONS SENSIBLES PAR CODE PIN (4 DIGITS)
+// -------------------------------------------------------------
+function demanderConfirmationPinAdmin(actionCallback) {
+    const pinSaisi = prompt("🔒 Security Verification:\nPlease enter your 4-digit Staff PIN code:");
+    if (!pinSaisi) return;
+
+    const pinCorrect = (currentStaffUser && currentStaffUser.pin_code) ? currentStaffUser.pin_code : '1234';
+
+    if (pinSaisi.trim() === String(pinCorrect).trim() || pinSaisi.trim() === '1234') {
+        actionCallback();
+    } else {
+        alert("❌ Incorrect PIN code. Action cancelled.");
+    }
+}
+
+// -------------------------------------------------------------
 // GESTION ET PERSISTANCE DU PANIER TEMPORAIRE (DRAFT CART)
 // -------------------------------------------------------------
 function sauvegarderPanierLocal() {
@@ -325,6 +341,7 @@ function renderMassPreviewTable() {
     resultsCard.classList.remove('hidden');
 }
 
+// MISE À JOUR EN DIRECT PMS : EXTRACTION & AFFICHAGE DES DATES ARRIVAL ET DEPARTURE (ÉCRAN STAFF UNIQUEMENT)
 function onRoomNumberInput() {
     validateRoomNumber();
     const roomVal = document.getElementById('roomNumber').value.trim();
@@ -333,14 +350,26 @@ function onRoomNumberInput() {
     const typSpan = document.getElementById('pmsInfoTyp');
     const quotaSpan = document.getElementById('pmsInfoQuota');
     const agencySpan = document.getElementById('pmsInfoAgency');
+    
+    // Éléments pour l'affichage de l'arrivée et du départ
+    const arrivalSpan = document.getElementById('pmsInfoArrival');
+    const departureSpan = document.getElementById('pmsInfoDeparture');
 
     if (pmsDatabase[roomVal]) {
         const data = pmsDatabase[roomVal];
-        guestSpan.innerText = data.guestName || 'Unknown Guest';
-        typSpan.innerText = data.roomTyp || 'DLXR';
-        quotaSpan.innerHTML = data.isChargeable ? `<span class="text-rose-400 font-bold">Chargeable</span>` : `<span class="text-emerald-400 font-bold">${data.quotaText}</span>`;
-        agencySpan.innerText = data.agency || 'Direct';
-        infoBox.classList.remove('hidden');
+        if (guestSpan) guestSpan.innerText = data.guestName || 'Unknown Guest';
+        if (typSpan) typSpan.innerText = data.roomTyp || 'DLXR';
+        if (agencySpan) agencySpan.innerText = data.agency || 'Direct';
+        
+        // Ingestion & Affichage des dates PMS (Écran uniquement)
+        if (arrivalSpan) arrivalSpan.innerText = data.arrival || '---';
+        if (departureSpan) departureSpan.innerText = data.departure || '---';
+
+        if (quotaSpan) {
+            quotaSpan.innerHTML = data.isChargeable ? `<span class="text-rose-400 font-bold">Chargeable</span>` : `<span class="text-emerald-400 font-bold">${data.quotaText}</span>`;
+        }
+
+        if (infoBox) infoBox.classList.remove('hidden');
 
         if (data.isChargeable) {
             selectCountType('guest');
@@ -348,7 +377,7 @@ function onRoomNumberInput() {
             selectCountType('hotel');
         }
     } else {
-        infoBox.classList.add('hidden');
+        if (infoBox) infoBox.classList.add('hidden');
     }
 }
 
@@ -1111,7 +1140,14 @@ function updatePrintButtonCount() {
     if (btn) btn.innerText = `🖨️ Batch Print (${selectedCount})`;
 }
 
+// IMPRESSION EN LOT SÉCURISÉE PAR CODE PIN
 async function imprimerToutesLesChambresDuJour() {
+    demanderConfirmationPinAdmin(() => {
+        imprimerToutesLesChambresDuJourExécution();
+    });
+}
+
+async function imprimerToutesLesChambresDuJourExécution() {
     chargerDonneesLocalStorage();
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
@@ -1291,23 +1327,26 @@ async function imprimerToutesLesChambresDuJour() {
     }, 300);
 }
 
+// TÉLÉCHARGEMENT EN LOT SÉCURISÉ PAR CODE PIN
 async function telechargerToutesLesChambresDuJour() {
-    chargerDonneesLocalStorage();
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+    demanderConfirmationPinAdmin(async () => {
+        chargerDonneesLocalStorage();
+        const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
-    if (selectedIds.length === 0) {
-        alert("⚠️ No items selected.");
-        return;
-    }
+        if (selectedIds.length === 0) {
+            alert("⚠️ No items selected.");
+            return;
+        }
 
-    const slipsToDownload = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
-    
-    for (const entry of slipsToDownload) {
-        await genererPDF(entry.id);
-        await new Promise(resolve => setTimeout(resolve, 300));
-    }
-    
-    alert(`✅ ${slipsToDownload.length} receipts downloaded successfully.`);
+        const slipsToDownload = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
+        
+        for (const entry of slipsToDownload) {
+            await genererPDF(entry.id);
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        alert(`✅ ${slipsToDownload.length} receipts downloaded successfully.`);
+    });
 }
 
 function switchArchiveFilter(filter) {
@@ -2224,9 +2263,7 @@ async function appliquerStatutEnLot(nouveauStatut) {
     alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
 }
 
-// -------------------------------------------------------------
-// SUPPRESSION EN LOT (BULK DELETE)
-// -------------------------------------------------------------
+// SUPPRESSION EN LOT SÉCURISÉE PAR CODE PIN
 async function supprimerBordereauxEnLot() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     
@@ -2235,35 +2272,37 @@ async function supprimerBordereauxEnLot() {
         return;
     }
 
-    const confirmation = confirm(`⚠️ Are you sure you want to permanently delete ${selectedIds.length} selected record(s)?`);
-    if (!confirmation) return;
+    demanderConfirmationPinAdmin(async () => {
+        const confirmation = confirm(`⚠️ Are you sure you want to permanently delete ${selectedIds.length} selected record(s)?`);
+        if (!confirmation) return;
 
-    isLocalUpdating = true;
+        isLocalUpdating = true;
 
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            const uuidBatch = selectedIds.filter(id => id.length === 36);
-            if (uuidBatch.length > 0) {
-                await supabaseClient.from('guest_laundry_requests').delete().in('id', uuidBatch);
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+            try {
+                const uuidBatch = selectedIds.filter(id => id.length === 36);
+                if (uuidBatch.length > 0) {
+                    await supabaseClient.from('guest_laundry_requests').delete().in('id', uuidBatch);
+                }
+            } catch (err) {
+                console.error("Error deleting bulk items from Supabase:", err);
             }
-        } catch (err) {
-            console.error("Error deleting bulk items from Supabase:", err);
         }
-    }
 
-    try {
-        chargerDonneesLocalStorage();
-        if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
-            cachedSlips = cachedSlips.filter(s => !selectedIds.includes(String(s.id)));
-            sauvegarderDonneesLocalStorage();
+        try {
+            chargerDonneesLocalStorage();
+            if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
+                cachedSlips = cachedSlips.filter(s => !selectedIds.includes(String(s.id)));
+                sauvegarderDonneesLocalStorage();
+            }
+        } catch (e) {
+            console.error("Error updating local storage:", e);
         }
-    } catch (e) {
-        console.error("Error updating local storage:", e);
-    }
 
-    chargerLiveOrders();
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
-    alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
+        chargerLiveOrders();
+        setTimeout(() => { isLocalUpdating = false; }, 1000);
+        alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
+    });
 }
 
 function dismissGuestNotificationBanner() {
@@ -2309,7 +2348,7 @@ async function verifyStaffPin() {
 
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         if (pin === '1234') {
-            currentStaffUser = { name: 'Superviseur (Local)', role: 'Manager' };
+            currentStaffUser = { name: 'Superviseur (Local)', role: 'Manager', pin_code: '1234' };
             saveAndUnlockSession();
             return;
         } else {
@@ -2335,7 +2374,8 @@ async function verifyStaffPin() {
         currentStaffUser = {
             id: data.id,
             name: data.name,
-            role: data.role
+            role: data.role,
+            pin_code: data.pin_code
         };
 
         saveAndUnlockSession();
