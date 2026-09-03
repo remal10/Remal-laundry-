@@ -32,22 +32,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- STYLES EXTRAITS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200">
 
     <!-- VIP REALTIME NOTIFICATION BANNER -->
-<div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
-    <div class="flex items-center gap-4">
-        <span class="text-2xl">🔔</span>
-        <div>
-            <p class="text-sm font-black uppercase tracking-wider">New Live Guest Request!</p>
-            <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Room --- just submitted a laundry order.</p>
+    <div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
+        <div class="flex items-center gap-4">
+            <span class="text-2xl">🔔</span>
+            <div>
+                <p class="text-sm font-black uppercase tracking-wider">New Live Guest Request!</p>
+                <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Room --- just submitted a laundry order.</p>
+            </div>
         </div>
+        <button onclick="event.stopPropagation(); dismissGuestNotificationBanner();" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">Close ✕</button>
     </div>
-    <button onclick="event.stopPropagation(); dismissGuestNotificationBanner();" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">Close ✕</button>
-</div>
 
     <div id="pwaInstallBanner" class="hidden bg-[#181614] border-b border-[#DCA773] px-6 py-3 flex justify-between items-center no-print">
         <div class="flex items-center gap-3">
@@ -137,18 +136,36 @@
                             
                             <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
                             
-                            <div id="roomPmsInfoBox" class="hidden mt-3 p-4 bg-[#211e1a] border border-[#2f2820] rounded-2xl text-xs space-y-2 shadow-sm">
-                                <div class="flex justify-between font-bold">
-                                    <span>Guest Name:</span> <span id="pmsInfoGuest" class="text-[#DCA773]">---</span>
+                            <!-- BOÎTE D'INFORMATION PMS (AVEC ARRIVAL & DEPARTURE) -->
+                            <div id="roomPmsInfoBox" class="hidden mt-3 p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs space-y-2 shadow-inner">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-stone-400 font-medium">Guest Name:</span>
+                                    <span id="pmsInfoGuest" class="font-bold text-stone-100">---</span>
                                 </div>
-                                <div class="flex justify-between font-bold">
-                                    <span>Room Type (Typ):</span> <span id="pmsInfoTyp">---</span>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-stone-400 font-medium">Room Type:</span>
+                                    <span id="pmsInfoTyp" class="font-bold text-stone-200">---</span>
                                 </div>
-                                <div class="flex justify-between font-bold border-t border-[#2f2820] pt-1.5">
-                                    <span>PMS Quota / Status:</span> <span id="pmsInfoQuota" class="text-emerald-400">---</span>
+
+                                <!-- INFORMATIONS INFORMATIVES (ÉCRAN UNIQUEMENT) -->
+                                <div class="grid grid-cols-2 gap-2 py-2 my-1 border-y border-[#2f2820] bg-[#181614]/60 px-2.5 rounded-xl text-[11px]">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-amber-400 font-semibold">🛬 Arr:</span>
+                                        <span id="pmsInfoArrival" class="text-stone-200 font-bold">---</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 justify-end">
+                                        <span class="text-amber-400 font-semibold">🛫 Dep:</span>
+                                        <span id="pmsInfoDeparture" class="text-stone-200 font-bold">---</span>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between font-bold">
-                                    <span>Agency:</span> <span id="pmsInfoAgency">---</span>
+
+                                <div class="flex justify-between items-center">
+                                    <span class="text-stone-400 font-medium">Laundry Quota:</span>
+                                    <span id="pmsInfoQuota" class="font-bold text-emerald-400">---</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-stone-400 font-medium">Agency / Origin:</span>
+                                    <span id="pmsInfoAgency" class="font-bold text-stone-200">---</span>
                                 </div>
                             </div>
 
@@ -771,17 +788,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- CHARGEMENT DES SCRIPTS DE L'APPLICATION (ORDRE STRICT) -->
+    <!-- CHARGEMENT DES SCRIPTS -->
     <script src="js/config.js"></script>
     <script src="js/laundry.js"></script>
     <script src="js/realtime-listener.js"></script>
     <script src="js/ui.js"></script>
 
-    <!-- SERVICE WORKER PWA INLINE -->
     <script>
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE_NAME = 'remal-pwa-v30';
+                const CACHE_NAME = 'remal-pwa-v31';
                 const ASSETS = [
                     './',
                     'style.css',
