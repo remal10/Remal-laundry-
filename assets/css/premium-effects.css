@@ -1,0 +1,334 @@
+/* ==================== PREMIUM EFFECTS REMAL HOTEL ==================== */
+/* Effets visuels luxueux - Ne modifie pas l'existant, ajoute seulement */
+
+:root {
+    --gold-primary: #DCA773;
+    --gold-light: #EAD0B3;
+    --gold-dark: #B88351;
+    --gold-gradient: linear-gradient(135deg, #EAD0B3 0%, #DCA773 50%, #B88351 100%);
+    --premium-shadow: 0 20px 60px rgba(220, 167, 115, 0.15);
+    --card-transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- 1. ANIMATION D'ENTRÉE CINÉMATIQUE ---------- */
+@keyframes cinematicEntrance {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+        filter: blur(10px);
+    }
+    50% {
+        filter: blur(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+    }
+}
+
+.cinematic-entrance {
+    animation: cinematicEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ---------- 2. EFFET DE BRILLANCE OR ---------- */
+@keyframes goldShimmer {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+.gold-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--gold-dark) 0%,
+        var(--gold-light) 25%,
+        #ffffff 50%,
+        var(--gold-light) 75%,
+        var(--gold-dark) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: goldShimmer 3s linear infinite;
+}
+
+/* ---------- 3. CARTE AVEC EFFET DE PROFONDEUR ---------- */
+.premium-card {
+    position: relative;
+    transition: var(--card-transition);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+.premium-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: var(--premium-shadow);
+}
+
+.premium-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.premium-card:hover::before {
+    opacity: 1;
+}
+
+/* ---------- 4. BOUTON OR LUXUEUX ---------- */
+.premium-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.premium-button:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* ---------- 5. ANIMATION DE PARTICULES D'OR ---------- */
+@keyframes floatUp {
+    0% {
+        opacity: 0;
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) rotate(360deg);
+    }
+}
+
+.gold-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    animation: floatUp 3s ease-out forwards;
+}
+
+/* ---------- 6. EFFET DE SURVOL ÉLÉGANT ---------- */
+.elegant-hover {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.elegant-hover:hover {
+    transform: translateX(5px);
+    border-color: var(--gold-primary);
+    background: linear-gradient(90deg, rgba(220, 167, 115, 0.1), transparent);
+}
+
+/* ---------- 7. TRANSITION ENTRE ÉCRANS ---------- */
+@keyframes slideOutLeft {
+    from { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+    to { 
+        opacity: 0; 
+        transform: translateX(-50px); 
+        filter: blur(5px);
+    }
+}
+
+@keyframes slideInRight {
+    from { 
+        opacity: 0; 
+        transform: translateX(50px); 
+        filter: blur(5px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+        filter: blur(0);
+    }
+}
+
+.screen-transition-out {
+    animation: slideOutLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.screen-transition-in {
+    animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ---------- 8. BADGE VIP ANIMÉ ---------- */
+@keyframes vipPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+    }
+}
+
+.vip-badge-animated {
+    animation: vipPulse 2s ease-in-out infinite;
+}
+
+/* ---------- 9. LOADER ÉLÉGANT ---------- */
+@keyframes elegantLoader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.elegant-loader {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(220, 167, 115, 0.1);
+    border-top-color: var(--gold-primary);
+    border-radius: 50%;
+    animation: elegantLoader 1s linear infinite;
+}
+
+/* ---------- 10. EFFET DE VERRE (GLASSMORPHISM) ---------- */
+.glass-effect {
+    background: rgba(28, 25, 23, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(220, 167, 115, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- 11. ANIMATION DE TEXTE ---------- */
+@keyframes textReveal {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+        letter-spacing: 0.5em;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        letter-spacing: 0.2em;
+    }
+}
+
+.text-reveal {
+    animation: textReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ---------- 12. NOTIFICATION ÉLÉGANTE ---------- */
+@keyframes notificationSlide {
+    from {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.elegant-notification {
+    animation: notificationSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ---------- 13. ANIMATION DE FONDU ---------- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease forwards;
+}
+
+/* ---------- 14. ANIMATION DE GLISSEMENT VERS LE HAUT ---------- */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-up {
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ---------- 15. EFFET DE PULSATION DOUCE ---------- */
+@keyframes softPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.soft-pulse {
+    animation: softPulse 2s ease-in-out infinite;
+}
+
+/* ---------- 16. DÉGRADÉ OR POUR LES BOUTONS ---------- */
+.gold-gradient-bg {
+    background: var(--gold-gradient);
+}
+
+/* ---------- 17. BORDURE ANIMÉE ---------- */
+@keyframes borderGlow {
+    0%, 100% {
+        border-color: rgba(220, 167, 115, 0.3);
+    }
+    50% {
+        border-color: rgba(220, 167, 115, 0.8);
+    }
+}
+
+.border-glow {
+    animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* ---------- 18. OMBRE PORTÉE PREMIUM ---------- */
+.premium-shadow {
+    box-shadow: var(--premium-shadow);
+}
+
+/* ---------- 19. EFFET DE SURVOL 3D ---------- */
+.tilt-hover {
+    transition: transform 0.3s ease;
+}
+
+.tilt-hover:hover {
+    transform: perspective(1000px) rotateX(2deg) rotateY(2deg) scale(1.02);
+}
+
+/* ---------- 20. TRANSITION DOUCE GLOBALE ---------- */
+.smooth-transition {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
