@@ -785,53 +785,27 @@
     <script src="js/realtime-listener.js"></script>
     <script src="js/ui.js"></script>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                const CACHE_NAME = 'remal-pwa-v31';
-                const ASSETS = [
-                    './',
-                    'style.css',
-                    'js/config.js',
-                    'js/laundry.js',
-                    'js/realtime-listener.js',
-                    'js/ui.js',
-                    'https://cdn.tailwindcss.com',
-                    'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap',
-                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-                    'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
-                    'https://cdn.jsdelivr.net/npm/chart.js',
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
-                    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
-                ];
-
-                self.addEventListener('install', (e) => {
-                    self.skipWaiting();
-                    e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(err => console.log('Cache partial:', err))));
+<script>
+    // Service Worker externe (Phase E.3)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('[SW] Service Worker registered:', registration.scope);
+                })
+                .catch(err => {
+                    console.log('[SW] Registration failed:', err);
                 });
-
-                self.addEventListener('activate', (e) => {
-                    e.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => { if (k !== CACHE_NAME) return caches.delete(k); }))).then(() => clients.claim()));
-                });
-
-                self.addEventListener('fetch', (e) => {
-                    e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request).catch(() => caches.match('./'))));
-                });
-            `;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            window.addEventListener('load', () => { 
-                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(err => console.log('SW Registration failed:', err)); 
-            });
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); 
-            deferredPrompt = e;
-            const banner = document.getElementById('pwaInstallBanner');
-            if (banner) banner.classList.remove('hidden');
         });
-    </script>
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); 
+        deferredPrompt = e;
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.classList.remove('hidden');
+    });
+</script>
      <script src="security-guard.js"></script>
     <script src="js/guesthub-integration.js"></script>
 </body>
