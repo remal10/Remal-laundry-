@@ -124,7 +124,7 @@ function showGuestHubElements(name, room) {
             display: flex;
             align-items: center;
             gap: 10px;
-            animation: slideUp 0.5s ease;
+            animation: remalSlideUp 0.5s ease;
         `;
         document.body.appendChild(sessionBanner);
     }
@@ -179,11 +179,11 @@ function returnToGuestHub() {
         align-items: center;
         justify-content: center;
         background: rgba(0, 0, 0, 0.95);
-        animation: fadeIn 0.3s ease;
+        animation: remalFadeIn 0.3s ease;
     `;
     overlay.innerHTML = `
         <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 60px; animation: bounce 1s infinite;">🏨</div>
+            <div style="font-size: 60px; animation: remalBounce 1s infinite;">🏨</div>
             <h2 style="color: #DCA773; font-size: 24px; margin-top: 20px; font-weight: bold; font-family: 'Cinzel', serif;">
                 Guest Hub
             </h2>
@@ -191,9 +191,9 @@ function returnToGuestHub() {
                 Returning to your personal space...
             </p>
             <div style="margin-top: 20px;">
-                <span style="display: inline-block; width: 8px; height: 8px; background: #DCA773; border-radius: 50%; animation: pulse 0.6s infinite; margin: 0 3px;"></span>
-                <span style="display: inline-block; width: 8px; height: 8px; background: #DCA773; border-radius: 50%; animation: pulse 0.6s 0.2s infinite; margin: 0 3px;"></span>
-                <span style="display: inline-block; width: 8px; height: 8px; background: #DCA773; border-radius: 50%; animation: pulse 0.6s 0.4s infinite; margin: 0 3px;"></span>
+                <span style="display: inline-block; width: 8px; height: 8px; background: #DCA773; border-radius: 50%; animation: remalPulse 0.6s infinite; margin: 0 3px;"></span>
+                <span style="display: inline-block; width: 8px; height: 8px; background: #DCA773; border-radius: 50%; animation: remalPulse 0.6s 0.2s infinite; margin: 0 3px;"></span>
+                <span style="display: inline-block; width: 8px; height: 8px; background: #DCA773; border-radius: 50%; animation: remalPulse 0.6s 0.4s infinite; margin: 0 3px;"></span>
             </div>
             <p style="color: #57534e; font-size: 10px; margin-top: 20px;">
                 ${guestHubSession.name} • Room ${guestHubSession.room}
@@ -219,19 +219,19 @@ function returnToGuestHub() {
 function addGuestHubAnimations() {
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes bounce {
+        @keyframes remalBounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-15px); }
         }
-        @keyframes pulse {
+        @keyframes remalPulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(1.3); }
         }
-        @keyframes fadeIn {
+        @keyframes remalFadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        @keyframes slideUp {
+        @keyframes remalSlideUp {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
