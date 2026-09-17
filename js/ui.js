@@ -194,6 +194,10 @@ function programmerTimerReinitialisationMinuit() {
     setInterval(verifierFinDeJournee, 1000);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// A.2 APPLIQUÉ : Le listener Supabase Realtime dupliqué a été retiré.
+// Il reste UNIQUEMENT le listener de realtime-listener.js (légitime).
+// ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -257,44 +261,11 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        supabaseClient.channel('realtime_laundry')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_laundry_requests' }, async (payload) => {
-                if (isLocalUpdating) return;
-                
-                if (payload.new && payload.new.id) {
-                    const idStr = String(payload.new.id);
-                    const roomClean = payload.new.room_number || payload.new.room || '---';
-                    
-                    let parsedItems = payload.new.items;
-                    if (typeof parsedItems === 'string') {
-                        try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
-                    }
-                    if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
-                        parsedItems = Object.values(parsedItems);
-                    }
-
-                    const formattedData = { 
-                        ...payload.new, 
-                        id: idStr,
-                        room: roomClean, 
-                        room_number: roomClean,
-                        items: Array.isArray(parsedItems) ? parsedItems : []
-                    };
-
-                    const idx = cachedSlips.findIndex(s => String(s.id) === idStr);
-                    if (idx !== -1) {
-                        cachedSlips[idx] = { ...cachedSlips[idx], ...formattedData };
-                    } else {
-                        cachedSlips.unshift(formattedData);
-                    }
-                    sauvegarderDonneesLocalStorage();
-                    chargerLiveOrders();
-                    if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-                        afficherListeBordereauxLocal();
-                    }
-                }
-            })
-            .subscribe();
+        // ═══════════════════════════════════════════════════════════
+        // A.2 : LISTENER REALTIME SUPPRIMÉ ICI (était dupliqué)
+        // Le listener réel est maintenant UNIQUEMENT dans 
+        // realtime-listener.js (initRealtimeGuestRequests)
+        // ═══════════════════════════════════════════════════════════
 
     } catch (e) {
         console.error("Exception lors de la synchronisation cloud:", e);
