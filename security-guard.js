@@ -54,10 +54,14 @@
             role: staffRole || 'none'
         });
         
-        // Vérification douce - ne bloque pas, avertit seulement
+        // ═══════════════════════════════════════════════════════════════
+        // A.5 APPLIQUÉ : Le warning visuel rouge a été retiré.
+        // L'authentification est gérée par ui.js (staffLoginModal).
+        // On garde uniquement la journalisation ci-dessus.
+        // ═══════════════════════════════════════════════════════════════
         if (!staffRole || !staffId) {
             console.warn('⚠️ Laundry OS accessible sans authentification staff');
-            showStaffWarning();
+            // ❌ showStaffWarning() SUPPRIMÉ
         }
     }
     
@@ -112,7 +116,13 @@
         });
     }
     
-    // ==================== AVERTISSEMENT STAFF ====================
+    // ==================== AVERTISSEMENT STAFF (DÉSACTIVÉ) ====================
+    // ═══════════════════════════════════════════════════════════════════
+    // A.5 : Fonction désactivée. La logique d'authentification est dans
+    // ui.js via staffLoginModal. Garder cette fonction commentée pour 
+    // référence future.
+    // ═══════════════════════════════════════════════════════════════════
+    /*
     function showStaffWarning() {
         const warning = document.createElement('div');
         warning.style.cssText = `
@@ -133,6 +143,7 @@
         
         setTimeout(() => warning.remove(), 5000);
     }
+    */
     
     // ==================== INITIALISATION ====================
     function init() {
