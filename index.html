@@ -58,24 +58,23 @@
         <div class="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(#DCA773_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-5 flex justify-between items-center">
-            <div class="flex items-center space-x-4 lg:space-x-6">
-                <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
-                    <div class="flex items-baseline space-x-2">
-                        <span class="text-2xl lg:text-3xl font-serif-luxury font-black text-[#DCA773] tracking-[0.25em]">REMAL</span>
-                        <span class="text-xs lg:text-sm font-serif-luxury text-stone-300 tracking-[0.15em] font-medium hidden sm:inline">HOTEL & VILLAS</span>
-                    </div>
-                    <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-0.5">
-                        <span>فندق وفيلا</span>
-                        <span class="text-stone-500">•</span>
-                        <span>Al Ruwais City</span>
-                    </div>
-                </div>
+     <div class="flex items-center space-x-4 lg:space-x-6">
+       <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
+        <img 
+            src="assets/remal-logo.png" 
+            alt="Remal Hotel & Villas" 
+            class="h-14 sm:h-16 lg:h-20 w-auto object-contain"
+         >
+         <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-1">
+            <span>Al Ruwais City</span>
+          </div>
+      </div>
 
-                <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
-                    <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
-                    <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
-                </div>
-            </div>
+       <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
+             <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
+             <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
+          </div>
+      </div>
             
             <div class="flex items-center space-x-3 sm:space-x-4">
                 <button onclick="toggleTheme()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 w-10 h-10 rounded-xl text-sm flex items-center justify-center shadow transition" title="Toggle Dark/Light Mode">
