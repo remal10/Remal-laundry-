@@ -42,14 +42,11 @@ function playLuxuryHotelChime() {
     }
 }
 
-// Dismiss notification banner manually
-function dismissGuestNotificationBanner() {
-    const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
-    if (banner) {
-        banner.style.display = 'none';
-        banner.classList.add('hidden');
-    }
-}
+// ═══════════════════════════════════════════════════════════════════
+// A.3 APPLIQUÉ : dismissGuestNotificationBanner() supprimée ici.
+// Elle reste UNIQUEMENT dans ui.js (version plus complète qui nettoie
+// aussi les classes CSS des cartes).
+// ═══════════════════════════════════════════════════════════════════
 
 // Display VIP notification banner in English
 function showLuxuryNotificationBanner(normalizedData) {
