@@ -242,7 +242,9 @@ body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
         background: #ffffff !important;
         color: #000000 !important;
     }
-    /* =========================================================
+}
+
+/* =========================================================
    PHASE C.1 — TOKENS SÉMANTIQUES
    Ces variables sont des ALIAS vers les anciennes.
    Aucune régression : --bg-dark, --bg-card, etc. restent valides.
@@ -317,5 +319,4 @@ body.light-mode {
     --state-warning-bg: rgba(245, 158, 11, 0.15);
     --state-danger-bg: rgba(244, 63, 94, 0.15);
     --state-info-bg: rgba(59, 130, 246, 0.15);
-}
 }
