@@ -960,64 +960,67 @@ function chargerLiveOrders() {
         return;
     }
 
-    activeTodaySlips.forEach(entry => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'remal-card p-4 rounded-2xl flex items-center gap-3.5 hover:border-[#DCA773] transition cursor-pointer';
+activeTodaySlips.forEach(entry => {
+    const itemDiv = document.createElement('div');
+    // C.3 : Utilisation de luxe-card + animation d'entrée
+    itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
-        let badgeText = entry.status || 'Collected';
-        let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
-        
-        if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
-            badgeText = '⚡ GUEST REQ';
-            badgeClass = 'bg-emerald-950 text-emerald-300 border border-emerald-600 animate-pulse';
-        } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
-            badgeText = '🧼 Washing';
-            badgeClass = 'bg-blue-950 text-blue-200 border border-blue-800';
-        } else if (entry.status === 'Ready') {
-            badgeText = '✨ Ready';
-            badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        } else if (entry.status === 'Delivered' || entry.status === 'Completed') {
-            badgeText = '✅ Delivered';
-            badgeClass = 'bg-emerald-950 text-emerald-200 border border-emerald-800';
-        } else if (entry.is_spa) {
-            badgeText = 'SPA Daily Sheet';
-            badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-        }
+    let badgeText = entry.status || 'Collected';
+    let badgeClass = 'luxe-badge luxe-badge-collected';
+    
+    // C.4 : Utilisation des nouvelles classes luxe-badge
+    if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
+        badgeText = '⚡ GUEST REQ';
+        badgeClass = 'luxe-badge luxe-badge-guest-req';
+    } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
+        badgeText = '🧼 Washing';
+        badgeClass = 'luxe-badge luxe-badge-washing';
+    } else if (entry.status === 'Ready') {
+        badgeText = '✨ Ready';
+        badgeClass = 'luxe-badge luxe-badge-ready';
+    } else if (entry.status === 'Delivered' || entry.status === 'Completed') {
+        badgeText = '✅ Delivered';
+        badgeClass = 'luxe-badge luxe-badge-delivered';
+    } else if (entry.is_spa) {
+        badgeText = 'SPA Daily Sheet';
+        badgeClass = 'luxe-badge luxe-badge-spa';
+    }
 
-        const roomNum = entry.room_number || entry.room || '---';
-        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+    const roomNum = entry.room_number || entry.room || '---';
+    const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
 
-        let identifierDisplay = `Room ${roomNum}`;
-        if (entry.is_spa) {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
-            identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
-        }
+    let identifierDisplay = `Room ${roomNum}`;
+    if (entry.is_spa) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
+        identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
+    }
 
-        const totalPcs = entry.total_pieces || entry.total_clothes || 0;
-        const totalAmount = entry.grand_total || entry.total || 0;
-        const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
+    const totalPcs = entry.total_pieces || entry.total_clothes || 0;
+    const totalAmount = entry.grand_total || entry.total || 0;
+    const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
 
-        itemDiv.innerHTML = `
-            <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[#DCA773] cursor-pointer" onchange="updatePrintButtonCount()">
-            <div class="flex-1" onclick="ouvrirModalDetails('${entry.id}')">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[#DCA773]'} text-base">${identifierDisplay}</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeText}</span>
-                        </div>
-                        <p class="text-[10px] text-stone-400 mt-1 flex items-center gap-1">${subDesc}</p>
+    // C.3 : Structure HTML améliorée avec meilleure hiérarchie
+    itemDiv.innerHTML = `
+        <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
+        <div class="flex-1 min-w-0" onclick="ouvrirModalDetails('${entry.id}')">
+            <div class="flex justify-between items-start gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[var(--text-accent)]'} text-base">${identifierDisplay}</span>
+                        <span class="${badgeClass}">${badgeText}</span>
                     </div>
-                    <div class="text-right">
-                        <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[#DCA773]'} text-sm">${totalAmount.toFixed(2)} AED</p>
-                        <p class="text-[9px] text-stone-500 font-semibold">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.service_type || entry.options?.service_style || 'Folding')}</p>
-                    </div>
+                    <p class="text-[10px] text-[var(--text-secondary)] mt-1.5 flex items-center gap-1 truncate">${subDesc}</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[var(--text-accent)]'} text-base leading-tight">${totalAmount.toFixed(2)} AED</p>
+                    <p class="text-[9px] text-[var(--text-muted)] font-semibold mt-0.5">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.service_type || entry.options?.service_style || 'Folding')}</p>
                 </div>
             </div>
-        `;
-        container.appendChild(itemDiv);
-    });
+        </div>
+    `;
+    container.appendChild(itemDiv);
+});
 
     updatePrintButtonCount();
 }
