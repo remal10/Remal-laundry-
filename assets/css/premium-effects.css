@@ -578,4 +578,16 @@ body.light-mode .luxe-badge-guest-req {
         transition: none !important;
         animation: none !important;
     }
+    
+/* Badge Chargeable (rose) */
+.luxe-badge-chargeable {
+    background: rgba(244, 63, 94, 0.1);
+    color: #fda4af;
+    border-color: rgba(244, 63, 94, 0.4);
+}
+
+body.light-mode .luxe-badge-chargeable {
+    background: #ffe4e6;
+    color: #9f1239;
+    border-color: #fecdd3;
 }
