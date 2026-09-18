@@ -195,8 +195,7 @@ function programmerTimerReinitialisationMinuit() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// A.2 APPLIQUÉ : Le listener Supabase Realtime dupliqué a été retiré.
-// Il reste UNIQUEMENT le listener de realtime-listener.js (légitime).
+// A.2 : Le listener Supabase Realtime dupliqué a été retiré.
 // ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
@@ -261,12 +260,6 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // A.2 : LISTENER REALTIME SUPPRIMÉ ICI (était dupliqué)
-        // Le listener réel est maintenant UNIQUEMENT dans 
-        // realtime-listener.js (initRealtimeGuestRequests)
-        // ═══════════════════════════════════════════════════════════
-
     } catch (e) {
         console.error("Exception lors de la synchronisation cloud:", e);
     }
@@ -312,7 +305,7 @@ function renderMassPreviewTable() {
     resultsCard.classList.remove('hidden');
 }
 
-// MISE À JOUR EN DIRECT PMS : EXTRACTION & AFFICHAGE DES DATES ARRIVAL ET DEPARTURE (ÉCRAN STAFF UNIQUEMENT)
+// MISE À JOUR EN DIRECT PMS
 function onRoomNumberInput() {
     validateRoomNumber();
     const roomVal = document.getElementById('roomNumber').value.trim();
@@ -322,7 +315,6 @@ function onRoomNumberInput() {
     const quotaSpan = document.getElementById('pmsInfoQuota');
     const agencySpan = document.getElementById('pmsInfoAgency');
     
-    // Éléments pour l'affichage de l'arrivée et du départ
     const arrivalSpan = document.getElementById('pmsInfoArrival');
     const departureSpan = document.getElementById('pmsInfoDeparture');
 
@@ -332,7 +324,6 @@ function onRoomNumberInput() {
         if (typSpan) typSpan.innerText = data.roomTyp || 'DLXR';
         if (agencySpan) agencySpan.innerText = data.agency || 'Direct';
         
-        // Ingestion & Affichage des dates PMS (Écran uniquement)
         if (arrivalSpan) arrivalSpan.innerText = data.arrival || '---';
         if (departureSpan) departureSpan.innerText = data.departure || '---';
 
@@ -622,9 +613,6 @@ async function handlePDFUpload(event) {
     }
 }
 
-// -------------------------------------------------------------
-// ENREGISTREMENT ET MODIFICATION COMPATIBLE TABLE GUEST (UUID SAFE)
-// -------------------------------------------------------------
 async function sauvegarderBordereauDepuisFormulaire() {
     const roomNum = document.getElementById('roomNumber').value.trim();
     if (!roomNum || !isRoomNumberValid(roomNum)) {
@@ -635,7 +623,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
     const editingId = document.getElementById('editingRecordId').value.trim();
     const cartEntries = Object.values(cart);
 
-    // Vérifier s'il y a des custom items renseignés
     let hasCustomItems = false;
     for (let i = 0; i < 3; i++) {
         const nameVal = document.getElementById(`customName${i}`)?.value.trim() || '';
@@ -655,7 +642,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
     let subtotalCalc = 0;
     const itemsArray = [];
 
-    // 1. Ingestion des articles du catalogue standard
     cartEntries.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
         const price = parseFloat(item.price) || 0;
@@ -685,7 +671,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
         });
     });
 
-    // 2. EXTRACTION DES CUSTOM ITEMS (0, 1, 2)
     for (let i = 0; i < 3; i++) {
         const customNameEl = document.getElementById(`customName${i}`);
         const customPriceEl = document.getElementById(`customPrice${i}`);
@@ -941,13 +926,16 @@ function chargerLiveOrders() {
 
     container.innerHTML = '';
 
+    // ═══════════════════════════════════════════════════════════════
+    // C.5 : Boutons d'action avec luxe-btn
+    // ═══════════════════════════════════════════════════════════════
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
     controlsDiv.innerHTML = `
-        <button onclick="toggleAllSelections(true)" class="text-xs font-bold text-[#DCA773] bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">✅ Select All</button>
-        <button onclick="toggleAllSelections(false)" class="text-xs font-bold text-stone-400 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition">❌ Deselect All</button>
-        <button onclick="ouvrirModalBatchStatus()" class="text-xs font-bold text-amber-300 bg-[#181614] hover:bg-[#211e1a] px-3.5 py-2 rounded-xl border border-[#2f2820] shadow transition flex items-center gap-1.5">🔄 Update Selected Status</button>
-        <button onclick="supprimerBordereauxEnLot()" class="text-xs font-bold text-rose-400 bg-rose-950/40 hover:bg-rose-900/60 px-3.5 py-2 rounded-xl border border-rose-800/80 shadow transition flex items-center gap-1.5">🗑️ Delete Selected</button>
+        <button onclick="toggleAllSelections(true)" class="luxe-btn luxe-btn-secondary" style="font-size:0.65rem;padding:0.5rem 0.85rem;">✅ Select All</button>
+        <button onclick="toggleAllSelections(false)" class="luxe-btn luxe-btn-ghost" style="font-size:0.65rem;padding:0.5rem 0.85rem;">❌ Deselect All</button>
+        <button onclick="ouvrirModalBatchStatus()" class="luxe-btn luxe-btn-secondary" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fcd34d;border-color:rgba(245,158,11,0.3);">🔄 Update Selected Status</button>
+        <button onclick="supprimerBordereauxEnLot()" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fda4af;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.1);">🗑️ Delete Selected</button>
     `;
     container.appendChild(controlsDiv);
 
@@ -960,67 +948,67 @@ function chargerLiveOrders() {
         return;
     }
 
-activeTodaySlips.forEach(entry => {
-    const itemDiv = document.createElement('div');
-    // C.3 : Utilisation de luxe-card + animation d'entrée
-    itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
+    // ═══════════════════════════════════════════════════════════════
+    // C.3 : Cartes Active Rooms avec luxe-card + badges luxe
+    // ═══════════════════════════════════════════════════════════════
+    activeTodaySlips.forEach(entry => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
-    let badgeText = entry.status || 'Collected';
-    let badgeClass = 'luxe-badge luxe-badge-collected';
-    
-    // C.4 : Utilisation des nouvelles classes luxe-badge
-    if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
-        badgeText = '⚡ GUEST REQ';
-        badgeClass = 'luxe-badge luxe-badge-guest-req';
-    } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
-        badgeText = '🧼 Washing';
-        badgeClass = 'luxe-badge luxe-badge-washing';
-    } else if (entry.status === 'Ready') {
-        badgeText = '✨ Ready';
-        badgeClass = 'luxe-badge luxe-badge-ready';
-    } else if (entry.status === 'Delivered' || entry.status === 'Completed') {
-        badgeText = '✅ Delivered';
-        badgeClass = 'luxe-badge luxe-badge-delivered';
-    } else if (entry.is_spa) {
-        badgeText = 'SPA Daily Sheet';
-        badgeClass = 'luxe-badge luxe-badge-spa';
-    }
+        let badgeText = entry.status || 'Collected';
+        let badgeClass = 'luxe-badge luxe-badge-collected';
+        
+        if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
+            badgeText = '⚡ GUEST REQ';
+            badgeClass = 'luxe-badge luxe-badge-guest-req';
+        } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
+            badgeText = '🧼 Washing';
+            badgeClass = 'luxe-badge luxe-badge-washing';
+        } else if (entry.status === 'Ready') {
+            badgeText = '✨ Ready';
+            badgeClass = 'luxe-badge luxe-badge-ready';
+        } else if (entry.status === 'Delivered' || entry.status === 'Completed') {
+            badgeText = '✅ Delivered';
+            badgeClass = 'luxe-badge luxe-badge-delivered';
+        } else if (entry.is_spa) {
+            badgeText = 'SPA Daily Sheet';
+            badgeClass = 'luxe-badge luxe-badge-spa';
+        }
 
-    const roomNum = entry.room_number || entry.room || '---';
-    const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+        const roomNum = entry.room_number || entry.room || '---';
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
 
-    let identifierDisplay = `Room ${roomNum}`;
-    if (entry.is_spa) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
-        identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
-    }
+        let identifierDisplay = `Room ${roomNum}`;
+        if (entry.is_spa) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const entryDateOnly = entry.options?.collection_date || (entry.created_at ? entry.created_at.split('T')[0] : todayStr);
+            identifierDisplay = `SPA — ${entryDateOnly} (#${entry.spa_serial || '---'})`;
+        }
 
-    const totalPcs = entry.total_pieces || entry.total_clothes || 0;
-    const totalAmount = entry.grand_total || entry.total || 0;
-    const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
+        const totalPcs = entry.total_pieces || entry.total_clothes || 0;
+        const totalAmount = entry.grand_total || entry.total || 0;
+        const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
 
-    // C.3 : Structure HTML améliorée avec meilleure hiérarchie
-    itemDiv.innerHTML = `
-        <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
-        <div class="flex-1 min-w-0" onclick="ouvrirModalDetails('${entry.id}')">
-            <div class="flex justify-between items-start gap-3">
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[var(--text-accent)]'} text-base">${identifierDisplay}</span>
-                        <span class="${badgeClass}">${badgeText}</span>
+        itemDiv.innerHTML = `
+            <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
+            <div class="flex-1 min-w-0" onclick="ouvrirModalDetails('${entry.id}')">
+                <div class="flex justify-between items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[var(--text-accent)]'} text-base">${identifierDisplay}</span>
+                            <span class="${badgeClass}">${badgeText}</span>
+                        </div>
+                        <p class="text-[10px] text-[var(--text-secondary)] mt-1.5 flex items-center gap-1 truncate">${subDesc}</p>
                     </div>
-                    <p class="text-[10px] text-[var(--text-secondary)] mt-1.5 flex items-center gap-1 truncate">${subDesc}</p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                    <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[var(--text-accent)]'} text-base leading-tight">${totalAmount.toFixed(2)} AED</p>
-                    <p class="text-[9px] text-[var(--text-muted)] font-semibold mt-0.5">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.service_type || entry.options?.service_style || 'Folding')}</p>
+                    <div class="text-right flex-shrink-0">
+                        <p class="font-serif-luxury font-bold ${entry.is_spa ? 'text-purple-300' : 'text-[var(--text-accent)]'} text-base leading-tight">${totalAmount.toFixed(2)} AED</p>
+                        <p class="text-[9px] text-[var(--text-muted)] font-semibold mt-0.5">${entry.is_spa ? `Delivered: ${entry.options?.delivered_by || 'Staff'}` : (entry.service_type || entry.options?.service_style || 'Folding')}</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-    container.appendChild(itemDiv);
-});
+        `;
+        container.appendChild(itemDiv);
+    });
 
     updatePrintButtonCount();
 }
@@ -1114,7 +1102,6 @@ function updatePrintButtonCount() {
     if (btn) btn.innerText = `🖨️ Batch Print (${selectedCount})`;
 }
 
-// IMPRESSION EN LOT SÉCURISÉE PAR CODE PIN
 async function imprimerToutesLesChambresDuJour() {
     demanderConfirmationPinAdmin(() => {
         imprimerToutesLesChambresDuJourExécution();
@@ -1301,7 +1288,6 @@ async function imprimerToutesLesChambresDuJourExécution() {
     }, 300);
 }
 
-// TÉLÉCHARGEMENT EN LOT SÉCURISÉ PAR CODE PIN
 async function telechargerToutesLesChambresDuJour() {
     demanderConfirmationPinAdmin(async () => {
         chargerDonneesLocalStorage();
@@ -1332,6 +1318,9 @@ function switchArchiveFilter(filter) {
     afficherListeBordereauxLocal();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// C.4 : Badges harmonisés dans Archives
+// ═══════════════════════════════════════════════════════════════════
 function afficherListeBordereauxLocal() {
     chargerDonneesLocalStorage();
     const searchVal = document.getElementById('searchRoom').value.toLowerCase().trim();
@@ -1389,16 +1378,17 @@ function afficherListeBordereauxLocal() {
                 <div class="space-y-2">
         `;
 
-   hotelEntries.forEach(entry => {
-        let badgeLabel = 'Hotel Count';
-        let badgeClass = 'luxe-badge luxe-badge-collected';
-        if(entry.extra_charged || entry.count_type === 'quota_extra') {
-          badgeLabel = 'Quota + Extra';
-          badgeClass = 'luxe-badge luxe-badge-ready';
-      } else if(entry.count_type === 'guest') {
-          badgeLabel = 'Chargeable';
-          badgeClass = 'luxe-badge luxe-badge-washing';
-    }
+        hotelEntries.forEach(entry => {
+            // C.4 : Badges luxe
+            let badgeLabel = 'Hotel Count';
+            let badgeClass = 'luxe-badge luxe-badge-collected';
+            if(entry.extra_charged || entry.count_type === 'quota_extra') {
+                badgeLabel = 'Quota + Extra';
+                badgeClass = 'luxe-badge luxe-badge-ready';
+            } else if(entry.count_type === 'guest') {
+                badgeLabel = 'Chargeable';
+                badgeClass = 'luxe-badge luxe-badge-chargeable';
+            }
 
             const roomNum = entry.room_number || entry.room || '---';
             const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
@@ -1413,7 +1403,7 @@ function afficherListeBordereauxLocal() {
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span>
-                        <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${badgeLabel}</span>
+                        <span class="ml-2 ${badgeClass}">${badgeLabel}</span>
                         <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
@@ -1739,7 +1729,7 @@ function fermerNotificationGuestReq(id) {
     if (id) {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
         if (checkbox) {
-            const card = checkbox.closest('.remal-card');
+            const card = checkbox.closest('.luxe-card') || checkbox.closest('.remal-card');
             if (card) {
                 card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
             }
@@ -1924,7 +1914,6 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
-// EDIT BORDEREAU - CHARGEMENT DU PANIER POUR MODIFICATION
 function modifierBordereauActuel() {
     if (!selectedIdForModal) return;
     chargerDonneesLocalStorage();
@@ -2141,9 +2130,6 @@ async function supprimerBordereauActuel() {
     }
 }
 
-// -------------------------------------------------------------
-// GESTION INDIVIDUELLE ET EN LOT DES STATUTS (SYNCHRO SUPABASE)
-// -------------------------------------------------------------
 async function changerStatutBordereau(recordId, nouveauStatut) {
     const targetId = recordId || selectedIdForModal;
     if (!targetId) return;
@@ -2237,7 +2223,6 @@ async function appliquerStatutEnLot(nouveauStatut) {
     alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
 }
 
-// SUPPRESSION EN LOT SÉCURISÉE PAR CODE PIN
 async function supprimerBordereauxEnLot() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     
@@ -2287,12 +2272,11 @@ function dismissGuestNotificationBanner() {
         bannerContainer.style.display = 'none';
     }
 
-    document.querySelectorAll('.remal-card').forEach(card => {
+    document.querySelectorAll('.luxe-card, .remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
 }
 
-// LAUNDRY OS STAFF AUTHENTICATION & TRACEABILITY
 let currentStaffUser = null;
 
 function checkStaffSession() {
