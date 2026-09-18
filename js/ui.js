@@ -1389,16 +1389,16 @@ function afficherListeBordereauxLocal() {
                 <div class="space-y-2">
         `;
 
-        hotelEntries.forEach(entry => {
-            let badgeLabel = 'Hotel Count';
-            let badgeClass = 'bg-amber-950 text-amber-200 border border-amber-800';
-            if(entry.extra_charged || entry.count_type === 'quota_extra') {
-                badgeLabel = 'Quota + Extra';
-                badgeClass = 'bg-purple-950 text-purple-200 border border-purple-800';
-            } else if(entry.count_type === 'guest') {
-                badgeLabel = 'Chargeable';
-                badgeClass = 'bg-rose-950 text-rose-200 border border-rose-800';
-            }
+   hotelEntries.forEach(entry => {
+        let badgeLabel = 'Hotel Count';
+        let badgeClass = 'luxe-badge luxe-badge-collected';
+        if(entry.extra_charged || entry.count_type === 'quota_extra') {
+          badgeLabel = 'Quota + Extra';
+          badgeClass = 'luxe-badge luxe-badge-ready';
+      } else if(entry.count_type === 'guest') {
+          badgeLabel = 'Chargeable';
+          badgeClass = 'luxe-badge luxe-badge-washing';
+    }
 
             const roomNum = entry.room_number || entry.room || '---';
             const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
