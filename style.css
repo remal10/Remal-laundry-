@@ -242,4 +242,80 @@ body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
         background: #ffffff !important;
         color: #000000 !important;
     }
+    /* =========================================================
+   PHASE C.1 — TOKENS SÉMANTIQUES
+   Ces variables sont des ALIAS vers les anciennes.
+   Aucune régression : --bg-dark, --bg-card, etc. restent valides.
+   ========================================================= */
+:root {
+    /* Surfaces */
+    --surface-base: #0f0e0c;
+    --surface-raised: #181614;
+    --surface-hover: #211e1a;
+    --surface-sunken: #0a0908;
+
+    /* Texte */
+    --text-primary: #f3f4f6;
+    --text-secondary: #a8a29e;
+    --text-muted: #78716c;
+    --text-accent: #DCA773;
+
+    /* Bordures */
+    --border-subtle: #2f2820;
+    --border-strong: #DCA773;
+
+    /* États */
+    --state-success: #10b981;
+    --state-warning: #f59e0b;
+    --state-danger: #f43f5e;
+    --state-info: #3b82f6;
+
+    /* États avec opacité (glassmorphism) */
+    --state-success-bg: rgba(16, 185, 129, 0.1);
+    --state-warning-bg: rgba(245, 158, 11, 0.1);
+    --state-danger-bg: rgba(244, 63, 94, 0.1);
+    --state-info-bg: rgba(59, 130, 246, 0.1);
+
+    /* Rayons */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+
+    /* Ombres */
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.12);
+    --shadow-glow: 0 0 20px rgba(220, 167, 115, 0.3);
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+/* Mode clair */
+body.light-mode {
+    --surface-base: #f8fafc;
+    --surface-raised: #ffffff;
+    --surface-hover: #f1f5f9;
+    --surface-sunken: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --text-accent: #b47a3e;
+
+    --border-subtle: #e2e8f0;
+    --border-strong: #b47a3e;
+
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --shadow-glow: 0 0 20px rgba(180, 122, 62, 0.25);
+
+    --state-success-bg: rgba(16, 185, 129, 0.15);
+    --state-warning-bg: rgba(245, 158, 11, 0.15);
+    --state-danger-bg: rgba(244, 63, 94, 0.15);
+    --state-info-bg: rgba(59, 130, 246, 0.15);
+}
 }
