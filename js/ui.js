@@ -1454,7 +1454,7 @@ function afficherListeBordereauxLocal() {
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
                     <div>
                         <span class="font-serif-luxury font-bold text-purple-300 text-sm sm:text-base">SPA Sheet #${entry.spa_serial || '---'} — ${entry.guest_name || 'Spa Agent'}</span>
-                        <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-950 text-purple-200 border border-purple-800">SPA Daily Sheet</span>
+                        <span class="ml-2 luxe-badge luxe-badge-spa">SPA Daily Sheet</span>
                         <div class="text-[10px] text-stone-400 mt-1">📅 ${dateFormatted} | Delivered by: ${entry.options?.delivered_by || 'Staff'}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
