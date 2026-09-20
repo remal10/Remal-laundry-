@@ -77,17 +77,32 @@
           </div>
       </div>
             
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                <button onclick="toggleTheme()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 w-10 h-10 rounded-xl text-sm flex items-center justify-center shadow transition" title="Toggle Dark/Light Mode">
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- ZONE MODIFIÉE : Indicateur agent + Boutons 44px + Logout   -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Indicateur Agent connecté (Ajout Phase 1) -->
+                <div id="staffIndicatorHeader" class="hidden sm:flex items-center gap-2 bg-[#181614] border border-[#DCA773]/40 rounded-xl px-3 py-2">
+                    <span class="text-[#DCA773] text-sm">👤</span>
+                    <span id="staffNameHeader" class="text-xs font-bold text-stone-200">---</span>
+                </div>
+
+                <button onclick="toggleTheme()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Toggle Dark/Light Mode">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
 
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-stone-900/90 text-stone-200 text-xs sm:text-sm border border-[#DCA773]/40 rounded-xl px-3.5 py-2.5 outline-none font-semibold cursor-pointer hover:bg-stone-800 transition">
+                <select id="langSelect" onchange="setLang(this.value)" class="bg-stone-900/90 text-stone-200 text-xs sm:text-sm border border-[#DCA773]/40 rounded-xl px-3.5 py-2.5 outline-none font-semibold cursor-pointer hover:bg-stone-800 transition h-11">
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                     <option value="hi">हिन्दी</option>
                 </select>
+
+                <!-- Bouton Logout (Ajout Phase 1) -->
+                <button onclick="confirmLogout()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
+            <!-- ═══════════════════════════════════════════════════════════ -->
         </div>
     </header>
 
