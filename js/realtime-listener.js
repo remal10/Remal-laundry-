@@ -75,22 +75,50 @@ function showLuxuryNotificationBanner(normalizedData) {
     playLuxuryHotelChime();
 }
 
+// ═══════════════════════════════════════════════════════════════════
 // Process incoming payload from Guest Portal
+// ═══════════════════════════════════════════════════════════════════
+// LOGIQUE "pending" :
+//   - created_by absent ou vide → 'pending' (créé par Guest, pas encore traité)
+//   - created_by = 'pending' → bordereau Guest en attente de traitement
+//   - created_by = 'staff ( nom )' → bordereau traité par un Staff
+//   - created_by = 'Guest App' → ancien format Guest (héritage)
+// ═══════════════════════════════════════════════════════════════════
 function processIncomingPayload(rawData) {
     if (!rawData) return;
 
-    // ⛔ BLOQUAGE NOTIFICATION SI CRÉÉ PAR LE STAFF / LAUNDRY OS
-    if (rawData.created_by && rawData.created_by !== 'Guest App' && rawData.created_by !== 'Guest' && rawData.created_by !== 'Guest Portal') {
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 1 : Normaliser created_by
+    // Si absent, vide, ou 'Guest App' → marquer comme 'pending'
+    // ═══════════════════════════════════════════════════════════════
+    if (!rawData.created_by || rawData.created_by === '' || rawData.created_by === 'Guest App') {
+        rawData.created_by = 'pending';
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 2 : Détecter si c'est du Staff (pas de bannière VIP)
+    // ═══════════════════════════════════════════════════════════════
+    const isStaff = rawData.created_by && 
+                    rawData.created_by !== 'pending' &&
+                    rawData.created_by !== 'Guest' &&
+                    rawData.created_by !== 'Guest Portal' &&
+                    rawData.created_by !== 'guest app';
+
+    if (isStaff) {
+        // ⛔ C'est du Staff → pas de bannière, pas de son
+        console.log("👤 Staff action detected (no notification):", rawData.created_by);
+        
         if (typeof window.onNewGuestRequestReceived === 'function') {
             window.onNewGuestRequestReceived(rawData);
         } else if (typeof chargerLiveOrders === 'function') {
             chargerLiveOrders();
-        } else if (typeof loadOrders === 'function') {
-            loadOrders();
         }
-        return; // Stoppe l'exécution : Pas de son ni de bannière pour le staff
+        return;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 3 : C'est du Guest → notification + bannière
+    // ═══════════════════════════════════════════════════════════════
     const normalizedRequest = {
         id: String(rawData.id),
         room: rawData.room_number || rawData.room || '---',
@@ -110,6 +138,7 @@ function processIncomingPayload(rawData) {
         extra_charged: rawData.extra_charged || false,
         status: rawData.status || 'Collected',
         is_guest_request: true,
+        created_by: 'pending',
         created_at: rawData.created_at || new Date().toISOString()
     };
 
@@ -173,7 +202,15 @@ function initRealtimeGuestRequests() {
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'guest_laundry_requests' },
             (payload) => {
-                if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) return;
+                // ═══════════════════════════════════════════════════════════════
+                // IGNORER les changements qui viennent d'être faits par le Staff
+                // (via le flag isLocalUpdating défini dans ui.js)
+                // ═══════════════════════════════════════════════════════════════
+                if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) {
+                    console.log("⏸️ Ignoring realtime (local update in progress)");
+                    return;
+                }
+                
                 console.log("🔔 DIRECT GUEST REQUEST RECEIVED:", payload.new);
                 processIncomingPayload(payload.new);
             }
