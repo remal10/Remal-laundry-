@@ -9,10 +9,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     switchMainSection('liveRecord');
     setLang('en');
 
-    // 1. Charger le panier temporaire sauvegardé (Draft Cart)
     chargerPanierLocal();
 
-    // 2. Initialiser le type et afficher les articles sans perte de sélection
     selectCountType(currentCountType || 'hotel');
     renderItems();
     if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
@@ -44,15 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(delDate && !delDate.value) delDate.value = todayIso;
     if(delTime && !delTime.value) delTime.value = timeIso;
 
-    // Démarrage du timer de réinitialisation automatique à 00h00
     programmerTimerReinitialisationMinuit();
 
     checkStaffSession();
 });
 
-// -------------------------------------------------------------
-// SÉCURISATION DES ACTIONS SENSIBLES PAR CODE PIN (4 DIGITS)
-// -------------------------------------------------------------
 function demanderConfirmationPinAdmin(actionCallback) {
     const pinSaisi = prompt("🔒 Security Verification:\nPlease enter your 4-digit Staff PIN code:");
     if (!pinSaisi) return;
@@ -66,9 +60,6 @@ function demanderConfirmationPinAdmin(actionCallback) {
     }
 }
 
-// -------------------------------------------------------------
-// GESTION ET PERSISTANCE DU PANIER TEMPORAIRE (DRAFT CART)
-// -------------------------------------------------------------
 function sauvegarderPanierLocal() {
     try {
         localStorage.setItem('remal_draft_cart', JSON.stringify(cart));
@@ -85,15 +76,9 @@ function chargerPanierLocal() {
         const savedType = localStorage.getItem('remal_draft_count_type');
         const savedService = localStorage.getItem('remal_draft_service');
 
-        if (savedCart) {
-            cart = JSON.parse(savedCart);
-        }
-        if (savedType) {
-            currentCountType = savedType;
-        }
-        if (savedService) {
-            currentService = savedService;
-        }
+        if (savedCart) cart = JSON.parse(savedCart);
+        if (savedType) currentCountType = savedType;
+        if (savedService) currentService = savedService;
     } catch (e) {
         console.error("Erreur chargement panier local:", e);
         cart = {};
@@ -166,9 +151,6 @@ function initTheme() {
 
 let isLocalUpdating = false;
 
-// -------------------------------------------------------------
-// TIMER REINITIALISATION AUTOMATIQUE A 00H00 (ACTIVE ROOMS)
-// -------------------------------------------------------------
 function programmerTimerReinitialisationMinuit() {
     function verifierFinDeJournee() {
         const maintenant = new Date();
@@ -194,9 +176,6 @@ function programmerTimerReinitialisationMinuit() {
     setInterval(verifierFinDeJournee, 1000);
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// A.2 : Le listener Supabase Realtime dupliqué a été retiré.
-// ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -305,7 +284,6 @@ function renderMassPreviewTable() {
     resultsCard.classList.remove('hidden');
 }
 
-// MISE À JOUR EN DIRECT PMS
 function onRoomNumberInput() {
     validateRoomNumber();
     const roomVal = document.getElementById('roomNumber').value.trim();
@@ -736,7 +714,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
         grand_total: grandTotal,
         special_notes: noteVal,
         status: currentStatus,
-        created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'Staff Laundry OS',
+        created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'pending',
         accepted_policy: true
     };
 
@@ -841,7 +819,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         grand_total: grandTotal,
         subtotal: parseFloat(newOrder.subtotal) || grandTotal,
         vat: parseFloat(newOrder.vat) || 0,
-        status: newOrder.status || 'Collected',
+        status: newOrder.status || 'Pending',
         is_spa: false,
         created_by: newOrder.created_by || 'pending',
         note: specialNotes,
@@ -946,13 +924,12 @@ function chargerLiveOrders() {
         let badgeText = entry.status || 'Collected';
         let badgeClass = 'luxe-badge luxe-badge-collected';
         
-       if (entry.status === 'Pending') {
+        if (entry.status === 'Pending') {
             badgeText = '⏳ PENDING';
             badgeClass = 'luxe-badge luxe-badge-pending';
-       } else if (entry.status === 'pickup_alert') {
+        } else if (entry.status === 'pickup_alert') {
             badgeText = '⚡ GUEST REQ';
             badgeClass = 'luxe-badge luxe-badge-guest-req';
-        }
         } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
             badgeText = '🧼 Washing';
             badgeClass = 'luxe-badge luxe-badge-washing';
@@ -1386,13 +1363,14 @@ function afficherListeBordereauxLocal() {
 
             const totalPcs = entry.total_pieces || entry.total_clothes || 0;
             const totalAmount = entry.grand_total || entry.total || 0;
+            const agentDisplay = entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending');
 
             html += `
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span>
                         <span class="ml-2 ${badgeClass}">${badgeLabel}</span>
-                        <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending')}</div>
+                        <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${agentDisplay}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
                         <small class="text-stone-400 font-normal">(${totalPcs} pcs)</small> 
@@ -2341,19 +2319,13 @@ function saveAndUnlockSession() {
     console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 1 : Indicateur agent dans le header + mise à jour
-// ═══════════════════════════════════════════════════════════════════
 function updateStaffUIIndicator() {
     const indicator = document.getElementById('currentLoggedStaff');
     const headerIndicator = document.getElementById('staffIndicatorHeader');
     const headerName = document.getElementById('staffNameHeader');
     
     if (currentStaffUser) {
-        // Ancien indicateur (modale login)
         if (indicator) indicator.innerText = `👤 ${currentStaffUser.name}`;
-        
-        // Nouveau indicateur header
         if (headerIndicator) headerIndicator.classList.remove('hidden');
         if (headerName) headerName.innerText = currentStaffUser.name;
     } else {
@@ -2367,9 +2339,6 @@ function logoutStaff() {
     location.reload();
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 1 : Confirmation logout avec message détaillé
-// ═══════════════════════════════════════════════════════════════════
 function confirmLogout() {
     if (!currentStaffUser) return;
     
