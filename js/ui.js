@@ -1388,7 +1388,7 @@ function afficherListeBordereauxLocal() {
                     <div>
                         <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span>
                         <span class="ml-2 ${badgeClass}">${badgeLabel}</span>
-                        <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${entry.created_by || 'Staff'}</div>
+                        <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending')}</div>
                     </div>
                     <div class="text-right font-bold text-stone-200">
                         <small class="text-stone-400 font-normal">(${totalPcs} pcs)</small> 
