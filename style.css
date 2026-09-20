@@ -320,3 +320,188 @@ body.light-mode {
     --state-danger-bg: rgba(244, 63, 94, 0.15);
     --state-info-bg: rgba(59, 130, 246, 0.15);
 }
+
+/* =========================================================
+   PHASE D.2.2 — DÉGRADÉ DORÉ (aligné avec Guest App)
+   ========================================================= */
+.text-gold-gradient {
+    background: linear-gradient(135deg, #EAD0B3 0%, #DCA773 50%, #B88351 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.light-mode .text-gold-gradient {
+    background: linear-gradient(135deg, #cfa26d 0%, #b47a3e 50%, #8c5822 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* =========================================================
+   PHASE D.2.3 — GLASSMORPHISM (aligné avec Guest App)
+   ========================================================= */
+
+.remal-glass {
+    background: rgba(22, 20, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(220, 167, 115, 0.35);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+}
+
+body.light-mode .remal-glass {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(180, 122, 62, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(180, 122, 62, 0.12);
+}
+
+.gold-shine {
+    position: relative;
+    overflow: hidden;
+}
+
+.gold-shine::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+}
+
+/* =========================================================
+   PHASE 1 — ERGONOMIE TACTILE
+   Optimisé pour téléphones, tablettes et écrans tactiles
+   ========================================================= */
+
+/* Zone tactile minimum 44px pour tous les boutons interactifs */
+button, 
+[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+select {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Exception pour les boutons avec contraintes spécifiques Tailwind */
+button.w-5,
+button.w-6,
+button.w-7,
+button.w-8 {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Feedback tactile global sur les boutons */
+button:active,
+[role="button"]:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Checkbox plus grosses et mieux tactiles */
+input[type="checkbox"].room-checkbox {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+/* Désactive le double-tap zoom sur tous les éléments interactifs */
+* {
+    touch-action: manipulation;
+}
+
+/* Espacement minimum entre éléments cliquables adjacents */
+button + button,
+a + a {
+    margin-left: 4px;
+}
+
+/* Amélioration focus visible (accessibilité clavier) */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #DCA773;
+    outline-offset: 2px;
+}
+
+body.light-mode button:focus-visible,
+body.light-mode input:focus-visible,
+body.light-mode select:focus-visible,
+body.light-mode textarea:focus-visible {
+    outline-color: #b47a3e;
+}
+
+/* Amélioration des inputs sur mobile (taille minimum pour éviter zoom iOS) */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    font-size: 16px; /* Évite le zoom automatique sur iOS */
+}
+
+/* Mais garder les inputs secondaires petits si nécessaire */
+.remal-input.text-xs,
+.remal-input.text-sm {
+    font-size: 16px; /* Override Tailwind pour éviter zoom iOS */
+}
+
+/* Sur très petits écrans, augmenter encore la taille tactile */
+@media (max-width: 480px) {
+    button,
+    [role="button"] {
+        min-height: 48px;
+    }
+    
+    /* Padding interne plus généreux sur mobile */
+    .luxe-btn {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Amélioration de la nav horizontale sur mobile */
+#mainNavContainer {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* Amélioration du scroll pour les containers internes */
+#itemsContainer,
+#liveOrdersList,
+#laundryList,
+.scrollbar-none {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Transition douce pour les modales sur mobile */
+@media (max-width: 640px) {
+    #detailModal > div,
+    #staffLoginModal > div,
+    #activeRoomsListModal > div,
+    #batchStatusModal > div {
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+}
