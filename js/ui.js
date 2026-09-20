@@ -478,9 +478,9 @@ function renderItems() {
                 freeControlsHtml = `
                     <div class="flex items-center gap-1.5 mt-1 bg-[#0f0e0c] px-2.5 py-1 rounded-lg border border-[#2f2820] text-[10px]">
                         <span class="text-stone-400 font-semibold">Free Pcs:</span>
-                        <button onclick="updateFreeQty('${key}', -1)" class="w-6 h-6 bg-[#181614] text-stone-200 rounded font-bold">-</button>
+                        <button onclick="updateFreeQty('${key}', -1)" class="w-8 h-8 bg-[#181614] text-stone-200 rounded font-bold active:scale-90 transition-transform">−</button>
                         <span class="text-emerald-400 font-bold px-1">${freeQty}</span>
-                        <button onclick="updateFreeQty('${key}', 1)" class="w-6 h-6 bg-[#DCA773] text-stone-950 rounded font-bold">+</button>
+                        <button onclick="updateFreeQty('${key}', 1)" class="w-8 h-8 bg-[#DCA773] text-stone-950 rounded font-bold active:scale-90 transition-transform">+</button>
                     </div>
                 `;
             }
@@ -493,10 +493,10 @@ function renderItems() {
                     <p class="text-[10px] ${currentCountType === 'hotel' ? 'text-emerald-400 font-bold' : 'text-[#DCA773] font-semibold'}">${priceDisplay}</p>
                     ${freeControlsHtml}
                 </div>
-                <div class="flex items-center space-x-2 bg-[#0f0e0c] p-1.5 rounded-xl border border-[#2f2820]">
-                    <button onclick="updateQty('${key}', '${item.name}', ${item.price}, -1)" class="w-7 h-7 bg-[#181614] text-stone-200 rounded-lg font-bold shadow-sm">-</button>
-                    <span class="font-bold px-2 text-sm">${qty}</span>
-                    <button onclick="updateQty('${key}', '${item.name}', ${item.price}, 1)" class="w-7 h-7 bg-[#DCA773] text-stone-950 rounded-lg font-bold shadow-sm">+</button>
+                <div class="flex items-center gap-3 bg-[#0f0e0c] p-1.5 rounded-xl border border-[#2f2820]">
+                    <button onclick="updateQty('${key}', '${item.name}', ${item.price}, -1)" class="w-11 h-11 bg-[#181614] text-stone-200 rounded-lg font-bold shadow-sm active:scale-90 transition-transform text-lg">−</button>
+                    <span class="font-bold px-2 text-base min-w-[32px] text-center">${qty}</span>
+                    <button onclick="updateQty('${key}', '${item.name}', ${item.price}, 1)" class="w-11 h-11 bg-[#DCA773] text-stone-950 rounded-lg font-bold shadow-sm active:scale-90 transition-transform text-lg">+</button>
                 </div>
             `;
             container.appendChild(row);
@@ -736,7 +736,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
         grand_total: grandTotal,
         special_notes: noteVal,
         status: currentStatus,
-        // ✅ MODIFICATION : Nom de l'agent connecté (format "staff ( sangare )")
         created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'Staff Laundry OS',
         accepted_policy: true
     };
@@ -801,9 +800,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
     setTimeout(() => { isLocalUpdating = false; }, 1000);
 }
 
-// -------------------------------------------------------------
-// RECEPTION DES NOTIFICATIONS GUEST DANS LAUNDRY OS
-// -------------------------------------------------------------
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
@@ -896,9 +892,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     } catch (e) {}
 };
 
-// -------------------------------------------------------------
-// AFFICHAGE ET GESTION DES COMMANDES (LIVE ORDERS)
-// -------------------------------------------------------------
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
     if (!container) return;
@@ -985,7 +978,7 @@ function chargerLiveOrders() {
         const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
 
         itemDiv.innerHTML = `
-            <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-5 h-5 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
+            <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-7 h-7 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
             <div class="flex-1 min-w-0" onclick="ouvrirModalDetails('${entry.id}')">
                 <div class="flex justify-between items-start gap-3">
                     <div class="min-w-0 flex-1">
@@ -1313,9 +1306,6 @@ function switchArchiveFilter(filter) {
     afficherListeBordereauxLocal();
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// C.4 : Badges harmonisés dans Archives
-// ═══════════════════════════════════════════════════════════════════
 function afficherListeBordereauxLocal() {
     chargerDonneesLocalStorage();
     const searchVal = document.getElementById('searchRoom').value.toLowerCase().trim();
@@ -2347,10 +2337,23 @@ function saveAndUnlockSession() {
     console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 1 : Indicateur agent dans le header + mise à jour
+// ═══════════════════════════════════════════════════════════════════
 function updateStaffUIIndicator() {
     const indicator = document.getElementById('currentLoggedStaff');
-    if (indicator && currentStaffUser) {
-        indicator.innerText = `👤 ${currentStaffUser.name}`;
+    const headerIndicator = document.getElementById('staffIndicatorHeader');
+    const headerName = document.getElementById('staffNameHeader');
+    
+    if (currentStaffUser) {
+        // Ancien indicateur (modale login)
+        if (indicator) indicator.innerText = `👤 ${currentStaffUser.name}`;
+        
+        // Nouveau indicateur header
+        if (headerIndicator) headerIndicator.classList.remove('hidden');
+        if (headerName) headerName.innerText = currentStaffUser.name;
+    } else {
+        if (headerIndicator) headerIndicator.classList.add('hidden');
     }
 }
 
@@ -2358,4 +2361,22 @@ function logoutStaff() {
     localStorage.removeItem('remal_current_staff');
     currentStaffUser = null;
     location.reload();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 1 : Confirmation logout avec message détaillé
+// ═══════════════════════════════════════════════════════════════════
+function confirmLogout() {
+    if (!currentStaffUser) return;
+    
+    const confirmed = confirm(
+        `🚪 Se déconnecter ?\n\n` +
+        `Agent actuel : ${currentStaffUser.name}\n` +
+        `Rôle : ${currentStaffUser.role}\n\n` +
+        `Vous devrez saisir votre PIN à nouveau pour continuer.`
+    );
+    
+    if (confirmed) {
+        logoutStaff();
+    }
 }
