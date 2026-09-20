@@ -701,6 +701,12 @@ async function sauvegarderBordereauDepuisFormulaire() {
         }
     }
 
+    // 🔑 LOG pour tracer
+    console.log("🔧 [Save] currentStaffUser:", currentStaffUser);
+
+    const staffName = currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'pending';
+    console.log("🔧 [Save] created_by sera:", staffName);
+
     const payloadSupabase = {
         room_number: roomNum,
         guest_name: pmsInfo.guestName || 'Guest',
@@ -714,7 +720,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
         grand_total: grandTotal,
         special_notes: noteVal,
         status: currentStatus,
-        created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'pending',
+        created_by: staffName,
         accepted_policy: true
     };
 
@@ -779,15 +785,54 @@ async function sauvegarderBordereauDepuisFormulaire() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// onNewGuestRequestReceived : reçoit UNIQUEMENT les nouveaux bordereaux Guest
-// (pas les actions Staff — celles-ci sont gérées directement par ui.js)
+// SHIELD — Protection contre l'écrasement de created_by
+// Quand un bordereau a déjà "staff ( xxx )", on ne l'écrase JAMAIS
 // ═══════════════════════════════════════════════════════════════════
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
-    console.log("📥 New guest request received:", newOrder);
-
     const recordId = String(newOrder.id || Date.now());
+    const incomingCreatedBy = newOrder.created_by;
+
+    console.log("🟢 [onNewGuestRequestReceived] REÇU:", {
+        id: recordId,
+        created_by: incomingCreatedBy,
+        status: newOrder.status
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // SHIELD : Si le record LOCAL a déjà "staff ( ... )" → on PROTÈGE
+    // ═══════════════════════════════════════════════════════════════
+    chargerDonneesLocalStorage();
+    const existingLocal = cachedSlips.find(s => String(s.id) === recordId);
+    
+    if (existingLocal && existingLocal.created_by && 
+        String(existingLocal.created_by).startsWith('staff (')) {
+        
+        console.log("🛡️ SHIELD ACTIVÉ : record local a déjà", existingLocal.created_by, "→ on ne touche pas au created_by");
+        
+        // On met à jour le record mais en gardant le created_by existant
+        const preservedRecord = {
+            ...existingLocal,
+            ...newOrder,
+            created_by: existingLocal.created_by  // ← On RESTAURE le bon
+        };
+        
+        const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+        if (existingIndex !== -1) {
+            cachedSlips[existingIndex] = preservedRecord;
+            sauvegarderDonneesLocalStorage();
+        }
+        
+        if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Sinon traitement normal pour les vrais nouveaux Guest
+    // ═══════════════════════════════════════════════════════════════
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes, 10) || 0;
@@ -825,7 +870,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         vat: parseFloat(newOrder.vat) || 0,
         status: newOrder.status || 'Pending',
         is_spa: false,
-        created_by: newOrder.created_by || 'pending',
+        created_by: incomingCreatedBy || 'pending',
         note: specialNotes,
         special_notes: specialNotes,
         items: parsedItemsList,
@@ -833,16 +878,13 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     };
 
     try {
-        chargerDonneesLocalStorage();
-        if (typeof cachedSlips !== 'undefined' && Array.isArray(cachedSlips)) {
-            const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
-            if (existingIndex !== -1) {
-                cachedSlips[existingIndex] = { ...cachedSlips[existingIndex], ...slipRecord };
-            } else {
-                cachedSlips.unshift(slipRecord);
-            }
-            sauvegarderDonneesLocalStorage();
+        const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+        if (existingIndex !== -1) {
+            cachedSlips[existingIndex] = { ...cachedSlips[existingIndex], ...slipRecord };
+        } else {
+            cachedSlips.unshift(slipRecord);
         }
+        sauvegarderDonneesLocalStorage();
     } catch (e) {
         console.warn("Local storage write error:", e);
     }
@@ -925,10 +967,20 @@ function chargerLiveOrders() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
+        // ═══════════════════════════════════════════════════════════════
+        // Détection du statut PENDING (created_by = pending ou guest app)
+        // ═══════════════════════════════════════════════════════════════
+        const isPendingCreator = !entry.created_by || 
+                                 entry.created_by === 'pending' || 
+                                 entry.created_by === 'Guest App' || 
+                                 entry.created_by === 'guest app' ||
+                                 entry.created_by === 'Guest' ||
+                                 entry.created_by === 'Staff Laundry OS';
+        
         let badgeText = entry.status || 'Collected';
         let badgeClass = 'luxe-badge luxe-badge-collected';
         
-        if (entry.status === 'Pending') {
+        if (isPendingCreator || entry.status === 'Pending') {
             badgeText = '⏳ PENDING';
             badgeClass = 'luxe-badge luxe-badge-pending';
         } else if (entry.status === 'pickup_alert') {
@@ -1885,10 +1937,25 @@ function ouvrirModalDetails(id) {
 }
 
 function modifierBordereauActuel() {
-    if (!selectedIdForModal) return;
+    if (!selectedIdForModal) {
+        alert("⚠️ No record selected");
+        return;
+    }
+    
     chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(e => String(e.id) === String(selectedIdForModal));
-    if (!entry) return;
+    
+    const entry = cachedSlips.find(e => 
+        String(e.id) === String(selectedIdForModal)
+    );
+    
+    if (!entry) {
+        console.error("❌ Record not found. selectedIdForModal =", selectedIdForModal);
+        console.log("Available IDs:", cachedSlips.map(s => s.id));
+        alert("⚠️ Record not found. Please refresh the page.");
+        return;
+    }
+    
+    console.log("✅ Editing record:", entry);
 
     fermerModal();
 
@@ -2256,12 +2323,16 @@ function checkStaffSession() {
     if (savedStaff) {
         try {
             currentStaffUser = JSON.parse(savedStaff);
+            console.log("✅ Staff session restored:", currentStaffUser);
             if (loginModal) loginModal.classList.add('hidden');
             updateStaffUIIndicator();
             return;
-        } catch (e) {}
+        } catch (e) {
+            console.error("❌ Error parsing saved staff:", e);
+        }
     }
 
+    console.warn("⚠️ No staff session found - showing login");
     if (loginModal) {
         loginModal.classList.remove('hidden');
     }
