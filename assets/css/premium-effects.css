@@ -586,6 +586,22 @@ body.light-mode .luxe-badge-guest-req {
     border-color: rgba(244, 63, 94, 0.4);
 }
 
+/* =========================================================
+   BADGE PENDING — pour les bordereaux Guest en attente
+   ========================================================= */
+.luxe-badge-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.7);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+
+body.light-mode .luxe-badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
+}
 body.light-mode .luxe-badge-chargeable {
     background: #ffe4e6;
     color: #9f1239;
