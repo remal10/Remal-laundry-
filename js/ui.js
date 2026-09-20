@@ -843,7 +843,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         vat: parseFloat(newOrder.vat) || 0,
         status: newOrder.status || 'Collected',
         is_spa: false,
-        created_by: 'Guest App',
+        created_by: newOrder.created_by || 'pending',
         note: specialNotes,
         special_notes: specialNotes,
         items: parsedItemsList,
