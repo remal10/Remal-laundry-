@@ -736,7 +736,8 @@ async function sauvegarderBordereauDepuisFormulaire() {
         grand_total: grandTotal,
         special_notes: noteVal,
         status: currentStatus,
-        created_by: 'Staff Laundry OS',
+        // ✅ MODIFICATION : Nom de l'agent connecté (format "staff ( sangare )")
+        created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'Staff Laundry OS',
         accepted_policy: true
     };
 
@@ -926,9 +927,6 @@ function chargerLiveOrders() {
 
     container.innerHTML = '';
 
-    // ═══════════════════════════════════════════════════════════════
-    // C.5 : Boutons d'action avec luxe-btn
-    // ═══════════════════════════════════════════════════════════════
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
     controlsDiv.innerHTML = `
@@ -948,9 +946,6 @@ function chargerLiveOrders() {
         return;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // C.3 : Cartes Active Rooms avec luxe-card + badges luxe
-    // ═══════════════════════════════════════════════════════════════
     activeTodaySlips.forEach(entry => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
@@ -1379,7 +1374,6 @@ function afficherListeBordereauxLocal() {
         `;
 
         hotelEntries.forEach(entry => {
-            // C.4 : Badges luxe
             let badgeLabel = 'Hotel Count';
             let badgeClass = 'luxe-badge luxe-badge-collected';
             if(entry.extra_charged || entry.count_type === 'quota_extra') {
