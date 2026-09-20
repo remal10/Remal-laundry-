@@ -249,7 +249,8 @@ async function sauvegarderBordereauLocal() {
         grand_total: grandTotal,
         special_notes: optionalNote,
         status: currentStatus,
-        created_by: 'Staff Laundry OS', // Marqueur pour désactiver le auto-trigger notification
+        // ✅ MODIFICATION : Nom de l'agent connecté (format "staff ( sangare )")
+        created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'Staff Laundry OS',
         accepted_policy: true
     };
 
@@ -565,7 +566,8 @@ async function validateAndSaveSpaReceipt() {
         grand_total: grandTotalValue,
         special_notes: `Collected by: ${collectedBy} | Delivered by: ${deliveredBy}`,
         status: 'Collected',
-        created_by: 'Staff Laundry OS',
+        // ✅ MODIFICATION : Nom de l'agent connecté (format "staff ( sangare )")
+        created_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'Staff Laundry OS',
         accepted_policy: true
     };
 
