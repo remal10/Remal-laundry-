@@ -1781,7 +1781,7 @@ function ouvrirModalDetails(id) {
         document.getElementById('modalTypDisplay').innerText = entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR');
         document.getElementById('modalAgencyDisplay').innerText = entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct');
         document.getElementById('modalQuotaDisplay').innerText = entry.pms_quota || entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
-        document.getElementById('modalCreatedByDisplay').innerText = entry.created_by || 'Staff';
+        document.getElementById('modalCreatedByDisplay').innerText = entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending');
         agencyBox.classList.remove('hidden');
     } else {
         agencyBox.classList.add('hidden');
