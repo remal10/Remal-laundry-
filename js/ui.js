@@ -775,9 +775,13 @@ async function sauvegarderBordereauDepuisFormulaire() {
     switchMainSection('liveRecord');
     chargerLiveOrders();
 
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    setTimeout(() => { isLocalUpdating = false; }, 3000);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// onNewGuestRequestReceived : reçoit UNIQUEMENT les nouveaux bordereaux Guest
+// (pas les actions Staff — celles-ci sont gérées directement par ui.js)
+// ═══════════════════════════════════════════════════════════════════
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
