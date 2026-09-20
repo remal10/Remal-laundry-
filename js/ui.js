@@ -946,9 +946,13 @@ function chargerLiveOrders() {
         let badgeText = entry.status || 'Collected';
         let badgeClass = 'luxe-badge luxe-badge-collected';
         
-        if (entry.status === 'pickup_alert' || entry.status === 'Pending') {
+       if (entry.status === 'Pending') {
+            badgeText = '⏳ PENDING';
+            badgeClass = 'luxe-badge luxe-badge-pending';
+       } else if (entry.status === 'pickup_alert') {
             badgeText = '⚡ GUEST REQ';
             badgeClass = 'luxe-badge luxe-badge-guest-req';
+        }
         } else if (entry.status === 'Washing' || entry.status === 'In Progress') {
             badgeText = '🧼 Washing';
             badgeClass = 'luxe-badge luxe-badge-washing';
