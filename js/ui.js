@@ -653,6 +653,14 @@ function switchMainSection(section) {
     } else if (section === 'lostfound') {
         renderLostFoundItems();
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // AUTO-SCROLL : Centrer le bouton actif dans la nav
+    // ═══════════════════════════════════════════════════════════════
+    const navBtnId = navButtons[section];
+    if (navBtnId) {
+        setTimeout(() => centrerBoutonNavigation(navBtnId), 100);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
