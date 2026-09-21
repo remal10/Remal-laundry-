@@ -1240,55 +1240,31 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
 // ═══════════════════════════════════════════════════════════════════
 function ouvrirModalBatchStatus() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-
-    console.log("🔍 [BatchStatus] Checkboxes cochées:", selectedIds.length);
-
     if (selectedIds.length === 0) {
         alert("⚠️ Please select at least one room checkbox.");
         return;
     }
-
     const countLabel = document.getElementById('batchStatusCountLabel');
     if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
-
-    const modal = document.getElementById('batchStatusModal');
-    if (!modal) {
-        console.error("❌ [BatchStatus] Modale introuvable dans le DOM !");
-        alert("⚠️ Batch status modal not found. Please refresh the page.");
-        return;
-    }
-
-    // ✅ FORCE display inline (bypass Tailwind hidden)
-    modal.style.display = 'flex';
-    modal.classList.remove('hidden');
     
-    console.log("✅ [BatchStatus] Modale ouverte avec", selectedIds.length, "record(s)");
-    console.log("✅ [BatchStatus] style.display =", modal.style.display);
+    const modal = document.getElementById('batchStatusModal');
+    if (modal) modal.classList.remove('hidden');
 }
+
 function fermerModalBatchStatus() {
     const modal = document.getElementById('batchStatusModal');
-    if (modal) {
-        modal.style.display = 'none';
-        modal.classList.add('hidden');
-    }
+    if (modal) modal.classList.add('hidden');
 }
 
 async function appliquerStatutEnLot(nouveauStatut) {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) {
-        alert("⚠️ No records selected.");
-        return;
-    }
+    if (selectedIds.length === 0) return;
 
     isLocalUpdating = true;
 
     chargerDonneesLocalStorage();
-    let updatedCount = 0;
     cachedSlips.forEach(s => {
-        if (selectedIds.includes(String(s.id))) {
-            s.status = nouveauStatut;
-            updatedCount++;
-        }
+        if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
     });
     sauvegarderDonneesLocalStorage();
 
@@ -1299,19 +1275,10 @@ async function appliquerStatutEnLot(nouveauStatut) {
         try {
             const uuidBatch = selectedIds.filter(id => id.length === 36);
             if (uuidBatch.length > 0) {
-                const { error } = await supabaseClient
-                    .from('guest_laundry_requests')
-                    .update({ status: nouveauStatut })
-                    .in('id', uuidBatch);
-                
-                if (error) {
-                    console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
-                } else {
-                    console.log(`✅ [BatchStatus] ${uuidBatch.length} records mis à jour sur Supabase`);
-                }
+                await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', uuidBatch);
             }
         } catch (err) {
-            console.error("❌ [BatchStatus] Exception:", err);
+            console.error("Erreur mise à jour en lot Supabase :", err);
         }
     }
 
@@ -1377,4 +1344,4 @@ function dismissGuestNotificationBanner() {
     document.querySelectorAll('.luxe-card, .remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
-}
+                            }
