@@ -1,4 +1,51 @@
 // Interactions Interface Utilisateur, Modals & Initialisation (Remal Hotel & Villas)
+
+// ═══════════════════════════════════════════════════════════════════
+// VARIABLES GLOBALES
+// ═══════════════════════════════════════════════════════════════════
+let currentStaffUser = null;
+let isLocalUpdating = false;
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPER : Restaure la session Staff depuis localStorage
+// Appelé à chaque action critique pour éviter les pertes de session
+// ═══════════════════════════════════════════════════════════════════
+function restaurerSessionStaff() {
+    if (currentStaffUser && currentStaffUser.name) return currentStaffUser;
+    
+    const saved = localStorage.getItem('remal_current_staff');
+    if (saved) {
+        try {
+            currentStaffUser = JSON.parse(saved);
+            console.log("🔄 [Session] Staff restauré:", currentStaffUser.name);
+            return currentStaffUser;
+        } catch(e) {
+            console.error("❌ [Session] Erreur parsing:", e);
+        }
+    }
+    console.warn("⚠️ [Session] Aucun Staff connecté");
+    return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPER : Formate l'affichage du champ "Agent"
+// ═══════════════════════════════════════════════════════════════════
+function formatAgentDisplay(createdBy) {
+    if (!createdBy || 
+        createdBy === 'pending' || 
+        createdBy === 'Guest App' || 
+        createdBy === 'guest app' ||
+        createdBy === 'Guest' ||
+        createdBy === 'Guest Portal' ||
+        createdBy === 'Staff Laundry OS') {
+        return 'Pending';
+    }
+    return createdBy;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INITIALISATION
+// ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
 
@@ -47,6 +94,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkStaffSession();
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// PIN ADMIN
+// ═══════════════════════════════════════════════════════════════════
 function demanderConfirmationPinAdmin(actionCallback) {
     const pinSaisi = prompt("🔒 Security Verification:\nPlease enter your 4-digit Staff PIN code:");
     if (!pinSaisi) return;
@@ -60,6 +110,9 @@ function demanderConfirmationPinAdmin(actionCallback) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PANIER LOCAL
+// ═══════════════════════════════════════════════════════════════════
 function sauvegarderPanierLocal() {
     try {
         localStorage.setItem('remal_draft_cart', JSON.stringify(cart));
@@ -110,6 +163,9 @@ function updateFreeQty(key, delta) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════════════════════════════════
 function installPWA() {
     if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -121,6 +177,9 @@ function installPWA() {
 }
 function dismissPWAInstall() { document.getElementById('pwaInstallBanner').classList.add('hidden'); }
 
+// ═══════════════════════════════════════════════════════════════════
+// THÈME
+// ═══════════════════════════════════════════════════════════════════
 function toggleTheme() {
     const body = document.body;
     const icon = document.getElementById('themeIcon');
@@ -149,23 +208,9 @@ function initTheme() {
     }
 }
 
-let isLocalUpdating = false;
-
 // ═══════════════════════════════════════════════════════════════════
-// HELPER : Formate l'affichage du champ "Agent"
+// TIMER MINUIT
 // ═══════════════════════════════════════════════════════════════════
-function formatAgentDisplay(createdBy) {
-    if (!createdBy || 
-        createdBy === 'pending' || 
-        createdBy === 'Guest App' || 
-        createdBy === 'guest app' ||
-        createdBy === 'Guest' ||
-        createdBy === 'Staff Laundry OS') {
-        return 'Pending';
-    }
-    return createdBy;
-}
-
 function programmerTimerReinitialisationMinuit() {
     function verifierFinDeJournee() {
         const maintenant = new Date();
@@ -191,6 +236,9 @@ function programmerTimerReinitialisationMinuit() {
     setInterval(verifierFinDeJournee, 1000);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// CHARGEMENT DONNÉES CLOUD
+// ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
 
@@ -218,15 +266,39 @@ async function chargerDonneesEtAbonnementCloud() {
                 }
                 if (!Array.isArray(parsedItems)) parsedItems = [];
 
+                // ═══════════════════════════════════════════════════════════════
+                // PROTECTION : Si on a un record local avec 'staff (' et que 
+                // Supabase a un 'pending', on garde le local
+                // ═══════════════════════════════════════════════════════════════
                 const existing = slipMap.get(String(s.id));
-                slipMap.set(String(s.id), { 
-                    ...existing,
-                    ...s, 
-                    id: String(s.id),
-                    room: roomClean, 
-                    room_number: roomClean,
-                    items: parsedItems
-                });
+                const localCreatedBy = existing?.created_by ? String(existing.created_by) : '';
+                const supaCreatedBy = s.created_by ? String(s.created_by) : '';
+                
+                const shouldPreserveLocal = localCreatedBy.startsWith('staff (') && 
+                                            !supaCreatedBy.startsWith('staff (');
+
+                if (shouldPreserveLocal) {
+                    console.log("🛡️ [ChargerCloud] Préservation local pour ID:", s.id, "→", localCreatedBy);
+                    slipMap.set(String(s.id), { 
+                        ...existing,
+                        ...s, 
+                        id: String(s.id),
+                        room: roomClean, 
+                        room_number: roomClean,
+                        items: parsedItems,
+                        created_by: localCreatedBy,
+                        status: existing.status
+                    });
+                } else {
+                    slipMap.set(String(s.id), { 
+                        ...existing,
+                        ...s, 
+                        id: String(s.id),
+                        room: roomClean, 
+                        room_number: roomClean,
+                        items: parsedItems
+                    });
+                }
             });
             
             cachedSlips = Array.from(slipMap.values());
@@ -259,6 +331,9 @@ async function chargerDonneesEtAbonnementCloud() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// TABLE PMS PREVIEW
+// ═══════════════════════════════════════════════════════════════════
 function renderMassPreviewTable() {
     const container = document.getElementById('massPreviewContainer');
     const counterContainer = document.getElementById('massRecordCounter');
@@ -299,6 +374,9 @@ function renderMassPreviewTable() {
     resultsCard.classList.remove('hidden');
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ROOM INPUT
+// ═══════════════════════════════════════════════════════════════════
 function onRoomNumberInput() {
     validateRoomNumber();
     const roomVal = document.getElementById('roomNumber').value.trim();
@@ -357,6 +435,9 @@ function validateRoomNumber() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// LANGUE
+// ═══════════════════════════════════════════════════════════════════
 function setLang(lang) {
     currentLang = lang;
     const t = i18n[lang] || i18n.en;
@@ -378,6 +459,9 @@ function setLang(lang) {
     renderItems();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION SECTIONS
+// ═══════════════════════════════════════════════════════════════════
 function switchMainSection(section) {
     if (section === 'newRecord') {
         reinitialiserFormulaire();
@@ -427,6 +511,9 @@ function switchMainSection(section) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// COUNT TYPE / SERVICE
+// ═══════════════════════════════════════════════════════════════════
 function selectCountType(type) {
     currentCountType = type;
     document.getElementById('btn-count-hotel').className = type === 'hotel' ? 'py-3 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow font-bold leading-tight' : 'py-3 px-1 rounded-xl text-stone-400 leading-tight';
@@ -447,6 +534,9 @@ function switchService(service) {
     renderItems();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// RENDER ITEMS
+// ═══════════════════════════════════════════════════════════════════
 function renderItems() {
     const container = document.getElementById('itemsContainer');
     if(!container) return;
@@ -497,6 +587,9 @@ function renderItems() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PREVIEW IMAGE
+// ═══════════════════════════════════════════════════════════════════
 function previewImage(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -533,6 +626,9 @@ function previewImage(event) {
     reader.readAsDataURL(file);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// RESET FORMULAIRE
+// ═══════════════════════════════════════════════════════════════════
 function reinitialiserFormulaire() {
     document.getElementById('roomNumber').value = ''; 
     document.getElementById('editingRecordId').value = '';
@@ -567,6 +663,9 @@ function reinitialiserFormulaire() {
     if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PDF UPLOAD
+// ═══════════════════════════════════════════════════════════════════
 async function handlePDFUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -606,12 +705,20 @@ async function handlePDFUpload(event) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// SAUVEGARDER BORDEREAU
+// ═══════════════════════════════════════════════════════════════════
 async function sauvegarderBordereauDepuisFormulaire() {
     const roomNum = document.getElementById('roomNumber').value.trim();
     if (!roomNum || !isRoomNumberValid(roomNum)) {
         alert("Please enter a valid room number.");
         return;
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SÉCURITÉ : Restaure la session Staff si perdue
+    // ═══════════════════════════════════════════════════════════════
+    restaurerSessionStaff();
 
     const editingId = document.getElementById('editingRecordId').value.trim();
     const cartEntries = Object.values(cart);
@@ -714,7 +821,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
         if (existingRecord && existingRecord.status) {
             currentStatus = existingRecord.status;
         }
-        // Si le record était Pending et le Staff l'édite → passe à Collected
+        // Si Pending → passe à Collected (Staff a traité)
         if (currentStatus === 'Pending') {
             currentStatus = 'Collected';
         }
@@ -764,6 +871,8 @@ async function sauvegarderBordereauDepuisFormulaire() {
             if (res.error) {
                 console.error("❌ ERREUR SUPABASE :", res.error.message);
                 alert("Erreur Supabase: " + res.error.message);
+                isLocalUpdating = false;
+                return;
             } else if (res.data && res.data.length > 0) {
                 assignedId = String(res.data[0].id);
                 console.log("✅ Synchronisé sur Supabase avec succès, ID:", assignedId);
@@ -771,6 +880,8 @@ async function sauvegarderBordereauDepuisFormulaire() {
         } catch (e) {
             console.error("Exception écriture Supabase :", e);
             alert("Exception d'écriture : " + e.message);
+            isLocalUpdating = false;
+            return;
         }
     }
 
@@ -795,6 +906,15 @@ async function sauvegarderBordereauDepuisFormulaire() {
     }
     sauvegarderDonneesLocalStorage();
 
+    // ═══════════════════════════════════════════════════════════════
+    // MESSAGE DE CONFIRMATION + REDIRECTION
+    // ═══════════════════════════════════════════════════════════════
+    if (editingId) {
+        alert(`✅ Record for Room ${roomNum} updated successfully!`);
+    } else {
+        alert(`✅ Record for Room ${roomNum} saved successfully!`);
+    }
+
     reinitialiserFormulaire();
     switchMainSection('liveRecord');
     chargerLiveOrders();
@@ -803,13 +923,15 @@ async function sauvegarderBordereauDepuisFormulaire() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// onNewGuestRequestReceived : reçoit les mises à jour Supabase
+// ON NEW GUEST REQUEST RECEIVED (Realtime)
+// CORRECTION : NE RECHARGE PLUS localStorage — utilise cachedSlips
+// SHIELD : Protège created_by ET status si Staff
 // ═══════════════════════════════════════════════════════════════════
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
     const recordId = String(newOrder.id || Date.now());
-    const incomingCreatedBy = String(newOrder.created_by || '');
+    const incomingCreatedBy = String(newOrder.created_by || '').trim();
     const incomingStatus = newOrder.status;
 
     console.log("🟢 [onNewGuestRequestReceived] REÇU:", {
@@ -818,38 +940,38 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         status: incomingStatus
     });
 
-    chargerDonneesLocalStorage();
+    // ═══════════════════════════════════════════════════════════════
+    // ⚠️ IMPORTANT : NE PAS recharger localStorage ici !
+    // Utilise cachedSlips qui est déjà en mémoire
+    // ═══════════════════════════════════════════════════════════════
+    if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) {
+        console.warn("⚠️ cachedSlips non disponible");
+        return;
+    }
+
     const existingLocal = cachedSlips.find(s => String(s.id) === recordId);
 
     // ═══════════════════════════════════════════════════════════════
-    // SHIELD : Protège created_by si déjà défini en "staff ( xxx )"
-    // MAIS laisse passer le status (pour que les changements du Staff s'affichent)
+    // SHIELD : Si le record local est un Staff record
+    // → on NE TOUCHE À RIEN (ni created_by, ni status)
     // ═══════════════════════════════════════════════════════════════
-   if (existingLocal && existingLocal.created_by && 
-    String(existingLocal.created_by).startsWith('staff (')) {
-    
-    console.log("🛡️ SHIELD ACTIVÉ : protection complète du record Staff");
-    console.log("   → created_by gardé:", existingLocal.created_by);
-    console.log("   → status gardé:", existingLocal.status);
-    console.log("   → status reçu (ignoré):", incomingStatus);
-    
-    // ═══════════════════════════════════════════════════════════════
-    // PROTECTION COMPLÈTE : On garde le record local intact.
-    // Le fallback ne doit PAS écraser les données locales du Staff.
-    // ═══════════════════════════════════════════════════════════════
-    
-    // ⚠️ IMPORTANT : On ne touche PAS au record local.
-    // On rafraîchit seulement l'affichage.
-    
-    if (typeof chargerLiveOrders === 'function') {
-        chargerLiveOrders();
+    if (existingLocal && existingLocal.created_by && 
+        String(existingLocal.created_by).startsWith('staff (')) {
+        
+        console.log("🛡️ SHIELD : record Staff — aucune modification locale");
+        console.log("   → created_by gardé:", existingLocal.created_by);
+        console.log("   → status gardé:", existingLocal.status);
+        
+        // On rafraîchit seulement l'affichage
+        if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
+        return;
     }
-    return;
-}
 
     // ═══════════════════════════════════════════════════════════════
-    // SHIELD INVERSE : Si le record arrive avec "staff ( xxx )" mais
-    // que le local a un vieux "Guest App", on force le bon
+    // SHIELD INVERSE : Si incomingCreatedBy dit 'staff (' mais local a 'pending'
+    // → on force le bon created_by dans le local
     // ═══════════════════════════════════════════════════════════════
     if (incomingCreatedBy.startsWith('staff (')) {
         console.log("🛡️ SHIELD INVERSE : force created_by à", incomingCreatedBy);
@@ -959,6 +1081,9 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     } catch (e) {}
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// CHARGER LIVE ORDERS
+// ═══════════════════════════════════════════════════════════════════
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
     if (!container) return;
@@ -1010,7 +1135,7 @@ function chargerLiveOrders() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
-        // Détection PENDING (statut ou créateur)
+        // Détection PENDING (statut OU créateur)
         const isPendingCreator = !entry.created_by || 
                                  entry.created_by === 'pending' || 
                                  entry.created_by === 'Guest App' || 
@@ -1079,6 +1204,9 @@ function chargerLiveOrders() {
     updatePrintButtonCount();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MODAL ACTIVE ROOMS LIST
+// ═══════════════════════════════════════════════════════════════════
 function ouvrirModalActiveRoomsList() {
     chargerDonneesLocalStorage();
     
@@ -1157,6 +1285,9 @@ async function exportActiveRoomsListToPDF() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// SELECTIONS / PRINT
+// ═══════════════════════════════════════════════════════════════════
 function toggleAllSelections(state) {
     document.querySelectorAll('.room-checkbox').forEach(cb => cb.checked = state);
     updatePrintButtonCount();
@@ -1375,6 +1506,9 @@ async function telechargerToutesLesChambresDuJour() {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ARCHIVES
+// ═══════════════════════════════════════════════════════════════════
 function switchArchiveFilter(filter) {
     currentArchiveFilter = filter;
     document.getElementById('archiveFilterAll').className = filter === 'all' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
@@ -1524,6 +1658,9 @@ function afficherListeBordereauxLocal() {
     container.innerHTML = html;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// LOST & FOUND
+// ═══════════════════════════════════════════════════════════════════
 function previewLFImage(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1649,6 +1786,9 @@ function deleteLFItem(id) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
 function renderManagementDashboard() {
     chargerDonneesLocalStorage();
 
@@ -1747,6 +1887,9 @@ function renderManagementDashboard() {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// SPA
+// ═══════════════════════════════════════════════════════════════════
 async function exportSpaToPDF() {
     const isValid = await validateAndSaveSpaReceipt();
     if (!isValid) return;
@@ -1788,6 +1931,9 @@ async function exportSpaToPDF() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MODAL DÉTAILS
+// ═══════════════════════════════════════════════════════════════════
 function fermerNotificationGuestReq(id) {
     if (id) {
         const checkbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
@@ -1977,6 +2123,9 @@ function ouvrirModalDetails(id) {
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// EDIT
+// ═══════════════════════════════════════════════════════════════════
 function modifierBordereauActuel() {
     if (!selectedIdForModal) {
         alert("⚠️ No record selected");
@@ -2083,6 +2232,9 @@ function modifierBordereauActuel() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PDF
+// ═══════════════════════════════════════════════════════════════════
 async function genererPDF(entryId = null) {
     const targetId = entryId || selectedIdForModal;
     if (!targetId) {
@@ -2178,6 +2330,9 @@ async function genererPDF(entryId = null) {
 
 function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
 
+// ═══════════════════════════════════════════════════════════════════
+// SUPPRESSION
+// ═══════════════════════════════════════════════════════════════════
 async function supprimerBordereauActuel() {
     if (!selectedIdForModal) return;
     if (confirm(`Delete this record?`)) {
@@ -2203,6 +2358,9 @@ async function supprimerBordereauActuel() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// CHANGEMENT STATUT
+// ═══════════════════════════════════════════════════════════════════
 async function changerStatutBordereau(recordId, nouveauStatut) {
     const targetId = recordId || selectedIdForModal;
     if (!targetId) return;
@@ -2248,6 +2406,9 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
     await changerStatutBordereau(requestId, nouveauStatut);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// BATCH STATUS
+// ═══════════════════════════════════════════════════════════════════
 function ouvrirModalBatchStatus() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     if (selectedIds.length === 0) {
@@ -2296,6 +2457,9 @@ async function appliquerStatutEnLot(nouveauStatut) {
     alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// SUPPRESSION EN LOT
+// ═══════════════════════════════════════════════════════════════════
 async function supprimerBordereauxEnLot() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     
@@ -2337,6 +2501,9 @@ async function supprimerBordereauxEnLot() {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// BANNIÈRE
+// ═══════════════════════════════════════════════════════════════════
 function dismissGuestNotificationBanner() {
     const bannerContainer = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     if (bannerContainer) {
@@ -2350,8 +2517,9 @@ function dismissGuestNotificationBanner() {
     });
 }
 
-let currentStaffUser = null;
-
+// ═══════════════════════════════════════════════════════════════════
+// SESSION STAFF
+// ═══════════════════════════════════════════════════════════════════
 function checkStaffSession() {
     const savedStaff = localStorage.getItem('remal_current_staff');
     const loginModal = document.getElementById('staffLoginModal');
