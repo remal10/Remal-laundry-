@@ -768,6 +768,41 @@
             </div>
         </div>
     </div>
+    <!-- ✨ PHASE E.3 : MODALE SET QTY -->
+<div id="setQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
+    <div class="bg-[#181614] border border-[#DCA773]/40 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
+        
+        <div class="text-center border-b border-[#2f2820] pb-3">
+            <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">🔢 Set Quantity</h3>
+            <p id="setQtyItemName" class="text-xs text-stone-300 mt-1 font-semibold">---</p>
+            <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
+        </div>
+
+        <div class="flex items-center justify-center gap-3">
+            <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
+            <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
+            
+            <input type="number" id="setQtyInput" min="0" placeholder="0" 
+                   class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
+            
+            <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
+            <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+                Annuler
+            </button>
+            <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">
+                ✓ Valider
+            </button>
+        </div>
+
+        <p class="text-[10px] text-stone-500 text-center">
+            Astuce : <strong>Entrée</strong> pour valider · <strong>Échap</strong> pour fermer
+        </p>
+    </div>
+</div>
 
     <!-- MODALE STATUT EN LOT -->
     <div id="batchStatusModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
