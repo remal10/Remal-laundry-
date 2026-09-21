@@ -213,7 +213,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     programmerTimerReinitialisationMinuit();
 
-    checkStaffSession();
+    checkStaffSession(); 
+    // PHASE E — Raccourcis & Auto-complétion
+   initPhaseE();
 });
 
 // ═══════════════════════════════════════════════════════════════════
