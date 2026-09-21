@@ -505,3 +505,171 @@ textarea {
         overflow-y: auto;
     }
 }
+
+/* =========================================================
+   PHASE 2 — ERGONOMIE ADAPTATIVE PAR APPAREIL
+   ========================================================= */
+
+/* ═══════════════════════════════════════════════════════════════
+   APPAREILS TACTILES (téléphone + tablette + PC tactile)
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch button,
+body.is-touch [role="button"],
+body.is-touch a {
+    /* Zones tactiles plus généreuses */
+    min-height: 48px;
+    -webkit-tap-highlight-color: rgba(220, 167, 115, 0.15);
+}
+
+/* Boutons +/- encore plus gros sur tactile */
+body.is-touch button.w-11,
+body.is-touch button.h-11 {
+    min-width: 48px;
+    min-height: 48px;
+}
+
+/* Effet de pression plus marqué */
+body.is-touch button:active {
+    transform: scale(0.92);
+    transition: transform 0.08s ease;
+}
+
+/* Pas de hover sur tactile (évite les faux positifs) */
+body.is-touch .luxe-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+}
+
+/* Effet de sélection plus visible */
+body.is-touch input[type="checkbox"] {
+    min-width: 28px;
+    min-height: 28px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PETITS ÉCRANS (téléphone)
+   ═══════════════════════════════════════════════════════════════ */
+body.is-mobile #mainNavContainer {
+    padding: 8px 12px;
+    gap: 8px;
+}
+
+body.is-mobile #mainNavContainer button {
+    padding: 12px 16px;
+    font-size: 11px;
+}
+
+body.is-mobile .remal-card {
+    border-radius: 20px;
+}
+
+body.is-mobile #itemsContainer {
+    max-height: 300px;
+}
+
+body.is-mobile .luxe-btn {
+    padding: 0.85rem 1rem;
+    font-size: 0.7rem;
+}
+
+/* Modales plus larges sur mobile */
+body.is-mobile #detailModal > div,
+body.is-mobile #staffLoginModal > div,
+body.is-mobile #activeRoomsListModal > div {
+    max-width: 100%;
+    border-radius: 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLETTES
+   ═══════════════════════════════════════════════════════════════ */
+body.is-tablet #mainNavContainer button {
+    padding: 14px 20px;
+    font-size: 13px;
+}
+
+body.is-tablet #itemsContainer {
+    max-height: 400px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PC TACTILE (tactile + grand écran)
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch:not(.is-mobile):not(.is-tablet) button {
+    min-height: 46px;
+    min-width: 46px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PC SOURIS (souris fine) — Autoriser les hover plus subtils
+   ═══════════════════════════════════════════════════════════════ */
+body.is-fine .luxe-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+body.is-fine button:hover {
+    transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL FLUIDE SUR TACTILE
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch #liveOrdersList,
+body.is-touch #laundryList,
+body.is-touch #itemsContainer,
+body.is-touch #mainNavContainer {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SWIPE GESTURES (mobile/tablette)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    /* Améliorer le scroll horizontal des onglets */
+    #mainNavContainer {
+        scroll-snap-type: x mandatory;
+    }
+    
+    #mainNavContainer button {
+        scroll-snap-align: start;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DÉSACTIVER LE PULL-TO-REFRESH SUR MOBILE
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch {
+    overscroll-behavior-y: contain;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AMÉLIORER LA LISIBILITÉ SUR PETITS ÉCRANS
+   ═══════════════════════════════════════════════════════════════ */
+body.is-mobile {
+    font-size: 14px;
+}
+
+body.is-mobile h1,
+body.is-mobile h2 {
+    font-size: 1rem;
+}
+
+body.is-mobile .font-serif-luxury {
+    letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DÉTECTION DYNAMIQUE AU CHANGEMENT D'ORIENTATION
+   ═══════════════════════════════════════════════════════════════ */
+@media (orientation: landscape) and (max-height: 500px) {
+    body.is-mobile #mainNavContainer {
+        padding: 6px 8px;
+    }
+    
+    body.is-mobile header {
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+}
