@@ -8,7 +8,6 @@ let isLocalUpdating = false;
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPER : Restaure la session Staff depuis localStorage
-// Appelé à chaque action critique pour éviter les pertes de session
 // ═══════════════════════════════════════════════════════════════════
 function restaurerSessionStaff() {
     if (currentStaffUser && currentStaffUser.name) return currentStaffUser;
@@ -266,10 +265,6 @@ async function chargerDonneesEtAbonnementCloud() {
                 }
                 if (!Array.isArray(parsedItems)) parsedItems = [];
 
-                // ═══════════════════════════════════════════════════════════════
-                // PROTECTION : Si on a un record local avec 'staff (' et que 
-                // Supabase a un 'pending', on garde le local
-                // ═══════════════════════════════════════════════════════════════
                 const existing = slipMap.get(String(s.id));
                 const localCreatedBy = existing?.created_by ? String(existing.created_by) : '';
                 const supaCreatedBy = s.created_by ? String(s.created_by) : '';
@@ -715,9 +710,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
         return;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // SÉCURITÉ : Restaure la session Staff si perdue
-    // ═══════════════════════════════════════════════════════════════
     restaurerSessionStaff();
 
     const editingId = document.getElementById('editingRecordId').value.trim();
@@ -821,7 +813,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
         if (existingRecord && existingRecord.status) {
             currentStatus = existingRecord.status;
         }
-        // Si Pending → passe à Collected (Staff a traité)
         if (currentStatus === 'Pending') {
             currentStatus = 'Collected';
         }
@@ -906,9 +897,6 @@ async function sauvegarderBordereauDepuisFormulaire() {
     }
     sauvegarderDonneesLocalStorage();
 
-    // ═══════════════════════════════════════════════════════════════
-    // MESSAGE DE CONFIRMATION + REDIRECTION
-    // ═══════════════════════════════════════════════════════════════
     if (editingId) {
         alert(`✅ Record for Room ${roomNum} updated successfully!`);
     } else {
@@ -923,9 +911,7 @@ async function sauvegarderBordereauDepuisFormulaire() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ON NEW GUEST REQUEST RECEIVED (Realtime)
-// CORRECTION : NE RECHARGE PLUS localStorage — utilise cachedSlips
-// SHIELD : Protège created_by ET status si Staff
+// ON NEW GUEST REQUEST RECEIVED
 // ═══════════════════════════════════════════════════════════════════
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
@@ -940,10 +926,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         status: incomingStatus
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // ⚠️ IMPORTANT : NE PAS recharger localStorage ici !
-    // Utilise cachedSlips qui est déjà en mémoire
-    // ═══════════════════════════════════════════════════════════════
     if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) {
         console.warn("⚠️ cachedSlips non disponible");
         return;
@@ -951,10 +933,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
 
     const existingLocal = cachedSlips.find(s => String(s.id) === recordId);
 
-    // ═══════════════════════════════════════════════════════════════
-    // SHIELD : Si le record local est un Staff record
-    // → on NE TOUCHE À RIEN (ni created_by, ni status)
-    // ═══════════════════════════════════════════════════════════════
     if (existingLocal && existingLocal.created_by && 
         String(existingLocal.created_by).startsWith('staff (')) {
         
@@ -962,17 +940,12 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         console.log("   → created_by gardé:", existingLocal.created_by);
         console.log("   → status gardé:", existingLocal.status);
         
-        // On rafraîchit seulement l'affichage
         if (typeof chargerLiveOrders === 'function') {
             chargerLiveOrders();
         }
         return;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // SHIELD INVERSE : Si incomingCreatedBy dit 'staff (' mais local a 'pending'
-    // → on force le bon created_by dans le local
-    // ═══════════════════════════════════════════════════════════════
     if (incomingCreatedBy.startsWith('staff (')) {
         console.log("🛡️ SHIELD INVERSE : force created_by à", incomingCreatedBy);
         
@@ -995,9 +968,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         return;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // Traitement normal pour les vrais nouveaux Guests
-    // ═══════════════════════════════════════════════════════════════
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Guest';
     const totalPcs = parseInt(newOrder.total_pieces || newOrder.total_clothes, 10) || 0;
@@ -1135,7 +1105,6 @@ function chargerLiveOrders() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
-        // Détection PENDING (statut OU créateur)
         const isPendingCreator = !entry.created_by || 
                                  entry.created_by === 'pending' || 
                                  entry.created_by === 'Guest App' || 
@@ -1932,18 +1901,36 @@ async function exportSpaToPDF() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// FERMER NOTIFICATION BANNER (utilisé par ouvrirModalDetails)
+// ═══════════════════════════════════════════════════════════════════
+function fermerNotificationGuestReq(id) {
+    if (id) {
+        const checkbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
+        if (checkbox) {
+            const card = checkbox.closest('.luxe-card') || checkbox.closest('.remal-card');
+            if (card) {
+                card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
+            }
+        }
+    }
+    
+    dismissGuestNotificationBanner();
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // MODAL DÉTAILS
 // ═══════════════════════════════════════════════════════════════════
 async function ouvrirModalDetails(id) {
     fermerNotificationGuestReq(id);
+
     selectedIdForModal = String(id);
 
     chargerDonneesLocalStorage();
     let entry = cachedSlips.find(e => String(e.id) === String(id));
 
     // ═══════════════════════════════════════════════════════════════
-    // SÉCURITÉ : Si le record local n'est pas un Staff (pending / vide / guest),
-    // on rafraîchit depuis Supabase pour avoir la VRAIE valeur
+    // REFRESH SUPABASE : Si le record local n'a pas le bon created_by,
+    // on rafraîchit depuis Supabase (fix du bug "pending qui revient")
     // ═══════════════════════════════════════════════════════════════
     const localCreatedBy = String(entry?.created_by || '').trim();
     const needsRefresh = !localCreatedBy.startsWith('staff (');
@@ -1958,8 +1945,7 @@ async function ouvrirModalDetails(id) {
                 .single();
 
             if (!error && data) {
-                console.log("✅ [Modal] Record rafraîchi:", data.created_by);
-                // Mettre à jour cachedSlips avec la version fraîche
+                console.log("✅ [Modal] Record rafraîchi, created_by =", data.created_by);
                 const idx = cachedSlips.findIndex(s => String(s.id) === String(id));
                 if (idx !== -1) {
                     cachedSlips[idx] = { ...cachedSlips[idx], ...data };
