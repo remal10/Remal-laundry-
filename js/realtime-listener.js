@@ -42,12 +42,6 @@ function playLuxuryHotelChime() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// A.3 APPLIQUÉ : dismissGuestNotificationBanner() supprimée ici.
-// Elle reste UNIQUEMENT dans ui.js (version plus complète qui nettoie
-// aussi les classes CSS des cartes).
-// ═══════════════════════════════════════════════════════════════════
-
 // Display VIP notification banner in English
 function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
@@ -71,25 +65,16 @@ function showLuxuryNotificationBanner(normalizedData) {
         console.log("🔔 NOTIFICATION:", textMessage);
     }
 
-    // Play chime sound
     playLuxuryHotelChime();
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // Process incoming payload
 // ═══════════════════════════════════════════════════════════════════
-// LOGIQUE STRICTE :
-//
-//   1. Si created_by commence par 'staff (' → ACTION STAFF
-//      → PAS de chime, PAS de bannière
-//      → Transmission silencieuse à l'UI
-//
-//   2. Si created_by est vide / null / 'pending' / 'Guest App' / 'Guest'
-//      → ACTION GUEST
-//      → Chime + bannière
-//      → Transmission à l'UI
-//
-//   3. Sinon → silence total
+// RÈGLES STRICTES :
+//   1. created_by commence par 'staff (' → action STAFF → pas de chime
+//   2. created_by vide/null/'pending'/'Guest App'/'Guest' → GUEST → chime
+//   3. Sinon → silence
 // ═══════════════════════════════════════════════════════════════════
 function processIncomingPayload(rawData) {
     if (!rawData) return;
@@ -105,13 +90,11 @@ function processIncomingPayload(rawData) {
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // CAS 1 : ACTION STAFF → transmission silencieuse
+    // CAS 1 : ACTION STAFF → transmission silencieuse (pas de chime)
     // ═══════════════════════════════════════════════════════════════
     if (isStaffAction) {
         console.log("👤 [processIncomingPayload] Staff action - no banner, no chime");
         
-        // On transmet quand même pour mettre à jour l'UI
-        // MAIS le SHIELD dans ui.js va protéger created_by
         if (typeof window.onNewGuestRequestReceived === 'function') {
             window.onNewGuestRequestReceived(rawData);
         } else if (typeof chargerLiveOrders === 'function') {
@@ -148,10 +131,8 @@ function processIncomingPayload(rawData) {
         created_at: rawData.created_at || new Date().toISOString()
     };
 
-    // Bannière + chime
     showLuxuryNotificationBanner(normalizedRequest);
 
-    // Transmission à l'UI
     if (typeof window.onNewGuestRequestReceived === 'function') {
         window.onNewGuestRequestReceived(normalizedRequest);
     } else if (typeof chargerLiveOrders === 'function') {
@@ -161,9 +142,7 @@ function processIncomingPayload(rawData) {
 
 // ═══════════════════════════════════════════════════════════════════
 // Fallback polling sync
-// ═══════════════════════════════════════════════════════════════════
-// CORRECTION MAJEURE : Ignore les records Staff pour éviter
-// l'écrasement de created_by et le déclenchement du chime
+// CORRECTION : Ignore les records Staff (pas de chime, pas d'écrasement)
 // ═══════════════════════════════════════════════════════════════════
 let lastProcessedId = null;
 
@@ -183,21 +162,15 @@ async function syncFallbackGuestRequests() {
         const latest = data[0];
         const latestCreatedBy = String(latest.created_by || '').trim();
 
-        // Première fois : juste mémoriser
         if (lastProcessedId === null) {
             lastProcessedId = String(latest.id);
             return;
         }
 
-        // Nouveau record détecté (ID différent)
         if (String(latest.id) !== lastProcessedId) {
             lastProcessedId = String(latest.id);
             
-            // ═══════════════════════════════════════════════════════════════
-            // CORRECTION CRITIQUE :
-            // Si c'est un record créé par un STAFF → IGNORER TOTALEMENT
-            // (pas de chime, pas de bannière, pas d'appel à processIncomingPayload)
-            // ═══════════════════════════════════════════════════════════════
+            // ⛔ NE PAS TRAITER les records Staff
             if (latestCreatedBy.startsWith('staff (')) {
                 console.log("⏭️ [Fallback] Skipping STAFF record (no chime):", {
                     id: latest.id,
@@ -206,7 +179,6 @@ async function syncFallbackGuestRequests() {
                 return;
             }
 
-            // Sinon, c'est un vrai Guest → on traite
             console.log("🔄 [Fallback] New GUEST request detected:", {
                 id: latest.id,
                 created_by: latestCreatedBy,
@@ -236,10 +208,6 @@ function initRealtimeGuestRequests() {
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'guest_laundry_requests' },
             (payload) => {
-                // ═══════════════════════════════════════════════════════════════
-                // IGNORER les changements qui viennent d'être faits par le Staff
-                // (via le flag isLocalUpdating défini dans ui.js)
-                // ═══════════════════════════════════════════════════════════════
                 if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) {
                     console.log("⏸️ [Realtime] Ignoring (local update in progress)");
                     return;
@@ -247,9 +215,7 @@ function initRealtimeGuestRequests() {
                 
                 const createdBy = String(payload.new.created_by || '').trim();
                 
-                // ═══════════════════════════════════════════════════════════════
-                // Ignorer aussi les records Staff (double protection)
-                // ═══════════════════════════════════════════════════════════════
+                // ⛔ Ignorer les records Staff (double protection)
                 if (createdBy.startsWith('staff (')) {
                     console.log("⏭️ [Realtime] Skipping STAFF record:", createdBy);
                     return;
@@ -267,7 +233,6 @@ function initRealtimeGuestRequests() {
             console.log("📡 Supabase Realtime channel status:", status);
         });
 
-    // Fallback polling every 8 seconds
     setInterval(syncFallbackGuestRequests, 8000);
 }
 
