@@ -43,6 +43,7 @@ function playLuxuryHotelChime() {
 }
 
 // Display VIP notification banner in English
+// ✅ FORMAT HARMONISÉ avec ui.js:onNewGuestRequestReceived
 function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
@@ -50,8 +51,9 @@ function showLuxuryNotificationBanner(normalizedData) {
     const roomNum = normalizedData.room || normalizedData.room_number || '---';
     const guestName = normalizedData.guest_name || 'Guest';
     const totalPcs = normalizedData.total_clothes || normalizedData.total_pieces || 0;
+    const grandTotal = Number(normalizedData.grand_total || normalizedData.total || 0);
 
-    const textMessage = `New laundry request from Room ${roomNum} (${guestName}) — ${totalPcs} Pcs`;
+    const textMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
 
     if (bannerText) {
         bannerText.innerText = textMessage;
