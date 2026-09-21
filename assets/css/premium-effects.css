@@ -746,3 +746,87 @@ body.light-mode .room-autocomplete-item .text-stone-100 {
 body.light-mode .room-autocomplete-item .text-stone-400 {
     color: #78716c;
 }
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE E.3 — QUICK-ADD (long-press, clic-droit, double-tap)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Bouton + : effet visuel pendant long-press */
+.qty-plus-btn {
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.qty-plus-btn.long-press-active {
+    background: #c89360 !important;
+    transform: scale(0.92);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Anneau de progression (600ms) */
+.qty-plus-btn.long-press-active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: conic-gradient(
+        rgba(255, 255, 255, 0.6) 0deg,
+        rgba(255, 255, 255, 0.6) 0deg,
+        transparent 0deg
+    );
+    border-radius: inherit;
+    animation: longPressProgress 600ms linear forwards;
+    pointer-events: none;
+}
+
+@keyframes longPressProgress {
+    from {
+        background: conic-gradient(
+            rgba(255, 255, 255, 0.6) 0deg,
+            rgba(255, 255, 255, 0.6) 0deg,
+            transparent 0deg
+        );
+    }
+    to {
+        background: conic-gradient(
+            rgba(255, 255, 255, 0.6) 360deg,
+            rgba(255, 255, 255, 0.6) 360deg,
+            transparent 360deg
+        );
+    }
+}
+
+/* Flash succès après +5 */
+.qty-plus-btn.long-press-success {
+    background: #22c55e !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+/* Item row : empêche la sélection texte lors du clic-droit / double-tap */
+.item-row-wrapper {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* Curseur contextuel (desktop) : indique qu'un clic-droit est possible */
+@media (pointer: fine) {
+    .item-row-wrapper {
+        cursor: context-menu;
+    }
+    .item-row-wrapper:hover {
+        background: rgba(220, 167, 115, 0.05);
+    }
+}
+
+/* Light mode adjustments */
+body.light-mode .qty-plus-btn.long-press-active {
+    background: #b8854f !important;
+}
+
+body.light-mode .item-row-wrapper:hover {
+    background: rgba(180, 130, 70, 0.08);
+}
