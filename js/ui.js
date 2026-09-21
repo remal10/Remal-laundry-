@@ -825,31 +825,27 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     // SHIELD : Protège created_by si déjà défini en "staff ( xxx )"
     // MAIS laisse passer le status (pour que les changements du Staff s'affichent)
     // ═══════════════════════════════════════════════════════════════
-    if (existingLocal && existingLocal.created_by && 
-        String(existingLocal.created_by).startsWith('staff (')) {
-        
-        console.log("🛡️ SHIELD ACTIVÉ : création d'un record préservé");
-        console.log("   → created_by gardé:", existingLocal.created_by);
-        console.log("   → status mis à jour:", incomingStatus);
-        
-        const preservedRecord = {
-            ...existingLocal,
-            ...newOrder,
-            created_by: existingLocal.created_by,  // ← Protégé
-            status: incomingStatus || existingLocal.status  // ← Status mis à jour
-        };
-        
-        const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
-        if (existingIndex !== -1) {
-            cachedSlips[existingIndex] = preservedRecord;
-            sauvegarderDonneesLocalStorage();
-        }
-        
-        if (typeof chargerLiveOrders === 'function') {
-            chargerLiveOrders();
-        }
-        return;
+   if (existingLocal && existingLocal.created_by && 
+    String(existingLocal.created_by).startsWith('staff (')) {
+    
+    console.log("🛡️ SHIELD ACTIVÉ : protection complète du record Staff");
+    console.log("   → created_by gardé:", existingLocal.created_by);
+    console.log("   → status gardé:", existingLocal.status);
+    console.log("   → status reçu (ignoré):", incomingStatus);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // PROTECTION COMPLÈTE : On garde le record local intact.
+    // Le fallback ne doit PAS écraser les données locales du Staff.
+    // ═══════════════════════════════════════════════════════════════
+    
+    // ⚠️ IMPORTANT : On ne touche PAS au record local.
+    // On rafraîchit seulement l'affichage.
+    
+    if (typeof chargerLiveOrders === 'function') {
+        chargerLiveOrders();
     }
+    return;
+}
 
     // ═══════════════════════════════════════════════════════════════
     // SHIELD INVERSE : Si le record arrive avec "staff ( xxx )" mais
