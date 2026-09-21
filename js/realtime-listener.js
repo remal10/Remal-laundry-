@@ -78,35 +78,43 @@ function showLuxuryNotificationBanner(normalizedData) {
 // ═══════════════════════════════════════════════════════════════════
 // Process incoming payload from Guest Portal
 // ═══════════════════════════════════════════════════════════════════
-// LOGIQUE "pending" :
-//   - created_by absent ou vide → 'pending' (créé par Guest, pas encore traité)
-//   - created_by = 'pending' → bordereau Guest en attente de traitement
-//   - created_by = 'staff ( nom )' → bordereau traité par un Staff
-//   - created_by = 'Guest App' → ancien format Guest (héritage)
+// LOGIQUE (mise à jour) :
+//   - created_by = 'staff ( xxx )'  → action STAFF → pas de chime/bannière
+//   - created_by = 'pending'         → action GUEST → chime/bannière
+//   - created_by = '' ou null        → action GUEST → chime/bannière
+//   - created_by = 'Guest App'       → action GUEST (ancien format) → chime/bannière
+//   - created_by = 'Guest'           → action GUEST → chime/bannière
+//   - created_by = 'Guest Portal'    → action GUEST → chime/bannière
 // ═══════════════════════════════════════════════════════════════════
 function processIncomingPayload(rawData) {
     if (!rawData) return;
 
     // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 1 : Normaliser created_by
-    // Si absent, vide, ou 'Guest App' → marquer comme 'pending'
+    // ÉTAPE 1 : Détecter si c'est du STAFF ou du GUEST
     // ═══════════════════════════════════════════════════════════════
-    if (!rawData.created_by || rawData.created_by === '' || rawData.created_by === 'Guest App') {
-        rawData.created_by = 'pending';
-    }
+    const createdBy = String(rawData.created_by || '');
+    const isStaffAction = createdBy.startsWith('staff (');
+    const isGuestAction = !createdBy ||
+                          createdBy === 'pending' ||
+                          createdBy === '' ||
+                          createdBy === 'Guest App' ||
+                          createdBy === 'guest app' ||
+                          createdBy === 'Guest' ||
+                          createdBy === 'Guest Portal';
+
+    console.log("🔍 [processIncomingPayload]", {
+        id: rawData.id,
+        created_by: createdBy,
+        status: rawData.status,
+        isStaff: isStaffAction,
+        isGuest: isGuestAction
+    });
 
     // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 2 : Détecter si c'est du Staff (pas de bannière VIP)
+    // ÉTAPE 2 : Si c'est du STAFF → transmettre au UI SANS bannière/chime
     // ═══════════════════════════════════════════════════════════════
-    const isStaff = rawData.created_by && 
-                    rawData.created_by !== 'pending' &&
-                    rawData.created_by !== 'Guest' &&
-                    rawData.created_by !== 'Guest Portal' &&
-                    rawData.created_by !== 'guest app';
-
-    if (isStaff) {
-        // ⛔ C'est du Staff → pas de bannière, pas de son
-        console.log("👤 Staff action detected (no notification):", rawData.created_by);
+    if (isStaffAction) {
+        console.log("👤 [processIncomingPayload] Staff action detected - no banner/chime");
         
         if (typeof window.onNewGuestRequestReceived === 'function') {
             window.onNewGuestRequestReceived(rawData);
@@ -117,41 +125,54 @@ function processIncomingPayload(rawData) {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 3 : C'est du Guest → notification + bannière
+    // ÉTAPE 3 : Si c'est du GUEST → bannière + chime + transmission
     // ═══════════════════════════════════════════════════════════════
-    const normalizedRequest = {
-        id: String(rawData.id),
-        room: rawData.room_number || rawData.room || '---',
-        room_number: rawData.room_number || rawData.room || '---',
-        guest_name: rawData.guest_name || 'Guest',
-        service_type: rawData.service_type || 'Laundry Collection',
-        items: rawData.items || [],
-        total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
-        total_pieces: rawData.total_pieces || rawData.total_clothes || 0,
-        subtotal: Number(rawData.subtotal || 0),
-        vat: Number(rawData.vat || 0),
-        total: Number(rawData.grand_total || rawData.total || 0),
-        grand_total: Number(rawData.grand_total || rawData.total || 0),
-        note: rawData.special_notes || rawData.note || 'None',
-        special_notes: rawData.special_notes || rawData.note || 'None',
-        pms_quota: rawData.pms_quota || 'Standard',
-        extra_charged: rawData.extra_charged || false,
-        status: rawData.status || 'Collected',
-        is_guest_request: true,
-        created_by: 'pending',
-        created_at: rawData.created_at || new Date().toISOString()
-    };
+    if (isGuestAction) {
+        console.log("🛎️ [processIncomingPayload] Guest action detected - banner + chime");
+        
+        const normalizedRequest = {
+            id: String(rawData.id),
+            room: rawData.room_number || rawData.room || '---',
+            room_number: rawData.room_number || rawData.room || '---',
+            guest_name: rawData.guest_name || 'Guest',
+            service_type: rawData.service_type || 'Laundry Collection',
+            items: rawData.items || [],
+            total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
+            total_pieces: rawData.total_pieces || rawData.total_clothes || 0,
+            subtotal: Number(rawData.subtotal || 0),
+            vat: Number(rawData.vat || 0),
+            total: Number(rawData.grand_total || rawData.total || 0),
+            grand_total: Number(rawData.grand_total || rawData.total || 0),
+            note: rawData.special_notes || rawData.note || 'None',
+            special_notes: rawData.special_notes || rawData.note || 'None',
+            pms_quota: rawData.pms_quota || 'Standard',
+            extra_charged: rawData.extra_charged || false,
+            status: rawData.status || 'Pending',
+            is_guest_request: true,
+            created_by: 'pending',
+            created_at: rawData.created_at || new Date().toISOString()
+        };
 
-    // 1. Trigger notification banner & audio chime only for real guest requests
-    showLuxuryNotificationBanner(normalizedRequest);
+        // Bannière + chime UNIQUEMENT pour Guest
+        showLuxuryNotificationBanner(normalizedRequest);
 
-    // 2. Transmit to Laundry OS interface to refresh active orders
+        if (typeof window.onNewGuestRequestReceived === 'function') {
+            window.onNewGuestRequestReceived(normalizedRequest);
+        } else if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CAS PAR DÉFAUT : inconnu → on transmet silencieusement
+    // ═══════════════════════════════════════════════════════════════
+    console.log("❓ [processIncomingPayload] Unknown source - silent transmission");
+    
     if (typeof window.onNewGuestRequestReceived === 'function') {
-        window.onNewGuestRequestReceived(normalizedRequest);
+        window.onNewGuestRequestReceived(rawData);
     } else if (typeof chargerLiveOrders === 'function') {
         chargerLiveOrders();
-    } else if (typeof loadOrders === 'function') {
-        loadOrders();
     }
 }
 
@@ -179,7 +200,11 @@ async function syncFallbackGuestRequests() {
 
         if (String(latest.id) !== lastProcessedId) {
             lastProcessedId = String(latest.id);
-            console.log("🔄 New request detected via fallback:", latest);
+            console.log("🔄 New request detected via fallback:", {
+                id: latest.id,
+                created_by: latest.created_by,
+                status: latest.status
+            });
             processIncomingPayload(latest);
         }
     } catch (err) {
@@ -211,7 +236,11 @@ function initRealtimeGuestRequests() {
                     return;
                 }
                 
-                console.log("🔔 DIRECT GUEST REQUEST RECEIVED:", payload.new);
+                console.log("🔔 REALTIME INSERT RECEIVED:", {
+                    id: payload.new.id,
+                    created_by: payload.new.created_by,
+                    status: payload.new.status
+                });
                 processIncomingPayload(payload.new);
             }
         )
