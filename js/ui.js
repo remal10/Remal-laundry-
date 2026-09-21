@@ -5,7 +5,55 @@
 // ═══════════════════════════════════════════════════════════════════
 let currentStaffUser = null;
 let isLocalUpdating = false;
+// ═══════════════════════════════════════════════════════════════════
+// DÉTECTION APPAREIL — Ajoute des classes sur <body>
+// ═══════════════════════════════════════════════════════════════════
+function detecterTypeAppareil() {
+    const body = document.getElementById('bodyRoot') || document.body;
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hasMouse = window.matchMedia('(pointer: fine)').matches;
+    const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const screenWidth = window.innerWidth;
+    
+    // Nettoyer les anciennes classes
+    body.classList.remove('is-touch', 'is-desktop', 'is-mobile', 'is-tablet', 'is-coarse', 'is-fine');
+    
+    // Détection basique
+    if (hasTouch) {
+        body.classList.add('is-touch');
+    } else {
+        body.classList.add('is-desktop');
+    }
+    
+    // Détection taille
+    if (screenWidth < 640) {
+        body.classList.add('is-mobile');
+    } else if (screenWidth < 1024) {
+        body.classList.add('is-tablet');
+    }
+    
+    // Détection pointer
+    if (hasCoarsePointer) {
+        body.classList.add('is-coarse');
+    }
+    if (hasMouse) {
+        body.classList.add('is-fine');
+    }
+    
+    console.log('📱 [Device] Détection:', {
+        isTouch: hasTouch,
+        isMouse: hasMouse,
+        isCoarse: hasCoarsePointer,
+        width: screenWidth,
+        classes: Array.from(body.classList)
+    });
+}
 
+// Détecter au chargement
+detecterTypeAppareil();
+
+// Re-détecter au redimensionnement
+window.addEventListener('resize', detecterTypeAppareil);
 // ═══════════════════════════════════════════════════════════════════
 // HELPER : Restaure la session Staff depuis localStorage
 // ═══════════════════════════════════════════════════════════════════
