@@ -335,8 +335,7 @@
 
 /* =========================================================
    PHASE C.2 — COMPOSANTS LUXE RÉUTILISABLES
-   Complète les effets ci-dessus avec des composants
-   basés sur les tokens sémantiques (Phase C.1)
+   Basés sur les tokens sémantiques (C.1)
    ========================================================= */
 
 /* ============================================================
@@ -409,7 +408,6 @@
     outline-offset: 2px;
 }
 
-/* Bouton primaire (doré) */
 .luxe-btn-primary {
     background: var(--text-accent);
     color: #1c1917;
@@ -423,7 +421,6 @@
     transform: translateY(-1px);
 }
 
-/* Bouton secondaire (outline) */
 .luxe-btn-secondary {
     background: var(--surface-raised);
     color: var(--text-accent);
@@ -436,7 +433,6 @@
     transform: translateY(-1px);
 }
 
-/* Bouton ghost (sans fond) */
 .luxe-btn-ghost {
     background: transparent;
     color: var(--text-secondary);
@@ -541,6 +537,42 @@ body.light-mode .luxe-badge-guest-req {
     border-color: #6ee7b7;
 }
 
+/* Badge Chargeable (rose) */
+.luxe-badge-chargeable {
+    background: rgba(244, 63, 94, 0.1);
+    color: #fda4af;
+    border-color: rgba(244, 63, 94, 0.4);
+}
+
+body.light-mode .luxe-badge-chargeable {
+    background: #ffe4e6;
+    color: #9f1239;
+    border-color: #fecdd3;
+}
+
+/* =========================================================
+   PHASE 3 — BADGE PENDING (bordereau créé par Guest)
+   Version AMÉLIORÉE avec dégradé + ombre
+   ========================================================= */
+.luxe-badge-pending {
+    background: linear-gradient(135deg, 
+        rgba(245, 158, 11, 0.2) 0%, 
+        rgba(217, 119, 6, 0.15) 100%);
+    color: #fbbf24;
+    border: 1.5px solid rgba(245, 158, 11, 0.8);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+body.light-mode .luxe-badge-pending {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border-color: #d97706;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+}
+
 /* ============================================================
    TRANSITIONS SUBTILES
    ============================================================ */
@@ -578,38 +610,11 @@ body.light-mode .luxe-badge-guest-req {
         transition: none !important;
         animation: none !important;
     }
-    
-/* Badge Chargeable (rose) */
-.luxe-badge-chargeable {
-    background: rgba(244, 63, 94, 0.1);
-    color: #fda4af;
-    border-color: rgba(244, 63, 94, 0.4);
-}
-
-/* =========================================================
-   BADGE PENDING — pour les bordereaux Guest en attente
-   ========================================================= */
-
-body.light-mode .luxe-badge-chargeable {.luxe-badge-pending {
-    background: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
-    border-color: rgba(245, 158, 11, 0.7);
-    font-weight: 800;
-    letter-spacing: 0.05em;
-}
-
-body.light-mode .luxe-badge-pending {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #f59e0b;
-}
-    background: #ffe4e6;
-    color: #9f1239;
-    border-color: #fecdd3;
 }
 
 /* =========================================================
    PHASE 3 — CARTE PENDING (bordereau créé par Guest)
+   Bordure orange + effet pulse
    ========================================================= */
 .pending-card {
     border: 2px solid rgba(245, 158, 11, 0.7) !important;
@@ -634,6 +639,7 @@ body.light-mode .luxe-badge-pending {
         #b45309 100%);
     border-radius: 8px 0 0 8px;
     animation: pendingPulse 2s ease-in-out infinite;
+    z-index: 1;
 }
 
 @keyframes pendingPulse {
