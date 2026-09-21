@@ -1934,27 +1934,50 @@ async function exportSpaToPDF() {
 // ═══════════════════════════════════════════════════════════════════
 // MODAL DÉTAILS
 // ═══════════════════════════════════════════════════════════════════
-function fermerNotificationGuestReq(id) {
-    if (id) {
-        const checkbox = document.querySelector(`.room-checkbox[data-id="${id}"]`);
-        if (checkbox) {
-            const card = checkbox.closest('.luxe-card') || checkbox.closest('.remal-card');
-            if (card) {
-                card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
+async function ouvrirModalDetails(id) {
+    fermerNotificationGuestReq(id);
+    selectedIdForModal = String(id);
+
+    chargerDonneesLocalStorage();
+    let entry = cachedSlips.find(e => String(e.id) === String(id));
+
+    // ═══════════════════════════════════════════════════════════════
+    // SÉCURITÉ : Si le record local n'est pas un Staff (pending / vide / guest),
+    // on rafraîchit depuis Supabase pour avoir la VRAIE valeur
+    // ═══════════════════════════════════════════════════════════════
+    const localCreatedBy = String(entry?.created_by || '').trim();
+    const needsRefresh = !localCreatedBy.startsWith('staff (');
+
+    if (needsRefresh && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            console.log("🔄 [Modal] Refresh depuis Supabase pour ID:", id);
+            const { data, error } = await supabaseClient
+                .from('guest_laundry_requests')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (!error && data) {
+                console.log("✅ [Modal] Record rafraîchi:", data.created_by);
+                // Mettre à jour cachedSlips avec la version fraîche
+                const idx = cachedSlips.findIndex(s => String(s.id) === String(id));
+                if (idx !== -1) {
+                    cachedSlips[idx] = { ...cachedSlips[idx], ...data };
+                } else {
+                    cachedSlips.unshift(data);
+                }
+                sauvegarderDonneesLocalStorage();
+                entry = cachedSlips.find(e => String(e.id) === String(id));
             }
+        } catch (e) {
+            console.warn("⚠️ [Modal] Erreur refresh:", e);
         }
     }
-    
-    dismissGuestNotificationBanner();
-}
 
-function ouvrirModalDetails(id) {
-    fermerNotificationGuestReq(id);
-
-    selectedIdForModal = String(id);
-    chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(e => String(e.id) === String(id));
-    if (!entry) return;
+    if (!entry) {
+        console.warn("⚠️ [Modal] Record introuvable:", id);
+        return;
+    }
 
     const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
     entry.receipt_id = receiptId;
