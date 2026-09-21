@@ -55,6 +55,107 @@ detecterTypeAppareil();
 // Re-détecter au redimensionnement
 window.addEventListener('resize', detecterTypeAppareil);
 // ═══════════════════════════════════════════════════════════════════
+// SWIPE GESTURES — Navigation tactile entre sections
+// ═══════════════════════════════════════════════════════════════════
+function activerSwipeNavigation() {
+    const body = document.getElementById('bodyRoot') || document.body;
+    
+    // Seulement sur tactile
+    if (!body.classList.contains('is-touch')) return;
+    
+    const sections = ['liveRecord', 'spa', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    const SWIPE_THRESHOLD = 100; // px minimum
+    const SWIPE_MAX_TIME = 600; // ms
+    const VERTICAL_TOLERANCE = 80; // tolérance verticale
+    
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+    }, { passive: true });
+    
+    document.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length !== 1) return;
+        
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+        
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        const deltaTime = touchEndTime - touchStartTime;
+        
+        // Vérifs
+        if (deltaTime > SWIPE_MAX_TIME) return;
+        if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+        if (Math.abs(deltaY) > VERTICAL_TOLERANCE) return;
+        
+        // Ne pas déclencher si on est dans une modale ou un input
+        if (e.target.closest('#detailModal, #staffLoginModal, #activeRoomsListModal, #batchStatusModal, input, textarea, select')) return;
+        
+        // Trouver la section actuelle
+        let currentIndex = -1;
+        sections.forEach((sec, idx) => {
+            const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) 
+                     || document.getElementById(`section-${sec}`)
+                     || document.getElementById(sec === 'spa' ? 'spa-laundry-section' : '');
+            if (el && !el.classList.contains('hidden')) {
+                currentIndex = idx;
+            }
+        });
+        
+        if (currentIndex === -1) return;
+        
+        // Swipe gauche → section suivante
+        if (deltaX < 0 && currentIndex < sections.length - 1) {
+            console.log('👈 Swipe gauche →', sections[currentIndex + 1]);
+            switchMainSection(sections[currentIndex + 1]);
+        }
+        // Swipe droite → section précédente
+        else if (deltaX > 0 && currentIndex > 0) {
+            console.log('👉 Swipe droite →', sections[currentIndex - 1]);
+            switchMainSection(sections[currentIndex - 1]);
+        }
+    }, { passive: true });
+    
+    console.log('✅ Swipe navigation activée');
+}
+
+// Activer le swipe au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(activerSwipeNavigation, 500);
+});
+// ═══════════════════════════════════════════════════════════════════
+// AUTO-SCROLL : Centrer le bouton actif dans la navigation
+// ═══════════════════════════════════════════════════════════════════
+function centrerBoutonNavigation(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    const container = document.getElementById('mainNavContainer');
+    if (!container) return;
+    
+    // Ne s'applique qu'en mode scroll horizontal
+    if (container.scrollWidth <= container.clientWidth) return;
+    
+    const btnRect = btn.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    
+    const btnCenter = btnRect.left + btnRect.width / 2;
+    const containerCenter = containerRect.left + containerRect.width / 2;
+    
+    const scrollOffset = btnCenter - containerCenter;
+    
+    container.scrollBy({
+        left: scrollOffset,
+        behavior: 'smooth'
+    });
+}
+// ═══════════════════════════════════════════════════════════════════
 // HELPER : Restaure la session Staff depuis localStorage
 // ═══════════════════════════════════════════════════════════════════
 function restaurerSessionStaff() {
