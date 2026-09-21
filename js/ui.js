@@ -806,29 +806,45 @@ window.onNewGuestRequestReceived = async function(newOrder) {
     chargerDonneesLocalStorage();
     const existingLocal = cachedSlips.find(s => String(s.id) === recordId);
     
-    if (existingLocal && existingLocal.created_by && 
-        String(existingLocal.created_by).startsWith('staff (')) {
-        
-        console.log("🛡️ SHIELD ACTIVÉ : record local a déjà", existingLocal.created_by, "→ on ne touche pas au created_by");
-        
-        // On met à jour le record mais en gardant le created_by existant
-        const preservedRecord = {
-            ...existingLocal,
-            ...newOrder,
-            created_by: existingLocal.created_by  // ← On RESTAURE le bon
-        };
-        
+if (existingLocal && existingLocal.created_by && 
+    String(existingLocal.created_by).startsWith('staff (')) {
+    
+    console.log("🛡️ SHIELD ACTIVÉ : record local a déjà", existingLocal.created_by, "→ on ne touche pas au created_by");
+    
+    const preservedRecord = {
+        ...existingLocal,
+        ...newOrder,
+        created_by: existingLocal.created_by
+    };
+    
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+    if (existingIndex !== -1) {
+        cachedSlips[existingIndex] = preservedRecord;
+        sauvegarderDonneesLocalStorage();
+    }
+    return;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHIELD INVERSE : Si newOrder vient avec 'staff ( xxx )' mais
+// que le local a un vieux 'Guest App', on FORCE le bon
+// ═══════════════════════════════════════════════════════════════
+if (newOrder.created_by && String(newOrder.created_by).startsWith('staff (')) {
+    console.log("🛡️ SHIELD INVERSE : on force le created_by à", newOrder.created_by);
+    
+    if (existingLocal) {
         const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
         if (existingIndex !== -1) {
-            cachedSlips[existingIndex] = preservedRecord;
+            cachedSlips[existingIndex] = {
+                ...cachedSlips[existingIndex],
+                ...newOrder,
+                created_by: newOrder.created_by
+            };
             sauvegarderDonneesLocalStorage();
         }
-        
-        if (typeof chargerLiveOrders === 'function') {
-            chargerLiveOrders();
-        }
-        return;
     }
+    return;
+}
 
     // ═══════════════════════════════════════════════════════════════
     // Sinon traitement normal pour les vrais nouveaux Guest
