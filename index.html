@@ -803,12 +803,12 @@
 </div>
 
 <!-- MODALE STATUT EN LOT -->
-<div id="batchStatusModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" data-z="9999">
-    <div class="bg-[#181614] border border-[#2f2820] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl" style="position: relative; z-index: 10000;">
+<div id="batchStatusModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #181614; border: 1px solid #2f2820; border-radius: 1rem; padding: 1.5rem; width: 100%; max-width: 28rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; z-index: 10000;">
         <h3 class="text-base font-bold text-[#DCA773] text-center">🔄 Update Status for Selected Rooms</h3>
-        <p id="batchStatusCountLabel" class="text-xs text-stone-400 text-center font-medium">0 items selected</p>
+        <p id="batchStatusCountLabel" class="text-xs text-stone-400 text-center font-medium mt-2">0 items selected</p>
         
-        <div class="grid grid-cols-2 gap-2 pt-2">
+        <div class="grid grid-cols-2 gap-2 pt-4">
             <button onclick="appliquerStatutEnLot('Collected')" class="py-3 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl transition border border-stone-700">
                 🧺 Collected
             </button>
@@ -823,7 +823,7 @@
             </button>
         </div>
 
-        <button onclick="fermerModalBatchStatus()" class="w-full py-2.5 bg-stone-900 text-stone-400 font-bold text-xs rounded-xl hover:bg-stone-800 transition mt-2 border border-[#2f2820]">
+        <button onclick="fermerModalBatchStatus()" class="w-full py-2.5 bg-stone-900 text-stone-400 font-bold text-xs rounded-xl hover:bg-stone-800 transition mt-4 border border-[#2f2820]">
             Cancel
         </button>
     </div>
