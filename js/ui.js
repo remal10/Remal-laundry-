@@ -1226,14 +1226,36 @@ function chargerLiveOrders() {
         return entryDate >= debutJournee;
     });
 
-    activeTodaySlips.sort((a, b) => {
-        if (a.is_spa && !b.is_spa) return -1;
-        if (!a.is_spa && b.is_spa) return 1;
-        const roomA = parseInt(a.room_number || a.room) || 0;
-        const roomB = parseInt(b.room_number || b.room) || 0;
-        return roomA - roomB;
-    });
+// ═══════════════════════════════════════════════════════════════
+// TRI : PENDING en premier, puis SPA, puis par numéro de chambre
+// ═══════════════════════════════════════════════════════════════
+const isPendingEntry = (e) => {
+    const cb = String(e.created_by || '');
+    return e.status === 'Pending' || 
+           cb === 'pending' || 
+           cb === 'Guest App' || 
+           cb === 'guest app' ||
+           cb === 'Guest' ||
+           cb === 'Staff Laundry OS' ||
+           cb === '';
+};
 
+activeTodaySlips.sort((a, b) => {
+    // 1. Pending en premier (priorité absolue)
+    const aPending = isPendingEntry(a);
+    const bPending = isPendingEntry(b);
+    if (aPending && !bPending) return -1;
+    if (!aPending && bPending) return 1;
+    
+    // 2. SPA ensuite
+    if (a.is_spa && !b.is_spa) return -1;
+    if (!a.is_spa && b.is_spa) return 1;
+    
+    // 3. Tri par numéro de chambre
+    const roomA = parseInt(a.room_number || a.room) || 0;
+    const roomB = parseInt(b.room_number || b.room) || 0;
+    return roomA - roomB;
+});
     const badge = document.getElementById('activeRoomsCountBadge');
     if (badge) badge.innerText = activeTodaySlips.length;
 
@@ -1258,9 +1280,24 @@ function chargerLiveOrders() {
         return;
     }
 
-    activeTodaySlips.forEach(entry => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
+   activeTodaySlips.forEach(entry => {
+    const itemDiv = document.createElement('div');
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Détection PENDING pour appliquer un style visuel distinct
+    // ═══════════════════════════════════════════════════════════════
+    const isPendingCreator = !entry.created_by || 
+                             entry.created_by === 'pending' || 
+                             entry.created_by === 'Guest App' || 
+                             entry.created_by === 'guest app' ||
+                             entry.created_by === 'Guest' ||
+                             entry.created_by === 'Staff Laundry OS';
+    const isPending = isPendingCreator || entry.status === 'Pending';
+    
+    // Classe de base + bordure orange si Pending
+    itemDiv.className = isPending 
+        ? 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer pending-card' 
+        : 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
         const isPendingCreator = !entry.created_by || 
                                  entry.created_by === 'pending' || 
