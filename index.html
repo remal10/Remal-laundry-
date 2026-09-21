@@ -136,11 +136,19 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     
                     <div class="lg:col-span-5 space-y-5">
-                        <div>
-                            <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
-                            <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold">
-                            
-                            <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
+           <div>
+                 <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
+    
+                 <!-- PHASE E.2 : Wrapper relative pour dropdown autocomplete -->
+                  <div class="relative">
+                     <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold" autocomplete="off">
+        
+                 <!-- PHASE E.2 : Dropdown autocomplete -->
+                 <div id="roomAutocompleteDropdown" 
+               class="hidden absolute left-0 right-0 top-full mt-2 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-80 overflow-y-auto scrollbar-none"></div>
+          </div>
+    
+                   <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
                             
                             <!-- BOÎTE D'INFORMATION PMS (AVEC ARRIVAL & DEPARTURE) -->
                             <div id="roomPmsInfoBox" class="hidden mt-3 p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs space-y-2 shadow-inner">
