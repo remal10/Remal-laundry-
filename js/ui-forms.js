@@ -2,6 +2,7 @@
 // REMAL LAUNDRY OS — UI FORMS
 // Panier, formulaire New Record, save, room input, langue, navigation
 // ⚠️ Chargé APRÈS ui-core.js
+// PHASE E.3 : Long-press +5 / Clic-droit Set Qty
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -46,6 +47,29 @@ function updateQty(key, name, price, delta) {
     if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 }
 
+// ✨ PHASE E.3 : Set Qty direct (modale Set Qty)
+function setQtyDirect(key, name, price, newQty) {
+    const qty = parseInt(newQty, 10);
+    if (isNaN(qty) || qty < 0) return;
+
+    if (qty === 0) {
+        delete cart[key];
+    } else {
+        if (!cart[key]) {
+            cart[key] = { qty: 0, freeQty: 0, price: price, name: name };
+        }
+        cart[key].qty = qty;
+        // Cap freeQty si nécessaire
+        if (cart[key].freeQty && cart[key].freeQty > qty) {
+            cart[key].freeQty = qty;
+        }
+    }
+
+    sauvegarderPanierLocal();
+    renderItems();
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+}
+
 function updateFreeQty(key, delta) {
     if (cart[key]) {
         cart[key].freeQty = Math.max(0, (cart[key].freeQty || 0) + delta);
@@ -53,6 +77,209 @@ function updateFreeQty(key, delta) {
         renderItems();
         if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE E.3 : MODALE "SET QTY"
+// ═══════════════════════════════════════════════════════════════════
+let currentSetQtyContext = null;
+
+function ouvrirModalSetQty(key, name, price, currentQty) {
+    currentSetQtyContext = { key, name, price };
+    
+    const modal = document.getElementById('setQtyModal');
+    const nameEl = document.getElementById('setQtyItemName');
+    const input = document.getElementById('setQtyInput');
+    const priceEl = document.getElementById('setQtyItemPrice');
+    
+    if (!modal || !input) return;
+    
+    if (nameEl) nameEl.innerText = name;
+    if (priceEl) priceEl.innerText = `${price.toFixed(2)} AED / pièce`;
+    input.value = currentQty || '';
+    
+    modal.classList.remove('hidden');
+    
+    setTimeout(() => {
+        input.focus();
+        input.select();
+    }, 100);
+}
+
+function fermerModalSetQty() {
+    const modal = document.getElementById('setQtyModal');
+    if (modal) modal.classList.add('hidden');
+    currentSetQtyContext = null;
+}
+
+function validerModalSetQty() {
+    if (!currentSetQtyContext) return;
+    const input = document.getElementById('setQtyInput');
+    if (!input) return;
+    
+    const newQty = parseInt(input.value, 10) || 0;
+    setQtyDirect(currentSetQtyContext.key, currentSetQtyContext.name, currentSetQtyContext.price, newQty);
+    fermerModalSetQty();
+}
+
+function incrementModalSetQty(delta) {
+    const input = document.getElementById('setQtyInput');
+    if (!input) return;
+    const current = parseInt(input.value, 10) || 0;
+    const next = Math.max(0, current + delta);
+    input.value = next;
+}
+
+// Gestion clavier dans la modale Set Qty
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('setQtyModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        validerModalSetQty();
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        fermerModalSetQty();
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE E.3 : LONG-PRESS sur bouton + (600ms → +5)
+// ═══════════════════════════════════════════════════════════════════
+const LONG_PRESS_DURATION = 600; // ms
+let longPressTimer = null;
+let longPressTriggered = false;
+let longPressStartTime = 0;
+
+function initLongPressOnPlusButtons() {
+    // Délégation d'événements sur le conteneur itemsContainer
+    const container = document.getElementById('itemsContainer');
+    if (!container) return;
+
+    // Annuler à chaque re-render (nouveaux boutons)
+    container.querySelectorAll('.qty-plus-btn').forEach(btn => {
+        // Reset si déjà attaché
+        if (btn.dataset.longPressAttached === 'true') return;
+        btn.dataset.longPressAttached = 'true';
+
+        const key = btn.dataset.key;
+        const name = btn.dataset.name;
+        const price = parseFloat(btn.dataset.price) || 0;
+
+        // ─── SOURIS (Desktop) ───────────────────────────────────────
+        btn.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return; // Seulement clic gauche
+            startLongPress(btn, () => {
+                updateQty(key, name, price, 5);
+                showQuickAddToast('+5');
+            });
+        });
+
+        btn.addEventListener('mouseup', () => cancelLongPress(btn));
+        btn.addEventListener('mouseleave', () => cancelLongPress(btn));
+
+        // ─── TACTILE (Mobile/Tablette) ──────────────────────────────
+        btn.addEventListener('touchstart', (e) => {
+            startLongPress(btn, () => {
+                updateQty(key, name, price, 5);
+                showQuickAddToast('+5');
+                if ('vibrate' in navigator) navigator.vibrate(30);
+            });
+        }, { passive: true });
+
+        btn.addEventListener('touchend', (e) => {
+            cancelLongPress(btn);
+        });
+        btn.addEventListener('touchcancel', () => cancelLongPress(btn));
+    });
+
+    // ─── CLIC-DROIT sur l'item (wrapper) ──────────────────────────
+    container.querySelectorAll('.item-row-wrapper').forEach(row => {
+        if (row.dataset.rightClickAttached === 'true') return;
+        row.dataset.rightClickAttached = 'true';
+
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const key = row.dataset.key;
+            const name = row.dataset.name;
+            const price = parseFloat(row.dataset.price) || 0;
+            const currentQty = cart[key]?.qty || 0;
+            ouvrirModalSetQty(key, name, price, currentQty);
+        });
+    });
+
+    // ─── DOUBLE-TAP sur l'item (accélère +1) ─────────────────────
+    let lastTap = 0;
+    container.querySelectorAll('.item-row-wrapper').forEach(row => {
+        if (row.dataset.doubleTapAttached === 'true') return;
+        row.dataset.doubleTapAttached = 'true';
+
+        row.addEventListener('touchend', (e) => {
+            // Ne pas interférer avec les boutons
+            if (e.target.closest('button')) return;
+            
+            const now = Date.now();
+            const DOUBLE_TAP_DELAY = 300;
+            
+            if (now - lastTap < DOUBLE_TAP_DELAY) {
+                // Double-tap détecté
+                const key = row.dataset.key;
+                const name = row.dataset.name;
+                const price = parseFloat(row.dataset.price) || 0;
+                updateQty(key, name, price, 1);
+                if ('vibrate' in navigator) navigator.vibrate(15);
+                lastTap = 0;
+            } else {
+                lastTap = now;
+            }
+        }, { passive: true });
+    });
+}
+
+function startLongPress(btn, callback) {
+    longPressTriggered = false;
+    longPressStartTime = Date.now();
+    btn.classList.add('long-press-active');
+
+    longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        btn.classList.remove('long-press-active');
+        btn.classList.add('long-press-success');
+        setTimeout(() => btn.classList.remove('long-press-success'), 300);
+        callback();
+    }, LONG_PRESS_DURATION);
+}
+
+function cancelLongPress(btn) {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+    btn.classList.remove('long-press-active');
+    longPressTriggered = false;
+}
+
+function showQuickAddToast(text) {
+    let toast = document.getElementById('quickAddToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'quickAddToast';
+        toast.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-[#DCA773] text-stone-950 font-black text-2xl px-6 py-3 rounded-2xl shadow-2xl pointer-events-none';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = text;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%, -50%) scale(1.1)';
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%, -50%) scale(0.9)';
+    }, 400);
+    
+    setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 700);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -223,6 +450,7 @@ function switchService(service) {
 
 // ═══════════════════════════════════════════════════════════════════
 // RENDER ITEMS
+// PHASE E.3 : ajout data-attrs + classes pour long-press/clic-droit
 // ═══════════════════════════════════════════════════════════════════
 function renderItems() {
     const container = document.getElementById('itemsContainer');
@@ -255,8 +483,12 @@ function renderItems() {
                 `;
             }
 
+            // ✨ PHASE E.3 : item-row-wrapper avec data-* pour interactions
             const row = document.createElement('div');
-            row.className = 'flex justify-between items-center py-2.5 border-b border-[#2f2820] text-xs';
+            row.className = 'item-row-wrapper flex justify-between items-center py-2.5 border-b border-[#2f2820] text-xs';
+            row.dataset.key = key;
+            row.dataset.name = item.name;
+            row.dataset.price = item.price;
             row.innerHTML = `
                 <div>
                     <p class="font-bold">${currentLang === 'ar' ? item.ar : item.name}</p>
@@ -266,12 +498,15 @@ function renderItems() {
                 <div class="flex items-center gap-3 bg-[#0f0e0c] p-1.5 rounded-xl border border-[#2f2820]">
                     <button onclick="updateQty('${key}', '${item.name}', ${item.price}, -1)" class="w-11 h-11 bg-[#181614] text-stone-200 rounded-lg font-bold shadow-sm active:scale-90 transition-transform text-lg">−</button>
                     <span class="font-bold px-2 text-base min-w-[32px] text-center">${qty}</span>
-                    <button onclick="updateQty('${key}', '${item.name}', ${item.price}, 1)" class="w-11 h-11 bg-[#DCA773] text-stone-950 rounded-lg font-bold shadow-sm active:scale-90 transition-transform text-lg">+</button>
+                    <button data-key="${key}" data-name="${item.name}" data-price="${item.price}" onclick="updateQty('${key}', '${item.name}', ${item.price}, 1)" class="qty-plus-btn w-11 h-11 bg-[#DCA773] text-stone-950 rounded-lg font-bold shadow-sm active:scale-90 transition-transform text-lg relative overflow-hidden">+</button>
                 </div>
             `;
             container.appendChild(row);
         });
     }
+    
+    // ✨ PHASE E.3 : Attacher les listeners après render
+    initLongPressOnPlusButtons();
 }
 
 // ═══════════════════════════════════════════════════════════════════
