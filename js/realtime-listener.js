@@ -76,46 +76,42 @@ function showLuxuryNotificationBanner(normalizedData) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Process incoming payload from Guest Portal
+// Process incoming payload
 // ═══════════════════════════════════════════════════════════════════
-// LOGIQUE (mise à jour) :
-//   - created_by = 'staff ( xxx )'  → action STAFF → pas de chime/bannière
-//   - created_by = 'pending'         → action GUEST → chime/bannière
-//   - created_by = '' ou null        → action GUEST → chime/bannière
-//   - created_by = 'Guest App'       → action GUEST (ancien format) → chime/bannière
-//   - created_by = 'Guest'           → action GUEST → chime/bannière
-//   - created_by = 'Guest Portal'    → action GUEST → chime/bannière
+// LOGIQUE STRICTE :
+//
+//   1. Si created_by commence par 'staff (' → ACTION STAFF
+//      → PAS de chime, PAS de bannière
+//      → Transmission silencieuse à l'UI
+//
+//   2. Si created_by est vide / null / 'pending' / 'Guest App' / 'Guest'
+//      → ACTION GUEST
+//      → Chime + bannière
+//      → Transmission à l'UI
+//
+//   3. Sinon → silence total
 // ═══════════════════════════════════════════════════════════════════
 function processIncomingPayload(rawData) {
     if (!rawData) return;
 
-    // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 1 : Détecter si c'est du STAFF ou du GUEST
-    // ═══════════════════════════════════════════════════════════════
-    const createdBy = String(rawData.created_by || '');
+    const createdBy = String(rawData.created_by || '').trim();
     const isStaffAction = createdBy.startsWith('staff (');
-    const isGuestAction = !createdBy ||
-                          createdBy === 'pending' ||
-                          createdBy === '' ||
-                          createdBy === 'Guest App' ||
-                          createdBy === 'guest app' ||
-                          createdBy === 'Guest' ||
-                          createdBy === 'Guest Portal';
 
     console.log("🔍 [processIncomingPayload]", {
         id: rawData.id,
         created_by: createdBy,
         status: rawData.status,
-        isStaff: isStaffAction,
-        isGuest: isGuestAction
+        isStaff: isStaffAction
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 2 : Si c'est du STAFF → transmettre au UI SANS bannière/chime
+    // CAS 1 : ACTION STAFF → transmission silencieuse
     // ═══════════════════════════════════════════════════════════════
     if (isStaffAction) {
-        console.log("👤 [processIncomingPayload] Staff action detected - no banner/chime");
+        console.log("👤 [processIncomingPayload] Staff action - no banner, no chime");
         
+        // On transmet quand même pour mettre à jour l'UI
+        // MAIS le SHIELD dans ui.js va protéger created_by
         if (typeof window.onNewGuestRequestReceived === 'function') {
             window.onNewGuestRequestReceived(rawData);
         } else if (typeof chargerLiveOrders === 'function') {
@@ -125,58 +121,50 @@ function processIncomingPayload(rawData) {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 3 : Si c'est du GUEST → bannière + chime + transmission
+    // CAS 2 : ACTION GUEST → chime + bannière
     // ═══════════════════════════════════════════════════════════════
-    if (isGuestAction) {
-        console.log("🛎️ [processIncomingPayload] Guest action detected - banner + chime");
-        
-        const normalizedRequest = {
-            id: String(rawData.id),
-            room: rawData.room_number || rawData.room || '---',
-            room_number: rawData.room_number || rawData.room || '---',
-            guest_name: rawData.guest_name || 'Guest',
-            service_type: rawData.service_type || 'Laundry Collection',
-            items: rawData.items || [],
-            total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
-            total_pieces: rawData.total_pieces || rawData.total_clothes || 0,
-            subtotal: Number(rawData.subtotal || 0),
-            vat: Number(rawData.vat || 0),
-            total: Number(rawData.grand_total || rawData.total || 0),
-            grand_total: Number(rawData.grand_total || rawData.total || 0),
-            note: rawData.special_notes || rawData.note || 'None',
-            special_notes: rawData.special_notes || rawData.note || 'None',
-            pms_quota: rawData.pms_quota || 'Standard',
-            extra_charged: rawData.extra_charged || false,
-            status: rawData.status || 'Pending',
-            is_guest_request: true,
-            created_by: 'pending',
-            created_at: rawData.created_at || new Date().toISOString()
-        };
+    console.log("🛎️ [processIncomingPayload] Guest action - banner + chime");
 
-        // Bannière + chime UNIQUEMENT pour Guest
-        showLuxuryNotificationBanner(normalizedRequest);
+    const normalizedRequest = {
+        id: String(rawData.id),
+        room: rawData.room_number || rawData.room || '---',
+        room_number: rawData.room_number || rawData.room || '---',
+        guest_name: rawData.guest_name || 'Guest',
+        service_type: rawData.service_type || 'Laundry Collection',
+        items: rawData.items || [],
+        total_clothes: rawData.total_pieces || rawData.total_clothes || 0,
+        total_pieces: rawData.total_pieces || rawData.total_clothes || 0,
+        subtotal: Number(rawData.subtotal || 0),
+        vat: Number(rawData.vat || 0),
+        total: Number(rawData.grand_total || rawData.total || 0),
+        grand_total: Number(rawData.grand_total || rawData.total || 0),
+        note: rawData.special_notes || rawData.note || 'None',
+        special_notes: rawData.special_notes || rawData.note || 'None',
+        pms_quota: rawData.pms_quota || 'Standard',
+        extra_charged: rawData.extra_charged || false,
+        status: rawData.status || 'Pending',
+        is_guest_request: true,
+        created_by: 'pending',
+        created_at: rawData.created_at || new Date().toISOString()
+    };
 
-        if (typeof window.onNewGuestRequestReceived === 'function') {
-            window.onNewGuestRequestReceived(normalizedRequest);
-        } else if (typeof chargerLiveOrders === 'function') {
-            chargerLiveOrders();
-        }
-        return;
-    }
+    // Bannière + chime
+    showLuxuryNotificationBanner(normalizedRequest);
 
-    // ═══════════════════════════════════════════════════════════════
-    // CAS PAR DÉFAUT : inconnu → on transmet silencieusement
-    // ═══════════════════════════════════════════════════════════════
-    console.log("❓ [processIncomingPayload] Unknown source - silent transmission");
-    
+    // Transmission à l'UI
     if (typeof window.onNewGuestRequestReceived === 'function') {
-        window.onNewGuestRequestReceived(rawData);
+        window.onNewGuestRequestReceived(normalizedRequest);
     } else if (typeof chargerLiveOrders === 'function') {
         chargerLiveOrders();
     }
 }
 
-// Fallback polling sync (Monitors all new incoming requests)
+// ═══════════════════════════════════════════════════════════════════
+// Fallback polling sync
+// ═══════════════════════════════════════════════════════════════════
+// CORRECTION MAJEURE : Ignore les records Staff pour éviter
+// l'écrasement de created_by et le déclenchement du chime
+// ═══════════════════════════════════════════════════════════════════
 let lastProcessedId = null;
 
 async function syncFallbackGuestRequests() {
@@ -193,16 +181,35 @@ async function syncFallbackGuestRequests() {
         if (error || !data || data.length === 0) return;
 
         const latest = data[0];
+        const latestCreatedBy = String(latest.created_by || '').trim();
+
+        // Première fois : juste mémoriser
         if (lastProcessedId === null) {
             lastProcessedId = String(latest.id);
             return;
         }
 
+        // Nouveau record détecté (ID différent)
         if (String(latest.id) !== lastProcessedId) {
             lastProcessedId = String(latest.id);
-            console.log("🔄 New request detected via fallback:", {
+            
+            // ═══════════════════════════════════════════════════════════════
+            // CORRECTION CRITIQUE :
+            // Si c'est un record créé par un STAFF → IGNORER TOTALEMENT
+            // (pas de chime, pas de bannière, pas d'appel à processIncomingPayload)
+            // ═══════════════════════════════════════════════════════════════
+            if (latestCreatedBy.startsWith('staff (')) {
+                console.log("⏭️ [Fallback] Skipping STAFF record (no chime):", {
+                    id: latest.id,
+                    created_by: latestCreatedBy
+                });
+                return;
+            }
+
+            // Sinon, c'est un vrai Guest → on traite
+            console.log("🔄 [Fallback] New GUEST request detected:", {
                 id: latest.id,
-                created_by: latest.created_by,
+                created_by: latestCreatedBy,
                 status: latest.status
             });
             processIncomingPayload(latest);
@@ -212,7 +219,9 @@ async function syncFallbackGuestRequests() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 // Initialize Supabase Realtime Listener
+// ═══════════════════════════════════════════════════════════════════
 function initRealtimeGuestRequests() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         console.warn("⚠️ Supabase client not ready for Realtime.");
@@ -232,13 +241,23 @@ function initRealtimeGuestRequests() {
                 // (via le flag isLocalUpdating défini dans ui.js)
                 // ═══════════════════════════════════════════════════════════════
                 if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) {
-                    console.log("⏸️ Ignoring realtime (local update in progress)");
+                    console.log("⏸️ [Realtime] Ignoring (local update in progress)");
                     return;
                 }
                 
-                console.log("🔔 REALTIME INSERT RECEIVED:", {
+                const createdBy = String(payload.new.created_by || '').trim();
+                
+                // ═══════════════════════════════════════════════════════════════
+                // Ignorer aussi les records Staff (double protection)
+                // ═══════════════════════════════════════════════════════════════
+                if (createdBy.startsWith('staff (')) {
+                    console.log("⏭️ [Realtime] Skipping STAFF record:", createdBy);
+                    return;
+                }
+                
+                console.log("🔔 [Realtime] INSERT RECEIVED:", {
                     id: payload.new.id,
-                    created_by: payload.new.created_by,
+                    created_by: createdBy,
                     status: payload.new.status
                 });
                 processIncomingPayload(payload.new);
