@@ -934,7 +934,170 @@ function modifierBordereauActuel() {
         if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
     }
 }
+// ═══════════════════════════════════════════════════════════════════
+// PHASE E.4 — DUPLICATION RAPIDE D'UN RECORD
+// ═══════════════════════════════════════════════════════════════════
+function dupliquerRecordActuel() {
+    if (!selectedIdForModal) {
+        alert("⚠️ No record selected");
+        return;
+    }
 
+    chargerDonneesLocalStorage();
+    const entry = cachedSlips.find(e => String(e.id) === String(selectedIdForModal));
+
+    if (!entry) {
+        console.error("❌ [Duplicate] Record not found:", selectedIdForModal);
+        alert("⚠️ Record not found. Please refresh the page.");
+        return;
+    }
+
+    // SPA : on ne duplique pas (S/N unique par jour)
+    if (entry.is_spa) {
+        alert("⚠️ SPA receipts cannot be duplicated.\nCreate a new one with a different serial number.");
+        return;
+    }
+
+    // Fermer la modale détails
+    fermerModal();
+
+    // Basculer vers le formulaire New Record
+    switchMainSection('newRecord');
+
+    // Reset propre du formulaire (vide tout : room, note, photo, cart)
+    reinitialiserFormulaire();
+
+    // ═══════════════════════════════════════════════════════════════
+    // Pré-remplissage intelligent
+    // ═══════════════════════════════════════════════════════════════
+    
+    // 1. Room : on laisse VIDE (l'agent choisit la nouvelle)
+    //    → déjà fait par reinitialiserFormulaire()
+
+    // 2. Type de compte (Hotel / Extra / Guest)
+    const sourceCountType = entry.extra_charged 
+        ? 'quota_extra' 
+        : (entry.count_type || 'hotel');
+    selectCountType(sourceCountType);
+
+    // 3. Service (laundry / dry / pressing)
+    //    On le déduit des items ou on garde le service par défaut
+    //    (les items ne stockent pas le service dans le record actuel,
+    //     donc on laisse 'laundry' par défaut)
+
+    // 4. Packaging (Folding / Hanger / Single)
+    const serviceStyle = entry.service_type || entry.options?.service_style || 'F — Folding';
+    const foldingRadios = document.querySelectorAll('input[name="foldingOption"]');
+    foldingRadios.forEach(radio => {
+        if (radio.value === serviceStyle) {
+            radio.checked = true;
+        }
+    });
+
+    // 5. Articles → on reconstruit le panier
+    let rawItems = entry.items || [];
+    if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const itemsList = Array.isArray(rawItems) 
+        ? rawItems 
+        : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+    cart = {};
+    let customIdx = 0;
+
+    itemsList.forEach(item => {
+        const itemName = item.name || item.item_name || 'Article';
+        const itemQty = parseInt(item.quantity || item.qty, 10) || 0;
+        const itemPrice = parseFloat(item.unit_price || item.price) || 0;
+        const freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+
+        if (itemQty <= 0) return;
+
+        // Custom items → on les met dans les champs custom (max 3)
+        if (item.category === 'Custom Item' && customIdx < 3) {
+            const nameInput = document.getElementById(`customName${customIdx}`);
+            const priceInput = document.getElementById(`customPrice${customIdx}`);
+            const qtyInput = document.getElementById(`customQty${customIdx}`);
+            if (nameInput) nameInput.value = itemName;
+            if (priceInput) priceInput.value = itemPrice;
+            if (qtyInput) qtyInput.value = itemQty;
+            customIdx++;
+            const customDetails = document.getElementById('detailsCustomItems');
+            if (customDetails) customDetails.open = true;
+        } else {
+            // Articles standards → on cherche dans quel service ils appartiennent
+            let foundService = null;
+            if (typeof database !== 'undefined') {
+                for (const svcKey of ['laundry', 'dry', 'pressing']) {
+                    const svc = database[svcKey];
+                    if (!svc) continue;
+                    for (const cat of Object.values(svc)) {
+                        if (cat.some(i => i.name === itemName)) {
+                            foundService = svcKey;
+                            break;
+                        }
+                    }
+                    if (foundService) break;
+                }
+            }
+
+            const servicePrefix = foundService || 'laundry';
+            const key = `${servicePrefix}_${itemName}`;
+            cart[key] = {
+                name: itemName,
+                price: itemPrice,
+                qty: itemQty,
+                freeQty: freeQty
+            };
+        }
+    });
+
+    // 6. Note : on la laisse VIDE (déjà fait par reinitialiserFormulaire())
+    // 7. Photo : on la laisse VIDE (déjà fait par reinitialiserFormulaire())
+
+    // 8. Sauvegarder le panier reconstruit
+    sauvegarderPanierLocal();
+    renderItems();
+    if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
+
+    // 9. Focus sur le champ Room pour saisie immédiate
+    setTimeout(() => {
+        const roomInput = document.getElementById('roomNumber');
+        if (roomInput) {
+            roomInput.focus();
+            roomInput.select();
+        }
+    }, 300);
+
+    // 10. Toast informatif
+    const totalPcs = entry.total_pieces || entry.total_clothes || 0;
+    const itemCount = Object.keys(cart).length;
+    showDuplicateToast(itemCount, totalPcs);
+}
+
+function showDuplicateToast(itemCount, totalPcs) {
+    let toast = document.getElementById('duplicateToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'duplicateToast';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-[#DCA773] text-stone-950 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl transition-all duration-300';
+        document.body.appendChild(toast);
+    }
+    
+    toast.innerHTML = `📋 <strong>Record duplicated</strong> — ${itemCount} item(s), ${totalPcs} pcs<br><span class="text-[10px] opacity-80">Choisissez la nouvelle chambre</span>`;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%, 0)';
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%, 20px)';
+    }, 3500);
+    
+    setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3800);
+}
 // ═══════════════════════════════════════════════════════════════════
 // PDF
 // ═══════════════════════════════════════════════════════════════════
