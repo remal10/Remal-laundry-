@@ -1240,15 +1240,27 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
 // ═══════════════════════════════════════════════════════════════════
 function ouvrirModalBatchStatus() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
+
+    console.log("🔍 [BatchStatus] Checkboxes cochées:", selectedIds.length);
+    console.log("🔍 [BatchStatus] IDs:", selectedIds);
+
     if (selectedIds.length === 0) {
         alert("⚠️ Please select at least one room checkbox.");
         return;
     }
+
     const countLabel = document.getElementById('batchStatusCountLabel');
     if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
-    
+
     const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.remove('hidden');
+    if (!modal) {
+        console.error("❌ [BatchStatus] Modale introuvable dans le DOM !");
+        alert("⚠️ Batch status modal not found. Please refresh the page.");
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    console.log("✅ [BatchStatus] Modale ouverte avec", selectedIds.length, "record(s)");
 }
 
 function fermerModalBatchStatus() {
@@ -1258,13 +1270,20 @@ function fermerModalBatchStatus() {
 
 async function appliquerStatutEnLot(nouveauStatut) {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0) {
+        alert("⚠️ No records selected.");
+        return;
+    }
 
     isLocalUpdating = true;
 
     chargerDonneesLocalStorage();
+    let updatedCount = 0;
     cachedSlips.forEach(s => {
-        if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
+        if (selectedIds.includes(String(s.id))) {
+            s.status = nouveauStatut;
+            updatedCount++;
+        }
     });
     sauvegarderDonneesLocalStorage();
 
@@ -1275,10 +1294,19 @@ async function appliquerStatutEnLot(nouveauStatut) {
         try {
             const uuidBatch = selectedIds.filter(id => id.length === 36);
             if (uuidBatch.length > 0) {
-                await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', uuidBatch);
+                const { error } = await supabaseClient
+                    .from('guest_laundry_requests')
+                    .update({ status: nouveauStatut })
+                    .in('id', uuidBatch);
+                
+                if (error) {
+                    console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
+                } else {
+                    console.log(`✅ [BatchStatus] ${uuidBatch.length} records mis à jour sur Supabase`);
+                }
             }
         } catch (err) {
-            console.error("Erreur mise à jour en lot Supabase :", err);
+            console.error("❌ [BatchStatus] Exception:", err);
         }
     }
 
