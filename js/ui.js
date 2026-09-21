@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════
 let currentStaffUser = null;
 let isLocalUpdating = false;
+
 // ═══════════════════════════════════════════════════════════════════
 // DÉTECTION APPAREIL — Ajoute des classes sur <body>
 // ═══════════════════════════════════════════════════════════════════
@@ -15,30 +16,22 @@ function detecterTypeAppareil() {
     const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
     const screenWidth = window.innerWidth;
     
-    // Nettoyer les anciennes classes
     body.classList.remove('is-touch', 'is-desktop', 'is-mobile', 'is-tablet', 'is-coarse', 'is-fine');
     
-    // Détection basique
     if (hasTouch) {
         body.classList.add('is-touch');
     } else {
         body.classList.add('is-desktop');
     }
     
-    // Détection taille
     if (screenWidth < 640) {
         body.classList.add('is-mobile');
     } else if (screenWidth < 1024) {
         body.classList.add('is-tablet');
     }
     
-    // Détection pointer
-    if (hasCoarsePointer) {
-        body.classList.add('is-coarse');
-    }
-    if (hasMouse) {
-        body.classList.add('is-fine');
-    }
+    if (hasCoarsePointer) body.classList.add('is-coarse');
+    if (hasMouse) body.classList.add('is-fine');
     
     console.log('📱 [Device] Détection:', {
         isTouch: hasTouch,
@@ -49,27 +42,23 @@ function detecterTypeAppareil() {
     });
 }
 
-// Détecter au chargement
 detecterTypeAppareil();
-
-// Re-détecter au redimensionnement
 window.addEventListener('resize', detecterTypeAppareil);
+
 // ═══════════════════════════════════════════════════════════════════
-// SWIPE GESTURES — Navigation tactile entre sections
+// SWIPE GESTURES
 // ═══════════════════════════════════════════════════════════════════
 function activerSwipeNavigation() {
     const body = document.getElementById('bodyRoot') || document.body;
-    
-    // Seulement sur tactile
     if (!body.classList.contains('is-touch')) return;
     
     const sections = ['liveRecord', 'spa', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
-    const SWIPE_THRESHOLD = 100; // px minimum
-    const SWIPE_MAX_TIME = 600; // ms
-    const VERTICAL_TOLERANCE = 80; // tolérance verticale
+    const SWIPE_THRESHOLD = 100;
+    const SWIPE_MAX_TIME = 600;
+    const VERTICAL_TOLERANCE = 80;
     
     document.addEventListener('touchstart', (e) => {
         if (e.touches.length !== 1) return;
@@ -89,35 +78,24 @@ function activerSwipeNavigation() {
         const deltaY = touchEndY - touchStartY;
         const deltaTime = touchEndTime - touchStartTime;
         
-        // Vérifs
         if (deltaTime > SWIPE_MAX_TIME) return;
         if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
         if (Math.abs(deltaY) > VERTICAL_TOLERANCE) return;
-        
-        // Ne pas déclencher si on est dans une modale ou un input
         if (e.target.closest('#detailModal, #staffLoginModal, #activeRoomsListModal, #batchStatusModal, input, textarea, select')) return;
         
-        // Trouver la section actuelle
         let currentIndex = -1;
         sections.forEach((sec, idx) => {
             const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) 
                      || document.getElementById(`section-${sec}`)
                      || document.getElementById(sec === 'spa' ? 'spa-laundry-section' : '');
-            if (el && !el.classList.contains('hidden')) {
-                currentIndex = idx;
-            }
+            if (el && !el.classList.contains('hidden')) currentIndex = idx;
         });
         
         if (currentIndex === -1) return;
         
-        // Swipe gauche → section suivante
         if (deltaX < 0 && currentIndex < sections.length - 1) {
-            console.log('👈 Swipe gauche →', sections[currentIndex + 1]);
             switchMainSection(sections[currentIndex + 1]);
-        }
-        // Swipe droite → section précédente
-        else if (deltaX > 0 && currentIndex > 0) {
-            console.log('👉 Swipe droite →', sections[currentIndex - 1]);
+        } else if (deltaX > 0 && currentIndex > 0) {
             switchMainSection(sections[currentIndex - 1]);
         }
     }, { passive: true });
@@ -125,12 +103,12 @@ function activerSwipeNavigation() {
     console.log('✅ Swipe navigation activée');
 }
 
-// Activer le swipe au chargement
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(activerSwipeNavigation, 500);
 });
+
 // ═══════════════════════════════════════════════════════════════════
-// AUTO-SCROLL : Centrer le bouton actif dans la navigation
+// AUTO-SCROLL NAV
 // ═══════════════════════════════════════════════════════════════════
 function centrerBoutonNavigation(btnId) {
     const btn = document.getElementById(btnId);
@@ -138,8 +116,6 @@ function centrerBoutonNavigation(btnId) {
     
     const container = document.getElementById('mainNavContainer');
     if (!container) return;
-    
-    // Ne s'applique qu'en mode scroll horizontal
     if (container.scrollWidth <= container.clientWidth) return;
     
     const btnRect = btn.getBoundingClientRect();
@@ -150,13 +126,11 @@ function centrerBoutonNavigation(btnId) {
     
     const scrollOffset = btnCenter - containerCenter;
     
-    container.scrollBy({
-        left: scrollOffset,
-        behavior: 'smooth'
-    });
+    container.scrollBy({ left: scrollOffset, behavior: 'smooth' });
 }
+
 // ═══════════════════════════════════════════════════════════════════
-// HELPER : Restaure la session Staff depuis localStorage
+// HELPER : Restaure la session Staff
 // ═══════════════════════════════════════════════════════════════════
 function restaurerSessionStaff() {
     if (currentStaffUser && currentStaffUser.name) return currentStaffUser;
@@ -176,7 +150,7 @@ function restaurerSessionStaff() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HELPER : Formate l'affichage du champ "Agent"
+// HELPER : Formate l'affichage Agent
 // ═══════════════════════════════════════════════════════════════════
 function formatAgentDisplay(createdBy) {
     if (!createdBy || 
@@ -293,9 +267,7 @@ function updateQty(key, name, price, delta) {
     
     cart[key].qty += delta;
     
-    if (cart[key].qty <= 0) {
-        delete cart[key];
-    }
+    if (cart[key].qty <= 0) delete cart[key];
 
     sauvegarderPanierLocal();
     renderItems();
@@ -654,9 +626,7 @@ function switchMainSection(section) {
         renderLostFoundItems();
     }
     
-    // ═══════════════════════════════════════════════════════════════
-    // AUTO-SCROLL : Centrer le bouton actif dans la nav
-    // ═══════════════════════════════════════════════════════════════
+    // AUTO-SCROLL : Centrer le bouton actif
     const navBtnId = navButtons[section];
     if (navBtnId) {
         setTimeout(() => centrerBoutonNavigation(navBtnId), 100);
@@ -1094,8 +1064,6 @@ window.onNewGuestRequestReceived = async function(newOrder) {
         String(existingLocal.created_by).startsWith('staff (')) {
         
         console.log("🛡️ SHIELD : record Staff — aucune modification locale");
-        console.log("   → created_by gardé:", existingLocal.created_by);
-        console.log("   → status gardé:", existingLocal.status);
         
         if (typeof chargerLiveOrders === 'function') {
             chargerLiveOrders();
@@ -1226,36 +1194,37 @@ function chargerLiveOrders() {
         return entryDate >= debutJournee;
     });
 
-// ═══════════════════════════════════════════════════════════════
-// TRI : PENDING en premier, puis SPA, puis par numéro de chambre
-// ═══════════════════════════════════════════════════════════════
-const isPendingEntry = (e) => {
-    const cb = String(e.created_by || '');
-    return e.status === 'Pending' || 
-           cb === 'pending' || 
-           cb === 'Guest App' || 
-           cb === 'guest app' ||
-           cb === 'Guest' ||
-           cb === 'Staff Laundry OS' ||
-           cb === '';
-};
+    // ═══════════════════════════════════════════════════════════════
+    // TRI : PENDING en premier, puis SPA, puis par chambre
+    // ═══════════════════════════════════════════════════════════════
+    const isPendingEntry = (e) => {
+        const cb = String(e.created_by || '');
+        return e.status === 'Pending' || 
+               cb === 'pending' || 
+               cb === 'Guest App' || 
+               cb === 'guest app' ||
+               cb === 'Guest' ||
+               cb === 'Staff Laundry OS' ||
+               cb === '';
+    };
+    
+    activeTodaySlips.sort((a, b) => {
+        // 1. Pending en premier
+        const aPending = isPendingEntry(a);
+        const bPending = isPendingEntry(b);
+        if (aPending && !bPending) return -1;
+        if (!aPending && bPending) return 1;
+        
+        // 2. SPA ensuite
+        if (a.is_spa && !b.is_spa) return -1;
+        if (!a.is_spa && b.is_spa) return 1;
+        
+        // 3. Tri par chambre
+        const roomA = parseInt(a.room_number || a.room) || 0;
+        const roomB = parseInt(b.room_number || b.room) || 0;
+        return roomA - roomB;
+    });
 
-activeTodaySlips.sort((a, b) => {
-    // 1. Pending en premier (priorité absolue)
-    const aPending = isPendingEntry(a);
-    const bPending = isPendingEntry(b);
-    if (aPending && !bPending) return -1;
-    if (!aPending && bPending) return 1;
-    
-    // 2. SPA ensuite
-    if (a.is_spa && !b.is_spa) return -1;
-    if (!a.is_spa && b.is_spa) return 1;
-    
-    // 3. Tri par numéro de chambre
-    const roomA = parseInt(a.room_number || a.room) || 0;
-    const roomB = parseInt(b.room_number || b.room) || 0;
-    return roomA - roomB;
-});
     const badge = document.getElementById('activeRoomsCountBadge');
     if (badge) badge.innerText = activeTodaySlips.length;
 
@@ -1280,36 +1249,29 @@ activeTodaySlips.sort((a, b) => {
         return;
     }
 
-   activeTodaySlips.forEach(entry => {
-    const itemDiv = document.createElement('div');
-    
-    // ═══════════════════════════════════════════════════════════════
-    // Détection PENDING pour appliquer un style visuel distinct
-    // ═══════════════════════════════════════════════════════════════
-    const isPendingCreator = !entry.created_by || 
-                             entry.created_by === 'pending' || 
-                             entry.created_by === 'Guest App' || 
-                             entry.created_by === 'guest app' ||
-                             entry.created_by === 'Guest' ||
-                             entry.created_by === 'Staff Laundry OS';
-    const isPending = isPendingCreator || entry.status === 'Pending';
-    
-    // Classe de base + bordure orange si Pending
-    itemDiv.className = isPending 
-        ? 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer pending-card' 
-        : 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
-
-        const isPendingCreator = !entry.created_by || 
-                                 entry.created_by === 'pending' || 
-                                 entry.created_by === 'Guest App' || 
-                                 entry.created_by === 'guest app' ||
-                                 entry.created_by === 'Guest' ||
-                                 entry.created_by === 'Staff Laundry OS';
+    activeTodaySlips.forEach(entry => {
+        const itemDiv = document.createElement('div');
         
+        // ═══════════════════════════════════════════════════════════════
+        // Détection PENDING pour style visuel
+        // ═══════════════════════════════════════════════════════════════
+        const isPendingCard = entry.status === 'Pending' || 
+                              !entry.created_by || 
+                              entry.created_by === 'pending' || 
+                              entry.created_by === 'Guest App' || 
+                              entry.created_by === 'guest app' ||
+                              entry.created_by === 'Guest' ||
+                              entry.created_by === 'Staff Laundry OS';
+        
+        itemDiv.className = isPendingCard 
+            ? 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer pending-card' 
+            : 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
+
+        // Badge
         let badgeText = entry.status || 'Collected';
         let badgeClass = 'luxe-badge luxe-badge-collected';
         
-        if (isPendingCreator || entry.status === 'Pending') {
+        if (isPendingCard) {
             badgeText = '⏳ PENDING';
             badgeClass = 'luxe-badge luxe-badge-pending';
         } else if (entry.status === 'pickup_alert') {
@@ -2095,7 +2057,7 @@ async function exportSpaToPDF() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FERMER NOTIFICATION BANNER (utilisé par ouvrirModalDetails)
+// FERMER NOTIFICATION BANNER
 // ═══════════════════════════════════════════════════════════════════
 function fermerNotificationGuestReq(id) {
     if (id) {
@@ -2122,10 +2084,6 @@ async function ouvrirModalDetails(id) {
     chargerDonneesLocalStorage();
     let entry = cachedSlips.find(e => String(e.id) === String(id));
 
-    // ═══════════════════════════════════════════════════════════════
-    // REFRESH SUPABASE : Si le record local n'a pas le bon created_by,
-    // on rafraîchit depuis Supabase (fix du bug "pending qui revient")
-    // ═══════════════════════════════════════════════════════════════
     const localCreatedBy = String(entry?.created_by || '').trim();
     const needsRefresh = !localCreatedBy.startsWith('staff (');
 
