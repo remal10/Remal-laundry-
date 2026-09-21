@@ -1258,16 +1258,19 @@ function ouvrirModalBatchStatus() {
         return;
     }
 
-    // ✅ Force display:flex + z-index inline
+    // ✅ FORCE display inline (bypass Tailwind hidden)
     modal.style.display = 'flex';
-    modal.style.zIndex = '9999';
+    modal.classList.remove('hidden');
     
     console.log("✅ [BatchStatus] Modale ouverte avec", selectedIds.length, "record(s)");
-    console.log("✅ [BatchStatus] display:", modal.style.display, "| zIndex:", modal.style.zIndex);
+    console.log("✅ [BatchStatus] style.display =", modal.style.display);
 }
 function fermerModalBatchStatus() {
     const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+    }
 }
 
 async function appliquerStatutEnLot(nouveauStatut) {
