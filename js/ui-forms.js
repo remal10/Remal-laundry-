@@ -962,23 +962,35 @@ async function sauvegarderBordereauDepuisFormulaire() {
         created_at: new Date().toISOString()
     };
 
-    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
-    if (existingIndex !== -1) {
-        cachedSlips[existingIndex] = slipRecord;
-    } else {
-        cachedSlips.unshift(slipRecord);
-    }
-    sauvegarderDonneesLocalStorage();
-
-    if (editingId) {
-        alert(`✅ Record for Room ${roomNum} updated successfully!`);
-    } else {
-        alert(`✅ Record for Room ${roomNum} saved successfully!`);
-    }
-
-    reinitialiserFormulaire();
-    switchMainSection('liveRecord');
-    chargerLiveOrders();
-
-    setTimeout(() => { isLocalUpdating = false; }, 3000);
+const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
+if (existingIndex !== -1) {
+    cachedSlips[existingIndex] = slipRecord;
+} else {
+    cachedSlips.unshift(slipRecord);
 }
+sauvegarderDonneesLocalStorage();
+
+// ✨ PHASE E.5 : Toast Undo UNIQUEMENT sur nouvelle création (pas sur Update)
+if (!editingId) {
+    // Nouveau record → on propose l'Undo
+    // (on n'utilise plus alert() pour ne pas bloquer le toast)
+    showUndoToast(assignedId, roomNum, false);
+} else {
+    // Édition → pas d'undo, feedback simple
+    // (on garde un petit toast non-bloquant au lieu d'alert)
+    const t = document.createElement('div');
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+    t.innerHTML = `✅ <strong>Room ${roomNum}</strong> updated`;
+    document.body.appendChild(t);
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 1800);
+}
+
+reinitialiserFormulaire();
+switchMainSection('liveRecord');
+chargerLiveOrders();
+
+setTimeout(() => { isLocalUpdating = false; }, 3000);
