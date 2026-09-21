@@ -678,3 +678,71 @@ body.is-touch .pending-card::before {
     animation: none;
     opacity: 1;
 }
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE E.2 — AUTO-COMPLÉTION CHAMBRE
+   ═══════════════════════════════════════════════════════════════════ */
+
+#roomAutocompleteDropdown {
+    animation: autocompleteFadeIn 0.15s ease-out;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+@keyframes autocompleteFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.room-autocomplete-item {
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+.room-autocomplete-item:active {
+    background: #2a251e !important;
+    transform: scale(0.99);
+}
+
+/* Scrollbar subtile dans le dropdown */
+#roomAutocompleteDropdown::-webkit-scrollbar {
+    width: 6px;
+}
+#roomAutocompleteDropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+#roomAutocompleteDropdown::-webkit-scrollbar-thumb {
+    background: rgba(220, 167, 115, 0.3);
+    border-radius: 3px;
+}
+#roomAutocompleteDropdown::-webkit-scrollbar-thumb:hover {
+    background: rgba(220, 167, 115, 0.5);
+}
+
+/* Light mode adjustments */
+body.light-mode #roomAutocompleteDropdown {
+    background: #ffffff;
+    border-color: rgba(180, 130, 70, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .room-autocomplete-item {
+    border-bottom-color: #f0e9df;
+}
+
+body.light-mode .room-autocomplete-item:hover {
+    background: #faf6f0;
+}
+
+body.light-mode .room-autocomplete-item .text-stone-100 {
+    color: #1a1612;
+}
+
+body.light-mode .room-autocomplete-item .text-stone-400 {
+    color: #78716c;
+}
