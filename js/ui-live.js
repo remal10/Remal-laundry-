@@ -1242,7 +1242,6 @@ function ouvrirModalBatchStatus() {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
     console.log("🔍 [BatchStatus] Checkboxes cochées:", selectedIds.length);
-    console.log("🔍 [BatchStatus] IDs:", selectedIds);
 
     if (selectedIds.length === 0) {
         alert("⚠️ Please select at least one room checkbox.");
@@ -1259,13 +1258,16 @@ function ouvrirModalBatchStatus() {
         return;
     }
 
-    modal.classList.remove('hidden');
+    // ✅ Force display:flex + z-index inline
+    modal.style.display = 'flex';
+    modal.style.zIndex = '9999';
+    
     console.log("✅ [BatchStatus] Modale ouverte avec", selectedIds.length, "record(s)");
+    console.log("✅ [BatchStatus] display:", modal.style.display, "| zIndex:", modal.style.zIndex);
 }
-
 function fermerModalBatchStatus() {
     const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) modal.style.display = 'none';
 }
 
 async function appliquerStatutEnLot(nouveauStatut) {
