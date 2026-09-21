@@ -78,7 +78,153 @@ function updateFreeQty(key, delta) {
         if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
     }
 }
+// ═══════════════════════════════════════════════════════════════════
+// PHASE E.5 — UNDO SAVE (toast 7s avec bouton Undo)
+// ═══════════════════════════════════════════════════════════════════
+const UNDO_DURATION = 7000; // 7 secondes
+let activeUndo = null;
 
+function showUndoToast(recordId, roomLabel, isSpa = false) {
+    // Si un undo est déjà actif → on le commit (l'agent a enchaîné)
+    if (activeUndo) {
+        clearTimeout(activeUndo.timer);
+        if (activeUndo.element && activeUndo.element.parentNode) {
+            activeUndo.element.parentNode.removeChild(activeUndo.element);
+        }
+        activeUndo = null;
+    }
+
+    const toast = document.createElement('div');
+    toast.id = 'undoToast';
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-[#181614] border border-[#DCA773]/40 text-stone-100 rounded-2xl shadow-2xl overflow-hidden';
+    toast.style.minWidth = '280px';
+    toast.style.maxWidth = '420px';
+
+    toast.innerHTML = `
+        <div class="flex items-center gap-3 px-4 py-3">
+            <span class="text-xl">${isSpa ? '🧘' : '✅'}</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-stone-100">
+                    ${isSpa ? 'SPA Sheet' : 'Room'} ${roomLabel} saved
+                </p>
+                <p class="text-[10px] text-stone-400 mt-0.5">Disparition dans <span class="undo-countdown font-bold text-[#DCA773]">7</span>s</p>
+            </div>
+            <button id="undoBtn" class="px-3.5 py-2 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-black text-xs rounded-xl shadow active:scale-95 transition flex items-center gap-1.5">
+                <i class="fas fa-undo text-[10px]"></i> Undo
+            </button>
+        </div>
+        <div class="h-1 bg-[#0f0e0c]">
+            <div id="undoProgressBar" class="h-full bg-gradient-to-r from-[#DCA773] to-[#c89360]" style="width: 100%; transition: width 7s linear;"></div>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+    
+    // Animation de la barre de progression
+    requestAnimationFrame(() => {
+        const bar = document.getElementById('undoProgressBar');
+        if (bar) bar.style.width = '0%';
+    });
+
+    // Compte à rebours
+    let secondsLeft = Math.round(UNDO_DURATION / 1000);
+    const countdownEl = toast.querySelector('.undo-countdown');
+    const countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (countdownEl && secondsLeft >= 0) countdownEl.innerText = secondsLeft;
+    }, 1000);
+
+    // Bouton Undo
+    const undoBtn = toast.querySelector('#undoBtn');
+    undoBtn.addEventListener('click', async () => {
+        clearTimeout(activeUndo.timer);
+        clearInterval(countdownInterval);
+        await executerUndo(recordId, toast);
+    });
+
+    // Timeout auto
+    const timer = setTimeout(() => {
+        clearInterval(countdownInterval);
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+        activeUndo = null;
+    }, UNDO_DURATION);
+
+    activeUndo = { recordId, timer, element: toast };
+}
+
+async function executerUndo(recordId, toastElement) {
+    console.log("↩️ [Undo] Suppression record:", recordId);
+    isLocalUpdating = true;
+
+    // 1. Suppression Supabase
+    if (typeof supabaseClient !== 'undefined' && supabaseClient && String(recordId).length === 36) {
+        try {
+            const { error } = await supabaseClient
+                .from('guest_laundry_requests')
+                .delete()
+                .eq('id', recordId);
+            
+            if (error) {
+                console.error("❌ [Undo] Erreur Supabase:", error.message);
+            } else {
+                console.log("✅ [Undo] Supprimé de Supabase:", recordId);
+            }
+        } catch (e) {
+            console.error("❌ [Undo] Exception Supabase:", e);
+        }
+    }
+
+    // 2. Suppression local
+    try {
+        chargerDonneesLocalStorage();
+        cachedSlips = cachedSlips.filter(s => String(s.id) !== String(recordId));
+        sauvegarderDonneesLocalStorage();
+    } catch (e) {
+        console.warn("⚠️ [Undo] Erreur local storage:", e);
+    }
+
+    // 3. Fermer le toast + feedback visuel
+    if (toastElement && toastElement.parentNode) {
+        toastElement.style.opacity = '0';
+        toastElement.style.transform = 'translate(-50%, 20px)';
+        toastElement.style.transition = 'all 0.25s ease';
+        setTimeout(() => {
+            if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement);
+        }, 300);
+    }
+
+    // 4. Rafraîchir UI
+    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+    if (typeof afficherListeBordereauxLocal === 'function') {
+        const archivesOpen = !document.getElementById('sectionPdfList')?.classList.contains('hidden');
+        if (archivesOpen) afficherListeBordereauxLocal();
+    }
+
+    // 5. Toast de confirmation
+    showUndoConfirmedToast();
+
+    setTimeout(() => { isLocalUpdating = false; }, 800);
+    activeUndo = null;
+}
+
+function showUndoConfirmedToast() {
+    const t = document.createElement('div');
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border border-rose-800 text-rose-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+    t.innerHTML = `↩️ <strong>Save annulé</strong> — record supprimé`;
+    document.body.appendChild(t);
+    
+    requestAnimationFrame(() => {
+        t.style.opacity = '1';
+    });
+
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+            if (t.parentNode) t.parentNode.removeChild(t);
+        }, 300);
+    }, 2000);
+}
 // ═══════════════════════════════════════════════════════════════════
 // PHASE E.3 : MODALE "SET QTY"
 // ═══════════════════════════════════════════════════════════════════
