@@ -830,3 +830,44 @@ body.light-mode .qty-plus-btn.long-press-active {
 body.light-mode .item-row-wrapper:hover {
     background: rgba(180, 130, 70, 0.08);
 }
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE E.4 — DUPLICATE RECORD (toast + bouton)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Toast Duplicate */
+#duplicateToast {
+    animation: duplicateSlideUp 0.35s ease-out;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 20px 40px rgba(220, 167, 115, 0.4);
+    pointer-events: none;
+}
+
+@keyframes duplicateSlideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 30px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Bouton Duplicate : feedback tactile */
+#btnDuplicateRecord:active {
+    transform: scale(0.95);
+    background: rgba(220, 167, 115, 0.35) !important;
+}
+
+/* Light mode adjustments */
+body.light-mode #duplicateToast {
+    background: #b8854f;
+    color: #ffffff;
+    box-shadow: 0 20px 40px rgba(184, 133, 79, 0.4);
+}
+
+body.light-mode #btnDuplicateRecord {
+    background: rgba(184, 133, 79, 0.15);
+    border-color: rgba(184, 133, 79, 0.5);
+}
