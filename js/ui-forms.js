@@ -3,6 +3,7 @@
 // Panier, formulaire New Record, save, room input, langue, navigation
 // ⚠️ Chargé APRÈS ui-core.js
 // PHASE E.3 : Long-press +5 / Clic-droit Set Qty
+// PHASE E.5 : Undo save (7s toast)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -47,7 +48,7 @@ function updateQty(key, name, price, delta) {
     if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 }
 
-// ✨ PHASE E.3 : Set Qty direct (modale Set Qty)
+// PHASE E.3 : Set Qty direct
 function setQtyDirect(key, name, price, newQty) {
     const qty = parseInt(newQty, 10);
     if (isNaN(qty) || qty < 0) return;
@@ -59,7 +60,6 @@ function setQtyDirect(key, name, price, newQty) {
             cart[key] = { qty: 0, freeQty: 0, price: price, name: name };
         }
         cart[key].qty = qty;
-        // Cap freeQty si nécessaire
         if (cart[key].freeQty && cart[key].freeQty > qty) {
             cart[key].freeQty = qty;
         }
@@ -78,14 +78,14 @@ function updateFreeQty(key, delta) {
         if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
     }
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // PHASE E.5 — UNDO SAVE (toast 7s avec bouton Undo)
 // ═══════════════════════════════════════════════════════════════════
-const UNDO_DURATION = 7000; // 7 secondes
+const UNDO_DURATION = 7000;
 let activeUndo = null;
 
 function showUndoToast(recordId, roomLabel, isSpa = false) {
-    // Si un undo est déjà actif → on le commit (l'agent a enchaîné)
     if (activeUndo) {
         clearTimeout(activeUndo.timer);
         if (activeUndo.element && activeUndo.element.parentNode) {
@@ -120,13 +120,11 @@ function showUndoToast(recordId, roomLabel, isSpa = false) {
 
     document.body.appendChild(toast);
     
-    // Animation de la barre de progression
     requestAnimationFrame(() => {
         const bar = document.getElementById('undoProgressBar');
         if (bar) bar.style.width = '0%';
     });
 
-    // Compte à rebours
     let secondsLeft = Math.round(UNDO_DURATION / 1000);
     const countdownEl = toast.querySelector('.undo-countdown');
     const countdownInterval = setInterval(() => {
@@ -134,7 +132,6 @@ function showUndoToast(recordId, roomLabel, isSpa = false) {
         if (countdownEl && secondsLeft >= 0) countdownEl.innerText = secondsLeft;
     }, 1000);
 
-    // Bouton Undo
     const undoBtn = toast.querySelector('#undoBtn');
     undoBtn.addEventListener('click', async () => {
         clearTimeout(activeUndo.timer);
@@ -142,7 +139,6 @@ function showUndoToast(recordId, roomLabel, isSpa = false) {
         await executerUndo(recordId, toast);
     });
 
-    // Timeout auto
     const timer = setTimeout(() => {
         clearInterval(countdownInterval);
         if (toast.parentNode) toast.parentNode.removeChild(toast);
@@ -156,7 +152,6 @@ async function executerUndo(recordId, toastElement) {
     console.log("↩️ [Undo] Suppression record:", recordId);
     isLocalUpdating = true;
 
-    // 1. Suppression Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient && String(recordId).length === 36) {
         try {
             const { error } = await supabaseClient
@@ -174,7 +169,6 @@ async function executerUndo(recordId, toastElement) {
         }
     }
 
-    // 2. Suppression local
     try {
         chargerDonneesLocalStorage();
         cachedSlips = cachedSlips.filter(s => String(s.id) !== String(recordId));
@@ -183,7 +177,6 @@ async function executerUndo(recordId, toastElement) {
         console.warn("⚠️ [Undo] Erreur local storage:", e);
     }
 
-    // 3. Fermer le toast + feedback visuel
     if (toastElement && toastElement.parentNode) {
         toastElement.style.opacity = '0';
         toastElement.style.transform = 'translate(-50%, 20px)';
@@ -193,14 +186,12 @@ async function executerUndo(recordId, toastElement) {
         }, 300);
     }
 
-    // 4. Rafraîchir UI
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     if (typeof afficherListeBordereauxLocal === 'function') {
         const archivesOpen = !document.getElementById('sectionPdfList')?.classList.contains('hidden');
         if (archivesOpen) afficherListeBordereauxLocal();
     }
 
-    // 5. Toast de confirmation
     showUndoConfirmedToast();
 
     setTimeout(() => { isLocalUpdating = false; }, 800);
@@ -212,10 +203,6 @@ function showUndoConfirmedToast() {
     t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border border-rose-800 text-rose-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
     t.innerHTML = `↩️ <strong>Save annulé</strong> — record supprimé`;
     document.body.appendChild(t);
-    
-    requestAnimationFrame(() => {
-        t.style.opacity = '1';
-    });
 
     setTimeout(() => {
         t.style.opacity = '0';
@@ -225,6 +212,7 @@ function showUndoConfirmedToast() {
         }, 300);
     }, 2000);
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // PHASE E.3 : MODALE "SET QTY"
 // ═══════════════════════════════════════════════════════════════════
@@ -293,19 +281,16 @@ document.addEventListener('keydown', (e) => {
 // ═══════════════════════════════════════════════════════════════════
 // PHASE E.3 : LONG-PRESS sur bouton + (600ms → +5)
 // ═══════════════════════════════════════════════════════════════════
-const LONG_PRESS_DURATION = 600; // ms
+const LONG_PRESS_DURATION = 600;
 let longPressTimer = null;
 let longPressTriggered = false;
 let longPressStartTime = 0;
 
 function initLongPressOnPlusButtons() {
-    // Délégation d'événements sur le conteneur itemsContainer
     const container = document.getElementById('itemsContainer');
     if (!container) return;
 
-    // Annuler à chaque re-render (nouveaux boutons)
     container.querySelectorAll('.qty-plus-btn').forEach(btn => {
-        // Reset si déjà attaché
         if (btn.dataset.longPressAttached === 'true') return;
         btn.dataset.longPressAttached = 'true';
 
@@ -313,9 +298,8 @@ function initLongPressOnPlusButtons() {
         const name = btn.dataset.name;
         const price = parseFloat(btn.dataset.price) || 0;
 
-        // ─── SOURIS (Desktop) ───────────────────────────────────────
         btn.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return; // Seulement clic gauche
+            if (e.button !== 0) return;
             startLongPress(btn, () => {
                 updateQty(key, name, price, 5);
                 showQuickAddToast('+5');
@@ -325,7 +309,6 @@ function initLongPressOnPlusButtons() {
         btn.addEventListener('mouseup', () => cancelLongPress(btn));
         btn.addEventListener('mouseleave', () => cancelLongPress(btn));
 
-        // ─── TACTILE (Mobile/Tablette) ──────────────────────────────
         btn.addEventListener('touchstart', (e) => {
             startLongPress(btn, () => {
                 updateQty(key, name, price, 5);
@@ -334,13 +317,10 @@ function initLongPressOnPlusButtons() {
             });
         }, { passive: true });
 
-        btn.addEventListener('touchend', (e) => {
-            cancelLongPress(btn);
-        });
+        btn.addEventListener('touchend', () => cancelLongPress(btn));
         btn.addEventListener('touchcancel', () => cancelLongPress(btn));
     });
 
-    // ─── CLIC-DROIT sur l'item (wrapper) ──────────────────────────
     container.querySelectorAll('.item-row-wrapper').forEach(row => {
         if (row.dataset.rightClickAttached === 'true') return;
         row.dataset.rightClickAttached = 'true';
@@ -355,21 +335,18 @@ function initLongPressOnPlusButtons() {
         });
     });
 
-    // ─── DOUBLE-TAP sur l'item (accélère +1) ─────────────────────
     let lastTap = 0;
     container.querySelectorAll('.item-row-wrapper').forEach(row => {
         if (row.dataset.doubleTapAttached === 'true') return;
         row.dataset.doubleTapAttached = 'true';
 
         row.addEventListener('touchend', (e) => {
-            // Ne pas interférer avec les boutons
             if (e.target.closest('button')) return;
             
             const now = Date.now();
             const DOUBLE_TAP_DELAY = 300;
             
             if (now - lastTap < DOUBLE_TAP_DELAY) {
-                // Double-tap détecté
                 const key = row.dataset.key;
                 const name = row.dataset.name;
                 const price = parseFloat(row.dataset.price) || 0;
@@ -564,7 +541,6 @@ function switchMainSection(section) {
         renderLostFoundItems();
     }
     
-    // AUTO-SCROLL : Centrer le bouton actif
     const navBtnId = navButtons[section];
     if (navBtnId) {
         setTimeout(() => centrerBoutonNavigation(navBtnId), 100);
@@ -595,8 +571,7 @@ function switchService(service) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// RENDER ITEMS
-// PHASE E.3 : ajout data-attrs + classes pour long-press/clic-droit
+// RENDER ITEMS (avec E.3 : data-attrs pour long-press/clic-droit)
 // ═══════════════════════════════════════════════════════════════════
 function renderItems() {
     const container = document.getElementById('itemsContainer');
@@ -629,7 +604,6 @@ function renderItems() {
                 `;
             }
 
-            // ✨ PHASE E.3 : item-row-wrapper avec data-* pour interactions
             const row = document.createElement('div');
             row.className = 'item-row-wrapper flex justify-between items-center py-2.5 border-b border-[#2f2820] text-xs';
             row.dataset.key = key;
@@ -651,7 +625,6 @@ function renderItems() {
         });
     }
     
-    // ✨ PHASE E.3 : Attacher les listeners après render
     initLongPressOnPlusButtons();
 }
 
@@ -774,7 +747,7 @@ async function handlePDFUpload(event) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SAUVEGARDER BORDEREAU
+// SAUVEGARDER BORDEREAU (avec E.5 : Undo toast)
 // ═══════════════════════════════════════════════════════════════════
 async function sauvegarderBordereauDepuisFormulaire() {
     const roomNum = document.getElementById('roomNumber').value.trim();
@@ -962,35 +935,32 @@ async function sauvegarderBordereauDepuisFormulaire() {
         created_at: new Date().toISOString()
     };
 
-const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
-if (existingIndex !== -1) {
-    cachedSlips[existingIndex] = slipRecord;
-} else {
-    cachedSlips.unshift(slipRecord);
+    const existingIndex = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
+    if (existingIndex !== -1) {
+        cachedSlips[existingIndex] = slipRecord;
+    } else {
+        cachedSlips.unshift(slipRecord);
+    }
+    sauvegarderDonneesLocalStorage();
+
+    // PHASE E.5 : Toast Undo UNIQUEMENT sur nouvelle création
+    if (!editingId) {
+        showUndoToast(assignedId, roomNum, false);
+    } else {
+        const t = document.createElement('div');
+        t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+        t.innerHTML = `✅ <strong>Room ${roomNum}</strong> updated`;
+        document.body.appendChild(t);
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+        }, 1800);
+    }
+
+    reinitialiserFormulaire();
+    switchMainSection('liveRecord');
+    chargerLiveOrders();
+
+    setTimeout(() => { isLocalUpdating = false; }, 3000);
 }
-sauvegarderDonneesLocalStorage();
-
-// ✨ PHASE E.5 : Toast Undo UNIQUEMENT sur nouvelle création (pas sur Update)
-if (!editingId) {
-    // Nouveau record → on propose l'Undo
-    // (on n'utilise plus alert() pour ne pas bloquer le toast)
-    showUndoToast(assignedId, roomNum, false);
-} else {
-    // Édition → pas d'undo, feedback simple
-    // (on garde un petit toast non-bloquant au lieu d'alert)
-    const t = document.createElement('div');
-    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
-    t.innerHTML = `✅ <strong>Room ${roomNum}</strong> updated`;
-    document.body.appendChild(t);
-    setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
-    }, 1800);
-}
-
-reinitialiserFormulaire();
-switchMainSection('liveRecord');
-chargerLiveOrders();
-
-setTimeout(() => { isLocalUpdating = false; }, 3000);
