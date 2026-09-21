@@ -589,7 +589,8 @@ body.light-mode .luxe-badge-guest-req {
 /* =========================================================
    BADGE PENDING — pour les bordereaux Guest en attente
    ========================================================= */
-.luxe-badge-pending {
+
+body.light-mode .luxe-badge-chargeable {.luxe-badge-pending {
     background: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
     border-color: rgba(245, 158, 11, 0.7);
@@ -602,8 +603,72 @@ body.light-mode .luxe-badge-pending {
     color: #92400e;
     border-color: #f59e0b;
 }
-body.light-mode .luxe-badge-chargeable {
     background: #ffe4e6;
     color: #9f1239;
     border-color: #fecdd3;
+}
+
+/* =========================================================
+   PHASE 3 — CARTE PENDING (bordereau créé par Guest)
+   ========================================================= */
+.pending-card {
+    border: 2px solid rgba(245, 158, 11, 0.7) !important;
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15), 
+                inset 0 0 0 1px rgba(245, 158, 11, 0.1) !important;
+    position: relative;
+    background: linear-gradient(135deg, 
+        rgba(245, 158, 11, 0.03) 0%, 
+        transparent 100%) !important;
+}
+
+.pending-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, 
+        #f59e0b 0%, 
+        #d97706 50%, 
+        #b45309 100%);
+    border-radius: 8px 0 0 8px;
+    animation: pendingPulse 2s ease-in-out infinite;
+}
+
+@keyframes pendingPulse {
+    0%, 100% {
+        opacity: 0.7;
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 16px rgba(245, 158, 11, 0.8);
+    }
+}
+
+.pending-card:hover {
+    border-color: rgba(245, 158, 11, 0.95) !important;
+    box-shadow: 0 8px 30px rgba(245, 158, 11, 0.25) !important;
+    transform: translateY(-2px);
+}
+
+/* Mode clair */
+body.light-mode .pending-card {
+    border-color: #d97706 !important;
+    background: linear-gradient(135deg, 
+        rgba(245, 158, 11, 0.08) 0%, 
+        #ffffff 100%) !important;
+    box-shadow: 0 4px 20px rgba(217, 119, 6, 0.12) !important;
+}
+
+body.light-mode .pending-card:hover {
+    border-color: #b45309 !important;
+    box-shadow: 0 8px 30px rgba(217, 119, 6, 0.2) !important;
+}
+
+/* Désactiver l'animation sur tactile pour économiser la batterie */
+body.is-touch .pending-card::before {
+    animation: none;
+    opacity: 1;
 }
