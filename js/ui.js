@@ -151,6 +151,21 @@ function initTheme() {
 
 let isLocalUpdating = false;
 
+// ═══════════════════════════════════════════════════════════════════
+// HELPER : Formate l'affichage du champ "Agent"
+// ═══════════════════════════════════════════════════════════════════
+function formatAgentDisplay(createdBy) {
+    if (!createdBy || 
+        createdBy === 'pending' || 
+        createdBy === 'Guest App' || 
+        createdBy === 'guest app' ||
+        createdBy === 'Guest' ||
+        createdBy === 'Staff Laundry OS') {
+        return 'Pending';
+    }
+    return createdBy;
+}
+
 function programmerTimerReinitialisationMinuit() {
     function verifierFinDeJournee() {
         const maintenant = new Date();
@@ -699,13 +714,16 @@ async function sauvegarderBordereauDepuisFormulaire() {
         if (existingRecord && existingRecord.status) {
             currentStatus = existingRecord.status;
         }
+        // Si le record était Pending et le Staff l'édite → passe à Collected
+        if (currentStatus === 'Pending') {
+            currentStatus = 'Collected';
+        }
     }
 
-    // 🔑 LOG pour tracer
-    console.log("🔧 [Save] currentStaffUser:", currentStaffUser);
-
     const staffName = currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'pending';
+    console.log("🔧 [Save] currentStaffUser:", currentStaffUser);
     console.log("🔧 [Save] created_by sera:", staffName);
+    console.log("🔧 [Save] status sera:", currentStatus);
 
     const payloadSupabase = {
         room_number: roomNum,
@@ -785,69 +803,82 @@ async function sauvegarderBordereauDepuisFormulaire() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SHIELD — Protection contre l'écrasement de created_by
-// Quand un bordereau a déjà "staff ( xxx )", on ne l'écrase JAMAIS
+// onNewGuestRequestReceived : reçoit les mises à jour Supabase
 // ═══════════════════════════════════════════════════════════════════
 window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
     const recordId = String(newOrder.id || Date.now());
-    const incomingCreatedBy = newOrder.created_by;
+    const incomingCreatedBy = String(newOrder.created_by || '');
+    const incomingStatus = newOrder.status;
 
     console.log("🟢 [onNewGuestRequestReceived] REÇU:", {
         id: recordId,
         created_by: incomingCreatedBy,
-        status: newOrder.status
+        status: incomingStatus
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // SHIELD : Si le record LOCAL a déjà "staff ( ... )" → on PROTÈGE
-    // ═══════════════════════════════════════════════════════════════
     chargerDonneesLocalStorage();
     const existingLocal = cachedSlips.find(s => String(s.id) === recordId);
-    
-if (existingLocal && existingLocal.created_by && 
-    String(existingLocal.created_by).startsWith('staff (')) {
-    
-    console.log("🛡️ SHIELD ACTIVÉ : record local a déjà", existingLocal.created_by, "→ on ne touche pas au created_by");
-    
-    const preservedRecord = {
-        ...existingLocal,
-        ...newOrder,
-        created_by: existingLocal.created_by
-    };
-    
-    const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
-    if (existingIndex !== -1) {
-        cachedSlips[existingIndex] = preservedRecord;
-        sauvegarderDonneesLocalStorage();
-    }
-    return;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SHIELD INVERSE : Si newOrder vient avec 'staff ( xxx )' mais
-// que le local a un vieux 'Guest App', on FORCE le bon
-// ═══════════════════════════════════════════════════════════════
-if (newOrder.created_by && String(newOrder.created_by).startsWith('staff (')) {
-    console.log("🛡️ SHIELD INVERSE : on force le created_by à", newOrder.created_by);
-    
-    if (existingLocal) {
-        const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
-        if (existingIndex !== -1) {
-            cachedSlips[existingIndex] = {
-                ...cachedSlips[existingIndex],
-                ...newOrder,
-                created_by: newOrder.created_by
-            };
-            sauvegarderDonneesLocalStorage();
-        }
-    }
-    return;
-}
 
     // ═══════════════════════════════════════════════════════════════
-    // Sinon traitement normal pour les vrais nouveaux Guest
+    // SHIELD : Protège created_by si déjà défini en "staff ( xxx )"
+    // MAIS laisse passer le status (pour que les changements du Staff s'affichent)
+    // ═══════════════════════════════════════════════════════════════
+    if (existingLocal && existingLocal.created_by && 
+        String(existingLocal.created_by).startsWith('staff (')) {
+        
+        console.log("🛡️ SHIELD ACTIVÉ : création d'un record préservé");
+        console.log("   → created_by gardé:", existingLocal.created_by);
+        console.log("   → status mis à jour:", incomingStatus);
+        
+        const preservedRecord = {
+            ...existingLocal,
+            ...newOrder,
+            created_by: existingLocal.created_by,  // ← Protégé
+            status: incomingStatus || existingLocal.status  // ← Status mis à jour
+        };
+        
+        const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+        if (existingIndex !== -1) {
+            cachedSlips[existingIndex] = preservedRecord;
+            sauvegarderDonneesLocalStorage();
+        }
+        
+        if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SHIELD INVERSE : Si le record arrive avec "staff ( xxx )" mais
+    // que le local a un vieux "Guest App", on force le bon
+    // ═══════════════════════════════════════════════════════════════
+    if (incomingCreatedBy.startsWith('staff (')) {
+        console.log("🛡️ SHIELD INVERSE : force created_by à", incomingCreatedBy);
+        
+        if (existingLocal) {
+            const existingIndex = cachedSlips.findIndex(s => String(s.id) === recordId);
+            if (existingIndex !== -1) {
+                cachedSlips[existingIndex] = {
+                    ...cachedSlips[existingIndex],
+                    ...newOrder,
+                    created_by: incomingCreatedBy,
+                    status: incomingStatus || cachedSlips[existingIndex].status
+                };
+                sauvegarderDonneesLocalStorage();
+            }
+        }
+        
+        if (typeof chargerLiveOrders === 'function') {
+            chargerLiveOrders();
+        }
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Traitement normal pour les vrais nouveaux Guests
     // ═══════════════════════════════════════════════════════════════
     const roomNum = String(newOrder.room_number || newOrder.room || '---');
     const guestName = newOrder.guest_name || 'Guest';
@@ -983,9 +1014,7 @@ function chargerLiveOrders() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
-        // ═══════════════════════════════════════════════════════════════
-        // Détection du statut PENDING (created_by = pending ou guest app)
-        // ═══════════════════════════════════════════════════════════════
+        // Détection PENDING (statut ou créateur)
         const isPendingCreator = !entry.created_by || 
                                  entry.created_by === 'pending' || 
                                  entry.created_by === 'Guest App' || 
@@ -1282,7 +1311,7 @@ async function imprimerToutesLesChambresDuJourExécution() {
                         <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Room Typ:</span> <span style="color: #111827;">${entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR')}</span></div>
                         <div><span style="color: #6b7280; font-weight: 500;">Agency:</span> <span style="color: #111827;">${entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct')}</span></div>
                         <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.pms_quota || entry.quota || badgeText}</span></div>
-                        <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending')}</span></div>
+                        <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${formatAgentDisplay(entry.created_by)}</span></div>
                     </div>
                 </div>
 
@@ -1435,7 +1464,7 @@ function afficherListeBordereauxLocal() {
 
             const totalPcs = entry.total_pieces || entry.total_clothes || 0;
             const totalAmount = entry.grand_total || entry.total || 0;
-            const agentDisplay = entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending');
+            const agentDisplay = formatAgentDisplay(entry.created_by);
 
             html += `
                 <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
@@ -1835,7 +1864,7 @@ function ouvrirModalDetails(id) {
         document.getElementById('modalTypDisplay').innerText = entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR');
         document.getElementById('modalAgencyDisplay').innerText = entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct');
         document.getElementById('modalQuotaDisplay').innerText = entry.pms_quota || entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
-        document.getElementById('modalCreatedByDisplay').innerText = entry.created_by === 'pending' ? 'Pending' : (entry.created_by || 'Pending');
+        document.getElementById('modalCreatedByDisplay').innerText = formatAgentDisplay(entry.created_by);
         agencyBox.classList.remove('hidden');
     } else {
         agencyBox.classList.add('hidden');
@@ -1960,18 +1989,13 @@ function modifierBordereauActuel() {
     
     chargerDonneesLocalStorage();
     
-    const entry = cachedSlips.find(e => 
-        String(e.id) === String(selectedIdForModal)
-    );
+    const entry = cachedSlips.find(e => String(e.id) === String(selectedIdForModal));
     
     if (!entry) {
         console.error("❌ Record not found. selectedIdForModal =", selectedIdForModal);
-        console.log("Available IDs:", cachedSlips.map(s => s.id));
         alert("⚠️ Record not found. Please refresh the page.");
         return;
     }
-    
-    console.log("✅ Editing record:", entry);
 
     fermerModal();
 
