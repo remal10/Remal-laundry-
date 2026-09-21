@@ -637,22 +637,38 @@ async function validateAndSaveSpaReceipt() {
     };
     targetRecord.receipt_id = obtenirReceiptId(targetRecord);
 
-    const index = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
-    if (index !== -1) {
-        cachedSlips[index] = targetRecord;
-        alert(`✅ SPA Receipt #${serialNo} updated!`);
-    } else {
-        cachedSlips.unshift(targetRecord);
-        alert(`✅ SPA Receipt #${serialNo} saved!`);
-    }
+const index = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
+const isNewSpa = (index === -1);
 
-    sauvegarderDonneesLocalStorage();
-    await writeRecordToFile(targetRecord);
-    switchMainSection('liveRecord');
-    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+if (!isNewSpa) {
+    cachedSlips[index] = targetRecord;
+} else {
+    cachedSlips.unshift(targetRecord);
+}
 
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
-    return true;
+sauvegarderDonneesLocalStorage();
+await writeRecordToFile(targetRecord);
+switchMainSection('liveRecord');
+if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+
+// ✨ PHASE E.5 : Undo sur nouvelle création SPA
+if (isNewSpa && typeof showUndoToast === 'function') {
+    showUndoToast(assignedId, `#${serialNo}`, true);
+} else if (!isNewSpa) {
+    // Update SPA → feedback simple
+    const t = document.createElement('div');
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+    t.innerHTML = `✅ <strong>SPA #${serialNo}</strong> updated`;
+    document.body.appendChild(t);
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 1800);
+}
+
+setTimeout(() => { isLocalUpdating = false; }, 1000);
+return true;
 }
 
 async function exportAutoDirect() {
