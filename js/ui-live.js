@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // REMAL LAUNDRY OS — UI LIVE
-// Live orders, modals (détails, active rooms), PDF, statuts, batch
+// Live orders, modals, PDF, statuts, batch
 // ⚠️ Chargé APRÈS ui-forms.js
 // ═══════════════════════════════════════════════════════════════════
 
@@ -161,9 +161,6 @@ function chargerLiveOrders() {
         return entryDate >= debutJournee;
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // TRI : PENDING en premier, puis SPA, puis par chambre
-    // ═══════════════════════════════════════════════════════════════
     const isPendingEntry = (e) => {
         const cb = String(e.created_by || '');
         return e.status === 'Pending' || 
@@ -176,17 +173,14 @@ function chargerLiveOrders() {
     };
     
     activeTodaySlips.sort((a, b) => {
-        // 1. Pending en premier
         const aPending = isPendingEntry(a);
         const bPending = isPendingEntry(b);
         if (aPending && !bPending) return -1;
         if (!aPending && bPending) return 1;
         
-        // 2. SPA ensuite
         if (a.is_spa && !b.is_spa) return -1;
         if (!a.is_spa && b.is_spa) return 1;
         
-        // 3. Tri par chambre
         const roomA = parseInt(a.room_number || a.room) || 0;
         const roomB = parseInt(b.room_number || b.room) || 0;
         return roomA - roomB;
@@ -219,9 +213,6 @@ function chargerLiveOrders() {
     activeTodaySlips.forEach(entry => {
         const itemDiv = document.createElement('div');
         
-        // ═══════════════════════════════════════════════════════════════
-        // Détection PENDING pour style visuel
-        // ═══════════════════════════════════════════════════════════════
         const isPendingCard = entry.status === 'Pending' || 
                               !entry.created_by || 
                               entry.created_by === 'pending' || 
@@ -234,7 +225,6 @@ function chargerLiveOrders() {
             ? 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer pending-card' 
             : 'luxe-card luxe-fade-in p-4 flex items-center gap-3.5 cursor-pointer';
 
-        // Badge
         let badgeText = entry.status || 'Collected';
         let badgeClass = 'luxe-badge luxe-badge-collected';
         
@@ -934,6 +924,7 @@ function modifierBordereauActuel() {
         if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
     }
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // PHASE E.4 — DUPLICATION RAPIDE D'UN RECORD
 // ═══════════════════════════════════════════════════════════════════
@@ -952,40 +943,20 @@ function dupliquerRecordActuel() {
         return;
     }
 
-    // SPA : on ne duplique pas (S/N unique par jour)
     if (entry.is_spa) {
         alert("⚠️ SPA receipts cannot be duplicated.\nCreate a new one with a different serial number.");
         return;
     }
 
-    // Fermer la modale détails
     fermerModal();
-
-    // Basculer vers le formulaire New Record
     switchMainSection('newRecord');
-
-    // Reset propre du formulaire (vide tout : room, note, photo, cart)
     reinitialiserFormulaire();
 
-    // ═══════════════════════════════════════════════════════════════
-    // Pré-remplissage intelligent
-    // ═══════════════════════════════════════════════════════════════
-    
-    // 1. Room : on laisse VIDE (l'agent choisit la nouvelle)
-    //    → déjà fait par reinitialiserFormulaire()
-
-    // 2. Type de compte (Hotel / Extra / Guest)
     const sourceCountType = entry.extra_charged 
         ? 'quota_extra' 
         : (entry.count_type || 'hotel');
     selectCountType(sourceCountType);
 
-    // 3. Service (laundry / dry / pressing)
-    //    On le déduit des items ou on garde le service par défaut
-    //    (les items ne stockent pas le service dans le record actuel,
-    //     donc on laisse 'laundry' par défaut)
-
-    // 4. Packaging (Folding / Hanger / Single)
     const serviceStyle = entry.service_type || entry.options?.service_style || 'F — Folding';
     const foldingRadios = document.querySelectorAll('input[name="foldingOption"]');
     foldingRadios.forEach(radio => {
@@ -994,7 +965,6 @@ function dupliquerRecordActuel() {
         }
     });
 
-    // 5. Articles → on reconstruit le panier
     let rawItems = entry.items || [];
     if (typeof rawItems === 'string') {
         try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
@@ -1014,7 +984,6 @@ function dupliquerRecordActuel() {
 
         if (itemQty <= 0) return;
 
-        // Custom items → on les met dans les champs custom (max 3)
         if (item.category === 'Custom Item' && customIdx < 3) {
             const nameInput = document.getElementById(`customName${customIdx}`);
             const priceInput = document.getElementById(`customPrice${customIdx}`);
@@ -1026,7 +995,6 @@ function dupliquerRecordActuel() {
             const customDetails = document.getElementById('detailsCustomItems');
             if (customDetails) customDetails.open = true;
         } else {
-            // Articles standards → on cherche dans quel service ils appartiennent
             let foundService = null;
             if (typeof database !== 'undefined') {
                 for (const svcKey of ['laundry', 'dry', 'pressing']) {
@@ -1053,15 +1021,10 @@ function dupliquerRecordActuel() {
         }
     });
 
-    // 6. Note : on la laisse VIDE (déjà fait par reinitialiserFormulaire())
-    // 7. Photo : on la laisse VIDE (déjà fait par reinitialiserFormulaire())
-
-    // 8. Sauvegarder le panier reconstruit
     sauvegarderPanierLocal();
     renderItems();
     if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 
-    // 9. Focus sur le champ Room pour saisie immédiate
     setTimeout(() => {
         const roomInput = document.getElementById('roomNumber');
         if (roomInput) {
@@ -1070,7 +1033,6 @@ function dupliquerRecordActuel() {
         }
     }, 300);
 
-    // 10. Toast informatif
     const totalPcs = entry.total_pieces || entry.total_clothes || 0;
     const itemCount = Object.keys(cart).length;
     showDuplicateToast(itemCount, totalPcs);
@@ -1098,6 +1060,7 @@ function showDuplicateToast(itemCount, totalPcs) {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 3800);
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // PDF
 // ═══════════════════════════════════════════════════════════════════
