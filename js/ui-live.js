@@ -2,7 +2,7 @@
 // REMAL LAUNDRY OS — UI LIVE
 // Live orders, modals, PDF, statuts, batch
 // ⚠️ Chargé APRÈS ui-forms.js
-// ✅ PLAN B : 4 boutons directs pour changement de statut (sans modale)
+// ✅ PLAN B FINAL : 4 boutons directs + Undo toast (10s)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -146,7 +146,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
 
 // ═══════════════════════════════════════════════════════════════════
 // CHARGER LIVE ORDERS
-// ✅ PLAN B : 4 boutons directs dans la barre de contrôle
+// ✅ PLAN B FINAL : 4 boutons directs dans la barre de contrôle
 // ═══════════════════════════════════════════════════════════════════
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -193,9 +193,6 @@ function chargerLiveOrders() {
 
     container.innerHTML = '';
 
-    // ═══════════════════════════════════════════════════════════════
-    // ✅ PLAN B : Barre de contrôle avec 4 boutons de statut directs
-    // ═══════════════════════════════════════════════════════════════
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
     controlsDiv.innerHTML = `
@@ -351,7 +348,6 @@ function ouvrirModalActiveRoomsList() {
     document.getElementById('activeRoomsTotalPieces').innerText = `${totalPieces} pcs`;
     document.getElementById('activeRoomsPdfDate').innerText = `Date: ${new Date().toLocaleDateString('en-GB')}`;
 
-    // Ferme detailModal avant
     const detailModal = document.getElementById('detailModal');
     if (detailModal) detailModal.classList.add('hidden');
 
@@ -828,7 +824,6 @@ async function ouvrirModalDetails(id) {
     const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${totalPcsVal} pcs\n*Grand Total:* ${grandTotalVal.toFixed(2)} AED`);
     document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
-    // Ferme activeRoomsListModal si ouverte
     const activeRoomsModal = document.getElementById('activeRoomsListModal');
     if (activeRoomsModal) activeRoomsModal.classList.add('hidden');
 
@@ -1255,8 +1250,11 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ✅ PLAN B : BATCH STATUS — Application directe (sans modale)
+// ✅ PLAN B FINAL : BATCH STATUS — Application directe + Undo 10s
 // ═══════════════════════════════════════════════════════════════════
+const BATCH_UNDO_DURATION = 10000; // 10 secondes
+let activeBatchUndo = null;
+
 async function appliquerStatutEnLot(nouveauStatut) {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
@@ -1265,16 +1263,25 @@ async function appliquerStatutEnLot(nouveauStatut) {
         return;
     }
 
-    // Confirmation
-    const confirmMsg = `Apply status "${nouveauStatut}" to ${selectedIds.length} selected record(s)?`;
-    if (!confirm(confirmMsg)) return;
+    // Si un undo précédent est encore actif, on le commit (l'utilisateur a enchaîné)
+    if (activeBatchUndo) {
+        clearTimeout(activeBatchUndo.timer);
+        if (activeBatchUndo.element && activeBatchUndo.element.parentNode) {
+            activeBatchUndo.element.parentNode.removeChild(activeBatchUndo.element);
+        }
+        activeBatchUndo = null;
+    }
 
     isLocalUpdating = true;
 
-    // Update local d'abord (feedback immédiat)
+    // Sauvegarde l'état AVANT pour pouvoir undo
     chargerDonneesLocalStorage();
+    const previousStatuses = {};
     cachedSlips.forEach(s => {
-        if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
+        if (selectedIds.includes(String(s.id))) {
+            previousStatuses[String(s.id)] = s.status || 'Collected';
+            s.status = nouveauStatut;
+        }
     });
     sauvegarderDonneesLocalStorage();
 
@@ -1304,7 +1311,136 @@ async function appliquerStatutEnLot(nouveauStatut) {
     }
 
     setTimeout(() => { isLocalUpdating = false; }, 1000);
-    alert(`✅ ${selectedIds.length} record(s) → "${nouveauStatut}"`);
+
+    // Toast Undo (10s)
+    showBatchStatusToast(nouveauStatut, selectedIds.length, previousStatuses);
+}
+
+function showBatchStatusToast(nouveauStatut, count, previousStatuses) {
+    const statusEmoji = {
+        'Collected': '🧺',
+        'Washing': '🧼',
+        'Ready': '✨',
+        'Delivered': '🚚'
+    };
+    const emoji = statusEmoji[nouveauStatut] || '✅';
+
+    const toast = document.createElement('div');
+    toast.id = 'batchStatusToast';
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-[#181614] border border-[#DCA773]/40 text-stone-100 rounded-2xl shadow-2xl overflow-hidden';
+    toast.style.minWidth = '300px';
+    toast.style.maxWidth = '460px';
+
+    toast.innerHTML = `
+        <div class="flex items-center gap-3 px-4 py-3">
+            <span class="text-xl">${emoji}</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-stone-100">
+                    ${count} record(s) → <span class="text-[#DCA773]">${nouveauStatut}</span>
+                </p>
+                <p class="text-[10px] text-stone-400 mt-0.5">Undo disponible <span class="batch-undo-countdown font-bold text-[#DCA773]">10</span>s</p>
+            </div>
+            <button id="batchUndoBtn" class="px-3.5 py-2 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-black text-xs rounded-xl shadow active:scale-95 transition flex items-center gap-1.5">
+                <i class="fas fa-undo text-[10px]"></i> Undo
+            </button>
+        </div>
+        <div class="h-1 bg-[#0f0e0c]">
+            <div id="batchUndoProgressBar" class="h-full bg-gradient-to-r from-[#DCA773] to-[#c89360]" style="width: 100%; transition: width 10s linear;"></div>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        const bar = document.getElementById('batchUndoProgressBar');
+        if (bar) bar.style.width = '0%';
+    });
+
+    let secondsLeft = Math.round(BATCH_UNDO_DURATION / 1000);
+    const countdownEl = toast.querySelector('.batch-undo-countdown');
+    const countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (countdownEl && secondsLeft >= 0) countdownEl.innerText = secondsLeft;
+    }, 1000);
+
+    // Bouton Undo
+    const undoBtn = toast.querySelector('#batchUndoBtn');
+    undoBtn.addEventListener('click', async () => {
+        clearTimeout(activeBatchUndo.timer);
+        clearInterval(countdownInterval);
+        await executerBatchUndo(previousStatuses, toast);
+    });
+
+    // Auto-remove après 10s
+    const timer = setTimeout(() => {
+        clearInterval(countdownInterval);
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+        activeBatchUndo = null;
+    }, BATCH_UNDO_DURATION);
+
+    activeBatchUndo = { timer, element: toast, previousStatuses };
+}
+
+async function executerBatchUndo(previousStatuses, toastElement) {
+    console.log("↩️ [BatchUndo] Restauration des statuts précédents:", previousStatuses);
+    isLocalUpdating = true;
+
+    // Restaurer statuts en local
+    chargerDonneesLocalStorage();
+    cachedSlips.forEach(s => {
+        const id = String(s.id);
+        if (previousStatuses[id] !== undefined) {
+            s.status = previousStatuses[id];
+        }
+    });
+    sauvegarderDonneesLocalStorage();
+
+    // Restaurer statuts sur Supabase
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            for (const [id, oldStatus] of Object.entries(previousStatuses)) {
+                if (id.length === 36) {
+                    await supabaseClient
+                        .from('guest_laundry_requests')
+                        .update({ status: oldStatus })
+                        .eq('id', id);
+                }
+            }
+            console.log(`✅ [BatchUndo] ${Object.keys(previousStatuses).length} records restaurés`);
+        } catch (err) {
+            console.error("❌ [BatchUndo] Erreur Supabase:", err);
+        }
+    }
+
+    // Refresh UI
+    chargerLiveOrders();
+
+    // Fermer le toast
+    if (toastElement && toastElement.parentNode) {
+        toastElement.style.opacity = '0';
+        toastElement.style.transform = 'translate(-50%, 20px)';
+        toastElement.style.transition = 'all 0.25s ease';
+        setTimeout(() => {
+            if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement);
+        }, 300);
+    }
+
+    // Toast de confirmation
+    const confirmToast = document.createElement('div');
+    confirmToast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border border-rose-800 text-rose-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+    confirmToast.innerHTML = `↩️ <strong>Statuts restaurés</strong> — ${Object.keys(previousStatuses).length} record(s)`;
+    document.body.appendChild(confirmToast);
+
+    setTimeout(() => {
+        confirmToast.style.opacity = '0';
+        confirmToast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+            if (confirmToast.parentNode) confirmToast.parentNode.removeChild(confirmToast);
+        }, 300);
+    }, 2200);
+
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    activeBatchUndo = null;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1365,4 +1501,4 @@ function dismissGuestNotificationBanner() {
     document.querySelectorAll('.luxe-card, .remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
-}
+                       }
