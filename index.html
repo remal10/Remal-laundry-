@@ -11,12 +11,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Remal Laundry">
 
-<!-- FAVICON & ICONS (Ajoutés Phase E.1) -->
+<!-- FAVICON & ICONS -->
 <link rel="icon" type="image/png" href="assets/remal-logo.png">
 <link rel="apple-touch-icon" href="assets/remal-logo.png">
 <link rel="shortcut icon" href="assets/remal-logo.png">
 
-<!-- WEBMANIFEST EXTERNE (Phase E.2) -->
+<!-- WEBMANIFEST EXTERNE -->
 <link rel="manifest" href="manifest.json"> 
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -59,29 +59,25 @@
         <div class="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(#DCA773_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-5 flex justify-between items-center">
-     <div class="flex items-center space-x-4 lg:space-x-6">
-       <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
-        <img 
-            src="assets/remal-logo.png" 
-            alt="Remal Hotel & Villas" 
-            class="h-14 sm:h-16 lg:h-20 w-auto object-contain"
-         >
-         <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-1">
-            <span>Al Ruwais City</span>
-          </div>
-      </div>
+            <div class="flex items-center space-x-4 lg:space-x-6">
+                <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
+                    <img 
+                        src="assets/remal-logo.png" 
+                        alt="Remal Hotel & Villas" 
+                        class="h-14 sm:h-16 lg:h-20 w-auto object-contain"
+                    >
+                    <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-1">
+                        <span>Al Ruwais City</span>
+                    </div>
+                </div>
 
-       <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
-             <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
-             <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
-          </div>
-      </div>
+                <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
+                    <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
+                    <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
+                </div>
+            </div>
             
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- ZONE MODIFIÉE : Indicateur agent + Boutons 44px + Logout   -->
-            <!-- ═══════════════════════════════════════════════════════════ -->
             <div class="flex items-center gap-2 sm:gap-3">
-                <!-- Indicateur Agent connecté (Ajout Phase 1) -->
                 <div id="staffIndicatorHeader" class="hidden sm:flex items-center gap-2 bg-[#181614] border border-[#DCA773]/40 rounded-xl px-3 py-2">
                     <span class="text-[#DCA773] text-sm">👤</span>
                     <span id="staffNameHeader" class="text-xs font-bold text-stone-200">---</span>
@@ -97,12 +93,10 @@
                     <option value="hi">हिन्दी</option>
                 </select>
 
-                <!-- Bouton Logout (Ajout Phase 1) -->
                 <button onclick="confirmLogout()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Logout">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
-            <!-- ═══════════════════════════════════════════════════════════ -->
         </div>
     </header>
 
@@ -136,21 +130,18 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     
                     <div class="lg:col-span-5 space-y-5">
-           <div>
-                 <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
-    
-                 <!-- PHASE E.2 : Wrapper relative pour dropdown autocomplete -->
-                  <div class="relative">
-                     <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold" autocomplete="off">
-        
-                 <!-- PHASE E.2 : Dropdown autocomplete -->
-                 <div id="roomAutocompleteDropdown" 
-               class="hidden absolute left-0 right-0 top-full mt-2 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-80 overflow-y-auto scrollbar-none"></div>
-          </div>
-    
-                   <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
                             
-                            <!-- BOÎTE D'INFORMATION PMS (AVEC ARRIVAL & DEPARTURE) -->
+                            <div class="relative">
+                                <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold" autocomplete="off">
+                                
+                                <div id="roomAutocompleteDropdown" 
+                                     class="hidden absolute left-0 right-0 top-full mt-2 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-80 overflow-y-auto scrollbar-none"></div>
+                            </div>
+                            
+                            <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
+                            
                             <div id="roomPmsInfoBox" class="hidden mt-3 p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs space-y-2 shadow-inner">
                                 <div class="flex justify-between items-center">
                                     <span class="text-stone-400 font-medium">Guest Name:</span>
@@ -161,7 +152,6 @@
                                     <span id="pmsInfoTyp" class="font-bold text-stone-200">---</span>
                                 </div>
 
-                                <!-- INFORMATIONS INFORMATIVES (ÉCRAN UNIQUEMENT) -->
                                 <div class="grid grid-cols-2 gap-2 py-2 my-1 border-y border-[#2f2820] bg-[#181614]/60 px-2.5 rounded-xl text-[11px]">
                                     <div class="flex items-center gap-1.5">
                                         <span class="text-amber-400 font-semibold">🛬 Arr:</span>
@@ -727,17 +717,20 @@
                 <div id="modalPhotoContainer" class="pt-1"></div>
             </div>
 
-    <div class="space-y-3 pt-2 no-print">
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
-            <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
-        </div>
-        <div class="grid grid-cols-3 gap-3">
-            <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit</button>
-            <button onclick="dupliquerRecordActuel()" id="btnDuplicateRecord" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📋 Duplicate</button>
-            <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
+            <div class="space-y-3 pt-2 no-print">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
+                    <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit</button>
+                    <button onclick="dupliquerRecordActuel()" id="btnDuplicateRecord" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📋 Duplicate</button>
+                    <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
+                </div>
+            </div>
         </div>
     </div>
+
     <!-- AUTHENTICATION STAFF MODAL -->
     <div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
         <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
@@ -766,41 +759,42 @@
             </div>
         </div>
     </div>
+
     <!-- ✨ PHASE E.3 : MODALE SET QTY -->
-<div id="setQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
-    <div class="bg-[#181614] border border-[#DCA773]/40 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
-        
-        <div class="text-center border-b border-[#2f2820] pb-3">
-            <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">🔢 Set Quantity</h3>
-            <p id="setQtyItemName" class="text-xs text-stone-300 mt-1 font-semibold">---</p>
-            <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
-        </div>
-
-        <div class="flex items-center justify-center gap-3">
-            <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
-            <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
+    <div id="setQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
+        <div class="bg-[#181614] border border-[#DCA773]/40 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
             
-            <input type="number" id="setQtyInput" min="0" placeholder="0" 
-                   class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
-            
-            <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
-            <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
-        </div>
+            <div class="text-center border-b border-[#2f2820] pb-3">
+                <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">🔢 Set Quantity</h3>
+                <p id="setQtyItemName" class="text-xs text-stone-300 mt-1 font-semibold">---</p>
+                <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
+            </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-2">
-            <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                Annuler
-            </button>
-            <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">
-                ✓ Valider
-            </button>
-        </div>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
+                <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
+                
+                <input type="number" id="setQtyInput" min="0" placeholder="0" 
+                       class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
+                
+                <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
+                <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
+            </div>
 
-        <p class="text-[10px] text-stone-500 text-center">
-            Astuce : <strong>Entrée</strong> pour valider · <strong>Échap</strong> pour fermer
-        </p>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+                    Annuler
+                </button>
+                <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">
+                    ✓ Valider
+                </button>
+            </div>
+
+            <p class="text-[10px] text-stone-500 text-center">
+                Astuce : <strong>Entrée</strong> pour valider · <strong>Échap</strong> pour fermer
+            </p>
+        </div>
     </div>
-</div>
 
     <!-- BIBLIOTHÈQUES EXTERNES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -819,7 +813,7 @@
     <script src="js/ui-shortcuts.js"></script>
 
 <script>
-    // Service Worker externe (Phase E.3)
+    // Service Worker externe
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js')
