@@ -16,7 +16,7 @@ function initKeyboardShortcuts() {
         
         const modalOpen = !document.getElementById('detailModal')?.classList.contains('hidden')
                        || !document.getElementById('staffLoginModal')?.classList.contains('hidden')
-                       || !document.getElementById('batchStatusModal')?.classList.contains('hidden')
+                       || (document.getElementById('batchStatusModal')?.classList.contains('hidden') === false)
                        || !document.getElementById('activeRoomsListModal')?.classList.contains('hidden');
 
         // Ctrl+S → Save Record (partout, même en tapant)
