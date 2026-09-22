@@ -2,6 +2,7 @@
 // REMAL LAUNDRY OS — UI LIVE
 // Live orders, modals, PDF, statuts, batch
 // ⚠️ Chargé APRÈS ui-forms.js
+// ✅ PLAN B : 4 boutons directs pour changement de statut (sans modale)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -145,6 +146,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
 
 // ═══════════════════════════════════════════════════════════════════
 // CHARGER LIVE ORDERS
+// ✅ PLAN B : 4 boutons directs dans la barre de contrôle
 // ═══════════════════════════════════════════════════════════════════
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -191,13 +193,22 @@ function chargerLiveOrders() {
 
     container.innerHTML = '';
 
+    // ═══════════════════════════════════════════════════════════════
+    // ✅ PLAN B : Barre de contrôle avec 4 boutons de statut directs
+    // ═══════════════════════════════════════════════════════════════
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
     controlsDiv.innerHTML = `
         <button onclick="toggleAllSelections(true)" class="luxe-btn luxe-btn-secondary" style="font-size:0.65rem;padding:0.5rem 0.85rem;">✅ Select All</button>
         <button onclick="toggleAllSelections(false)" class="luxe-btn luxe-btn-ghost" style="font-size:0.65rem;padding:0.5rem 0.85rem;">❌ Deselect All</button>
-        <button onclick="ouvrirModalBatchStatus()" class="luxe-btn luxe-btn-secondary" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fcd34d;border-color:rgba(245,158,11,0.3);">🔄 Update Selected Status</button>
         <button onclick="supprimerBordereauxEnLot()" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fda4af;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.1);">🗑️ Delete Selected</button>
+        
+        <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider self-center ml-1">Set Status →</span>
+        
+        <button onclick="appliquerStatutEnLot('Collected')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fcd34d;border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.08);">🧺 Collected</button>
+        <button onclick="appliquerStatutEnLot('Washing')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#93c5fd;border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.08);">🧼 Washing</button>
+        <button onclick="appliquerStatutEnLot('Ready')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#d8b4fe;border-color:rgba(168,85,247,0.4);background:rgba(168,85,247,0.08);">✨ Ready</button>
+        <button onclick="appliquerStatutEnLot('Delivered')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#6ee7b7;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.08);">🚚 Delivered</button>
     `;
     container.appendChild(controlsDiv);
 
@@ -340,10 +351,7 @@ function ouvrirModalActiveRoomsList() {
     document.getElementById('activeRoomsTotalPieces').innerText = `${totalPieces} pcs`;
     document.getElementById('activeRoomsPdfDate').innerText = `Date: ${new Date().toLocaleDateString('en-GB')}`;
 
-    // ✅ FIX : Ferme les autres modales avant d'ouvrir
-    const batchModal = document.getElementById('batchStatusModal');
-    if (batchModal) batchModal.classList.add('hidden');
-
+    // Ferme detailModal avant
     const detailModal = document.getElementById('detailModal');
     if (detailModal) detailModal.classList.add('hidden');
 
@@ -820,10 +828,7 @@ async function ouvrirModalDetails(id) {
     const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${totalPcsVal} pcs\n*Grand Total:* ${grandTotalVal.toFixed(2)} AED`);
     document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
-    // ✅ FIX : Ferme les autres modales avant d'ouvrir le bordereau
-    const batchModal = document.getElementById('batchStatusModal');
-    if (batchModal) batchModal.classList.add('hidden');
-
+    // Ferme activeRoomsListModal si ouverte
     const activeRoomsModal = document.getElementById('activeRoomsListModal');
     if (activeRoomsModal) activeRoomsModal.classList.add('hidden');
 
@@ -1202,7 +1207,7 @@ async function supprimerBordereauActuel() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CHANGEMENT STATUT
+// CHANGEMENT STATUT (individuel)
 // ═══════════════════════════════════════════════════════════════════
 async function changerStatutBordereau(recordId, nouveauStatut) {
     const targetId = recordId || selectedIdForModal;
@@ -1250,67 +1255,56 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// BATCH STATUS
+// ✅ PLAN B : BATCH STATUS — Application directe (sans modale)
 // ═══════════════════════════════════════════════════════════════════
-function ouvrirModalBatchStatus() {
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) {
-        alert("⚠️ Please select at least one room checkbox.");
-        return;
-    }
-    
-    // ✅ FIX : Ferme TOUTES les autres modales avant d'ouvrir
-    const detailModal = document.getElementById('detailModal');
-    if (detailModal) detailModal.classList.add('hidden');
-    
-    const activeRoomsModal = document.getElementById('activeRoomsListModal');
-    if (activeRoomsModal) activeRoomsModal.classList.add('hidden');
-
-    const countLabel = document.getElementById('batchStatusCountLabel');
-    if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
-    
-    const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-function fermerModalBatchStatus() {
-    const modal = document.getElementById('batchStatusModal');
-    if (modal) modal.classList.add('hidden');
-    
-    // ✅ FIX : Reset selectedIdForModal pour éviter ré-ouverture bordereau
-    if (typeof selectedIdForModal !== 'undefined') {
-        selectedIdForModal = null;
-    }
-}
-
 async function appliquerStatutEnLot(nouveauStatut) {
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-    if (selectedIds.length === 0) return;
+
+    if (selectedIds.length === 0) {
+        alert("⚠️ Please select at least one room checkbox first.");
+        return;
+    }
+
+    // Confirmation
+    const confirmMsg = `Apply status "${nouveauStatut}" to ${selectedIds.length} selected record(s)?`;
+    if (!confirm(confirmMsg)) return;
 
     isLocalUpdating = true;
 
+    // Update local d'abord (feedback immédiat)
     chargerDonneesLocalStorage();
     cachedSlips.forEach(s => {
         if (selectedIds.includes(String(s.id))) s.status = nouveauStatut;
     });
     sauvegarderDonneesLocalStorage();
 
-    fermerModalBatchStatus();
+    // Refresh UI immédiat
     chargerLiveOrders();
 
+    // Update Supabase en arrière-plan
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const uuidBatch = selectedIds.filter(id => id.length === 36);
             if (uuidBatch.length > 0) {
-                await supabaseClient.from('guest_laundry_requests').update({ status: nouveauStatut }).in('id', uuidBatch);
+                const { error } = await supabaseClient
+                    .from('guest_laundry_requests')
+                    .update({ status: nouveauStatut })
+                    .in('id', uuidBatch);
+
+                if (error) {
+                    console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
+                    alert("⚠️ Supabase error: " + error.message);
+                } else {
+                    console.log(`✅ [BatchStatus] ${uuidBatch.length} records → "${nouveauStatut}"`);
+                }
             }
         } catch (err) {
-            console.error("Erreur mise à jour en lot Supabase :", err);
+            console.error("❌ [BatchStatus] Exception:", err);
         }
     }
 
     setTimeout(() => { isLocalUpdating = false; }, 1000);
-    alert(`✅ Status updated to "${nouveauStatut}" for ${selectedIds.length} record(s)!`);
+    alert(`✅ ${selectedIds.length} record(s) → "${nouveauStatut}"`);
 }
 
 // ═══════════════════════════════════════════════════════════════════
