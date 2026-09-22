@@ -1,9 +1,9 @@
 // =============================================================
 // SERVICE WORKER - REMAL LAUNDRY OS
-// Version : v33 (fix: gestion erreurs fetch + Vercel SSO)
+// Version : v34 (fix: network-first pour HTML/CSS/JS + suppression ui.js)
 // =============================================================
 
-const CACHE_NAME = 'remal-pwa-v33';
+const CACHE_NAME = 'remal-pwa-v34';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -14,7 +14,11 @@ const ASSETS_TO_CACHE = [
     './js/config.js',
     './js/laundry.js',
     './js/realtime-listener.js',
-    './js/ui.js',
+    './js/ui-core.js',
+    './js/ui-forms.js',
+    './js/ui-live.js',
+    './js/ui-modules.js',
+    './js/ui-shortcuts.js',
     './js/guesthub-integration.js',
     './security-guard.js'
 ];
@@ -32,16 +36,14 @@ const EXTERNAL_ASSETS = [
 
 // INSTALLATION - Cache les assets locaux + externes
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing v33...');
+    console.log('[SW] Installing v34...');
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            // Cache local assets (obligatoire)
             const localPromise = cache.addAll(ASSETS_TO_CACHE).catch(err => {
                 console.warn('[SW] Some local assets failed to cache:', err);
             });
             
-            // Cache external assets (best effort - échec non-bloquant)
             const externalPromise = Promise.all(
                 EXTERNAL_ASSETS.map(url => 
                     fetch(url).then(response => {
@@ -61,9 +63,9 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// ACTIVATION - Nettoyage des anciens caches
+// ACTIVATION - Nettoyage des anciens caches + prise de contrôle immédiate
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating v33...');
+    console.log('[SW] Activating v34...');
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
@@ -78,33 +80,64 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// FETCH - Interception des requêtes avec fallback robuste
+// FETCH - Stratégie adaptative selon le type de ressource
 self.addEventListener('fetch', (event) => {
-    // Ignorer les méthodes non-GET
     if (event.request.method !== 'GET') return;
-    
-    // Ignorer les requêtes Supabase (toujours en direct)
     if (event.request.url.includes('supabase.co')) return;
-    
-    // Ignorer les requêtes chrome-extension, etc.
     if (!event.request.url.startsWith('http')) return;
-    
+
+    const url = new URL(event.request.url);
+    const isLocal = url.origin === self.location.origin;
+
+    // ═══════════════════════════════════════════════════════════════
+    // STRATÉGIE 1 : NETWORK-FIRST pour HTML/CSS/JS local
+    // → Toujours essayer le réseau en premier → jamais de version obsolète
+    // ═══════════════════════════════════════════════════════════════
+    if (isLocal && (
+        event.request.destination === 'document' ||
+        url.pathname.endsWith('.html') ||
+        url.pathname.endsWith('.css') ||
+        url.pathname.endsWith('.js')
+    )) {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.ok) {
+                        // Mettre à jour le cache en arrière-plan
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(event.request, responseClone).catch(() => {});
+                        });
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    // Réseau indisponible → fallback cache
+                    return caches.match(event.request).then(cached => {
+                        return cached || fallbackResponse(event.request);
+                    });
+                })
+        );
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STRATÉGIE 2 : CACHE-FIRST pour images, fonts, assets externes
+    // → Performance optimale, ces ressources changent rarement
+    // ═══════════════════════════════════════════════════════════════
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
-                return cachedResponse; // Retourne depuis le cache
+                return cachedResponse;
             }
             
-            // Pas en cache → essaie le réseau
             return fetch(event.request).then((networkResponse) => {
-                // Vérifier que la réponse est valide
                 if (!networkResponse || !networkResponse.ok) {
-                    // Réponse invalide → fallback
                     return fallbackResponse(event.request);
                 }
                 
-                // Mettre en cache les nouvelles ressources locales (optionnel)
-                if (event.request.url.startsWith(self.location.origin)) {
+                // Cacher les nouvelles ressources valides
+                if (networkResponse.ok) {
                     const responseClone = networkResponse.clone();
                     caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, responseClone).catch(() => {});
@@ -112,18 +145,15 @@ self.addEventListener('fetch', (event) => {
                 }
                 
                 return networkResponse;
-            }).catch((error) => {
-                // Erreur réseau → fallback
-                console.warn('[SW] Network fetch failed for:', event.request.url);
+            }).catch(() => {
                 return fallbackResponse(event.request);
             });
         })
     );
 });
 
-// Fonction de fallback robuste
+// Fallback robuste
 function fallbackResponse(request) {
-    // Pour HTML → retourne index.html depuis le cache
     if (request.headers.get('accept')?.includes('text/html')) {
         return caches.match('./index.html').then(response => {
             return response || new Response(
@@ -133,14 +163,12 @@ function fallbackResponse(request) {
         });
     }
     
-    // Pour JSON → retourne un JSON vide valide
     if (request.url.endsWith('.json')) {
         return Promise.resolve(new Response('{}', {
             headers: { 'Content-Type': 'application/json' }
         }));
     }
     
-    // Pour tout le reste → retourne une réponse vide valide
     return Promise.resolve(new Response('', {
         status: 408,
         statusText: 'Request Timeout'
