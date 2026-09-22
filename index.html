@@ -1,23 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr" id="htmlRoot" dir="ltr" style="max-width: 100vw; overflow-x: hidden;">
+<html lang="fr" id="htmlRoot" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Remal Hotel & Villas - Laundry & Lost & Found OS</title>
-
-<!-- STYLE DE SECOURS (Anti-débordement si Tailwind échoue) -->
-<style>
-    html, body {
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
-        margin: 0;
-        padding: 0;
-    }
-    img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-</style>
     
 <!-- PWA META TAGS -->
 <meta name="theme-color" content="#0f0e0c">
@@ -40,7 +26,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="assets/css/premium-effects.css">
 </head>
-<body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot" style="max-width: 100vw; overflow-x: hidden;">
+<body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
 
     <!-- VIP REALTIME NOTIFICATION BANNER -->
     <div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
@@ -72,14 +58,13 @@
         <div class="absolute inset-0 z-0 bg-gradient-to-r from-black via-[#1a1612] to-black opacity-90"></div>
         <div class="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(#DCA773_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center">
+        <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-5 flex justify-between items-center">
             <div class="flex items-center space-x-4 lg:space-x-6">
                 <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
                     <img 
                         src="assets/remal-logo.png" 
                         alt="Remal Hotel & Villas" 
                         class="h-14 sm:h-16 lg:h-20 w-auto object-contain"
-                        style="max-width: 180px; height: auto;"
                     >
                     <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-1">
                         <span>Al Ruwais City</span>
@@ -115,7 +100,7 @@
         </div>
     </header>
 
-    <div id="mainNavContainer" class="sticky top-0 z-50 flex flex-nowrap bg-[#12100e] border-b border-[#DCA773]/30 px-4 py-2 gap-3 overflow-x-auto scrollbar-none shadow-2xl no-print max-w-full">
+    <div id="mainNavContainer" class="sticky top-0 z-50 flex flex-nowrap bg-[#12100e] border-b border-[#DCA773]/30 px-4 py-2 gap-3 overflow-x-auto scrollbar-none shadow-2xl no-print">
         <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow">Active Rooms</button>
         <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">SPA</button>
         <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Lost & Found</button>
@@ -124,7 +109,7 @@
         <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Chart</button>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-6">
 
         <div id="quickActionButtons" class="no-print">
             <button onclick="switchMainSection('newRecord')" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 px-6 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition tracking-wide">
@@ -133,7 +118,7 @@
         </div>
 
         <div id="sectionNewRecord" class="hidden space-y-4 no-print">
-            <div class="remal-card p-4 sm:p-6 lg:p-8 rounded-3xl relative max-w-6xl mx-auto">
+            <div class="remal-card p-6 lg:p-8 rounded-3xl relative max-w-6xl mx-auto">
                 
                 <div class="flex justify-between items-center border-b border-[#2f2820] pb-4 mb-6">
                     <h2 class="text-xl font-serif-luxury font-bold text-[#DCA773]" id="lblFormTitle">New Record</h2>
@@ -195,7 +180,7 @@
 
                         <div>
                             <label class="block text-xs font-bold text-stone-400 mb-1.5">Account & Quota Type</label>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#0f0e0c] p-2 rounded-2xl border border-[#2f2820] text-xs font-bold text-center">
+                            <div class="grid grid-cols-3 gap-2 bg-[#0f0e0c] p-2 rounded-2xl border border-[#2f2820] text-xs font-bold text-center">
                                 <button onclick="selectCountType('hotel')" id="btn-count-hotel" class="py-3 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow transition leading-tight">Hotel Count (Free)</button>
                                 <button onclick="selectCountType('quota_extra')" id="btn-count-quota-extra" class="py-3 px-1 rounded-xl text-stone-400 transition leading-tight">Hotel & Extra Charged</button>
                                 <button onclick="selectCountType('guest')" id="btn-count-guest" class="py-3 px-1 rounded-xl text-stone-400 transition leading-tight">Guest Count (Full)</button>
@@ -204,7 +189,7 @@
 
                         <div>
                             <label class="block text-xs font-bold text-stone-400 mb-1.5">Service Type</label>
-                            <div class="flex flex-col sm:flex-row gap-2 text-xs font-bold">
+                            <div class="flex gap-2 text-xs font-bold">
                                 <button onclick="switchService('laundry')" id="tab-service-laundry" class="flex-1 py-3 rounded-xl bg-[#DCA773] text-stone-950 shadow">LAUNDRY</button>
                                 <button onclick="switchService('dry')" id="tab-service-dry" class="flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">DRY CLEANING</button>
                                 <button onclick="switchService('pressing')" id="tab-service-pressing" class="flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">PRESSING</button>
@@ -213,7 +198,7 @@
 
                         <div>
                             <label class="block text-xs font-bold text-stone-400 mb-1.5">Packaging</label>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs font-bold text-center text-stone-300">
+                            <div class="grid grid-cols-3 gap-2 p-2 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs font-bold text-center text-stone-300">
                                 <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
                                     <input type="radio" name="foldingOption" value="F — Folding" checked class="accent-[#DCA773] mb-1"> F — Folding
                                 </label>
@@ -238,18 +223,18 @@
                             <div class="p-3.5 pt-0 space-y-2.5 border-t border-[#2f2820]/40 mt-1" id="customItemsContainer">
                                 <div class="flex gap-2 items-center">
                                     <input type="text" placeholder="Item name (e.g. Special Coat)" id="customName0" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
-                                    <input type="number" placeholder="Price" id="customPrice0" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-20 sm:w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
-                                    <input type="number" placeholder="Qty" id="customQty0" min="0" value="" oninput="calculateGlobalTotals()" class="w-16 sm:w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
+                                    <input type="number" placeholder="Price" id="customPrice0" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
+                                    <input type="number" placeholder="Qty" id="customQty0" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
                                 </div>
                                 <div class="flex gap-2 items-center">
                                     <input type="text" placeholder="Item name" id="customName1" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
-                                    <input type="number" placeholder="Price" id="customPrice1" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-20 sm:w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
-                                    <input type="number" placeholder="Qty" id="customQty1" min="0" value="" oninput="calculateGlobalTotals()" class="w-16 sm:w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
+                                    <input type="number" placeholder="Price" id="customPrice1" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
+                                    <input type="number" placeholder="Qty" id="customQty1" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
                                 </div>
                                 <div class="flex gap-2 items-center">
                                     <input type="text" placeholder="Item name" id="customName2" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
-                                    <input type="number" placeholder="Price" id="customPrice2" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-20 sm:w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
-                                    <input type="number" placeholder="Qty" id="customQty2" min="0" value="" oninput="calculateGlobalTotals()" class="w-16 sm:w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
+                                    <input type="number" placeholder="Price" id="customPrice2" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
+                                    <input type="number" placeholder="Qty" id="customQty2" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
                                 </div>
                             </div>
                         </details>
@@ -289,7 +274,7 @@
         </div>
 
         <div id="sectionMassEntry" class="hidden space-y-4 no-print">
-            <div class="remal-card p-4 sm:p-8 rounded-3xl space-y-5 max-w-4xl mx-auto">
+            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-4xl mx-auto">
                 <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                     <div>
                         <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] uppercase tracking-wider">PMS Mass Entry & PDF Parser</h2>
@@ -300,7 +285,7 @@
                 
                 <p class="text-xs text-stone-300">Upload your PMS multi-page PDF report directly or paste the text content below.</p>
 
-                <div class="border-2 border-dashed border-[#2f2820] p-6 sm:p-8 text-center rounded-2xl bg-[#0f0e0c] hover:border-[#DCA773] transition cursor-pointer" onclick="document.getElementById('pdfFileReceiver').click()">
+                <div class="border-2 border-dashed border-[#2f2820] p-8 text-center rounded-2xl bg-[#0f0e0c] hover:border-[#DCA773] transition cursor-pointer" onclick="document.getElementById('pdfFileReceiver').click()">
                     <i class="fas fa-file-pdf text-4xl text-[#DCA773] mb-3"></i>
                     <p class="text-sm font-bold text-stone-200">Click to upload PMS PDF Report</p>
                     <p class="text-xs text-stone-500 mt-1">Supports multi-page guest list reports</p>
@@ -314,9 +299,9 @@
                 <div id="massRecordCounter" class="text-xs font-bold text-emerald-400"></div>
             </div>
 
-            <div id="massResultsCard" class="hidden remal-card p-4 sm:p-6 rounded-3xl space-y-4 max-w-5xl mx-auto">
+            <div id="massResultsCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-5xl mx-auto">
                 <h3 class="text-sm font-serif-luxury font-bold text-stone-200">In-House Guest Laundry List & Status</h3>
-                <div class="max-h-[500px] overflow-y-auto overflow-x-auto border border-[#2f2820] rounded-2xl">
+                <div class="max-h-[500px] overflow-y-auto border border-[#2f2820] rounded-2xl">
                     <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
                         <thead class="bg-[#181614] text-stone-300 sticky top-0 z-10 border-b border-[#2f2820]">
                             <tr>
@@ -364,7 +349,7 @@
         </div>
 
         <!-- SECTION SPA -->
-        <section id="spa-laundry-section" class="hidden p-4 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
+        <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
             
             <input type="hidden" id="editingSpaId" value="">
 
@@ -509,7 +494,7 @@
                 </button>
             </div>
 
-            <div id="lfFormCard" class="hidden remal-card p-4 sm:p-6 rounded-3xl space-y-4 max-w-2xl mx-auto">
+            <div id="lfFormCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-2xl mx-auto">
                 <h3 class="text-sm font-bold text-[#DCA773] border-b border-[#2f2820] pb-2">New Lost & Found Item</h3>
                 <div>
                     <label class="block text-xs font-bold text-stone-400 mb-1">Item Name / Description</label>
@@ -537,24 +522,24 @@
         </div>
 
         <div id="sectionPdfList" class="hidden space-y-4 no-print">
-            <div class="remal-card p-4 sm:p-8 rounded-3xl space-y-5 max-w-5xl mx-auto">
+            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-5xl mx-auto">
                 <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                     <h3 class="text-base sm:text-lg font-serif-luxury font-bold text-[#DCA773]" id="lblArchiveTitle">Archives & Search</h3>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4">
                     <button onclick="exportAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
                         ⚡ Export Auto (1 Clic)
                     </button>
                     <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
                         🔄 Import Auto (1 Clic)
                     </button>
-                    <button onclick="selectBackupFolder()" class="sm:col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                    <button onclick="selectBackupFolder()" class="col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
                         📁 Choisir le dossier téléphone (File System)
                     </button>
                 </div>
 
-                <div class="flex flex-col sm:flex-row bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
+                <div class="flex bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
                     <button onclick="switchArchiveFilter('all')" id="archiveFilterAll" class="flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">ALL RECORDS</button>
                     <button onclick="switchArchiveFilter('laundry')" id="archiveFilterLaundry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🏨 HOTEL LAUNDRY</button>
                     <button onclick="switchArchiveFilter('spa')" id="archiveFilterSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🧘 SPA LAUNDRY</button>
@@ -575,7 +560,7 @@
         </div>
 
         <div id="sectionDashboard" class="hidden space-y-4 no-print">
-            <div class="remal-card p-4 sm:p-8 rounded-3xl space-y-6 max-w-5xl mx-auto">
+            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-5xl mx-auto">
                 <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                     <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📈 Reception & Management Analytics</h3>
                     <span class="text-xs bg-amber-950 text-amber-200 border border-amber-800 font-bold px-3 py-1 rounded-full">Executive Overview</span>
@@ -619,7 +604,7 @@
 
     <!-- MODAL LISTE DES CHAMBRES ACTIVES -->
     <div id="activeRoomsListModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-        <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-4 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+        <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
             
             <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                 <div>
@@ -629,7 +614,7 @@
                 <button onclick="fermerModalActiveRoomsList()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
             </div>
 
-            <div id="activeRoomsPdfExportArea" class="bg-white text-stone-900 p-4 sm:p-6 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
+            <div id="activeRoomsPdfExportArea" class="bg-white text-stone-900 p-6 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
                 
                 <div class="text-center border-b border-stone-300 pb-4 mb-4">
                     <h2 class="text-lg font-serif-luxury font-black text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
@@ -640,20 +625,18 @@
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs text-left border-collapse">
-                        <thead>
-                            <tr class="bg-stone-100 text-stone-900 font-bold border-b border-stone-300 uppercase tracking-wider text-[10px]">
-                                <th class="p-2.5">Room</th>
-                                <th class="p-2.5">Guest Name</th>
-                                <th class="p-2.5">Packaging</th>
-                                <th class="p-2.5">Account & Quota</th>
-                                <th class="p-2.5 text-right">Pieces</th>
-                            </tr>
-                        </thead>
-                        <tbody id="activeRoomsTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
-                    </table>
-                </div>
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                        <tr class="bg-stone-100 text-stone-900 font-bold border-b border-stone-300 uppercase tracking-wider text-[10px]">
+                            <th class="p-2.5">Room</th>
+                            <th class="p-2.5">Guest Name</th>
+                            <th class="p-2.5">Packaging</th>
+                            <th class="p-2.5">Account & Quota</th>
+                            <th class="p-2.5 text-right">Pieces</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeRoomsTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
+                </table>
 
                 <div class="mt-4 pt-3 border-t border-stone-300 flex justify-between text-[11px] font-bold text-stone-600">
                     <span>Total Active Rooms: <strong id="activeRoomsTotalCount" class="text-stone-950">0</strong></span>
@@ -661,7 +644,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div class="grid grid-cols-2 gap-3 pt-2">
                 <button onclick="exportActiveRoomsListToPDF()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
                     <i class="fas fa-file-pdf"></i> 📥 Download PDF List
                 </button>
@@ -674,9 +657,9 @@
 
     <!-- MODALE DETAILS RECEIPT -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-4 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
+        <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
             
-            <div id="pdfExportArea" class="p-4 sm:p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
+            <div id="pdfExportArea" class="p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
                 <div class="text-center border-b border-stone-300 pb-4 relative">
                     <button onclick="fermerModal()" class="absolute right-0 top-0 text-stone-500 text-2xl font-bold hover:text-stone-900 no-print">✕</button>
                     <h2 id="modalPdfHotelName" class="text-xl font-serif-luxury font-bold text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
@@ -710,18 +693,16 @@
                     <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs text-left border-collapse">
-                        <thead>
-                            <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300 uppercase tracking-wider">
-                                <th id="modalThItem" class="p-3">Item</th>
-                                <th id="modalThQty" class="p-3 text-center">Qty</th>
-                                <th id="modalThTotal" class="p-3 text-right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
-                    </table>
-                </div>
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                        <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300 uppercase tracking-wider">
+                            <th id="modalThItem" class="p-3">Item</th>
+                            <th id="modalThQty" class="p-3 text-center">Qty</th>
+                            <th id="modalThTotal" class="p-3 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
+                </table>
 
                 <div class="bg-stone-50 p-4 rounded-xl text-xs space-y-2 font-medium text-stone-700 border border-stone-200">
                     <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-2"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
@@ -752,7 +733,7 @@
 
     <!-- AUTHENTICATION STAFF MODAL -->
     <div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="remal-card w-full max-w-md p-6 sm:p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
+        <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
             <div>
                 <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">
                     🔐
@@ -789,15 +770,15 @@
                 <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
             </div>
 
-            <div class="flex items-center justify-center gap-2 sm:gap-3">
-                <button onclick="incrementModalSetQty(-5)" class="w-10 h-10 sm:w-12 sm:h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-sm sm:text-base border border-[#2f2820] active:scale-90 transition">−5</button>
-                <button onclick="incrementModalSetQty(-1)" class="w-10 h-10 sm:w-12 sm:h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-lg sm:text-xl border border-[#2f2820] active:scale-90 transition">−</button>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
+                <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
                 
                 <input type="number" id="setQtyInput" min="0" placeholder="0" 
-                       class="w-20 sm:w-24 h-12 sm:h-14 text-center text-xl sm:text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
+                       class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
                 
-                <button onclick="incrementModalSetQty(1)" class="w-10 h-10 sm:w-12 sm:h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-lg sm:text-xl active:scale-90 transition">+</button>
-                <button onclick="incrementModalSetQty(5)" class="w-10 h-10 sm:w-12 sm:h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-sm sm:text-base active:scale-90 transition">+5</button>
+                <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
+                <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
             </div>
 
             <div class="grid grid-cols-2 gap-3 pt-2">
