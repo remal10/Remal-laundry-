@@ -1,5 +1,9 @@
 // =============================================================
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
+// ⚠️ Ce fichier est chargé AVANT ui.js — les doublons de fonctions
+//    (updateQty, chargerDonneesLocalStorage, etc.) sont écrasés par ui.js.
+//    Seules les fonctions UNIQUES à ce fichier sont actives.
+// ✅ Aligné sur la logique created_by de ui.js : 'staff ( nom )' ou 'pending'
 // =============================================================
 
 async function selectBackupFolder() {
@@ -122,6 +126,9 @@ function calculateGlobalTotals() {
 
 // -------------------------------------------------------------
 // ENREGISTREMENT ET ALIGNEMENT COMPATIBLE GUEST PORTAL & SUPABASE
+// ⚠️ NOTE : cette fonction n'est plus appelée par le bouton Save 
+// (ui.js:sauvegarderBordereauDepuisFormulaire() prend le relais).
+// Conservée pour compatibilité legacy — alignée sur la logique ui.js.
 // -------------------------------------------------------------
 async function sauvegarderBordereauLocal() {
     const roomInput = document.getElementById('roomNumber');
@@ -136,7 +143,6 @@ async function sauvegarderBordereauLocal() {
 
     const cartEntries = Object.values(cart);
 
-    // Vérifier s'il y a des custom items renseignés
     let hasCustomItems = false;
     for (let i = 0; i < 3; i++) {
         const nameVal = document.getElementById(`customName${i}`)?.value.trim() || '';
@@ -156,7 +162,6 @@ async function sauvegarderBordereauLocal() {
     let subtotalCalc = 0;
     const itemsArray = [];
 
-    // 1. Extraction des articles du panier standard
     cartEntries.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
         const price = parseFloat(item.price) || 0;
@@ -186,7 +191,6 @@ async function sauvegarderBordereauLocal() {
         });
     });
 
-    // 2. EXTRACTION SÉCURISÉE DES CUSTOM ITEMS (0, 1, 2)
     for (let i = 0; i < 3; i++) {
         const customNameEl = document.getElementById(`customName${i}`);
         const customPriceEl = document.getElementById(`customPrice${i}`);
@@ -234,7 +238,19 @@ async function sauvegarderBordereauLocal() {
         if (existingRecord && existingRecord.status) {
             currentStatus = existingRecord.status;
         }
+        if (currentStatus === 'Pending') {
+            currentStatus = 'Collected';
+        }
     }
+
+    // ✅ ALIGNÉ SUR ui.js : restaure la session + fallback 'pending'
+    const staffSession = (typeof restaurerSessionStaff === 'function') 
+        ? restaurerSessionStaff() 
+        : (currentStaffUser || null);
+
+    const staffName = staffSession?.name 
+        ? `staff ( ${staffSession.name} )` 
+        : 'pending';
 
     const payloadSupabase = {
         room_number: roomNum,
@@ -249,7 +265,7 @@ async function sauvegarderBordereauLocal() {
         grand_total: grandTotal,
         special_notes: optionalNote,
         status: currentStatus,
-        created_by: 'Staff Laundry OS', // Marqueur pour désactiver le auto-trigger notification
+        created_by: staffName,
         accepted_policy: true
     };
 
@@ -552,6 +568,15 @@ async function validateAndSaveSpaReceipt() {
         }
     });
 
+    // ✅ ALIGNÉ SUR ui.js : restaure la session + fallback 'pending'
+    const staffSession = (typeof restaurerSessionStaff === 'function') 
+        ? restaurerSessionStaff() 
+        : (currentStaffUser || null);
+
+    const staffName = staffSession?.name 
+        ? `staff ( ${staffSession.name} )` 
+        : 'pending';
+
     const payloadSpa = {
         room_number: `SPA #${serialNo}`,
         guest_name: givenBy,
@@ -565,7 +590,7 @@ async function validateAndSaveSpaReceipt() {
         grand_total: grandTotalValue,
         special_notes: `Collected by: ${collectedBy} | Delivered by: ${deliveredBy}`,
         status: 'Collected',
-        created_by: 'Staff Laundry OS',
+        created_by: staffName,
         accepted_policy: true
     };
 
@@ -612,22 +637,38 @@ async function validateAndSaveSpaReceipt() {
     };
     targetRecord.receipt_id = obtenirReceiptId(targetRecord);
 
-    const index = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
-    if (index !== -1) {
-        cachedSlips[index] = targetRecord;
-        alert(`✅ SPA Receipt #${serialNo} updated!`);
-    } else {
-        cachedSlips.unshift(targetRecord);
-        alert(`✅ SPA Receipt #${serialNo} saved!`);
-    }
+const index = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
+const isNewSpa = (index === -1);
 
-    sauvegarderDonneesLocalStorage();
-    await writeRecordToFile(targetRecord);
-    switchMainSection('liveRecord');
-    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+if (!isNewSpa) {
+    cachedSlips[index] = targetRecord;
+} else {
+    cachedSlips.unshift(targetRecord);
+}
 
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
-    return true;
+sauvegarderDonneesLocalStorage();
+await writeRecordToFile(targetRecord);
+switchMainSection('liveRecord');
+if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+
+// ✨ PHASE E.5 : Undo sur nouvelle création SPA
+if (isNewSpa && typeof showUndoToast === 'function') {
+    showUndoToast(assignedId, `#${serialNo}`, true);
+} else if (!isNewSpa) {
+    // Update SPA → feedback simple
+    const t = document.createElement('div');
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+    t.innerHTML = `✅ <strong>SPA #${serialNo}</strong> updated`;
+    document.body.appendChild(t);
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 1800);
+}
+
+setTimeout(() => { isLocalUpdating = false; }, 1000);
+return true;
 }
 
 async function exportAutoDirect() {

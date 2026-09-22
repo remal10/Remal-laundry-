@@ -42,16 +42,8 @@ function playLuxuryHotelChime() {
     }
 }
 
-// Dismiss notification banner manually
-function dismissGuestNotificationBanner() {
-    const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
-    if (banner) {
-        banner.style.display = 'none';
-        banner.classList.add('hidden');
-    }
-}
-
 // Display VIP notification banner in English
+// ✅ FORMAT HARMONISÉ avec ui.js:onNewGuestRequestReceived
 function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
@@ -59,8 +51,9 @@ function showLuxuryNotificationBanner(normalizedData) {
     const roomNum = normalizedData.room || normalizedData.room_number || '---';
     const guestName = normalizedData.guest_name || 'Guest';
     const totalPcs = normalizedData.total_clothes || normalizedData.total_pieces || 0;
+    const grandTotal = Number(normalizedData.grand_total || normalizedData.total || 0);
 
-    const textMessage = `New laundry request from Room ${roomNum} (${guestName}) — ${totalPcs} Pcs`;
+    const textMessage = `⚡ NEW REQUEST: Room ${roomNum} (${guestName}) — ${totalPcs} Pcs (${grandTotal.toFixed(2)} AED)`;
 
     if (bannerText) {
         bannerText.innerText = textMessage;
@@ -74,25 +67,48 @@ function showLuxuryNotificationBanner(normalizedData) {
         console.log("🔔 NOTIFICATION:", textMessage);
     }
 
-    // Play chime sound
     playLuxuryHotelChime();
 }
 
-// Process incoming payload from Guest Portal
+// ═══════════════════════════════════════════════════════════════════
+// Process incoming payload
+// ═══════════════════════════════════════════════════════════════════
+// RÈGLES STRICTES :
+//   1. created_by commence par 'staff (' → action STAFF → pas de chime
+//   2. created_by vide/null/'pending'/'Guest App'/'Guest' → GUEST → chime
+//   3. Sinon → silence
+// ═══════════════════════════════════════════════════════════════════
 function processIncomingPayload(rawData) {
     if (!rawData) return;
 
-    // ⛔ BLOQUAGE NOTIFICATION SI CRÉÉ PAR LE STAFF / LAUNDRY OS
-    if (rawData.created_by && rawData.created_by !== 'Guest App' && rawData.created_by !== 'Guest' && rawData.created_by !== 'Guest Portal') {
+    const createdBy = String(rawData.created_by || '').trim();
+    const isStaffAction = createdBy.startsWith('staff (');
+
+    console.log("🔍 [processIncomingPayload]", {
+        id: rawData.id,
+        created_by: createdBy,
+        status: rawData.status,
+        isStaff: isStaffAction
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // CAS 1 : ACTION STAFF → transmission silencieuse (pas de chime)
+    // ═══════════════════════════════════════════════════════════════
+    if (isStaffAction) {
+        console.log("👤 [processIncomingPayload] Staff action - no banner, no chime");
+        
         if (typeof window.onNewGuestRequestReceived === 'function') {
             window.onNewGuestRequestReceived(rawData);
         } else if (typeof chargerLiveOrders === 'function') {
             chargerLiveOrders();
-        } else if (typeof loadOrders === 'function') {
-            loadOrders();
         }
-        return; // Stoppe l'exécution : Pas de son ni de bannière pour le staff
+        return;
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CAS 2 : ACTION GUEST → chime + bannière
+    // ═══════════════════════════════════════════════════════════════
+    console.log("🛎️ [processIncomingPayload] Guest action - banner + chime");
 
     const normalizedRequest = {
         id: String(rawData.id),
@@ -111,25 +127,25 @@ function processIncomingPayload(rawData) {
         special_notes: rawData.special_notes || rawData.note || 'None',
         pms_quota: rawData.pms_quota || 'Standard',
         extra_charged: rawData.extra_charged || false,
-        status: rawData.status || 'Collected',
+        status: rawData.status || 'Pending',
         is_guest_request: true,
+        created_by: 'pending',
         created_at: rawData.created_at || new Date().toISOString()
     };
 
-    // 1. Trigger notification banner & audio chime only for real guest requests
     showLuxuryNotificationBanner(normalizedRequest);
 
-    // 2. Transmit to Laundry OS interface to refresh active orders
     if (typeof window.onNewGuestRequestReceived === 'function') {
         window.onNewGuestRequestReceived(normalizedRequest);
     } else if (typeof chargerLiveOrders === 'function') {
         chargerLiveOrders();
-    } else if (typeof loadOrders === 'function') {
-        loadOrders();
     }
 }
 
-// Fallback polling sync (Monitors all new incoming requests)
+// ═══════════════════════════════════════════════════════════════════
+// Fallback polling sync
+// CORRECTION : Ignore les records Staff (pas de chime, pas d'écrasement)
+// ═══════════════════════════════════════════════════════════════════
 let lastProcessedId = null;
 
 async function syncFallbackGuestRequests() {
@@ -146,6 +162,8 @@ async function syncFallbackGuestRequests() {
         if (error || !data || data.length === 0) return;
 
         const latest = data[0];
+        const latestCreatedBy = String(latest.created_by || '').trim();
+
         if (lastProcessedId === null) {
             lastProcessedId = String(latest.id);
             return;
@@ -153,7 +171,21 @@ async function syncFallbackGuestRequests() {
 
         if (String(latest.id) !== lastProcessedId) {
             lastProcessedId = String(latest.id);
-            console.log("🔄 New request detected via fallback:", latest);
+            
+            // ⛔ NE PAS TRAITER les records Staff
+            if (latestCreatedBy.startsWith('staff (')) {
+                console.log("⏭️ [Fallback] Skipping STAFF record (no chime):", {
+                    id: latest.id,
+                    created_by: latestCreatedBy
+                });
+                return;
+            }
+
+            console.log("🔄 [Fallback] New GUEST request detected:", {
+                id: latest.id,
+                created_by: latestCreatedBy,
+                status: latest.status
+            });
             processIncomingPayload(latest);
         }
     } catch (err) {
@@ -161,7 +193,9 @@ async function syncFallbackGuestRequests() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 // Initialize Supabase Realtime Listener
+// ═══════════════════════════════════════════════════════════════════
 function initRealtimeGuestRequests() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         console.warn("⚠️ Supabase client not ready for Realtime.");
@@ -176,8 +210,24 @@ function initRealtimeGuestRequests() {
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'guest_laundry_requests' },
             (payload) => {
-                if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) return;
-                console.log("🔔 DIRECT GUEST REQUEST RECEIVED:", payload.new);
+                if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) {
+                    console.log("⏸️ [Realtime] Ignoring (local update in progress)");
+                    return;
+                }
+                
+                const createdBy = String(payload.new.created_by || '').trim();
+                
+                // ⛔ Ignorer les records Staff (double protection)
+                if (createdBy.startsWith('staff (')) {
+                    console.log("⏭️ [Realtime] Skipping STAFF record:", createdBy);
+                    return;
+                }
+                
+                console.log("🔔 [Realtime] INSERT RECEIVED:", {
+                    id: payload.new.id,
+                    created_by: createdBy,
+                    status: payload.new.status
+                });
                 processIncomingPayload(payload.new);
             }
         )
@@ -185,7 +235,6 @@ function initRealtimeGuestRequests() {
             console.log("📡 Supabase Realtime channel status:", status);
         });
 
-    // Fallback polling every 8 seconds
     setInterval(syncFallbackGuestRequests, 8000);
 }
 

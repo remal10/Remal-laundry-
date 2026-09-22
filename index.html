@@ -5,36 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Remal Hotel & Villas - Laundry & Lost & Found OS</title>
     
-    <!-- PWA META TAGS -->
-    <meta name="theme-color" content="#12100e">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Remal Laundry">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3003/3003984.png">
+<!-- PWA META TAGS -->
+<meta name="theme-color" content="#0f0e0c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Remal Laundry">
 
-    <!-- WEBMANIFEST INLINE -->
-    <link rel="manifest" href='data:application/manifest+json,{
-        "name": "Remal Hotel & Villas Laundry",
-        "short_name": "Remal Laundry",
-        "description": "Front Desk, Laundry & Lost & Found System",
-        "start_url": "./",
-        "display": "standalone",
-        "background_color": "#12100e",
-        "theme_color": "#12100e",
-        "orientation": "any",
-        "icons": [
-            { "src": "https://cdn-icons-png.flaticon.com/512/3003/3003984.png", "sizes": "192x192", "type": "image/png" },
-            { "src": "https://cdn-icons-png.flaticon.com/512/3003/3003984.png", "sizes": "512x512", "type": "image/png" }
-        ]
-    }'>
+<!-- FAVICON & ICONS (Ajoutés Phase E.1) -->
+<link rel="icon" type="image/png" href="assets/remal-logo.png">
+<link rel="apple-touch-icon" href="assets/remal-logo.png">
+<link rel="shortcut icon" href="assets/remal-logo.png">
 
+<!-- WEBMANIFEST EXTERNE (Phase E.2) -->
+<link rel="manifest" href="manifest.json"> 
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/premium-effects.css">
 </head>
-<body class="min-h-screen pb-16 bg-[#12100e] text-stone-200">
+<body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
 
     <!-- VIP REALTIME NOTIFICATION BANNER -->
     <div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
@@ -67,36 +59,50 @@
         <div class="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(#DCA773_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-5 flex justify-between items-center">
-            <div class="flex items-center space-x-4 lg:space-x-6">
-                <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
-                    <div class="flex items-baseline space-x-2">
-                        <span class="text-2xl lg:text-3xl font-serif-luxury font-black text-[#DCA773] tracking-[0.25em]">REMAL</span>
-                        <span class="text-xs lg:text-sm font-serif-luxury text-stone-300 tracking-[0.15em] font-medium hidden sm:inline">HOTEL & VILLAS</span>
-                    </div>
-                    <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-0.5">
-                        <span>فندق وفيلا</span>
-                        <span class="text-stone-500">•</span>
-                        <span>Al Ruwais City</span>
-                    </div>
+     <div class="flex items-center space-x-4 lg:space-x-6">
+       <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
+        <img 
+            src="assets/remal-logo.png" 
+            alt="Remal Hotel & Villas" 
+            class="h-14 sm:h-16 lg:h-20 w-auto object-contain"
+         >
+         <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-1">
+            <span>Al Ruwais City</span>
+          </div>
+      </div>
+
+       <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
+             <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
+             <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
+          </div>
+      </div>
+            
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- ZONE MODIFIÉE : Indicateur agent + Boutons 44px + Logout   -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Indicateur Agent connecté (Ajout Phase 1) -->
+                <div id="staffIndicatorHeader" class="hidden sm:flex items-center gap-2 bg-[#181614] border border-[#DCA773]/40 rounded-xl px-3 py-2">
+                    <span class="text-[#DCA773] text-sm">👤</span>
+                    <span id="staffNameHeader" class="text-xs font-bold text-stone-200">---</span>
                 </div>
 
-                <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
-                    <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
-                    <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                <button onclick="toggleTheme()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 w-10 h-10 rounded-xl text-sm flex items-center justify-center shadow transition" title="Toggle Dark/Light Mode">
+                <button onclick="toggleTheme()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Toggle Dark/Light Mode">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
 
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-stone-900/90 text-stone-200 text-xs sm:text-sm border border-[#DCA773]/40 rounded-xl px-3.5 py-2.5 outline-none font-semibold cursor-pointer hover:bg-stone-800 transition">
+                <select id="langSelect" onchange="setLang(this.value)" class="bg-stone-900/90 text-stone-200 text-xs sm:text-sm border border-[#DCA773]/40 rounded-xl px-3.5 py-2.5 outline-none font-semibold cursor-pointer hover:bg-stone-800 transition h-11">
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                     <option value="hi">हिन्दी</option>
                 </select>
+
+                <!-- Bouton Logout (Ajout Phase 1) -->
+                <button onclick="confirmLogout()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
+            <!-- ═══════════════════════════════════════════════════════════ -->
         </div>
     </header>
 
@@ -130,11 +136,19 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     
                     <div class="lg:col-span-5 space-y-5">
-                        <div>
-                            <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
-                            <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold">
-                            
-                            <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
+           <div>
+                 <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
+    
+                 <!-- PHASE E.2 : Wrapper relative pour dropdown autocomplete -->
+                  <div class="relative">
+                     <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold" autocomplete="off">
+        
+                 <!-- PHASE E.2 : Dropdown autocomplete -->
+                 <div id="roomAutocompleteDropdown" 
+               class="hidden absolute left-0 right-0 top-full mt-2 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-80 overflow-y-auto scrollbar-none"></div>
+          </div>
+    
+                   <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
                             
                             <!-- BOÎTE D'INFORMATION PMS (AVEC ARRIVAL & DEPARTURE) -->
                             <div id="roomPmsInfoBox" class="hidden mt-3 p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs space-y-2 shadow-inner">
@@ -713,19 +727,17 @@
                 <div id="modalPhotoContainer" class="pt-1"></div>
             </div>
 
-            <div class="space-y-3 pt-2 no-print">
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
-                    <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit Record</button>
-                    <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
-                </div>
-            </div>
+    <div class="space-y-3 pt-2 no-print">
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
+            <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+            <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit</button>
+            <button onclick="dupliquerRecordActuel()" id="btnDuplicateRecord" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📋 Duplicate</button>
+            <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
         </div>
     </div>
-
     <!-- AUTHENTICATION STAFF MODAL -->
     <div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
         <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
@@ -754,33 +766,41 @@
             </div>
         </div>
     </div>
+    <!-- ✨ PHASE E.3 : MODALE SET QTY -->
+<div id="setQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
+    <div class="bg-[#181614] border border-[#DCA773]/40 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
+        
+        <div class="text-center border-b border-[#2f2820] pb-3">
+            <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">🔢 Set Quantity</h3>
+            <p id="setQtyItemName" class="text-xs text-stone-300 mt-1 font-semibold">---</p>
+            <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
+        </div>
 
-    <!-- MODALE STATUT EN LOT -->
-    <div id="batchStatusModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#181614] border border-[#2f2820] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
-            <h3 class="text-base font-bold text-[#DCA773] text-center">🔄 Update Status for Selected Rooms</h3>
-            <p id="batchStatusCountLabel" class="text-xs text-stone-400 text-center font-medium">0 items selected</p>
+        <div class="flex items-center justify-center gap-3">
+            <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
+            <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
             
-            <div class="grid grid-cols-2 gap-2 pt-2">
-                <button onclick="appliquerStatutEnLot('Collected')" class="py-3 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl transition border border-stone-700">
-                    🧺 Collected
-                </button>
-                <button onclick="appliquerStatutEnLot('Washing')" class="py-3 px-2 bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 text-xs font-bold rounded-xl transition">
-                    🧼 Washing
-                </button>
-                <button onclick="appliquerStatutEnLot('Ready')" class="py-3 px-2 bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs font-bold rounded-xl transition">
-                    ✨ Ready
-                </button>
-                <button onclick="appliquerStatutEnLot('Delivered')" class="py-3 px-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-bold rounded-xl transition">
-                    🚚 Delivered
-                </button>
-            </div>
+            <input type="number" id="setQtyInput" min="0" placeholder="0" 
+                   class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
+            
+            <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
+            <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
+        </div>
 
-            <button onclick="fermerModalBatchStatus()" class="w-full py-2.5 bg-stone-900 text-stone-400 font-bold text-xs rounded-xl hover:bg-stone-800 transition mt-2 border border-[#2f2820]">
-                Cancel
+        <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+                Annuler
+            </button>
+            <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">
+                ✓ Valider
             </button>
         </div>
+
+        <p class="text-[10px] text-stone-500 text-center">
+            Astuce : <strong>Entrée</strong> pour valider · <strong>Échap</strong> pour fermer
+        </p>
     </div>
+</div>
 
     <!-- BIBLIOTHÈQUES EXTERNES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -792,56 +812,34 @@
     <script src="js/config.js"></script>
     <script src="js/laundry.js"></script>
     <script src="js/realtime-listener.js"></script>
-    <script src="js/ui.js"></script>
+    <script src="js/ui-core.js"></script>
+    <script src="js/ui-forms.js"></script>
+    <script src="js/ui-live.js"></script>
+    <script src="js/ui-modules.js"></script>
+    <script src="js/ui-shortcuts.js"></script>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                const CACHE_NAME = 'remal-pwa-v31';
-                const ASSETS = [
-                    './',
-                    'style.css',
-                    'js/config.js',
-                    'js/laundry.js',
-                    'js/realtime-listener.js',
-                    'js/ui.js',
-                    'https://cdn.tailwindcss.com',
-                    'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap',
-                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-                    'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
-                    'https://cdn.jsdelivr.net/npm/chart.js',
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
-                    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
-                ];
-
-                self.addEventListener('install', (e) => {
-                    self.skipWaiting();
-                    e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(err => console.log('Cache partial:', err))));
+<script>
+    // Service Worker externe (Phase E.3)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('[SW] Service Worker registered:', registration.scope);
+                })
+                .catch(err => {
+                    console.log('[SW] Registration failed:', err);
                 });
-
-                self.addEventListener('activate', (e) => {
-                    e.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => { if (k !== CACHE_NAME) return caches.delete(k); }))).then(() => clients.claim()));
-                });
-
-                self.addEventListener('fetch', (e) => {
-                    e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request).catch(() => caches.match('./'))));
-                });
-            `;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            window.addEventListener('load', () => { 
-                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(err => console.log('SW Registration failed:', err)); 
-            });
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); 
-            deferredPrompt = e;
-            const banner = document.getElementById('pwaInstallBanner');
-            if (banner) banner.classList.remove('hidden');
         });
-    </script>
-       <script src="security-guard.js"></script>
-       <script src="js/guesthub-integration.js"></script>
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); 
+        deferredPrompt = e;
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.classList.remove('hidden');
+    });
+</script>
+     <script src="security-guard.js"></script>
+    <script src="js/guesthub-integration.js"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
     --border-gold: #2f2820;
     --text-main: #f3f4f6;
     --font-family: 'Plus Jakarta Sans', sans-serif;
-    --font-serif: 'Playfair Display', serif;
+    --font-serif: 'Cinzel', 'Playfair Display', serif;
 }
 
 .light-mode {
@@ -241,5 +241,435 @@ body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
         break-after: page !important;
         background: #ffffff !important;
         color: #000000 !important;
+    }
+}
+
+/* =========================================================
+   PHASE C.1 — TOKENS SÉMANTIQUES
+   Ces variables sont des ALIAS vers les anciennes.
+   Aucune régression : --bg-dark, --bg-card, etc. restent valides.
+   ========================================================= */
+:root {
+    /* Surfaces */
+    --surface-base: #0f0e0c;
+    --surface-raised: #181614;
+    --surface-hover: #211e1a;
+    --surface-sunken: #0a0908;
+
+    /* Texte */
+    --text-primary: #f3f4f6;
+    --text-secondary: #a8a29e;
+    --text-muted: #78716c;
+    --text-accent: #DCA773;
+
+    /* Bordures */
+    --border-subtle: #2f2820;
+    --border-strong: #DCA773;
+
+    /* États */
+    --state-success: #10b981;
+    --state-warning: #f59e0b;
+    --state-danger: #f43f5e;
+    --state-info: #3b82f6;
+
+    /* États avec opacité (glassmorphism) */
+    --state-success-bg: rgba(16, 185, 129, 0.1);
+    --state-warning-bg: rgba(245, 158, 11, 0.1);
+    --state-danger-bg: rgba(244, 63, 94, 0.1);
+    --state-info-bg: rgba(59, 130, 246, 0.1);
+
+    /* Rayons */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+
+    /* Ombres */
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.12);
+    --shadow-glow: 0 0 20px rgba(220, 167, 115, 0.3);
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+/* Mode clair */
+body.light-mode {
+    --surface-base: #f8fafc;
+    --surface-raised: #ffffff;
+    --surface-hover: #f1f5f9;
+    --surface-sunken: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --text-accent: #b47a3e;
+
+    --border-subtle: #e2e8f0;
+    --border-strong: #b47a3e;
+
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --shadow-glow: 0 0 20px rgba(180, 122, 62, 0.25);
+
+    --state-success-bg: rgba(16, 185, 129, 0.15);
+    --state-warning-bg: rgba(245, 158, 11, 0.15);
+    --state-danger-bg: rgba(244, 63, 94, 0.15);
+    --state-info-bg: rgba(59, 130, 246, 0.15);
+}
+
+/* =========================================================
+   PHASE D.2.2 — DÉGRADÉ DORÉ (aligné avec Guest App)
+   ========================================================= */
+.text-gold-gradient {
+    background: linear-gradient(135deg, #EAD0B3 0%, #DCA773 50%, #B88351 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.light-mode .text-gold-gradient {
+    background: linear-gradient(135deg, #cfa26d 0%, #b47a3e 50%, #8c5822 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* =========================================================
+   PHASE D.2.3 — GLASSMORPHISM (aligné avec Guest App)
+   ========================================================= */
+
+.remal-glass {
+    background: rgba(22, 20, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(220, 167, 115, 0.35);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+}
+
+body.light-mode .remal-glass {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(180, 122, 62, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(180, 122, 62, 0.12);
+}
+
+.gold-shine {
+    position: relative;
+    overflow: hidden;
+}
+
+.gold-shine::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+}
+
+/* =========================================================
+   PHASE 1 — ERGONOMIE TACTILE
+   Optimisé pour téléphones, tablettes et écrans tactiles
+   ========================================================= */
+
+/* Zone tactile minimum 44px pour tous les boutons interactifs */
+button, 
+[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+select {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Exception pour les boutons avec contraintes spécifiques Tailwind */
+button.w-5,
+button.w-6,
+button.w-7,
+button.w-8 {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Feedback tactile global sur les boutons */
+button:active,
+[role="button"]:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Checkbox plus grosses et mieux tactiles */
+input[type="checkbox"].room-checkbox {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+/* Désactive le double-tap zoom sur tous les éléments interactifs */
+* {
+    touch-action: manipulation;
+}
+
+/* Espacement minimum entre éléments cliquables adjacents */
+button + button,
+a + a {
+    margin-left: 4px;
+}
+
+/* Amélioration focus visible (accessibilité clavier) */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #DCA773;
+    outline-offset: 2px;
+}
+
+body.light-mode button:focus-visible,
+body.light-mode input:focus-visible,
+body.light-mode select:focus-visible,
+body.light-mode textarea:focus-visible {
+    outline-color: #b47a3e;
+}
+
+/* Amélioration des inputs sur mobile (taille minimum pour éviter zoom iOS) */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    font-size: 16px; /* Évite le zoom automatique sur iOS */
+}
+
+/* Mais garder les inputs secondaires petits si nécessaire */
+.remal-input.text-xs,
+.remal-input.text-sm {
+    font-size: 16px; /* Override Tailwind pour éviter zoom iOS */
+}
+
+/* Sur très petits écrans, augmenter encore la taille tactile */
+@media (max-width: 480px) {
+    button,
+    [role="button"] {
+        min-height: 48px;
+    }
+    
+    /* Padding interne plus généreux sur mobile */
+    .luxe-btn {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Amélioration de la nav horizontale sur mobile */
+#mainNavContainer {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* Amélioration du scroll pour les containers internes */
+#itemsContainer,
+#liveOrdersList,
+#laundryList,
+.scrollbar-none {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Transition douce pour les modales sur mobile */
+@media (max-width: 640px) {
+    #detailModal > div,
+    #staffLoginModal > div,
+    #activeRoomsListModal > div,
+    #batchStatusModal > div {
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+}
+
+/* =========================================================
+   PHASE 2 — ERGONOMIE ADAPTATIVE PAR APPAREIL
+   ========================================================= */
+
+/* ═══════════════════════════════════════════════════════════════
+   APPAREILS TACTILES (téléphone + tablette + PC tactile)
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch button,
+body.is-touch [role="button"],
+body.is-touch a {
+    /* Zones tactiles plus généreuses */
+    min-height: 48px;
+    -webkit-tap-highlight-color: rgba(220, 167, 115, 0.15);
+}
+
+/* Boutons +/- encore plus gros sur tactile */
+body.is-touch button.w-11,
+body.is-touch button.h-11 {
+    min-width: 48px;
+    min-height: 48px;
+}
+
+/* Effet de pression plus marqué */
+body.is-touch button:active {
+    transform: scale(0.92);
+    transition: transform 0.08s ease;
+}
+
+/* Pas de hover sur tactile (évite les faux positifs) */
+body.is-touch .luxe-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+}
+
+/* Effet de sélection plus visible */
+body.is-touch input[type="checkbox"] {
+    min-width: 28px;
+    min-height: 28px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PETITS ÉCRANS (téléphone)
+   ═══════════════════════════════════════════════════════════════ */
+body.is-mobile #mainNavContainer {
+    padding: 8px 12px;
+    gap: 8px;
+}
+
+body.is-mobile #mainNavContainer button {
+    padding: 12px 16px;
+    font-size: 11px;
+}
+
+body.is-mobile .remal-card {
+    border-radius: 20px;
+}
+
+body.is-mobile #itemsContainer {
+    max-height: 300px;
+}
+
+body.is-mobile .luxe-btn {
+    padding: 0.85rem 1rem;
+    font-size: 0.7rem;
+}
+
+/* Modales plus larges sur mobile */
+body.is-mobile #detailModal > div,
+body.is-mobile #staffLoginModal > div,
+body.is-mobile #activeRoomsListModal > div {
+    max-width: 100%;
+    border-radius: 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLETTES
+   ═══════════════════════════════════════════════════════════════ */
+body.is-tablet #mainNavContainer button {
+    padding: 14px 20px;
+    font-size: 13px;
+}
+
+body.is-tablet #itemsContainer {
+    max-height: 400px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PC TACTILE (tactile + grand écran)
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch:not(.is-mobile):not(.is-tablet) button {
+    min-height: 46px;
+    min-width: 46px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PC SOURIS (souris fine) — Autoriser les hover plus subtils
+   ═══════════════════════════════════════════════════════════════ */
+body.is-fine .luxe-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+body.is-fine button:hover {
+    transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL FLUIDE SUR TACTILE
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch #liveOrdersList,
+body.is-touch #laundryList,
+body.is-touch #itemsContainer,
+body.is-touch #mainNavContainer {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SWIPE GESTURES (mobile/tablette)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    /* Améliorer le scroll horizontal des onglets */
+    #mainNavContainer {
+        scroll-snap-type: x mandatory;
+    }
+    
+    #mainNavContainer button {
+        scroll-snap-align: start;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DÉSACTIVER LE PULL-TO-REFRESH SUR MOBILE
+   ═══════════════════════════════════════════════════════════════ */
+body.is-touch {
+    overscroll-behavior-y: contain;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AMÉLIORER LA LISIBILITÉ SUR PETITS ÉCRANS
+   ═══════════════════════════════════════════════════════════════ */
+body.is-mobile {
+    font-size: 14px;
+}
+
+body.is-mobile h1,
+body.is-mobile h2 {
+    font-size: 1rem;
+}
+
+body.is-mobile .font-serif-luxury {
+    letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DÉTECTION DYNAMIQUE AU CHANGEMENT D'ORIENTATION
+   ═══════════════════════════════════════════════════════════════ */
+@media (orientation: landscape) and (max-height: 500px) {
+    body.is-mobile #mainNavContainer {
+        padding: 6px 8px;
+    }
+    
+    body.is-mobile header {
+        padding-top: 8px;
+        padding-bottom: 8px;
     }
 }
