@@ -340,6 +340,13 @@ function ouvrirModalActiveRoomsList() {
     document.getElementById('activeRoomsTotalPieces').innerText = `${totalPieces} pcs`;
     document.getElementById('activeRoomsPdfDate').innerText = `Date: ${new Date().toLocaleDateString('en-GB')}`;
 
+    // ✅ FIX : Ferme les autres modales avant d'ouvrir
+    const batchModal = document.getElementById('batchStatusModal');
+    if (batchModal) batchModal.classList.add('hidden');
+
+    const detailModal = document.getElementById('detailModal');
+    if (detailModal) detailModal.classList.add('hidden');
+
     document.getElementById('activeRoomsListModal').classList.remove('hidden');
 }
 
@@ -813,6 +820,13 @@ async function ouvrirModalDetails(id) {
     const whatsappMsg = encodeURIComponent(`*REMAL HOTEL & VILLAS - RECEIPT*\n*Ref:* ${entry.is_spa ? '#' + entry.spa_serial : 'Room ' + roomNum}\n*Receipt ID:* #${receiptId}\n*Guest:* ${entry.guest_name}\n*Total Pieces:* ${totalPcsVal} pcs\n*Grand Total:* ${grandTotalVal.toFixed(2)} AED`);
     document.getElementById('btnWhatsappShare').href = `https://wa.me/?text=${whatsappMsg}`;
 
+    // ✅ FIX : Ferme les autres modales avant d'ouvrir le bordereau
+    const batchModal = document.getElementById('batchStatusModal');
+    if (batchModal) batchModal.classList.add('hidden');
+
+    const activeRoomsModal = document.getElementById('activeRoomsListModal');
+    if (activeRoomsModal) activeRoomsModal.classList.add('hidden');
+
     document.getElementById('detailModal').classList.remove('hidden');
 }
 
@@ -1244,6 +1258,14 @@ function ouvrirModalBatchStatus() {
         alert("⚠️ Please select at least one room checkbox.");
         return;
     }
+    
+    // ✅ FIX : Ferme TOUTES les autres modales avant d'ouvrir
+    const detailModal = document.getElementById('detailModal');
+    if (detailModal) detailModal.classList.add('hidden');
+    
+    const activeRoomsModal = document.getElementById('activeRoomsListModal');
+    if (activeRoomsModal) activeRoomsModal.classList.add('hidden');
+
     const countLabel = document.getElementById('batchStatusCountLabel');
     if (countLabel) countLabel.innerText = `Apply new status to ${selectedIds.length} selected record(s)`;
     
@@ -1254,6 +1276,11 @@ function ouvrirModalBatchStatus() {
 function fermerModalBatchStatus() {
     const modal = document.getElementById('batchStatusModal');
     if (modal) modal.classList.add('hidden');
+    
+    // ✅ FIX : Reset selectedIdForModal pour éviter ré-ouverture bordereau
+    if (typeof selectedIdForModal !== 'undefined') {
+        selectedIdForModal = null;
+    }
 }
 
 async function appliquerStatutEnLot(nouveauStatut) {
@@ -1344,4 +1371,4 @@ function dismissGuestNotificationBanner() {
     document.querySelectorAll('.luxe-card, .remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
-                            }
+}
