@@ -4,20 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Remal Hotel & Villas - Laundry & Lost & Found OS</title>
-    
-<!-- PWA META TAGS -->
-<meta name="theme-color" content="#0f0e0c">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Remal Laundry">
 
 <!-- FAVICON & ICONS -->
 <link rel="icon" type="image/png" href="assets/remal-logo.png">
 <link rel="apple-touch-icon" href="assets/remal-logo.png">
 <link rel="shortcut icon" href="assets/remal-logo.png">
-
-<!-- WEBMANIFEST EXTERNE -->
-<link rel="manifest" href="manifest.json"> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -25,6 +16,37 @@
     
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="assets/css/premium-effects.css">
+    
+    <!-- FIX LOGO : style inline critique pour éviter le débordement -->
+    <style>
+        /* Fix logo size - ne dépend PAS de Tailwind CDN */
+        #bodyRoot header img[src*="remal-logo"] {
+            height: 56px !important;
+            width: auto !important;
+            max-width: 200px !important;
+            object-fit: contain !important;
+            display: block !important;
+        }
+        
+        @media (min-width: 640px) {
+            #bodyRoot header img[src*="remal-logo"] {
+                height: 64px !important;
+                max-width: 240px !important;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            #bodyRoot header img[src*="remal-logo"] {
+                height: 80px !important;
+                max-width: 300px !important;
+            }
+        }
+        
+        /* Fix global : aucun élément ne doit dépasser la largeur du viewport */
+        #bodyRoot {
+            overflow-x: hidden !important;
+        }
+    </style>
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
 
@@ -38,20 +60,6 @@
             </div>
         </div>
         <button onclick="event.stopPropagation(); dismissGuestNotificationBanner();" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">Close ✕</button>
-    </div>
-
-    <div id="pwaInstallBanner" class="hidden bg-[#181614] border-b border-[#DCA773] px-6 py-3 flex justify-between items-center no-print">
-        <div class="flex items-center gap-3">
-            <span class="text-xl">📱</span>
-            <div>
-                <p class="text-sm font-bold text-[#DCA773]">Installer Remal Laundry OS</p>
-                <p class="text-xs text-stone-400">Accès rapide écran d'accueil & usage hors-ligne</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <button onclick="installPWA()" class="bg-[#DCA773] text-stone-950 font-bold px-4 py-1.5 rounded-xl text-xs shadow">Installer</button>
-            <button onclick="dismissPWAInstall()" class="text-stone-400 font-bold px-2 text-xs">✕</button>
-        </div>
     </div>
 
     <header class="relative bg-[#12100e] overflow-hidden border-b border-[#DCA773]/30 shadow-2xl no-print">
@@ -812,28 +820,7 @@
     <script src="js/ui-modules.js"></script>
     <script src="js/ui-shortcuts.js"></script>
 
-<script>
-    // Service Worker externe
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(registration => {
-                    console.log('[SW] Service Worker registered:', registration.scope);
-                })
-                .catch(err => {
-                    console.log('[SW] Registration failed:', err);
-                });
-        });
-    }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault(); 
-        deferredPrompt = e;
-        const banner = document.getElementById('pwaInstallBanner');
-        if (banner) banner.classList.remove('hidden');
-    });
-</script>
-     <script src="security-guard.js"></script>
+    <script src="security-guard.js"></script>
     <script src="js/guesthub-integration.js"></script>
 </body>
 </html>
