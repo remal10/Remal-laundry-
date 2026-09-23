@@ -39,7 +39,37 @@ function chargerDonneesLocalStorage() {
 }
 
 function sauvegarderDonneesLocalStorage() {
-    localStorage.setItem('remal_laundry_slips', JSON.stringify(cachedSlips));
+    // ✅ Phase 1.2 — Dégradation gracieuse
+    // Niveau 1 : 90 derniers jours
+    const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const slips90j = cachedSlips.filter(s => s.created_at && s.created_at >= ilYa90Jours);
+    
+    try {
+        localStorage.setItem('remal_laundry_slips', JSON.stringify(slips90j));
+        return;
+    } catch (e) {
+        console.warn("⚠️ [Storage] localStorage plein à 90j, réduction à 30j");
+    }
+
+    // Niveau 2 : 30 derniers jours
+    const ilYa30Jours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const slips30j = cachedSlips.filter(s => s.created_at && s.created_at >= ilYa30Jours);
+    
+    try {
+        localStorage.setItem('remal_laundry_slips', JSON.stringify(slips30j));
+        return;
+    } catch (e) {
+        console.warn("⚠️ [Storage] localStorage plein à 30j, réduction à 100 records");
+    }
+
+    // Niveau 3 : 100 records les plus récents
+    try {
+        const last100 = cachedSlips.slice(0, 100);
+        localStorage.setItem('remal_laundry_slips', JSON.stringify(last100));
+        console.error("❌ [Storage] localStorage critique, garde uniquement 100 records");
+    } catch (e) {
+        console.error("❌ [Storage] Impossible de sauvegarder dans localStorage");
+    }
 }
 
 function chargerPmsLocalStorage() {
