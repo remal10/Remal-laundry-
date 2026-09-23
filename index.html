@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" id="htmlRoot" dir="ltr">
+<html lang="en" id="htmlRoot" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -547,56 +547,30 @@
                     </button>
                 </div>
 
+                <!-- Category filter: All / Hotel Laundry / SPA Laundry -->
                 <div class="flex bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
                     <button onclick="switchArchiveFilter('all')" id="archiveFilterAll" class="flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">ALL RECORDS</button>
                     <button onclick="switchArchiveFilter('laundry')" id="archiveFilterLaundry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🏨 HOTEL LAUNDRY</button>
                     <button onclick="switchArchiveFilter('spa')" id="archiveFilterSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🧘 SPA LAUNDRY</button>
                 </div>
-               <!-- Phase 2.2 — Status filter chips -->
-<div id="statusFilterBar" class="flex flex-wrap bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400 mt-3">
-    <button onclick="switchStatusFilter('all')" id="statusFilterAll" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">
-        All Status
-    </button>
-    <button onclick="switchStatusFilter('Pending')" id="statusFilterPending" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
-        ⏳ Pending
-    </button>
-    <button onclick="switchStatusFilter('Washing')" id="statusFilterWashing" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
-        🧼 Washing
-    </button>
-    <button onclick="switchStatusFilter('Ready')" id="statusFilterReady" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
-        ✨ Ready
-    </button>
-    <button onclick="switchStatusFilter('Delivered')" id="statusFilterDelivered" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
-        ✅ Delivered
-    </button>
-</div>
-                <!-- Quick date filters -->
-<div id="archiveDateFilters" class="flex flex-wrap gap-2 mt-3">
-  <button 
-    onclick="switchDateFilter('today')" 
-    id="dateFilterToday"
-    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
-    Today
-  </button>
-  <button 
-    onclick="switchDateFilter('7d')" 
-    id="dateFilter7d"
-    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
-    Last 7 days
-  </button>
-  <button 
-    onclick="switchDateFilter('30d')" 
-    id="dateFilter30d"
-    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
-    Last 30 days
-  </button>
-  <button 
-    onclick="switchDateFilter('90d')" 
-    id="dateFilter90d"
-    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
-    Last 90 days
-  </button>
-</div>
+
+                <!-- Phase 2.2 — Status filter chips -->
+                <div id="statusFilterBar" class="flex flex-wrap bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
+                    <button onclick="switchStatusFilter('all')" id="statusFilterAll" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold">All Status</button>
+                    <button onclick="switchStatusFilter('pending')" id="statusFilterPending" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">⏳ Pending</button>
+                    <button onclick="switchStatusFilter('washing')" id="statusFilterWashing" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">🧼 Washing</button>
+                    <button onclick="switchStatusFilter('ready')" id="statusFilterReady" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">✨ Ready</button>
+                    <button onclick="switchStatusFilter('delivered')" id="statusFilterDelivered" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">✅ Delivered</button>
+                </div>
+
+                <!-- Phase 2.3 — Quick date filters -->
+                <div id="archiveDateFilters" class="flex flex-wrap gap-2">
+                    <button onclick="switchDateFilter('today')" id="dateFilterToday" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Today</button>
+                    <button onclick="switchDateFilter('7d')" id="dateFilter7d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 7 days</button>
+                    <button onclick="switchDateFilter('30d')" id="dateFilter30d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 30 days</button>
+                    <button onclick="switchDateFilter('90d')" id="dateFilter90d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 90 days</button>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]">
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">🔍</span>
@@ -661,7 +635,7 @@
             <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                 <div>
                     <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">Active Hotel Laundry Rooms Overview</h3>
-                    <p class="text-xs text-stone-400">Liste des chambres du jour (ordre croissant)</p>
+                    <p class="text-xs text-stone-400">List of the day's rooms (ascending order)</p>
                 </div>
                 <button onclick="fermerModalActiveRoomsList()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
             </div>
@@ -701,7 +675,7 @@
                     <i class="fas fa-file-pdf"></i> 📥 Download PDF List
                 </button>
                 <button onclick="fermerModalActiveRoomsList()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                    Fermer
+                    Close
                 </button>
             </div>
         </div>
@@ -835,15 +809,15 @@
 
             <div class="grid grid-cols-2 gap-3 pt-2">
                 <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                    Annuler
+                    Cancel
                 </button>
                 <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">
-                    ✓ Valider
+                    ✓ Confirm
                 </button>
             </div>
 
             <p class="text-[10px] text-stone-500 text-center">
-                Astuce : <strong>Entrée</strong> pour valider · <strong>Échap</strong> pour fermer
+                Tip: <strong>Enter</strong> to confirm · <strong>Escape</strong> to close
             </p>
         </div>
     </div>
