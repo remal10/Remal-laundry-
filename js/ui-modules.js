@@ -17,12 +17,12 @@ async function chargerDonneesEtAbonnementCloud() {
 
     try {
         // Limiter aux 90 derniers jours (archives illimitées dans Supabase, affichage limité)
-const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-const { data: slips, error: slipsErr } = await supabaseClient
-    .from('guest_laundry_requests')
-    .select('*')
-    .gte('created_at', ilYa90Jours)
-    .order('created_at', { ascending: false });
+        const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: slips, error: slipsErr } = await supabaseClient
+            .from('guest_laundry_requests')
+            .select('*')
+            .gte('created_at', ilYa90Jours)
+            .order('created_at', { ascending: false });
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
@@ -186,28 +186,27 @@ function afficherListeBordereauxLocal() {
 
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
-const container = document.getElementById('laundryList');
-if (!container) return;
+    const container = document.getElementById('laundryList');
+    if (!container) return;
 
-// ✅ Phase 1.4 — Bandeau info si > 50 records
-const existingBanner = document.getElementById('archives-info-banner');
-if (existingBanner) existingBanner.remove();
+    // ✅ Phase 1.4 — Bandeau info si > 50 records
+    const existingBanner = document.getElementById('archives-info-banner');
+    if (existingBanner) existingBanner.remove();
 
-if (cachedSlips.length > 50) {
-    const infoBanner = document.createElement('div');
-    infoBanner.id = 'archives-info-banner';
-    infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
-    infoBanner.innerHTML = `
+    if (cachedSlips.length > 50) {
+        const infoBanner = document.createElement('div');
+        infoBanner.id = 'archives-info-banner';
+        infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
+        // CORRECTION ICI : suppression de la duplication de innerHTML
         infoBanner.innerHTML = `
-    📚 <strong>Archives limited to 90 days</strong> — 
-    <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
-    Older data remains in Supabase but is not displayed.
-`;
-    `;
-    container.parentNode.insertBefore(infoBanner, container);
-}
+            📚 <strong>Archives limited to 90 days</strong> — 
+            <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
+            Older data remains in Supabase but is not displayed.
+        `;
+        container.parentNode.insertBefore(infoBanner, container);
+    }
 
-if (filtered.length === 0) {
+    if (filtered.length === 0) {
         container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">No records found matching criteria.</p>`;
         return;
     }
@@ -321,7 +320,7 @@ if (filtered.length === 0) {
         counter.className = 'text-xs text-stone-400 font-semibold mb-2';
         counter.innerText = `📊 ${filtered.length} result${filtered.length > 1 ? 's' : ''} found`;
         container.parentNode.insertBefore(counter, container);
-      }
+    }
     
     container.innerHTML = html;
 }
