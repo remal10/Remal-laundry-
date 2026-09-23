@@ -570,6 +570,33 @@
         ✅ Delivered
     </button>
 </div>
+                <!-- Quick date filters -->
+<div id="archiveDateFilters" class="flex flex-wrap gap-2 mt-3">
+  <button 
+    onclick="switchDateFilter('today')" 
+    id="dateFilterToday"
+    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
+    Today
+  </button>
+  <button 
+    onclick="switchDateFilter('7d')" 
+    id="dateFilter7d"
+    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
+    Last 7 days
+  </button>
+  <button 
+    onclick="switchDateFilter('30d')" 
+    id="dateFilter30d"
+    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
+    Last 30 days
+  </button>
+  <button 
+    onclick="switchDateFilter('90d')" 
+    id="dateFilter90d"
+    class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
+    Last 90 days
+  </button>
+</div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]">
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">🔍</span>
