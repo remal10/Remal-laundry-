@@ -198,9 +198,11 @@ if (cachedSlips.length > 50) {
     infoBanner.id = 'archives-info-banner';
     infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
     infoBanner.innerHTML = `
-        📚 <strong>Archives limitées à 90 jours</strong> — 
-        <span class="text-stone-300">${cachedSlips.length} records chargés.</span> 
-        Les données plus anciennes restent dans Supabase mais ne sont pas affichées.
+        infoBanner.innerHTML = `
+    📚 <strong>Archives limited to 90 days</strong> — 
+    <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
+    Older data remains in Supabase but is not displayed.
+`;
     `;
     container.parentNode.insertBefore(infoBanner, container);
 }
