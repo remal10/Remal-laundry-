@@ -310,7 +310,19 @@ if (filtered.length === 0) {
 
         html += `</div></div>`;
     }
+    // Phase 2.1 — Result counter
+    const counterId = 'archives-results-counter';
+    const existingCounter = document.getElementById(counterId);
+    if (existingCounter) existingCounter.remove();
 
+    if (filtered.length > 0) {
+        const counter = document.createElement('div');
+        counter.id = counterId;
+        counter.className = 'text-xs text-stone-400 font-semibold mb-2';
+        counter.innerText = `📊 ${filtered.length} result${filtered.length > 1 ? 's' : ''} found`;
+        container.parentNode.insertBefore(counter, container);
+      }
+    
     container.innerHTML = html;
 }
 
