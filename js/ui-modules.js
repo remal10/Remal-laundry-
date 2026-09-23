@@ -5,6 +5,17 @@
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
+// PHASE 2.2 — STATUS FILTER STATE
+// PHASE 2.3 — DATE FILTER STATE
+// ═══════════════════════════════════════════════════════════════════
+
+// Phase 2.2 — Status filter ('all' | 'pending' | 'washing' | 'ready' | 'delivered')
+let currentStatusFilter = 'all';
+
+// Phase 2.3 — Quick date filter ('today' | '7d' | '30d' | '90d' | null = no filter)
+let currentDateFilter = null;
+
+// ═══════════════════════════════════════════════════════════════════
 // CHARGEMENT DONNÉES CLOUD
 // ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
@@ -156,6 +167,101 @@ function switchArchiveFilter(filter) {
     afficherListeBordereauxLocal();
 }
 
+// ─────────────────────────────────────────────────────────────────
+// PHASE 2.2 — STATUS FILTER CHIPS
+// ─────────────────────────────────────────────────────────────────
+function switchStatusFilter(status) {
+    currentStatusFilter = status;
+
+    // Reset all status chips
+    ['All', 'Pending', 'Washing', 'Ready', 'Delivered'].forEach(label => {
+        const btn = document.getElementById('statusFilter' + label);
+        if (btn) {
+            btn.className = 'status-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition';
+        }
+    });
+
+    // Activate selected chip
+    const activeLabel = status.charAt(0).toUpperCase() + status.slice(1);
+    const activeBtn = document.getElementById('statusFilter' + activeLabel);
+    if (activeBtn) {
+        activeBtn.className = 'status-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#DCA773] bg-[#DCA773] text-stone-950 shadow transition';
+    }
+
+    afficherListeBordereauxLocal();
+    console.log('[StatusFilter] Applied:', status);
+}
+
+function matchesStatusFilter(record) {
+    if (currentStatusFilter === 'all') return true;
+
+    const status = String(record.status || '').toLowerCase().trim();
+
+    switch (currentStatusFilter) {
+        case 'pending':   return status === 'pending' || status === 'collected';
+        case 'washing':   return status === 'washing' || status === 'in_progress';
+        case 'ready':     return status === 'ready';
+        case 'delivered': return status === 'delivered' || status === 'completed';
+        default:          return true;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PHASE 2.3 — QUICK DATE FILTERS
+// ─────────────────────────────────────────────────────────────────
+function switchDateFilter(range) {
+    // Toggle: clicking active filter clears it
+    currentDateFilter = (currentDateFilter === range) ? null : range;
+
+    // Reset all date chips
+    ['Today', '7d', '30d', '90d'].forEach(label => {
+        const btn = document.getElementById('dateFilter' + label);
+        if (btn) {
+            btn.className = 'date-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition';
+        }
+    });
+
+    // Activate selected chip
+    if (currentDateFilter) {
+        const activeLabel = currentDateFilter.charAt(0).toUpperCase() + currentDateFilter.slice(1);
+        const activeBtn = document.getElementById('dateFilter' + activeLabel);
+        if (activeBtn) {
+            activeBtn.className = 'date-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#DCA773] bg-[#DCA773] text-stone-950 shadow transition';
+        }
+    }
+
+    afficherListeBordereauxLocal();
+    console.log('[DateFilter] Applied:', currentDateFilter || 'none');
+}
+
+function matchesDateFilter(record) {
+    if (!currentDateFilter) return true;
+
+    const dateStr = record.created_at || record.date || record.timestamp;
+    if (!dateStr) return false;
+
+    const recordDate = new Date(dateStr);
+    if (isNaN(recordDate.getTime())) return false;
+
+    const now = new Date();
+    const diffMs = now - recordDate;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    switch (currentDateFilter) {
+        case 'today': {
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            return recordDate >= today;
+        }
+        case '7d':  return diffDays <= 7;
+        case '30d': return diffDays <= 30;
+        case '90d': return diffDays <= 90;
+        default:    return true;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AFFICHAGE LISTE BORDEREAUX
+// ═══════════════════════════════════════════════════════════════════
 function afficherListeBordereauxLocal() {
     chargerDonneesLocalStorage();
     const searchVal = document.getElementById('searchRoom').value.toLowerCase().trim();
@@ -181,6 +287,12 @@ function afficherListeBordereauxLocal() {
         if (currentArchiveFilter === 'laundry') matchCategory = !entry.is_spa;
         if (currentArchiveFilter === 'spa') matchCategory = !!entry.is_spa;
 
+        // Phase 2.2 — Status filter
+        if (!matchesStatusFilter(entry)) return false;
+
+        // Phase 2.3 — Date filter
+        if (!matchesDateFilter(entry)) return false;
+
         return matchRoom && matchDate && matchCategory;
     });
 
@@ -197,7 +309,6 @@ function afficherListeBordereauxLocal() {
         const infoBanner = document.createElement('div');
         infoBanner.id = 'archives-info-banner';
         infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
-        // CORRECTION ICI : suppression de la duplication de innerHTML
         infoBanner.innerHTML = `
             📚 <strong>Archives limited to 90 days</strong> — 
             <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
@@ -309,6 +420,7 @@ function afficherListeBordereauxLocal() {
 
         html += `</div></div>`;
     }
+
     // Phase 2.1 — Result counter
     const counterId = 'archives-results-counter';
     const existingCounter = document.getElementById(counterId);
@@ -703,10 +815,10 @@ function confirmLogout() {
     if (!currentStaffUser) return;
     
     const confirmed = confirm(
-        `🚪 Se déconnecter ?\n\n` +
-        `Agent actuel : ${currentStaffUser.name}\n` +
-        `Rôle : ${currentStaffUser.role}\n\n` +
-        `Vous devrez saisir votre PIN à nouveau pour continuer.`
+        `🚪 Log out?\n\n` +
+        `Current agent: ${currentStaffUser.name}\n` +
+        `Role: ${currentStaffUser.role}\n\n` +
+        `You will need to enter your PIN again to continue.`
     );
     
     if (confirmed) {
