@@ -16,7 +16,13 @@ async function chargerDonneesEtAbonnementCloud() {
     }
 
     try {
-        const { data: slips, error: slipsErr } = await supabaseClient.from('guest_laundry_requests').select('*');
+        // Limiter aux 90 derniers jours (archives illimitées dans Supabase, affichage limité)
+const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+const { data: slips, error: slipsErr } = await supabaseClient
+    .from('guest_laundry_requests')
+    .select('*')
+    .gte('created_at', ilYa90Jours)
+    .order('created_at', { ascending: false });
         
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
