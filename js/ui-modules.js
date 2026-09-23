@@ -16,6 +16,133 @@ let currentStatusFilter = 'all';
 let currentDateFilter = null;
 
 // ═══════════════════════════════════════════════════════════════════
+// PHASE 2.4 — ROOM AUTOCOMPLETE IN SEARCH
+// ═══════════════════════════════════════════════════════════════════
+
+let searchRoomDebounceTimer = null;
+
+/**
+ * Extract unique room numbers from cachedSlips, sorted ascending
+ * @returns {string[]}
+ */
+function getUniqueRoomsFromArchives() {
+    if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
+    const rooms = new Set();
+    cachedSlips.forEach(entry => {
+        const room = String(entry.room_number || entry.room || '').trim();
+        if (room && /^\d+$/.test(room)) rooms.add(room);
+    });
+    return Array.from(rooms).sort((a, b) => parseInt(a) - parseInt(b));
+}
+
+/**
+ * Handle input/focus on #searchRoom — debounced autocomplete
+ * @param {Event} event
+ */
+function onSearchRoomInput(event) {
+    if (searchRoomDebounceTimer) clearTimeout(searchRoomDebounceTimer);
+    searchRoomDebounceTimer = setTimeout(() => {
+        renderSearchRoomDropdown(event?.target?.value || '');
+    }, 200);
+}
+
+/**
+ * Render autocomplete dropdown for #searchRoom
+ * @param {string} query
+ */
+function renderSearchRoomDropdown(query) {
+    const dropdown = document.getElementById('searchRoomDropdown');
+    if (!dropdown) return;
+
+    const input = document.getElementById('searchRoom');
+    if (!input) return;
+
+    const q = String(query || '').trim().toLowerCase();
+
+    // If query looks like a guest name or SPA serial (contains letters or #), don't show room suggestions
+    if (q && !/^\d+$/.test(q)) {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+        // Still trigger the standard filter
+        if (typeof afficherListeBordereauxLocal === 'function') {
+            afficherListeBordereauxLocal();
+        }
+        return;
+    }
+
+    const allRooms = getUniqueRoomsFromArchives();
+    const matches = q
+        ? allRooms.filter(r => r.startsWith(q))
+        : allRooms;
+
+    // Limit to 12 results for cleanliness
+    const limited = matches.slice(0, 12);
+
+    if (limited.length === 0) {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+        if (typeof afficherListeBordereauxLocal === 'function') {
+            afficherListeBordereauxLocal();
+        }
+        return;
+    }
+
+    dropdown.innerHTML = limited.map(room => `
+        <button type="button"
+                onclick="selectSearchRoom('${room}')"
+                class="w-full text-left px-4 py-2.5 text-xs font-semibold text-stone-200 hover:bg-[#181614] border-b border-[#2f2820] last:border-b-0 transition flex items-center justify-between">
+            <span>🏠 Room <strong class="text-[#DCA773]">${room}</strong></span>
+            <span class="text-[10px] text-stone-500">→</span>
+        </button>
+    `).join('');
+
+    dropdown.classList.remove('hidden');
+}
+
+/**
+ * Apply a room suggestion: fill input + hide dropdown + re-run filter
+ * @param {string} room
+ */
+function selectSearchRoom(room) {
+    const input = document.getElementById('searchRoom');
+    if (input) input.value = room;
+
+    const dropdown = document.getElementById('searchRoomDropdown');
+    if (dropdown) {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+    }
+
+    if (typeof afficherListeBordereauxLocal === 'function') {
+        afficherListeBordereauxLocal();
+    }
+
+    console.log('[SearchRoom] Selected:', room);
+}
+
+/**
+ * Close dropdown when clicking outside
+ */
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('searchRoomDropdown');
+    const input = document.getElementById('searchRoom');
+    if (!dropdown || !input) return;
+    if (!dropdown.contains(e.target) && e.target !== input) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+/**
+ * Close dropdown on Escape key
+ */
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const dropdown = document.getElementById('searchRoomDropdown');
+        if (dropdown) dropdown.classList.add('hidden');
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // CHARGEMENT DONNÉES CLOUD
 // ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
