@@ -186,10 +186,26 @@ function afficherListeBordereauxLocal() {
 
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
-    const container = document.getElementById('laundryList');
-    if (!container) return;
+const container = document.getElementById('laundryList');
+if (!container) return;
 
-    if (filtered.length === 0) {
+// ✅ Phase 1.4 — Bandeau info si > 50 records
+const existingBanner = document.getElementById('archives-info-banner');
+if (existingBanner) existingBanner.remove();
+
+if (cachedSlips.length > 50) {
+    const infoBanner = document.createElement('div');
+    infoBanner.id = 'archives-info-banner';
+    infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
+    infoBanner.innerHTML = `
+        📚 <strong>Archives limitées à 90 jours</strong> — 
+        <span class="text-stone-300">${cachedSlips.length} records chargés.</span> 
+        Les données plus anciennes restent dans Supabase mais ne sont pas affichées.
+    `;
+    container.parentNode.insertBefore(infoBanner, container);
+}
+
+if (filtered.length === 0) {
         container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">No records found matching criteria.</p>`;
         return;
     }
