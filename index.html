@@ -552,7 +552,24 @@
                     <button onclick="switchArchiveFilter('laundry')" id="archiveFilterLaundry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🏨 HOTEL LAUNDRY</button>
                     <button onclick="switchArchiveFilter('spa')" id="archiveFilterSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🧘 SPA LAUNDRY</button>
                 </div>
-
+               <!-- Phase 2.2 — Status filter chips -->
+<div id="statusFilterBar" class="flex flex-wrap bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400 mt-3">
+    <button onclick="switchStatusFilter('all')" id="statusFilterAll" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">
+        All Status
+    </button>
+    <button onclick="switchStatusFilter('Pending')" id="statusFilterPending" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
+        ⏳ Pending
+    </button>
+    <button onclick="switchStatusFilter('Washing')" id="statusFilterWashing" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
+        🧼 Washing
+    </button>
+    <button onclick="switchStatusFilter('Ready')" id="statusFilterReady" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
+        ✨ Ready
+    </button>
+    <button onclick="switchStatusFilter('Delivered')" id="statusFilterDelivered" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">
+        ✅ Delivered
+    </button>
+</div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]">
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">🔍</span>
