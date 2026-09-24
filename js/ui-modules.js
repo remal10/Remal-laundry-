@@ -565,6 +565,296 @@ function afficherListeBordereauxLocal() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// PHASE 3 — EXPORT FILTERED ARCHIVES (PDF + CSV)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Returns the currently filtered list (same logic as afficherListeBordereauxLocal)
+ * @returns {Array}
+ */
+function getCurrentFilteredArchives() {
+    if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
+
+    const searchRoomEl = document.getElementById('searchRoom');
+    const searchDateEl = document.getElementById('searchDate');
+    const searchVal = searchRoomEl ? searchRoomEl.value.toLowerCase().trim() : '';
+    const searchDateVal = searchDateEl ? searchDateEl.value : '';
+
+    let filtered = cachedSlips.filter(entry => {
+        const roomNum = String(entry.room_number || entry.room || '').toLowerCase();
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry).toLowerCase() : '';
+        const matchRoom = !searchVal ||
+            roomNum.includes(searchVal) ||
+            receiptId.includes(searchVal) ||
+            String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
+            String(entry.spa_serial || '').toLowerCase().includes(searchVal) ||
+            (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
+
+        let matchDate = true;
+        if (searchDateVal) {
+            const entryDate = entry.created_at ? new Date(entry.created_at).toISOString().split('T')[0] : '';
+            matchDate = (entryDate === searchDateVal);
+        }
+
+        let matchCategory = true;
+        if (currentArchiveFilter === 'laundry') matchCategory = !entry.is_spa;
+        if (currentArchiveFilter === 'spa') matchCategory = !!entry.is_spa;
+
+        if (!matchesStatusFilter(entry)) return false;
+        if (!matchesDateFilter(entry)) return false;
+
+        return matchRoom && matchDate && matchCategory;
+    });
+
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return filtered;
+}
+
+/**
+ * Build a human-readable filters summary string
+ * @returns {string}
+ */
+function buildFiltersSummary() {
+    const parts = [];
+    if (currentArchiveFilter && currentArchiveFilter !== 'all') {
+        parts.push(`Category=${currentArchiveFilter === 'laundry' ? 'Hotel Laundry' : 'SPA Laundry'}`);
+    }
+    if (currentStatusFilter && currentStatusFilter !== 'all') {
+        parts.push(`Status=${currentStatusFilter.charAt(0).toUpperCase() + currentStatusFilter.slice(1)}`);
+    }
+    if (currentDateFilter) {
+        const labels = { today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', '90d': 'Last 90 days' };
+        parts.push(`Date=${labels[currentDateFilter] || currentDateFilter}`);
+    }
+    const searchRoomEl = document.getElementById('searchRoom');
+    if (searchRoomEl && searchRoomEl.value.trim()) {
+        parts.push(`Search="${searchRoomEl.value.trim()}"`);
+    }
+    const searchDateEl = document.getElementById('searchDate');
+    if (searchDateEl && searchDateEl.value) {
+        parts.push(`Date=${searchDateEl.value}`);
+    }
+    return parts.length > 0 ? parts.join(' · ') : 'No filters';
+}
+
+/**
+ * Build a safe filename suffix from active filters
+ * @returns {string}
+ */
+function buildFilenameSuffix() {
+    const parts = [];
+    if (currentArchiveFilter && currentArchiveFilter !== 'all') parts.push(currentArchiveFilter);
+    if (currentStatusFilter && currentStatusFilter !== 'all') parts.push(currentStatusFilter);
+    if (currentDateFilter) parts.push(currentDateFilter);
+    return parts.length > 0 ? '_' + parts.join('-') : '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 3.1 — EXPORT PDF
+// ═══════════════════════════════════════════════════════════════════
+async function exportFilteredArchivesToPDF() {
+    const filtered = getCurrentFilteredArchives();
+
+    if (filtered.length === 0) {
+        alert('⚠️ No records to export. Adjust your filters first.');
+        return;
+    }
+
+    const container = document.getElementById('archivesExportContainer');
+    if (!container) {
+        alert('⚠️ Export container missing.');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const filtersSummary = buildFiltersSummary();
+    const now = new Date().toLocaleString('en-GB');
+
+    // Build HTML for PDF
+    let rowsHtml = '';
+    filtered.forEach((entry, idx) => {
+        const room = entry.room_number || entry.room || '---';
+        const guest = entry.guest_name || (entry.is_spa ? 'Spa Agent' : 'Guest');
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+        const date = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : '---';
+        const status = (entry.status || 'Collected');
+        const pcs = entry.total_pieces || entry.total_clothes || 0;
+        const amount = Number(entry.grand_total || entry.total || 0).toFixed(2);
+        const type = entry.is_spa ? 'SPA' : 'Hotel';
+
+        rowsHtml += `
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 6px 8px; font-size: 10px; text-align: center;">${idx + 1}</td>
+                <td style="padding: 6px 8px; font-size: 10px; font-weight: bold;">${room}</td>
+                <td style="padding: 6px 8px; font-size: 10px;">${guest}</td>
+                <td style="padding: 6px 8px; font-size: 9px; font-family: monospace; color: #6b7280;">${receiptId}</td>
+                <td style="padding: 6px 8px; font-size: 9px;">${date}</td>
+                <td style="padding: 6px 8px; font-size: 10px; text-align: center;">${type}</td>
+                <td style="padding: 6px 8px; font-size: 10px; text-align: center;">${status}</td>
+                <td style="padding: 6px 8px; font-size: 10px; text-align: right;">${pcs}</td>
+                <td style="padding: 6px 8px; font-size: 10px; text-align: right; font-weight: bold;">${amount} AED</td>
+            </tr>
+        `;
+    });
+
+    const totalPieces = filtered.reduce((sum, e) => sum + Number(e.total_pieces || e.total_clothes || 0), 0);
+    const totalAmount = filtered.reduce((sum, e) => sum + Number(e.grand_total || e.total || 0), 0).toFixed(2);
+
+    container.innerHTML = `
+        <div style="font-family: 'Helvetica', Arial, sans-serif; padding: 20px; background: #fff; color: #1c1917;">
+            
+            <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 12px; margin-bottom: 16px;">
+                <h1 style="font-size: 20px; margin: 0; color: #1c1917; letter-spacing: 2px;">REMAL HOTEL & VILLAS</h1>
+                <p style="font-size: 10px; color: #6b7280; margin: 4px 0 0 0; letter-spacing: 2px; text-transform: uppercase;">Al Ruwais City, Abu Dhabi – UAE</p>
+                <p style="font-size: 14px; color: #DCA773; font-weight: bold; margin: 8px 0 0 0; letter-spacing: 1px;">LAUNDRY ARCHIVES EXPORT</p>
+            </div>
+
+            <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 10px;">
+                <div style="font-weight: bold; color: #78350f; margin-bottom: 4px;">📋 Active Filters:</div>
+                <div style="color: #57534e;">${filtersSummary}</div>
+                <div style="color: #57534e; margin-top: 6px;">Total exported: <strong>${filtered.length} record(s)</strong> · Exported on: ${now}</div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <thead>
+                    <tr style="background: #1c1917; color: #fff;">
+                        <th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">#</th>
+                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">ROOM</th>
+                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">GUEST</th>
+                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">RECEIPT ID</th>
+                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">DATE</th>
+                        <th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">TYPE</th>
+                        <th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">STATUS</th>
+                        <th style="padding: 8px; text-align: right; font-size: 9px; letter-spacing: 1px;">PCS</th>
+                        <th style="padding: 8px; text-align: right; font-size: 9px; letter-spacing: 1px;">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f5f5f4; font-weight: bold;">
+                        <td colspan="7" style="padding: 10px 8px; text-align: right; font-size: 11px;">TOTALS:</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 11px;">${totalPieces}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 11px; color: #b45309;">${totalAmount} AED</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 9px; color: #9ca3af;">
+                Remal Laundry OS — Generated automatically. This document is a system export.
+            </div>
+        </div>
+    `;
+
+    const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.pdf`;
+
+    const opt = {
+        margin: [8, 8, 8, 8],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(container).save();
+        console.log('[Export PDF] Success:', filename, `(${filtered.length} records)`);
+    } catch (e) {
+        console.error('[Export PDF] Error:', e);
+        alert('⚠️ Error generating PDF. Check the console.');
+    } finally {
+        container.innerHTML = '';
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 3.2 — EXPORT CSV
+// ═══════════════════════════════════════════════════════════════════
+function exportFilteredArchivesToCSV() {
+    const filtered = getCurrentFilteredArchives();
+
+    if (filtered.length === 0) {
+        alert('⚠️ No records to export. Adjust your filters first.');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // CSV header
+    const headers = [
+        'Index', 'Room', 'Guest', 'Receipt ID', 'Date', 'Type', 'Status',
+        'Pieces', 'Amount (AED)', 'Created By', 'Packaging'
+    ];
+
+    // CSV rows
+    const rows = filtered.map((entry, idx) => {
+        const room = entry.room_number || entry.room || '';
+        const guest = entry.guest_name || (entry.is_spa ? 'Spa Agent' : 'Guest');
+        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+        const date = entry.created_at ? new Date(entry.created_at).toISOString() : '';
+        const type = entry.is_spa ? 'SPA' : 'Hotel';
+        const status = entry.status || 'Collected';
+        const pcs = entry.total_pieces || entry.total_clothes || 0;
+        const amount = Number(entry.grand_total || entry.total || 0).toFixed(2);
+        const agent = entry.created_by || '';
+        const packaging = entry.packaging || entry.folding || '';
+
+        return [
+            idx + 1,
+            csvEscape(room),
+            csvEscape(guest),
+            csvEscape(receiptId),
+            csvEscape(date),
+            csvEscape(type),
+            csvEscape(status),
+            pcs,
+            amount,
+            csvEscape(agent),
+            csvEscape(packaging)
+        ].join(',');
+    });
+
+    // Totals row
+    const totalPieces = filtered.reduce((s, e) => s + Number(e.total_pieces || e.total_clothes || 0), 0);
+    const totalAmount = filtered.reduce((s, e) => s + Number(e.grand_total || e.total || 0), 0).toFixed(2);
+    const totalRow = `TOTALS,,,,,,,,${totalPieces},${totalAmount},,`;
+
+    const csv = [headers.join(','), ...rows, totalRow].join('\n');
+
+    // Download
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel UTF-8
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.csv`;
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log('[Export CSV] Success:', filename, `(${filtered.length} records)`);
+}
+
+/**
+ * Escape CSV field (handles quotes, commas, newlines)
+ * @param {string} value
+ * @returns {string}
+ */
+function csvEscape(value) {
+    const str = String(value == null ? '' : value);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // LOST & FOUND
 // ═══════════════════════════════════════════════════════════════════
 function previewLFImage(event) {
@@ -951,4 +1241,4 @@ function confirmLogout() {
     if (confirmed) {
         logoutStaff();
     }
-}
+        }
