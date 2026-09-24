@@ -16,6 +16,62 @@ let currentStatusFilter = 'all';
 let currentDateFilter = null;
 
 // ═══════════════════════════════════════════════════════════════════
+// PHASE 5 — ROLE MANAGEMENT (Admin / Staff)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Check if current user has admin role
+ * @returns {boolean}
+ */
+function isAdmin() {
+    try {
+        if (typeof currentStaffUser === 'undefined' || !currentStaffUser) {
+            // Fallback: try reading from localStorage (page might be loading)
+            const session = localStorage.getItem('remal_current_staff');
+            if (session) {
+                const parsed = JSON.parse(session);
+                return String(parsed.role || '').toLowerCase() === 'admin';
+            }
+            return false;
+        }
+        return String(currentStaffUser.role || '').toLowerCase() === 'admin';
+    } catch (e) {
+        console.warn('[Role] isAdmin() error:', e);
+        return false;
+    }
+}
+
+/**
+ * Require admin role for an action. Shows an alert and returns false if not admin.
+ * @param {string} actionName - Human-readable action name for the error message
+ * @returns {boolean} true if admin, false otherwise
+ */
+function requireAdmin(actionName = 'this action') {
+    if (isAdmin()) return true;
+    alert(`🚫 Access denied.\n\nOnly administrators can perform: ${actionName}.\n\nPlease contact your manager if you need this access.`);
+    console.warn('[Role] Access denied for:', actionName);
+    return false;
+}
+
+/**
+ * Apply role-based visibility to the UI.
+ * Adds 'role-staff' class to body if user is NOT admin.
+ * CSS rule hides all [data-admin-only="true"] elements when body has role-staff.
+ */
+function applyRoleVisibility() {
+    const body = document.body;
+    if (!body) return;
+
+    if (isAdmin()) {
+        body.classList.remove('role-staff');
+        console.log('[Role] Admin mode — full UI visible');
+    } else {
+        body.classList.add('role-staff');
+        console.log('[Role] Staff mode — restricted UI');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // PHASE 2.4 — ROOM AUTOCOMPLETE IN SEARCH
 // ═══════════════════════════════════════════════════════════════════
 
@@ -154,7 +210,6 @@ async function chargerDonneesEtAbonnementCloud() {
     }
 
     try {
-        // Limiter aux 90 derniers jours (archives illimitées dans Supabase, affichage limité)
         const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
         const { data: slips, error: slipsErr } = await supabaseClient
             .from('guest_laundry_requests')
@@ -294,13 +349,9 @@ function switchArchiveFilter(filter) {
     afficherListeBordereauxLocal();
 }
 
-// ─────────────────────────────────────────────────────────────────
-// PHASE 2.2 — STATUS FILTER CHIPS
-// ─────────────────────────────────────────────────────────────────
 function switchStatusFilter(status) {
     currentStatusFilter = status;
 
-    // Reset all status chips
     ['All', 'Pending', 'Washing', 'Ready', 'Delivered'].forEach(label => {
         const btn = document.getElementById('statusFilter' + label);
         if (btn) {
@@ -308,7 +359,6 @@ function switchStatusFilter(status) {
         }
     });
 
-    // Activate selected chip
     const activeLabel = status.charAt(0).toUpperCase() + status.slice(1);
     const activeBtn = document.getElementById('statusFilter' + activeLabel);
     if (activeBtn) {
@@ -333,14 +383,9 @@ function matchesStatusFilter(record) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// PHASE 2.3 — QUICK DATE FILTERS
-// ─────────────────────────────────────────────────────────────────
 function switchDateFilter(range) {
-    // Toggle: clicking active filter clears it
     currentDateFilter = (currentDateFilter === range) ? null : range;
 
-    // Reset all date chips
     ['Today', '7d', '30d', '90d'].forEach(label => {
         const btn = document.getElementById('dateFilter' + label);
         if (btn) {
@@ -348,7 +393,6 @@ function switchDateFilter(range) {
         }
     });
 
-    // Activate selected chip
     if (currentDateFilter) {
         const activeLabel = currentDateFilter.charAt(0).toUpperCase() + currentDateFilter.slice(1);
         const activeBtn = document.getElementById('dateFilter' + activeLabel);
@@ -414,10 +458,7 @@ function afficherListeBordereauxLocal() {
         if (currentArchiveFilter === 'laundry') matchCategory = !entry.is_spa;
         if (currentArchiveFilter === 'spa') matchCategory = !!entry.is_spa;
 
-        // Phase 2.2 — Status filter
         if (!matchesStatusFilter(entry)) return false;
-
-        // Phase 2.3 — Date filter
         if (!matchesDateFilter(entry)) return false;
 
         return matchRoom && matchDate && matchCategory;
@@ -428,7 +469,6 @@ function afficherListeBordereauxLocal() {
     const container = document.getElementById('laundryList');
     if (!container) return;
 
-    // ✅ Phase 1.4 — Bandeau info si > 50 records
     const existingBanner = document.getElementById('archives-info-banner');
     if (existingBanner) existingBanner.remove();
 
@@ -436,11 +476,11 @@ function afficherListeBordereauxLocal() {
         const infoBanner = document.createElement('div');
         infoBanner.id = 'archives-info-banner';
         infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
-      infoBanner.innerHTML = `
-    📚 <strong>Archives limited to 90 days</strong> — 
-    <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
-    Older data is automatically archived.
-`;
+        infoBanner.innerHTML = `
+            📚 <strong>Archives limited to 90 days</strong> — 
+            <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
+            Older data is automatically archived.
+        `;
         container.parentNode.insertBefore(infoBanner, container);
     }
 
@@ -548,7 +588,6 @@ function afficherListeBordereauxLocal() {
         html += `</div></div>`;
     }
 
-    // Phase 2.1 — Result counter
     const counterId = 'archives-results-counter';
     const existingCounter = document.getElementById(counterId);
     if (existingCounter) existingCounter.remove();
@@ -568,10 +607,6 @@ function afficherListeBordereauxLocal() {
 // PHASE 3 — EXPORT FILTERED ARCHIVES (PDF + CSV)
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Returns the currently filtered list (same logic as afficherListeBordereauxLocal)
- * @returns {Array}
- */
 function getCurrentFilteredArchives() {
     if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
 
@@ -610,10 +645,6 @@ function getCurrentFilteredArchives() {
     return filtered;
 }
 
-/**
- * Build a human-readable filters summary string
- * @returns {string}
- */
 function buildFiltersSummary() {
     const parts = [];
     if (currentArchiveFilter && currentArchiveFilter !== 'all') {
@@ -637,10 +668,6 @@ function buildFiltersSummary() {
     return parts.length > 0 ? parts.join(' · ') : 'No filters';
 }
 
-/**
- * Build a safe filename suffix from active filters
- * @returns {string}
- */
 function buildFilenameSuffix() {
     const parts = [];
     if (currentArchiveFilter && currentArchiveFilter !== 'all') parts.push(currentArchiveFilter);
@@ -649,9 +676,6 @@ function buildFilenameSuffix() {
     return parts.length > 0 ? '_' + parts.join('-') : '';
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 3.1 — EXPORT PDF
-// ═══════════════════════════════════════════════════════════════════
 async function exportFilteredArchivesToPDF() {
     const filtered = getCurrentFilteredArchives();
 
@@ -670,7 +694,6 @@ async function exportFilteredArchivesToPDF() {
     const filtersSummary = buildFiltersSummary();
     const now = new Date().toLocaleString('en-GB');
 
-    // Build HTML for PDF
     let rowsHtml = '';
     filtered.forEach((entry, idx) => {
         const room = entry.room_number || entry.room || '---';
@@ -771,9 +794,6 @@ async function exportFilteredArchivesToPDF() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 3.2 — EXPORT CSV
-// ═══════════════════════════════════════════════════════════════════
 function exportFilteredArchivesToCSV() {
     const filtered = getCurrentFilteredArchives();
 
@@ -784,13 +804,11 @@ function exportFilteredArchivesToCSV() {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // CSV header
     const headers = [
         'Index', 'Room', 'Guest', 'Receipt ID', 'Date', 'Type', 'Status',
         'Pieces', 'Amount (AED)', 'Created By', 'Packaging'
     ];
 
-    // CSV rows
     const rows = filtered.map((entry, idx) => {
         const room = entry.room_number || entry.room || '';
         const guest = entry.guest_name || (entry.is_spa ? 'Spa Agent' : 'Guest');
@@ -818,15 +836,13 @@ function exportFilteredArchivesToCSV() {
         ].join(',');
     });
 
-    // Totals row
     const totalPieces = filtered.reduce((s, e) => s + Number(e.total_pieces || e.total_clothes || 0), 0);
     const totalAmount = filtered.reduce((s, e) => s + Number(e.grand_total || e.total || 0), 0).toFixed(2);
     const totalRow = `TOTALS,,,,,,,,${totalPieces},${totalAmount},,`;
 
     const csv = [headers.join(','), ...rows, totalRow].join('\n');
 
-    // Download
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel UTF-8
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.csv`;
@@ -841,11 +857,6 @@ function exportFilteredArchivesToCSV() {
     console.log('[Export CSV] Success:', filename, `(${filtered.length} records)`);
 }
 
-/**
- * Escape CSV field (handles quotes, commas, newlines)
- * @param {string} value
- * @returns {string}
- */
 function csvEscape(value) {
     const str = String(value == null ? '' : value);
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -853,6 +864,124 @@ function csvEscape(value) {
     }
     return str;
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 4.5 — VIEW ARCHIVES (read-only modal)
+// ═══════════════════════════════════════════════════════════════════
+
+function ouvrirModaleArchives() {
+    const modal = document.getElementById('archivesModal');
+    if (!modal) {
+        console.warn('[Archives] Modal not found');
+        return;
+    }
+    modal.classList.remove('hidden');
+    chargerArchives();
+}
+
+function fermerModaleArchives() {
+    const modal = document.getElementById('archivesModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function chargerArchives() {
+    const list = document.getElementById('archivesList');
+    const badge = document.getElementById('archivesCountBadge');
+
+    if (!list || !badge) return;
+
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Supabase not available.</p>`;
+        badge.innerText = 'Error';
+        return;
+    }
+
+    list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading archived records...</p>`;
+    badge.innerText = 'Loading...';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('archives')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (error) {
+            console.error('[Archives] Fetch error:', error);
+            list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`;
+            badge.innerText = 'Error';
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">📭 No archived records yet.</p>`;
+            badge.innerText = '0 records';
+            return;
+        }
+
+        badge.innerText = `${data.length} record${data.length > 1 ? 's' : ''} loaded`;
+
+        list.innerHTML = data.map(entry => {
+            const room = entry.room_number || entry.room || '---';
+            const guest = entry.guest_name || 'Guest';
+            const receiptId = typeof obtenirReceiptId === 'function' 
+                ? obtenirReceiptId(entry) 
+                : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+            const dateFormatted = entry.created_at 
+                ? new Date(entry.created_at).toLocaleDateString('en-GB', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                }) 
+                : '---';
+            const archivedAt = entry.archived_at 
+                ? new Date(entry.archived_at).toLocaleDateString('en-GB', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                }) 
+                : '---';
+            const status = entry.status || 'Collected';
+            const pcs = entry.total_pieces || 0;
+            const amount = Number(entry.grand_total || 0).toFixed(2);
+            const type = entry.service_type || 'laundry';
+
+            return `
+                <div class="p-3 bg-[#181614] rounded-2xl border border-[#2f2820] text-xs">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-bold text-[#DCA773]">
+                                🏠 Room ${room} — ${guest}
+                            </div>
+                            <div class="text-[10px] text-stone-500 mt-1">
+                                #${receiptId} · ${type} · Status: <span class="text-stone-300 font-semibold">${status}</span>
+                            </div>
+                            <div class="text-[10px] text-stone-500 mt-0.5">
+                                📅 Created: ${dateFormatted} · 📦 Archived: ${archivedAt}
+                            </div>
+                        </div>
+                        <div class="text-right ml-3">
+                            <div class="font-bold text-stone-200 text-sm">${amount} AED</div>
+                            <div class="text-[10px] text-stone-500">${pcs} pcs</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        console.log('[Archives] Loaded', data.length, 'records');
+
+    } catch (e) {
+        console.error('[Archives] Exception:', e);
+        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`;
+        badge.innerText = 'Error';
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('archivesModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    }
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // LOST & FOUND
@@ -1140,6 +1269,7 @@ function checkStaffSession() {
             console.log("✅ Staff session restored:", currentStaffUser);
             if (loginModal) loginModal.classList.add('hidden');
             updateStaffUIIndicator();
+            applyRoleVisibility();  // Phase 5
             return;
         } catch (e) {
             console.error("❌ Error parsing saved staff:", e);
@@ -1205,6 +1335,7 @@ function saveAndUnlockSession() {
     if (loginModal) loginModal.classList.add('hidden');
     
     updateStaffUIIndicator();
+    applyRoleVisibility();  // Phase 5
     console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
@@ -1241,137 +1372,4 @@ function confirmLogout() {
     if (confirmed) {
         logoutStaff();
     }
-        }
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 4.5 — VIEW ARCHIVES (read-only modal)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Open the Archived Records modal
- */
-function ouvrirModaleArchives() {
-    const modal = document.getElementById('archivesModal');
-    if (!modal) {
-        console.warn('[Archives] Modal not found');
-        return;
-    }
-    modal.classList.remove('hidden');
-    chargerArchives();
 }
-
-/**
- * Close the Archived Records modal
- */
-function fermerModaleArchives() {
-    const modal = document.getElementById('archivesModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-/**
- * Fetch archived records from Supabase and render them
- */
-async function chargerArchives() {
-    const list = document.getElementById('archivesList');
-    const badge = document.getElementById('archivesCountBadge');
-
-    if (!list || !badge) return;
-
-    // Supabase check
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Supabase not available.</p>`;
-        badge.innerText = 'Error';
-        return;
-    }
-
-    // Loading state
-    list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading archived records...</p>`;
-    badge.innerText = 'Loading...';
-
-    try {
-        const { data, error } = await supabaseClient
-            .from('archives')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(500);
-
-        if (error) {
-            console.error('[Archives] Fetch error:', error);
-            list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`;
-            badge.innerText = 'Error';
-            return;
-        }
-
-        if (!data || data.length === 0) {
-            list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">📭 No archived records yet.</p>`;
-            badge.innerText = '0 records';
-            return;
-        }
-
-        // Update badge
-        badge.innerText = `${data.length} record${data.length > 1 ? 's' : ''} loaded`;
-
-        // Render
-        list.innerHTML = data.map(entry => {
-            const room = entry.room_number || entry.room || '---';
-            const guest = entry.guest_name || 'Guest';
-            const receiptId = typeof obtenirReceiptId === 'function' 
-                ? obtenirReceiptId(entry) 
-                : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
-            const dateFormatted = entry.created_at 
-                ? new Date(entry.created_at).toLocaleDateString('en-GB', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                }) 
-                : '---';
-            const archivedAt = entry.archived_at 
-                ? new Date(entry.archived_at).toLocaleDateString('en-GB', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                }) 
-                : '---';
-            const status = entry.status || 'Collected';
-            const pcs = entry.total_pieces || 0;
-            const amount = Number(entry.grand_total || 0).toFixed(2);
-            const type = entry.service_type || 'laundry';
-
-            return `
-                <div class="p-3 bg-[#181614] rounded-2xl border border-[#2f2820] text-xs">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="font-bold text-[#DCA773]">
-                                🏠 Room ${room} — ${guest}
-                            </div>
-                            <div class="text-[10px] text-stone-500 mt-1">
-                                #${receiptId} · ${type} · Status: <span class="text-stone-300 font-semibold">${status}</span>
-                            </div>
-                            <div class="text-[10px] text-stone-500 mt-0.5">
-                                📅 Created: ${dateFormatted} · 📦 Archived: ${archivedAt}
-                            </div>
-                        </div>
-                        <div class="text-right ml-3">
-                            <div class="font-bold text-stone-200 text-sm">${amount} AED</div>
-                            <div class="text-[10px] text-stone-500">${pcs} pcs</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        console.log('[Archives] Loaded', data.length, 'records');
-
-    } catch (e) {
-        console.error('[Archives] Exception:', e);
-        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`;
-        badge.innerText = 'Error';
-    }
-}
-
-/**
- * Close archives modal on Escape
- */
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const modal = document.getElementById('archivesModal');
-        if (modal && !modal.classList.contains('hidden')) {
-            modal.classList.add('hidden');
-        }
-    }
-});
