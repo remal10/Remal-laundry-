@@ -710,6 +710,39 @@
         </div>
     </div>
 
+    <!-- PHASE 4.5 — ARCHIVED RECORDS MODAL -->
+<div id="archivesModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
+    <div class="bg-[#181614] w-full max-w-4xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+        
+        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+            <div>
+                <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📦 Archived Records</h3>
+                <p class="text-xs text-stone-400 mt-0.5">Records older than 90 days (read-only)</p>
+            </div>
+            <button onclick="fermerModaleArchives()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
+        </div>
+
+        <div class="flex flex-wrap gap-3 items-center">
+            <button onclick="chargerArchives()" 
+                    class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow">
+                🔄 Refresh
+            </button>
+            <span id="archivesCountBadge" class="text-xs bg-[#0f0e0c] text-stone-300 font-bold px-3 py-2 rounded-xl border border-[#2f2820]">
+                Loading...
+            </span>
+        </div>
+
+        <div id="archivesList" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-[#2f2820] p-3 space-y-2">
+            <p class="text-xs text-stone-500 text-center py-6">Click "Refresh" to load archived records.</p>
+        </div>
+
+        <button onclick="fermerModaleArchives()" 
+                class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+            Close
+        </button>
+    </div>
+</div>
+    
     <!-- MODALE DETAILS RECEIPT -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
