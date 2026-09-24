@@ -46,6 +46,11 @@
         #bodyRoot {
             overflow-x: hidden !important;
         }
+
+        /* Phase 5 — Hide admin-only elements for staff role */
+        body.role-staff [data-admin-only="true"] {
+            display: none !important;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
@@ -111,10 +116,10 @@
     <div id="mainNavContainer" class="sticky top-0 z-50 flex flex-nowrap bg-[#12100e] border-b border-[#DCA773]/30 px-4 py-2 gap-3 overflow-x-auto scrollbar-none shadow-2xl no-print">
         <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow">Active Rooms</button>
         <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">SPA</button>
-        <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Lost & Found</button>
-        <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Archives</button>
-        <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Mass PDF</button>
-        <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Chart</button>
+        <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Lost & Found</button>
+        <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Archives</button>
+        <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Mass PDF</button>
+        <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Chart</button>
     </div>
 
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-6">
@@ -340,11 +345,11 @@
                         <i class="fas fa-list-ol text-[#DCA773]"></i>
                         <span>📋 Active Rooms List</span>
                     </button>
-                    <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                    <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                         <i class="fas fa-print text-sm"></i>
                         <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
                     </button>
-                    <button onclick="telechargerToutesLesChambresDuJour()" id="btnBatchDownload" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                    <button onclick="telechargerToutesLesChambresDuJour()" id="btnBatchDownload" data-admin-only="true" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                         <i class="fas fa-download text-sm"></i>
                         <span>📥 Download All (PDFs)</span>
                     </button>
@@ -543,7 +548,7 @@
                         🔄 Import Auto (1 Clic)
                     </button>
                     <button onclick="selectBackupFolder()" class="col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                        📁 Choisir le dossier téléphone (File System)
+                        📁 Choose phone folder (File System)
                     </button>
                 </div>
 
@@ -572,45 +577,45 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]">
-    <div class="relative">
-        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400 z-10">🔍</span>
-        <input type="text" id="searchRoom" 
-               oninput="onSearchRoomInput(event)" 
-               onfocus="onSearchRoomInput(event)"
-               autocomplete="off"
-               placeholder="Search room (103...), guest, or SPA serial (#23)..." 
-               class="w-full remal-input rounded-xl pl-10 pr-4 py-3 text-xs">
-        <div id="searchRoomDropdown" 
-             class="hidden absolute left-0 right-0 top-full mt-1 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-64 overflow-y-auto scrollbar-none">
-        </div>
-    </div>
-    <div>
-        <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="w-full remal-input rounded-xl px-4 py-3 text-xs cursor-pointer">
-    </div>
-</div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400 z-10">🔍</span>
+                        <input type="text" id="searchRoom" 
+                               oninput="onSearchRoomInput(event)" 
+                               onfocus="onSearchRoomInput(event)"
+                               autocomplete="off"
+                               placeholder="Search room (103...), guest, or SPA serial (#23)..." 
+                               class="w-full remal-input rounded-xl pl-10 pr-4 py-3 text-xs">
+                        <div id="searchRoomDropdown" 
+                             class="hidden absolute left-0 right-0 top-full mt-1 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-64 overflow-y-auto scrollbar-none">
+                        </div>
+                    </div>
+                    <div>
+                        <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="w-full remal-input rounded-xl px-4 py-3 text-xs cursor-pointer">
+                    </div>
+                </div>
 
-<!-- Phase 3 — Export filtered results -->
-<div class="grid grid-cols-2 gap-3">
-    <button onclick="exportFilteredArchivesToPDF()" 
-            class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-        📥 Export PDF
-    </button>
-    <button onclick="exportFilteredArchivesToCSV()" 
-            class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-        📊 Export CSV
-    </button>
-</div>
+                <!-- Phase 3 — Export filtered results -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="exportFilteredArchivesToPDF()" 
+                            class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                        📥 Export PDF
+                    </button>
+                    <button onclick="exportFilteredArchivesToCSV()" 
+                            class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                        📊 Export CSV
+                    </button>
+                </div>
 
-<!-- Phase 4.5 — View Archives button -->
-<button onclick="ouvrirModaleArchives()" 
-        class="w-full bg-[#0f0e0c] hover:bg-[#181614] text-[#DCA773] border border-[#DCA773]/40 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-    📦 View Archives (older than 90 days)
-</button>
+                <!-- Phase 4.5 — View Archives button -->
+                <button onclick="ouvrirModaleArchives()" 
+                        class="w-full bg-[#0f0e0c] hover:bg-[#181614] text-[#DCA773] border border-[#DCA773]/40 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
+                    📦 View Archives (older than 90 days)
+                </button>
 
-<!-- Hidden export container for PDF rendering -->
-<div id="archivesExportContainer" class="hidden"></div>
+                <!-- Hidden export container for PDF rendering -->
+                <div id="archivesExportContainer" class="hidden"></div>
 
-<div id="laundryList" class="space-y-5 pt-1"><p class="text-xs text-stone-500 text-center py-4" id="lblLoadingRecords">Loading records...</p></div>
+                <div id="laundryList" class="space-y-5 pt-1"><p class="text-xs text-stone-500 text-center py-4" id="lblLoadingRecords">Loading records...</p></div>
             </div>
         </div>
 
@@ -711,37 +716,37 @@
     </div>
 
     <!-- PHASE 4.5 — ARCHIVED RECORDS MODAL -->
-<div id="archivesModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-    <div class="bg-[#181614] w-full max-w-4xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
-        
-        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-            <div>
-                <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📦 Archived Records</h3>
-                <p class="text-xs text-stone-400 mt-0.5">Records older than 90 days (read-only)</p>
+    <div id="archivesModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
+        <div class="bg-[#181614] w-full max-w-4xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+            
+            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+                <div>
+                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📦 Archived Records</h3>
+                    <p class="text-xs text-stone-400 mt-0.5">Records older than 90 days (read-only)</p>
+                </div>
+                <button onclick="fermerModaleArchives()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
             </div>
-            <button onclick="fermerModaleArchives()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
-        </div>
 
-        <div class="flex flex-wrap gap-3 items-center">
-            <button onclick="chargerArchives()" 
-                    class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow">
-                🔄 Refresh
+            <div class="flex flex-wrap gap-3 items-center">
+                <button onclick="chargerArchives()" 
+                        class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow">
+                    🔄 Refresh
+                </button>
+                <span id="archivesCountBadge" class="text-xs bg-[#0f0e0c] text-stone-300 font-bold px-3 py-2 rounded-xl border border-[#2f2820]">
+                    Loading...
+                </span>
+            </div>
+
+            <div id="archivesList" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-[#2f2820] p-3 space-y-2">
+                <p class="text-xs text-stone-500 text-center py-6">Click "Refresh" to load archived records.</p>
+            </div>
+
+            <button onclick="fermerModaleArchives()" 
+                    class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+                Close
             </button>
-            <span id="archivesCountBadge" class="text-xs bg-[#0f0e0c] text-stone-300 font-bold px-3 py-2 rounded-xl border border-[#2f2820]">
-                Loading...
-            </span>
         </div>
-
-        <div id="archivesList" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-[#2f2820] p-3 space-y-2">
-            <p class="text-xs text-stone-500 text-center py-6">Click "Refresh" to load archived records.</p>
-        </div>
-
-        <button onclick="fermerModaleArchives()" 
-                class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-            Close
-        </button>
     </div>
-</div>
     
     <!-- MODALE DETAILS RECEIPT -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
@@ -813,7 +818,7 @@
                 <div class="grid grid-cols-3 gap-3">
                     <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit</button>
                     <button onclick="dupliquerRecordActuel()" id="btnDuplicateRecord" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📋 Duplicate</button>
-                    <button onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
+                    <button id="btnDeleteRecord" data-admin-only="true" onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
                 </div>
             </div>
         </div>
