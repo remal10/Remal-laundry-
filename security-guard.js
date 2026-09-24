@@ -46,8 +46,17 @@
     function protectStaffAccess() {
         if (!CONFIG.staffOnly) return;
         
-        const staffRole = localStorage.getItem('staffRole');
-        const staffId = localStorage.getItem('staffId');
+        // Read from the new staff session system (remal_current_staff) with fallback to legacy
+        let staffRole = localStorage.getItem('staffRole');
+        let staffId = localStorage.getItem('staffId');
+        try {
+            const session = localStorage.getItem('remal_current_staff');
+            if (session) {
+                const parsed = JSON.parse(session);
+                staffId = parsed.id || parsed.name || staffId;
+                staffRole = parsed.role || staffRole;
+            }
+        } catch (e) { /* ignore */ }
         
         logActivity('laundry_os_accessed', { 
             authenticated: !!(staffRole && staffId),
