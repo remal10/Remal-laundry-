@@ -1242,3 +1242,136 @@ function confirmLogout() {
         logoutStaff();
     }
         }
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 4.5 — VIEW ARCHIVES (read-only modal)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Open the Archived Records modal
+ */
+function ouvrirModaleArchives() {
+    const modal = document.getElementById('archivesModal');
+    if (!modal) {
+        console.warn('[Archives] Modal not found');
+        return;
+    }
+    modal.classList.remove('hidden');
+    chargerArchives();
+}
+
+/**
+ * Close the Archived Records modal
+ */
+function fermerModaleArchives() {
+    const modal = document.getElementById('archivesModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+/**
+ * Fetch archived records from Supabase and render them
+ */
+async function chargerArchives() {
+    const list = document.getElementById('archivesList');
+    const badge = document.getElementById('archivesCountBadge');
+
+    if (!list || !badge) return;
+
+    // Supabase check
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Supabase not available.</p>`;
+        badge.innerText = 'Error';
+        return;
+    }
+
+    // Loading state
+    list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading archived records...</p>`;
+    badge.innerText = 'Loading...';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('archives')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (error) {
+            console.error('[Archives] Fetch error:', error);
+            list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`;
+            badge.innerText = 'Error';
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">📭 No archived records yet.</p>`;
+            badge.innerText = '0 records';
+            return;
+        }
+
+        // Update badge
+        badge.innerText = `${data.length} record${data.length > 1 ? 's' : ''} loaded`;
+
+        // Render
+        list.innerHTML = data.map(entry => {
+            const room = entry.room_number || entry.room || '---';
+            const guest = entry.guest_name || 'Guest';
+            const receiptId = typeof obtenirReceiptId === 'function' 
+                ? obtenirReceiptId(entry) 
+                : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+            const dateFormatted = entry.created_at 
+                ? new Date(entry.created_at).toLocaleDateString('en-GB', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                }) 
+                : '---';
+            const archivedAt = entry.archived_at 
+                ? new Date(entry.archived_at).toLocaleDateString('en-GB', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                }) 
+                : '---';
+            const status = entry.status || 'Collected';
+            const pcs = entry.total_pieces || 0;
+            const amount = Number(entry.grand_total || 0).toFixed(2);
+            const type = entry.service_type || 'laundry';
+
+            return `
+                <div class="p-3 bg-[#181614] rounded-2xl border border-[#2f2820] text-xs">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-bold text-[#DCA773]">
+                                🏠 Room ${room} — ${guest}
+                            </div>
+                            <div class="text-[10px] text-stone-500 mt-1">
+                                #${receiptId} · ${type} · Status: <span class="text-stone-300 font-semibold">${status}</span>
+                            </div>
+                            <div class="text-[10px] text-stone-500 mt-0.5">
+                                📅 Created: ${dateFormatted} · 📦 Archived: ${archivedAt}
+                            </div>
+                        </div>
+                        <div class="text-right ml-3">
+                            <div class="font-bold text-stone-200 text-sm">${amount} AED</div>
+                            <div class="text-[10px] text-stone-500">${pcs} pcs</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        console.log('[Archives] Loaded', data.length, 'records');
+
+    } catch (e) {
+        console.error('[Archives] Exception:', e);
+        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`;
+        badge.innerText = 'Error';
+    }
+}
+
+/**
+ * Close archives modal on Escape
+ */
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('archivesModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    }
+});
