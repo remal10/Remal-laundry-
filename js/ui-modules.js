@@ -436,11 +436,11 @@ function afficherListeBordereauxLocal() {
         const infoBanner = document.createElement('div');
         infoBanner.id = 'archives-info-banner';
         infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
-        infoBanner.innerHTML = `
-            📚 <strong>Archives limited to 90 days</strong> — 
-            <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
-            Older data remains in Supabase but is not displayed.
-        `;
+      infoBanner.innerHTML = `
+    📚 <strong>Archives limited to 90 days</strong> — 
+    <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
+    Older data is automatically archived.
+`;
         container.parentNode.insertBefore(infoBanner, container);
     }
 
