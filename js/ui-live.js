@@ -3,6 +3,7 @@
 // Live orders, modals, PDF, statuts, batch
 // ⚠️ Chargé APRÈS ui-forms.js
 // ✅ PLAN B FINAL : 4 boutons directs + Undo toast (10s)
+// Phase 5 : Admin-only controls (Select All / Batch Status / Delete)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -147,6 +148,7 @@ window.onNewGuestRequestReceived = async function(newOrder) {
 // ═══════════════════════════════════════════════════════════════════
 // CHARGER LIVE ORDERS
 // ✅ PLAN B FINAL : 4 boutons directs dans la barre de contrôle
+// ✅ Phase 5 : Barre cachée pour les non-admins
 // ═══════════════════════════════════════════════════════════════════
 function chargerLiveOrders() {
     const container = document.getElementById('liveOrdersList');
@@ -193,21 +195,26 @@ function chargerLiveOrders() {
 
     container.innerHTML = '';
 
-    const controlsDiv = document.createElement('div');
-    controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
-    controlsDiv.innerHTML = `
-        <button onclick="toggleAllSelections(true)" class="luxe-btn luxe-btn-secondary" style="font-size:0.65rem;padding:0.5rem 0.85rem;">✅ Select All</button>
-        <button onclick="toggleAllSelections(false)" class="luxe-btn luxe-btn-ghost" style="font-size:0.65rem;padding:0.5rem 0.85rem;">❌ Deselect All</button>
-        <button onclick="supprimerBordereauxEnLot()" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fda4af;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.1);">🗑️ Delete Selected</button>
-        
-        <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider self-center ml-1">Set Status →</span>
-        
-        <button onclick="appliquerStatutEnLot('Collected')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fcd34d;border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.08);">🧺 Collected</button>
-        <button onclick="appliquerStatutEnLot('Washing')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#93c5fd;border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.08);">🧼 Washing</button>
-        <button onclick="appliquerStatutEnLot('Ready')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#d8b4fe;border-color:rgba(168,85,247,0.4);background:rgba(168,85,247,0.08);">✨ Ready</button>
-        <button onclick="appliquerStatutEnLot('Delivered')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#6ee7b7;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.08);">🚚 Delivered</button>
-    `;
-    container.appendChild(controlsDiv);
+    // Phase 5 — Admin-only controls bar
+    const adminMode = (typeof isAdmin === 'function') ? isAdmin() : false;
+
+    if (adminMode) {
+        const controlsDiv = document.createElement('div');
+        controlsDiv.className = 'col-span-full flex flex-wrap gap-2 mb-2';
+        controlsDiv.innerHTML = `
+            <button onclick="toggleAllSelections(true)" class="luxe-btn luxe-btn-secondary" style="font-size:0.65rem;padding:0.5rem 0.85rem;">✅ Select All</button>
+            <button onclick="toggleAllSelections(false)" class="luxe-btn luxe-btn-ghost" style="font-size:0.65rem;padding:0.5rem 0.85rem;">❌ Deselect All</button>
+            <button onclick="supprimerBordereauxEnLot()" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fda4af;border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.1);">🗑️ Delete Selected</button>
+            
+            <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider self-center ml-1">Set Status →</span>
+            
+            <button onclick="appliquerStatutEnLot('Collected')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#fcd34d;border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.08);">🧺 Collected</button>
+            <button onclick="appliquerStatutEnLot('Washing')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#93c5fd;border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.08);">🧼 Washing</button>
+            <button onclick="appliquerStatutEnLot('Ready')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#d8b4fe;border-color:rgba(168,85,247,0.4);background:rgba(168,85,247,0.08);">✨ Ready</button>
+            <button onclick="appliquerStatutEnLot('Delivered')" class="luxe-btn" style="font-size:0.65rem;padding:0.5rem 0.85rem;color:#6ee7b7;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.08);">🚚 Delivered</button>
+        `;
+        container.appendChild(controlsDiv);
+    }
 
     if (activeTodaySlips.length === 0) {
         const emptyMsg = document.createElement('p');
@@ -393,6 +400,7 @@ function updatePrintButtonCount() {
 }
 
 async function imprimerToutesLesChambresDuJour() {
+    if (typeof requireAdmin === 'function' && !requireAdmin('Batch Print')) return;
     demanderConfirmationPinAdmin(() => {
         imprimerToutesLesChambresDuJourExécution();
     });
@@ -579,6 +587,7 @@ async function imprimerToutesLesChambresDuJourExécution() {
 }
 
 async function telechargerToutesLesChambresDuJour() {
+    if (typeof requireAdmin === 'function' && !requireAdmin('Download All PDFs')) return;
     demanderConfirmationPinAdmin(async () => {
         chargerDonneesLocalStorage();
         const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
@@ -1177,6 +1186,7 @@ function fermerModal() { document.getElementById('detailModal').classList.add('h
 // SUPPRESSION
 // ═══════════════════════════════════════════════════════════════════
 async function supprimerBordereauActuel() {
+    if (typeof requireAdmin === 'function' && !requireAdmin('delete a record')) return;
     if (!selectedIdForModal) return;
     if (confirm(`Delete this record?`)) {
         isLocalUpdating = true;
@@ -1205,6 +1215,7 @@ async function supprimerBordereauActuel() {
 // CHANGEMENT STATUT (individuel)
 // ═══════════════════════════════════════════════════════════════════
 async function changerStatutBordereau(recordId, nouveauStatut) {
+    if (typeof requireAdmin === 'function' && !requireAdmin('change record status')) return;
     const targetId = recordId || selectedIdForModal;
     if (!targetId) return;
 
@@ -1252,10 +1263,11 @@ async function mettreAJourStatutCommande(requestId, nouveauStatut) {
 // ═══════════════════════════════════════════════════════════════════
 // ✅ PLAN B FINAL : BATCH STATUS — Application directe + Undo 10s
 // ═══════════════════════════════════════════════════════════════════
-const BATCH_UNDO_DURATION = 10000; // 10 secondes
+const BATCH_UNDO_DURATION = 10000;
 let activeBatchUndo = null;
 
 async function appliquerStatutEnLot(nouveauStatut) {
+    if (typeof requireAdmin === 'function' && !requireAdmin('apply batch status')) return;
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
 
     if (selectedIds.length === 0) {
@@ -1263,7 +1275,6 @@ async function appliquerStatutEnLot(nouveauStatut) {
         return;
     }
 
-    // Si un undo précédent est encore actif, on le commit (l'utilisateur a enchaîné)
     if (activeBatchUndo) {
         clearTimeout(activeBatchUndo.timer);
         if (activeBatchUndo.element && activeBatchUndo.element.parentNode) {
@@ -1274,7 +1285,6 @@ async function appliquerStatutEnLot(nouveauStatut) {
 
     isLocalUpdating = true;
 
-    // Sauvegarde l'état AVANT pour pouvoir undo
     chargerDonneesLocalStorage();
     const previousStatuses = {};
     cachedSlips.forEach(s => {
@@ -1285,10 +1295,8 @@ async function appliquerStatutEnLot(nouveauStatut) {
     });
     sauvegarderDonneesLocalStorage();
 
-    // Refresh UI immédiat
     chargerLiveOrders();
 
-    // Update Supabase en arrière-plan
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const uuidBatch = selectedIds.filter(id => id.length === 36);
@@ -1312,7 +1320,6 @@ async function appliquerStatutEnLot(nouveauStatut) {
 
     setTimeout(() => { isLocalUpdating = false; }, 1000);
 
-    // Toast Undo (10s)
     showBatchStatusToast(nouveauStatut, selectedIds.length, previousStatuses);
 }
 
@@ -1363,7 +1370,6 @@ function showBatchStatusToast(nouveauStatut, count, previousStatuses) {
         if (countdownEl && secondsLeft >= 0) countdownEl.innerText = secondsLeft;
     }, 1000);
 
-    // Bouton Undo
     const undoBtn = toast.querySelector('#batchUndoBtn');
     undoBtn.addEventListener('click', async () => {
         clearTimeout(activeBatchUndo.timer);
@@ -1371,7 +1377,6 @@ function showBatchStatusToast(nouveauStatut, count, previousStatuses) {
         await executerBatchUndo(previousStatuses, toast);
     });
 
-    // Auto-remove après 10s
     const timer = setTimeout(() => {
         clearInterval(countdownInterval);
         if (toast.parentNode) toast.parentNode.removeChild(toast);
@@ -1385,7 +1390,6 @@ async function executerBatchUndo(previousStatuses, toastElement) {
     console.log("↩️ [BatchUndo] Restauration des statuts précédents:", previousStatuses);
     isLocalUpdating = true;
 
-    // Restaurer statuts en local
     chargerDonneesLocalStorage();
     cachedSlips.forEach(s => {
         const id = String(s.id);
@@ -1395,7 +1399,6 @@ async function executerBatchUndo(previousStatuses, toastElement) {
     });
     sauvegarderDonneesLocalStorage();
 
-    // Restaurer statuts sur Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             for (const [id, oldStatus] of Object.entries(previousStatuses)) {
@@ -1412,10 +1415,8 @@ async function executerBatchUndo(previousStatuses, toastElement) {
         }
     }
 
-    // Refresh UI
     chargerLiveOrders();
 
-    // Fermer le toast
     if (toastElement && toastElement.parentNode) {
         toastElement.style.opacity = '0';
         toastElement.style.transform = 'translate(-50%, 20px)';
@@ -1425,7 +1426,6 @@ async function executerBatchUndo(previousStatuses, toastElement) {
         }, 300);
     }
 
-    // Toast de confirmation
     const confirmToast = document.createElement('div');
     confirmToast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border border-rose-800 text-rose-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
     confirmToast.innerHTML = `↩️ <strong>Statuts restaurés</strong> — ${Object.keys(previousStatuses).length} record(s)`;
@@ -1447,6 +1447,7 @@ async function executerBatchUndo(previousStatuses, toastElement) {
 // SUPPRESSION EN LOT
 // ═══════════════════════════════════════════════════════════════════
 async function supprimerBordereauxEnLot() {
+    if (typeof requireAdmin === 'function' && !requireAdmin('delete multiple records')) return;
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
     
     if (selectedIds.length === 0) {
@@ -1501,4 +1502,4 @@ function dismissGuestNotificationBanner() {
     document.querySelectorAll('.luxe-card, .remal-card').forEach(card => {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
-                       }
+}
