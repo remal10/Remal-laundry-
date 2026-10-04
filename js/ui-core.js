@@ -304,3 +304,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     // PHASE E — Raccourcis & Auto-complétion
     initPhaseE();
 });
+// ═══════════════════════════════════════════════════════════════════
+// ✨ SPRINT 1.5 — MENU MOBILE STAFF (⋯)
+// ═══════════════════════════════════════════════════════════════════
+
+function toggleStaffMobileMenu() {
+    const menu = document.getElementById('staffMobileMenu');
+    const overlay = document.getElementById('staffMobileMenuOverlay');
+    if (!menu || !overlay) return;
+
+    const isVisible = menu.classList.contains('visible');
+
+    if (isVisible) {
+        closeStaffMobileMenu();
+    } else {
+        menu.classList.add('visible');
+        overlay.classList.add('visible');
+        updateStaffMobileMenuState();
+    }
+}
+
+function closeStaffMobileMenu() {
+    const menu = document.getElementById('staffMobileMenu');
+    const overlay = document.getElementById('staffMobileMenuOverlay');
+    if (menu) menu.classList.remove('visible');
+    if (overlay) overlay.classList.remove('visible');
+}
+
+function updateStaffMobileMenuState() {
+    // Synchronise l'icône thème
+    const menuIcon = document.getElementById('menuThemeIcon');
+    if (menuIcon) {
+        menuIcon.className = document.body.classList.contains('light-mode') 
+            ? 'fas fa-sun' 
+            : 'fas fa-moon';
+    }
+
+    // Synchronise le badge langue
+    const langBadge = document.getElementById('menuLangBadge');
+    if (langBadge) {
+        const lang = (typeof currentLang !== 'undefined' && currentLang) ? currentLang.toUpperCase() : 'EN';
+        langBadge.textContent = lang;
+    }
+}
+
+/**
+ * Cycle entre les langues (EN → AR → HI → EN)
+ */
+function cycleLanguage() {
+    const langs = ['en', 'ar', 'hi'];
+    const current = (typeof currentLang !== 'undefined' && currentLang) ? currentLang : 'en';
+    const idx = langs.indexOf(current);
+    const next = langs[(idx + 1) % langs.length];
+    
+    if (typeof setLang === 'function') setLang(next);
+    
+    // Met à jour le badge
+    const langBadge = document.getElementById('menuLangBadge');
+    if (langBadge) langBadge.textContent = next.toUpperCase();
+    
+    // Vibration
+    if (navigator.vibrate) navigator.vibrate(10);
+}
+
+// Exposer globalement
+window.toggleStaffMobileMenu = toggleStaffMobileMenu;
+window.closeStaffMobileMenu = closeStaffMobileMenu;
+window.updateStaffMobileMenuState = updateStaffMobileMenuState;
+window.cycleLanguage = cycleLanguage;
+
+// Fermer le menu si on clique ailleurs
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('staffMobileMenu');
+    const trigger = document.querySelector('.menu-trigger-btn');
+    if (!menu || !trigger) return;
+    if (!menu.contains(e.target) && !trigger.contains(e.target)) {
+        closeStaffMobileMenu();
+    }
+});
+
+// Fermer le menu sur Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeStaffMobileMenu();
+});
+
+// Sync thème avec toggleTheme existant
+const originalToggleTheme = window.toggleTheme;
+if (typeof originalToggleTheme === 'function') {
+    window.toggleTheme = function() {
+        originalToggleTheme.apply(this, arguments);
+        setTimeout(updateStaffMobileMenuState, 100);
+    };
+}
+
+console.log('✅ [Sprint 1.5] Menu mobile staff chargé');
