@@ -1499,3 +1499,363 @@ body.light-mode .staff-mobile-menu-item i {
 body.light-mode .staff-mobile-menu-item:hover {
     background: rgba(180, 122, 62, 0.08);
 }
+/* ═══════════════════════════════════════════════════════════
+   🌞 SPRINT 2 — MODE CLAIR PREMIUM (Laundry OS)
+   Cohérence + lisibilité + contraste
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══ 1. BODY BACKGROUND EN MODE CLAIR ═══ */
+body.light-mode {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    color: #0f172a !important;
+}
+
+/* Retirer le radial gradient doré en mode clair */
+body.light-mode #bodyRoot {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+}
+
+body.light-mode #bodyRoot::before {
+    background: radial-gradient(ellipse at center, rgba(180, 122, 62, 0.06) 0%, transparent 70%) !important;
+}
+
+/* ═══ 2. HEADER EN MODE CLAIR ═══ */
+body.light-mode .laundry-header {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+    border-bottom-color: rgba(180, 122, 62, 0.25) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-mode .laundry-header::after {
+    background: linear-gradient(90deg, transparent, rgba(180, 122, 62, 0.4), transparent) !important;
+}
+
+body.light-mode .laundry-brand-title {
+    color: #b47a3e !important;
+}
+
+body.light-mode .laundry-brand-sub {
+    color: #64748b !important;
+}
+
+body.light-mode .role-badge {
+    background: linear-gradient(135deg, rgba(180, 122, 62, 0.08) 0%, rgba(180, 122, 62, 0.02) 100%) !important;
+    border-color: rgba(180, 122, 62, 0.35) !important;
+}
+
+body.light-mode .role-badge-name {
+    color: #0f172a !important;
+}
+
+body.light-mode .role-badge-role {
+    color: #b47a3e !important;
+}
+
+body.light-mode .header-action-btn,
+body.light-mode .lang-select-premium {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(180, 122, 62, 0.25) !important;
+    color: #64748b !important;
+}
+
+body.light-mode .header-action-btn:hover,
+body.light-mode .lang-select-premium:hover {
+    background: #ffffff !important;
+    color: #b47a3e !important;
+    border-color: #b47a3e !important;
+    box-shadow: 0 4px 12px rgba(180, 122, 62, 0.15) !important;
+}
+
+body.light-mode .header-action-btn.danger:hover {
+    color: #e11d48 !important;
+    border-color: #e11d48 !important;
+}
+
+body.light-mode .menu-trigger-btn {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #b47a3e !important;
+}
+
+/* ═══ 3. NAV EN MODE CLAIR ═══ */
+body.light-mode .laundry-nav {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom-color: rgba(180, 122, 62, 0.2) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .nav-tab-premium {
+    color: #64748b !important;
+}
+
+body.light-mode .nav-tab-premium:hover {
+    color: #b47a3e !important;
+    background: rgba(180, 122, 62, 0.06) !important;
+    border-color: rgba(180, 122, 62, 0.15) !important;
+}
+
+body.light-mode .nav-tab-premium.active {
+    background: linear-gradient(135deg, #b47a3e 0%, #d9a76a 100%) !important;
+    color: #ffffff !important;
+    border-color: #b47a3e !important;
+    box-shadow: 0 6px 20px rgba(180, 122, 62, 0.3) !important;
+}
+
+body.light-mode .nav-tab-premium.active i {
+    color: #ffffff !important;
+}
+
+/* ═══ 4. QUICK ACTIONS EN MODE CLAIR ═══ */
+body.light-mode .quick-action-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(180, 122, 62, 0.2) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-mode .quick-action-card:hover {
+    background: #ffffff !important;
+    border-color: #b47a3e !important;
+    box-shadow: 
+        0 12px 30px rgba(180, 122, 62, 0.2),
+        0 0 0 1px rgba(180, 122, 62, 0.15) !important;
+}
+
+body.light-mode .quick-action-card::before {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(180, 122, 62, 0.08) 45%, 
+        rgba(180, 122, 62, 0.16) 50%, 
+        rgba(180, 122, 62, 0.08) 55%, 
+        transparent 100%) !important;
+}
+
+body.light-mode .quick-action-icon {
+    background: linear-gradient(135deg, #b47a3e 0%, #d9a76a 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(180, 122, 62, 0.3) !important;
+}
+
+body.light-mode .quick-action-label {
+    color: #0f172a !important;
+}
+
+body.light-mode .quick-action-sub {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+/* ═══ 5. SECTIONS EN MODE CLAIR ═══ */
+body.light-mode .laundry-section {
+    /* Rien à faire, la section est déjà transparente */
+}
+
+/* ═══ 6. LIVE RECORDS CARDS EN MODE CLAIR ═══ */
+body.light-mode .luxe-card,
+body.light-mode #liveOrdersList > div:not(.col-span-full) {
+    background: #ffffff !important;
+    border: 1px solid rgba(180, 122, 62, 0.15) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-mode .luxe-card:hover,
+body.light-mode #liveOrdersList > div:not(.col-span-full):hover {
+    border-color: rgba(180, 122, 62, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(180, 122, 62, 0.15) !important;
+}
+
+/* Texte dans les cartes */
+body.light-mode .luxe-card .text-\[\#DCA773\],
+body.light-mode #liveOrdersList .text-\[\#DCA773\] {
+    color: #b47a3e !important;
+}
+
+body.light-mode .luxe-card .font-serif-luxury,
+body.light-mode #liveOrdersList .font-serif-luxury {
+    color: #b47a3e !important;
+}
+
+body.light-mode #liveOrdersList p,
+body.light-mode .luxe-card p {
+    color: #1e293b !important;
+}
+
+body.light-mode #liveOrdersList .text-stone-400,
+body.light-mode #liveOrdersList .text-stone-500 {
+    color: #64748b !important;
+}
+
+body.light-mode #liveOrdersList .text-stone-300 {
+    color: #475569 !important;
+}
+
+/* Checkboxes en mode clair */
+body.light-mode .room-checkbox {
+    accent-color: #b47a3e !important;
+}
+
+/* ═══ 7. BOUTONS ADMIN EN MODE CLAIR ═══ */
+body.light-mode #btnBatchPrint,
+body.light-mode button[onclick*="ouvrirModalActiveRoomsList"] {
+    background: #ffffff !important;
+    color: #475569 !important;
+    border: 1px solid rgba(180, 122, 62, 0.25) !important;
+}
+
+body.light-mode #btnBatchPrint:hover,
+body.light-mode button[onclick*="ouvrirModalActiveRoomsList"]:hover {
+    background: rgba(180, 122, 62, 0.06) !important;
+    color: #b47a3e !important;
+    border-color: #b47a3e !important;
+}
+
+body.light-mode #btnBatchDownload {
+    background: linear-gradient(135deg, #b47a3e 0%, #d9a76a 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+body.light-mode #btnBatchDownload:hover {
+    background: linear-gradient(135deg, #9a6834 0%, #c89360 100%) !important;
+}
+
+/* ═══ 8. BOUTONS DE STATUT EN LOT EN MODE CLAIR ═══ */
+body.light-mode button[onclick*="appliquerStatutEnLot"],
+body.light-mode button[onclick*="toggleAllSelections"] {
+    background: #ffffff !important;
+    border: 1px solid rgba(180, 122, 62, 0.25) !important;
+    color: #475569 !important;
+}
+
+body.light-mode button[onclick*="appliquerStatutEnLot"]:hover,
+body.light-mode button[onclick*="toggleAllSelections"]:hover {
+    border-color: #b47a3e !important;
+    background: rgba(180, 122, 62, 0.06) !important;
+}
+
+body.light-mode button[onclick*="supprimerBordereauxEnLot"] {
+    background: #ffffff !important;
+    color: #e11d48 !important;
+    border: 1px solid rgba(225, 29, 72, 0.3) !important;
+}
+
+/* ═══ 9. TITRES DE SECTION EN MODE CLAIR ═══ */
+body.light-mode #lblActiveRoomsHeader,
+body.light-mode .text-xs.font-bold.uppercase.tracking-wider {
+    color: #475569 !important;
+}
+
+body.light-mode #activeRoomsCountBadge {
+    background: #ffffff !important;
+    border: 1px solid rgba(180, 122, 62, 0.3) !important;
+    color: #b47a3e !important;
+}
+
+/* ═══ 10. MENU MOBILE EN MODE CLAIR ═══ */
+body.light-mode .staff-mobile-menu {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+    border-color: rgba(180, 122, 62, 0.4) !important;
+    box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(180, 122, 62, 0.1) !important;
+}
+
+body.light-mode .staff-mobile-menu-item {
+    color: #0f172a !important;
+}
+
+body.light-mode .staff-mobile-menu-item i {
+    color: #b47a3e !important;
+}
+
+body.light-mode .staff-mobile-menu-item:hover {
+    background: rgba(180, 122, 62, 0.08) !important;
+    color: #b47a3e !important;
+}
+
+body.light-mode .staff-mobile-menu-item .menu-lang-badge {
+    background: rgba(180, 122, 62, 0.15) !important;
+    color: #b47a3e !important;
+}
+
+body.light-mode .staff-mobile-menu-item.danger {
+    color: #e11d48 !important;
+}
+
+body.light-mode .staff-mobile-menu-item.danger i {
+    color: #e11d48 !important;
+}
+
+/* ═══ 11. MODALES EN MODE CLAIR ═══ */
+body.light-mode #detailModal,
+body.light-mode #activeRoomsListModal,
+body.light-mode #archivesModal,
+body.light-mode #setQtyModal,
+body.light-mode #staffLoginModal {
+    background: rgba(15, 23, 42, 0.6) !important;
+}
+
+body.light-mode #detailModal > div,
+body.light-mode #activeRoomsListModal > div,
+body.light-mode #archivesModal > div,
+body.light-mode #setQtyModal > div,
+body.light-mode #staffLoginModal > div {
+    background: #ffffff !important;
+    border-color: rgba(180, 122, 62, 0.25) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ═══ 12. TITRES DANS LES MODALES ═══ */
+body.light-mode #detailModal h3,
+body.light-mode #activeRoomsListModal h3,
+body.light-mode #archivesModal h3 {
+    color: #0f172a !important;
+}
+
+body.light-mode #detailModal .text-\[\#DCA773\],
+body.light-mode #setQtyModal .text-\[\#DCA773\] {
+    color: #b47a3e !important;
+}
+
+/* ═══ 13. FORMULAIRE NEW RECORD EN MODE CLAIR ═══ */
+body.light-mode #sectionNewRecord .remal-card {
+    background: #ffffff !important;
+    border-color: rgba(180, 122, 62, 0.2) !important;
+}
+
+body.light-mode #sectionNewRecord h2 {
+    color: #b47a3e !important;
+}
+
+body.light-mode #itemsContainer,
+body.light-mode #detailsCustomItems,
+body.light-mode #detailsGarmentNotes {
+    background: #f8fafc !important;
+    border-color: rgba(180, 122, 62, 0.2) !important;
+}
+
+/* ═══ 14. TRANSITIONS DOUCES ═══ */
+body.light-mode .laundry-header,
+body.light-mode .laundry-nav,
+body.light-mode .quick-action-card,
+body.light-mode .nav-tab-premium,
+body.light-mode .header-action-btn {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ═══ 15. TOASTS EN MODE CLAIR ═══ */
+body.light-mode #undoToast,
+body.light-mode #batchStatusToast {
+    background: #ffffff !important;
+    border-color: rgba(180, 122, 62, 0.4) !important;
+    color: #0f172a !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.light-mode #undoToast .text-stone-100,
+body.light-mode #batchStatusToast .text-stone-100 {
+    color: #0f172a !important;
+}
+
+body.light-mode #undoToast .text-stone-400,
+body.light-mode #batchStatusToast .text-stone-400 {
+    color: #64748b !important;
+}
