@@ -67,7 +67,16 @@
     </style>
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
-
+<!-- 📱 Bannière d'installation PWA -->
+<div id="pwaInstallBanner" class="hidden fixed bottom-4 left-4 right-4 z-[9999] bg-gradient-to-r from-[#DCA773] to-[#F8E9C0] text-stone-950 rounded-2xl shadow-2xl p-4 flex items-center gap-3 no-print">
+    <div class="text-2xl">📱</div>
+    <div class="flex-1">
+        <p class="font-bold text-sm">Installer Laundry OS</p>
+        <p class="text-[11px] opacity-80">Accès rapide depuis l'écran d'accueil</p>
+    </div>
+    <button onclick="installPWA()" class="bg-stone-950 text-[#DCA773] font-bold px-4 py-2 rounded-xl text-xs">Installer</button>
+    <button onclick="document.getElementById('pwaInstallBanner').classList.add('hidden')" class="text-stone-700 text-xl">✕</button>
+</div>
     <!-- VIP REALTIME NOTIFICATION BANNER -->
     <div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
         <div class="flex items-center gap-4">
