@@ -2136,19 +2136,24 @@ body.light-mode #batchStatusToast .text-stone-400 {
 
 /* ═══ Pied de page / signature ═══ */
 #pdfExportArea .receipt-footer {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px dashed rgba(180, 122, 62, 0.3);
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(180, 122, 62, 0.35);
     text-align: center;
-    font-size: 9px;
-    color: #a8a29e;
-    letter-spacing: 0.15em;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #78716c;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
+    line-height: 1.6;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 #pdfExportArea .receipt-footer strong {
     color: #b47a3e;
-    font-weight: 800;
+    font-weight: 900;
+    letter-spacing: 0.08em;
 }
 
 /* ═══ Animation d'apparition ═══ */
