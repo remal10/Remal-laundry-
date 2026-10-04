@@ -796,17 +796,17 @@
             
 <div id="pdfExportArea" class="p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
 
-    <div class="receipt-header-compact">
+<div class="receipt-header-compact">
     <button onclick="fermerModal()" class="receipt-close-btn no-print">✕</button>
     
-<div class="receipt-header-left">
-    <img src="assets/remal-logo.png" alt="Remal" class="receipt-logo-compact" onerror="this.style.display='none';">
-</div>
-
-<div class="receipt-header-right">
-    <p id="modalPdfLaundryService" class="receipt-service-compact">LAUNDRY SERVICE</p>
-    <p id="modalPdfReceiptId" class="receipt-id-compact">Receipt ID: <strong id="modalReceiptIdDisplay">---</strong></p>
-</div>
+    <div class="receipt-header-left">
+        <img src="assets/remal-logo.png" alt="Remal" class="receipt-logo-compact" onerror="this.style.display='none';">
+    </div>
+    
+    <div class="receipt-header-right">
+        <div id="modalRoomNumDisplay" class="receipt-room-number">---</div>
+        <div class="receipt-room-label">Room</div>
+    </div>
 </div>
 <h2 id="modalPdfHotelName" style="display:none;">REMAL HOTEL & VILLAS</h2>
 <p id="modalPdfHotelSub" style="display:none;">Al Ruwais City, Abu Dhabi – UAE</p>
