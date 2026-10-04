@@ -1859,3 +1859,327 @@ body.light-mode #undoToast .text-stone-400,
 body.light-mode #batchStatusToast .text-stone-400 {
     color: #64748b !important;
 }
+/* ═══════════════════════════════════════════════════════════
+   🎨 BORDEREAU PDF — Design Premium
+   Améliore #pdfExportArea SANS casser le PDF existant
+   Compatible mode clair ET mode sombre
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══ Conteneur principal ═══ */
+#pdfExportArea {
+    position: relative;
+    background: #ffffff !important;
+    color: #1c1917 !important;
+    border-radius: 20px;
+    padding: 32px 28px !important;
+    border: 1.5px solid rgba(180, 122, 62, 0.25);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+}
+
+/* Bande décorative dorée en haut */
+#pdfExportArea::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #DCA773, #F8E9C0, #DCA773, transparent);
+    border-radius: 0 0 4px 4px;
+}
+
+/* ═══ En-tête du bordereau ═══ */
+#pdfExportArea .receipt-header {
+    text-align: center;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1.5px solid rgba(180, 122, 62, 0.15);
+    position: relative;
+}
+
+/* Logo Remal centré */
+#pdfExportArea .receipt-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+#pdfExportArea .receipt-logo img {
+    height: 60px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(220, 167, 115, 0.25));
+}
+
+/* Titre principal */
+#pdfExportArea .receipt-title {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #b47a3e;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Sous-titre */
+#pdfExportArea .receipt-subtitle {
+    font-size: 10px;
+    color: #78716c;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 6px 0 0 0;
+}
+
+/* Service (LAUNDRY SERVICE) */
+#pdfExportArea .receipt-service {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 16px;
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.15) 0%, rgba(220, 167, 115, 0.05) 100%);
+    border: 1px solid rgba(180, 122, 62, 0.3);
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #b47a3e;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* Receipt ID */
+#pdfExportArea .receipt-id {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #78716c;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+}
+
+#pdfExportArea .receipt-id strong {
+    color: #1c1917;
+    font-weight: 700;
+}
+
+/* ═══ Bloc infos Guest/Room (fond clair) ═══ */
+#pdfExportArea .receipt-info-box {
+    background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 100%) !important;
+    border: 1px solid rgba(180, 122, 62, 0.18) !important;
+    border-radius: 14px;
+    padding: 16px 18px !important;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Petite barre dorée à gauche du bloc infos */
+#pdfExportArea .receipt-info-box::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #DCA773 0%, #F8E9C0 100%);
+}
+
+/* Lignes infos */
+#pdfExportArea .receipt-info-box .flex {
+    padding: 4px 0;
+}
+
+#pdfExportArea .receipt-info-box span {
+    font-size: 11.5px;
+}
+
+#pdfExportArea .receipt-info-box .font-bold,
+#pdfExportArea .receipt-info-box strong {
+    color: #1c1917;
+    font-weight: 700;
+}
+
+/* ═══ Bloc Packaging ═══ */
+#pdfExportArea .receipt-packaging {
+    background: #fafaf9;
+    border: 1px solid rgba(180, 122, 62, 0.15);
+    border-radius: 12px;
+    padding: 10px 16px !important;
+    margin-bottom: 16px;
+    font-size: 11.5px;
+}
+
+#pdfExportArea .receipt-packaging .font-bold {
+    color: #78716c;
+}
+
+#pdfExportArea .receipt-packaging .text-amber-700 {
+    color: #b47a3e !important;
+    font-weight: 700;
+}
+
+/* ═══ Table items ═══ */
+#pdfExportArea table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(180, 122, 62, 0.15);
+}
+
+#pdfExportArea table thead tr {
+    background: linear-gradient(135deg, #1c1917 0%, #292524 100%) !important;
+}
+
+#pdfExportArea table thead th {
+    padding: 12px 14px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #DCA773 !important;
+    text-align: left;
+}
+
+#pdfExportArea table thead th.text-center {
+    text-align: center;
+}
+
+#pdfExportArea table thead th.text-right {
+    text-align: right;
+}
+
+#pdfExportArea table tbody tr {
+    border-bottom: 1px solid rgba(180, 122, 62, 0.08);
+    transition: background 0.2s ease;
+}
+
+#pdfExportArea table tbody tr:nth-child(even) {
+    background: #fafaf9;
+}
+
+#pdfExportArea table tbody tr:last-child {
+    border-bottom: none;
+}
+
+#pdfExportArea table tbody td {
+    padding: 11px 14px !important;
+    font-size: 11.5px !important;
+    color: #1c1917;
+}
+
+/* ═══ Bloc TOTAL (mise en avant) ═══ */
+#pdfExportArea .receipt-total-box {
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.12) 0%, rgba(248, 233, 192, 0.2) 100%) !important;
+    border: 1.5px solid rgba(180, 122, 62, 0.4) !important;
+    border-radius: 14px;
+    padding: 16px 20px !important;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+#pdfExportArea .receipt-total-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at top right, rgba(220, 167, 115, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+#pdfExportArea .receipt-total-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #78716c;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+#pdfExportArea .receipt-total-value {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 26px !important;
+    font-weight: 700;
+    color: #b47a3e !important;
+    line-height: 1.1;
+}
+
+/* ═══ Note / Défauts ═══ */
+#pdfExportArea #modalNoteBox {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border: 1px solid #fde68a !important;
+    border-radius: 12px;
+    padding: 12px 16px !important;
+    margin-top: 14px;
+}
+
+#pdfExportArea #modalNoteBox p:first-child {
+    font-size: 10px !important;
+    letter-spacing: 0.1em;
+    color: #78350f !important;
+}
+
+#pdfExportArea #modalNoteBox p:last-child {
+    color: #1c1917 !important;
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+
+/* ═══ Pied de page / signature ═══ */
+#pdfExportArea .receipt-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px dashed rgba(180, 122, 62, 0.3);
+    text-align: center;
+    font-size: 9px;
+    color: #a8a29e;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+#pdfExportArea .receipt-footer strong {
+    color: #b47a3e;
+    font-weight: 800;
+}
+
+/* ═══ Animation d'apparition ═══ */
+#pdfExportArea .receipt-logo,
+#pdfExportArea .receipt-title {
+    animation: receiptFadeIn 0.5s ease;
+}
+
+@keyframes receiptFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══ Mode clair (déjà light, mais on adapte) ═══ */
+body.light-mode #pdfExportArea {
+    background: #ffffff !important;
+    border-color: rgba(180, 122, 62, 0.3) !important;
+    box-shadow:
+        0 20px 50px rgba(180, 122, 62, 0.1),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ═══ Impression / PDF ═══ */
+@media print {
+    #pdfExportArea {
+        box-shadow: none !important;
+        border: 1px solid #d1d5db !important;
+        padding: 20px !important;
+    }
+    
+    #pdfExportArea::before {
+        display: none;
+    }
+}
