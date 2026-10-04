@@ -843,11 +843,13 @@
                     <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
                 </table>
 
-                <div class="bg-stone-50 p-4 rounded-xl text-xs space-y-2 font-medium text-stone-700 border border-stone-200">
-                    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-2"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
-                    <div class="flex justify-between font-bold text-lg text-stone-900 pt-1"><span id="modalLblGrandTotal">Grand Total:</span><span id="modalTotal" class="text-amber-700 font-serif-luxury text-xl">0.00 AED</span></div>
-                </div>
-
+<div class="bg-stone-50 p-4 rounded-xl text-xs space-y-2 font-medium text-stone-700 border border-stone-200 receipt-total-box">
+    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-2"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
+    <div class="flex justify-between font-bold text-lg text-stone-900 pt-1 items-center">
+        <span id="modalLblGrandTotal" class="receipt-total-label">Grand Total:</span>
+        <span id="modalTotal" class="text-amber-700 font-serif-luxury text-xl receipt-total-value">0.00 AED</span>
+    </div>
+</div>
                 <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1 text-stone-800">
                     <p id="modalLblGarmentNotes" class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
                     <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
