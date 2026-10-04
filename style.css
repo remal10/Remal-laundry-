@@ -2817,3 +2817,198 @@ body.light-mode #pdfExportArea {
         padding-top: 6px !important;
     }
 }
+/* ═══════════════════════════════════════════════════════════
+   📄 PDF BORDEREAU — ULTRA COMPACT (fix 2 pages → 1 page)
+   Réductions finales pour tenir sur 1 SEULE page A4
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══ 1. CONTENEUR — Padding minimal ═══ */
+#pdfExportArea {
+    padding: 14px 18px 14px 18px !important;
+}
+
+/* ═══ 2. HEADER — Plus compact ═══ */
+#pdfExportArea .receipt-header-compact {
+    padding: 2px 4px 8px 4px !important;
+    margin-bottom: 10px !important;
+    gap: 14px !important;
+}
+
+#pdfExportArea .receipt-header-logo {
+    padding-right: 14px !important;
+}
+
+#pdfExportArea .receipt-logo-compact {
+    height: 42px !important;
+    max-width: 110px !important;
+}
+
+#pdfExportArea .receipt-service-compact {
+    padding: 4px 12px !important;
+    font-size: 10px !important;
+}
+
+#pdfExportArea .receipt-id-compact {
+    font-size: 9px !important;
+}
+
+/* ═══ 3. BLOC INFOS — Beaucoup plus compact ═══ */
+#pdfExportArea .receipt-info-box {
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+    gap: 6px !important;
+    border-radius: 10px !important;
+}
+
+#pdfExportArea .receipt-info-box .flex {
+    padding: 2px 0 !important;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+}
+
+#pdfExportArea .receipt-info-box .text-xs {
+    font-size: 9.5px !important;
+}
+
+#pdfExportArea .receipt-info-box .text-2xl {
+    font-size: 18px !important;
+}
+
+#pdfExportArea .receipt-info-box .grid-cols-2 {
+    padding: 4px 6px !important;
+    font-size: 9.5px !important;
+    gap: 4px !important;
+    margin: 2px 0 !important;
+}
+
+#pdfExportArea #modalAgencyQuotaBox {
+    padding-top: 4px !important;
+    gap: 2px !important;
+    font-size: 10px !important;
+}
+
+#pdfExportArea #modalAgencyQuotaBox > div {
+    padding: 1px 0 !important;
+    line-height: 1.25 !important;
+}
+
+/* ═══ 4. BLOC PACKAGING — Plus compact ═══ */
+#pdfExportArea .receipt-packaging {
+    padding: 5px 12px !important;
+    margin-bottom: 8px !important;
+    font-size: 10px !important;
+}
+
+/* ═══ 5. TABLE ITEMS — Ultra compacte ═══ */
+#pdfExportArea table {
+    margin-bottom: 8px !important;
+}
+
+#pdfExportArea table thead th {
+    padding: 5px 10px !important;
+    font-size: 8.5px !important;
+    letter-spacing: 0.08em !important;
+}
+
+#pdfExportArea table tbody td {
+    padding: 4px 10px !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+}
+
+/* ═══ 6. TOTAL BOX — Très compact ═══ */
+#pdfExportArea .receipt-total-box {
+    padding: 6px 12px !important;
+    margin-top: 4px !important;
+    margin-bottom: 0 !important;
+    border-radius: 8px !important;
+}
+
+#pdfExportArea .receipt-total-box > div:first-child {
+    padding-bottom: 3px !important;
+    margin-bottom: 2px !important;
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+}
+
+#pdfExportArea .receipt-total-box > div:last-child {
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+#pdfExportArea .receipt-total-label {
+    font-size: 8.5px !important;
+    letter-spacing: 0.1em !important;
+}
+
+#pdfExportArea .receipt-total-value {
+    font-size: 16px !important;
+    line-height: 1 !important;
+}
+
+/* ═══ 7. FOOTER — Très compact, visible, en bas de page 1 ═══ */
+#pdfExportArea .receipt-footer {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-top: 8px !important;
+    padding-top: 6px !important;
+    padding-bottom: 2px !important;
+    border-top: 1px solid rgba(180, 122, 62, 0.25) !important;
+    text-align: center !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+    line-height: 1.2 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+}
+
+/* ═══ 8. RÉDUCTION DES MARGES ENTRE BLOCS ═══ */
+#pdfExportArea > .space-y-5 > * + * {
+    margin-top: 5px !important;
+}
+
+/* ═══ 9. IMPRESSION / PDF — Forcer 1 seule page ═══ */
+@media print {
+    #pdfExportArea {
+        padding: 12px 16px !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+    
+    #pdfExportArea .receipt-header-compact {
+        margin-bottom: 8px !important;
+        padding-bottom: 6px !important;
+    }
+    
+    #pdfExportArea .receipt-info-box {
+        margin-bottom: 6px !important;
+        padding: 6px 10px !important;
+    }
+    
+    #pdfExportArea .receipt-packaging {
+        margin-bottom: 6px !important;
+        padding: 4px 10px !important;
+    }
+    
+    #pdfExportArea table {
+        margin-bottom: 6px !important;
+    }
+    
+    #pdfExportArea .receipt-total-box {
+        margin-top: 4px !important;
+        padding: 5px 10px !important;
+    }
+    
+    #pdfExportArea .receipt-footer {
+        margin-top: 6px !important;
+        padding-top: 5px !important;
+    }
+}
