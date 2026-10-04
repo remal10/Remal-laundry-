@@ -1343,11 +1343,23 @@ function updateStaffUIIndicator() {
     const indicator = document.getElementById('currentLoggedStaff');
     const headerIndicator = document.getElementById('staffIndicatorHeader');
     const headerName = document.getElementById('staffNameHeader');
+
+    // ✨ SPRINT 1 : badge rôle premium (nouveau header)
+    const roleName = document.getElementById('roleBadgeName');
+    const roleIcon = document.getElementById('roleBadgeIcon');
+    const roleRole = document.getElementById('roleBadgeRole');
     
     if (currentStaffUser) {
         if (indicator) indicator.innerText = `👤 ${currentStaffUser.name}`;
         if (headerIndicator) headerIndicator.classList.remove('hidden');
         if (headerName) headerName.innerText = currentStaffUser.name;
+
+        // ✨ Mise à jour du badge rôle premium
+        if (roleName) roleName.textContent = currentStaffUser.name || 'Staff';
+        
+        const isAdminUser = String(currentStaffUser.role || '').toLowerCase() === 'admin';
+        if (roleIcon) roleIcon.textContent = isAdminUser ? '👑' : '👤';
+        if (roleRole) roleRole.textContent = isAdminUser ? 'Manager' : 'Staff';
     } else {
         if (headerIndicator) headerIndicator.classList.add('hidden');
     }
