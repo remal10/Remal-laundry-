@@ -2156,14 +2156,22 @@ body.light-mode #batchStatusToast .text-stone-400 {
     padding-top: 18px;
     border-top: 1px solid rgba(180, 122, 62, 0.35);
     text-align: center;
-    font-size: 10.5px;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+    font-size: 12px;
+    font-style: normal;
     font-weight: 700;
-    color: #78716c;
-    letter-spacing: 0.1em;
+    color: #b47a3e;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     line-height: 1.6;
     page-break-inside: avoid;
     break-inside: avoid;
+    /* ✨ FIX : Empêche le débordement */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 #pdfExportArea .receipt-footer strong {
