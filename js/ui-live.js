@@ -1114,22 +1114,26 @@ async function genererPDF(entryId = null) {
         const noPrintElements = printArea.querySelectorAll('.no-print');
         noPrintElements.forEach(el => el.style.display = 'none');
 
-        const opt = {
-            margin:       [10, 12, 10, 12],
-            filename:     `${fileTargetName}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true, 
-                logging: false, 
-                backgroundColor: '#ffffff',
-                scrollX: 0,
-                scrollY: 0
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
+const opt = {
+    margin:       [10, 12, 10, 12],
+    filename:     `${fileTargetName}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        allowTaint: true,
+        logging: false, 
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight,
+        x: 0,
+        y: 0
+    },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+};
         try {
             await html2pdf().set(opt).from(printArea).save();
         } catch (e) {
