@@ -2462,3 +2462,35 @@ body.light-mode #batchStatusToast .text-stone-400 {
     padding: 3px 0 !important;
     line-height: 1.4 !important;
 }
+/* ═══════════════════════════════════════════════════════════
+   📄 PDF — 204 sans label (centré verticalement)
+   ═══════════════════════════════════════════════════════════ */
+
+#pdfExportArea .receipt-header-right {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    text-align: right !important;
+    flex: 0 0 auto !important;
+}
+
+#pdfExportArea .receipt-room-number {
+    display: block !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 52px !important;
+    font-weight: 900 !important;
+    color: #b47a3e !important;
+    line-height: 1 !important;
+    letter-spacing: -0.02em !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: right !important;
+    text-shadow: 0 2px 8px rgba(180, 122, 62, 0.15) !important;
+}
+
+/* Le label "Room" caché s'il reste quelque part */
+#pdfExportArea .receipt-room-label {
+    display: none !important;
+}
