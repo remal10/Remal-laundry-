@@ -2,43 +2,121 @@
 // REALTIME LISTENER & NOTIFICATIONS (REMAL LAUNDRY OS)
 // ==========================================
 
-// Play hotel chime with mobile AudioContext support
-function playLuxuryHotelChime() {
+// ═══════════════════════════════════════════════════════════════════
+// 🎵 SONS PREMIUM — 3 tonalités distinctes selon le type
+// ═══════════════════════════════════════════════════════════════════
+
+// Contexte audio partagé (créé au 1er user gesture)
+let _sharedAudioCtx = null;
+
+function _getAudioCtx() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-
-        if (ctx.state === 'suspended') {
-            ctx.resume();
-        }
-
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        let now = ctx.currentTime;
-
-        notes.forEach((freq, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.15);
-
-            gain.gain.setValueAtTime(0, now + idx * 0.15);
-            gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.15 + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.15 + 1.1);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.start(now + idx * 0.15);
-            osc.stop(now + idx * 0.15 + 1.2);
-        });
-
-        if ("vibrate" in navigator) {
-            navigator.vibrate([200, 100, 200, 100, 400]);
-        }
+        if (!AudioContext) return null;
+        if (!_sharedAudioCtx) _sharedAudioCtx = new AudioContext();
+        if (_sharedAudioCtx.state === 'suspended') _sharedAudioCtx.resume();
+        return _sharedAudioCtx;
     } catch (e) {
         console.warn("Audio Context Warning:", e);
+        return null;
+    }
+}
+
+// Init au 1er clic (obligatoire mobile)
+document.addEventListener('click', () => _getAudioCtx(), { once: true });
+document.addEventListener('touchstart', () => _getAudioCtx(), { once: true });
+
+/**
+ * Joue une séquence de notes
+ * @param {Array} notes - [{ freq, delay, duration, volume }]
+ * @param {string} type - 'sine' | 'triangle' | 'square'
+ */
+function _playSequence(notes, type = 'sine') {
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    notes.forEach(({ freq, delay = 0, duration = 0.3, volume = 0.15 }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now + delay);
+
+        gain.gain.setValueAtTime(0, now + delay);
+        gain.gain.linearRampToValueAtTime(volume, now + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + delay);
+        osc.stop(now + delay + duration + 0.1);
+    });
+}
+
+/**
+ * 🛎️ Chime principal — Nouvelle commande Laundry
+ * Carillon doré (le son actuel amélioré)
+ */
+function playLuxuryHotelChime() {
+    _playSequence([
+        { freq: 523.25, delay: 0.00, duration: 0.40, volume: 0.15 },  // C5
+        { freq: 659.25, delay: 0.15, duration: 0.40, volume: 0.15 },  // E5
+        { freq: 783.99, delay: 0.30, duration: 0.45, volume: 0.14 },  // G5
+        { freq: 1046.50, delay: 0.45, duration: 0.60, volume: 0.12 }  // C6
+    ], 'sine');
+
+    if ("vibrate" in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 400]);
+    }
+}
+
+/**
+ * 🧺 Son Laundry Guest (demande de linge)
+ */
+function playLaundryChime() {
+    _playSequence([
+        { freq: 659.25, delay: 0.00, duration: 0.35, volume: 0.16 },  // E5
+        { freq: 880.00, delay: 0.18, duration: 0.50, volume: 0.13 }   // A5
+    ], 'triangle');
+
+    if ("vibrate" in navigator) {
+        navigator.vibrate([120, 60, 120]);
+    }
+}
+
+/**
+ * 📢 Gong SPA (demande SPA)
+ */
+function playSpaGong() {
+    _playSequence([
+        { freq: 196.00, delay: 0.00, duration: 0.80, volume: 0.14 },  // G3
+        { freq: 147.00, delay: 0.30, duration: 1.00, volume: 0.12 }   // D3
+    ], 'sine');
+
+    if ("vibrate" in navigator) {
+        navigator.vibrate([200, 100, 200]);
+    }
+}
+
+/**
+ * 🎯 Sélectionne le son selon le type de commande
+ */
+function playAlert(type = 'new_order') {
+    switch (type) {
+        case 'spa':
+            playSpaGong();
+            break;
+        case 'laundry':
+            playLaundryChime();
+            break;
+        case 'new_order':
+        case 'room_service':
+        default:
+            playLuxuryHotelChime();
+            break;
     }
 }
 
