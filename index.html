@@ -979,7 +979,55 @@
     <script src="js/ui-shortcuts.js"></script>
     <script src="js/sound-alerts.js"></script>
 
-    <script src="security-guard.js"></script>
+      <script src="security-guard.js"></script>
     <script src="js/guesthub-integration.js"></script>
+
+    <!-- ═══ PWA — Enregistrement Service Worker ═══ -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('✅ [PWA] Service Worker enregistré:', registration.scope);
+                        
+                        // Vérifier les mises à jour toutes les heures
+                        setInterval(() => registration.update(), 60 * 60 * 1000);
+                        
+                        // Détecter les nouvelles versions
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('🔄 [PWA] Nouvelle version disponible');
+                                        // Auto-reload
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                });
+                            }
+                        });
+                    })
+                    .catch((err) => console.warn('⚠️ [PWA] Service Worker:', err));
+            });
+        }
+
+        // PWA Install Prompt (Android)
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('📱 [PWA] Installation disponible');
+            
+            // Afficher un bouton d'installation (optionnel)
+            const installBanner = document.getElementById('pwaInstallBanner');
+            if (installBanner) installBanner.classList.remove('hidden');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ [PWA] App installée');
+            deferredPrompt = null;
+        });
+    </script>
 </body>
 </html>
