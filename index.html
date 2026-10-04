@@ -103,14 +103,28 @@
     </div>
 </header>
 
-    <div id="mainNavContainer" class="sticky top-0 z-50 flex flex-nowrap bg-[#12100e] border-b border-[#DCA773]/30 px-4 py-2 gap-3 overflow-x-auto scrollbar-none shadow-2xl no-print">
-        <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow">Active Rooms</button>
-        <button onclick="switchMainSection('spa')" id="navBtnSpa" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">SPA</button>
-        <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Lost & Found</button>
-        <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Archives</button>
-        <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Mass PDF</button>
-        <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" data-admin-only="true" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]">Chart</button>
+<nav id="mainNavContainer" class="laundry-nav no-print">
+    <div class="laundry-nav-inner">
+        <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="nav-tab-premium active">
+            <i class="fas fa-bed"></i><span>Active Rooms</span>
+        </button>
+        <button onclick="switchMainSection('spa')" id="navBtnSpa" class="nav-tab-premium">
+            <i class="fas fa-spa"></i><span>SPA</span>
+        </button>
+        <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" data-admin-only="true" class="nav-tab-premium">
+            <i class="fas fa-box-open"></i><span>Lost & Found</span>
+        </button>
+        <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" data-admin-only="true" class="nav-tab-premium">
+            <i class="fas fa-archive"></i><span>Archives</span>
+        </button>
+        <button onclick="switchMainSection('massEntry')" id="navBtnMassEntry" data-admin-only="true" class="nav-tab-premium">
+            <i class="fas fa-file-import"></i><span>Mass PDF</span>
+        </button>
+        <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" data-admin-only="true" class="nav-tab-premium">
+            <i class="fas fa-chart-line"></i><span>Chart</span>
+        </button>
     </div>
+</nav>
 
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-6">
 
