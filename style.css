@@ -2283,52 +2283,6 @@ body.light-mode #pdfExportArea {
 }
 
 /* ═══ 2. BLOC INFOS COMPACT (2 colonnes) ═══ */
-#pdfExportArea .receipt-info-box {
-    padding: 10px 14px !important;
-    margin-bottom: 10px !important;
-    border-radius: 10px !important;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 6px 20px !important;
-    align-items: start !important;
-}
-
-/* Colonne gauche = Room + Guest */
-#pdfExportArea .receipt-info-box > .flex:first-child {
-    grid-column: 1 !important;
-}
-
-/* Le bloc "Room" prend la 1ère cellule */
-#pdfExportArea .receipt-info-box .flex.justify-between.items-center:first-child {
-    grid-column: 1 / -1 !important;
-    padding-bottom: 6px !important;
-    border-bottom: 1px solid rgba(180, 122, 62, 0.15) !important;
-    margin-bottom: 2px !important;
-}
-
-/* Toutes les lignes "flex" passent en grid */
-#pdfExportArea .receipt-info-box .flex {
-    padding: 2px 0 !important;
-    font-size: 10.5px !important;
-    line-height: 1.35 !important;
-}
-
-#pdfExportArea .receipt-info-box .text-xs {
-    font-size: 10px !important;
-}
-
-#pdfExportArea .receipt-info-box .text-2xl {
-    font-size: 18px !important;
-}
-
-#pdfExportArea .receipt-info-box .grid-cols-2 {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 4px !important;
-    padding: 4px 8px !important;
-    margin: 4px 0 !important;
-    font-size: 9.5px !important;
-}
-
 /* Réduction du bloc "Agency/Quota Box" interne */
 #pdfExportArea #modalAgencyQuotaBox {
     padding-top: 6px !important;
@@ -2426,3 +2380,4 @@ body.light-mode #pdfExportArea {
         break-inside: avoid !important;
     }
 }
+
