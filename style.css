@@ -2494,3 +2494,160 @@ body.light-mode #batchStatusToast .text-stone-400 {
 #pdfExportArea .receipt-room-label {
     display: none !important;
 }
+/* ═══════════════════════════════════════════════════════════
+   🧘 SPA SHEET — Header premium (2 logos opposés + SPA centre)
+   ═══════════════════════════════════════════════════════════ */
+
+#spa-laundry-section .spa-header {
+    background: linear-gradient(180deg, #fafaf9 0%, #ffffff 100%) !important;
+    border-radius: 16px !important;
+    padding: 20px 24px 16px 24px !important;
+    margin-bottom: 20px !important;
+    border: 1px solid rgba(180, 122, 62, 0.15) !important;
+    position: relative !important;
+}
+
+/* Fine barre dorée en haut */
+#spa-laundry-section .spa-header::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 60% !important;
+    height: 3px !important;
+    background: linear-gradient(90deg, transparent, #DCA773, #F8E9C0, #DCA773, transparent) !important;
+    border-radius: 0 0 3px 3px !important;
+}
+
+/* Ligne 1 : logos + titre centré */
+#spa-laundry-section .spa-header-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+}
+
+/* Logo gauche */
+#spa-laundry-section .spa-header-logo-left {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-width: 120px !important;
+}
+
+/* Logo droite */
+#spa-laundry-section .spa-header-logo-right {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    min-width: 120px !important;
+}
+
+/* Style commun des logos */
+#spa-laundry-section .spa-logo-img {
+    height: 60px !important;
+    width: auto !important;
+    max-width: 160px !important;
+    object-fit: contain !important;
+    display: block !important;
+    filter: drop-shadow(0 2px 6px rgba(180, 122, 62, 0.15)) !important;
+}
+
+/* Titre SPA au centre */
+#spa-laundry-section .spa-header-title {
+    flex: 1 !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+}
+
+#spa-laundry-section .spa-title-main {
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    letter-spacing: 0.3em !important;
+    text-transform: uppercase !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    text-shadow: 0 2px 12px rgba(180, 122, 62, 0.15) !important;
+}
+
+#spa-laundry-section .spa-title-sub {
+    font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #78716c !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase !important;
+    margin: 4px 0 0 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Ligne 2 : date */
+#spa-laundry-section .spa-header-date {
+    margin-top: 16px !important;
+    padding-top: 12px !important;
+    border-top: 1px dashed rgba(180, 122, 62, 0.25) !important;
+    text-align: center !important;
+}
+
+/* ═══ MOBILE ═══ */
+@media (max-width: 640px) {
+    #spa-laundry-section .spa-header {
+        padding: 16px 14px 12px 14px !important;
+    }
+    
+    #spa-laundry-section .spa-header-row {
+        gap: 10px !important;
+    }
+    
+    #spa-laundry-section .spa-header-logo-left,
+    #spa-laundry-section .spa-header-logo-right {
+        min-width: 80px !important;
+    }
+    
+    #spa-laundry-section .spa-logo-img {
+        height: 44px !important;
+        max-width: 100px !important;
+    }
+    
+    #spa-laundry-section .spa-title-main {
+        font-size: 22px !important;
+        letter-spacing: 0.2em !important;
+    }
+    
+    #spa-laundry-section .spa-title-sub {
+        font-size: 8.5px !important;
+        letter-spacing: 0.1em !important;
+    }
+}
+
+/* ═══ IMPRESSION PDF ═══ */
+@media print {
+    #spa-laundry-section .spa-header {
+        background: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        padding: 16px 20px !important;
+    }
+    
+    #spa-laundry-section .spa-header::before {
+        display: none !important;
+    }
+    
+    #spa-laundry-section .spa-logo-img {
+        height: 50px !important;
+    }
+    
+    #spa-laundry-section .spa-title-main {
+        font-size: 26px !important;
+    }
+}
