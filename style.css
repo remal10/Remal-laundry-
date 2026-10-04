@@ -996,10 +996,9 @@ body.is-mobile .font-serif-luxury {
 }
 
 @media (min-width: 640px) {
-    .quick-actions-grid.role-admin { grid-template-columns: repeat(4, 1fr); }
+    .quick-actions-grid.role-admin { grid-template-columns: repeat(3, 1fr); }
     .quick-actions-grid.role-staff { grid-template-columns: repeat(2, 1fr); }
 }
-
 .quick-action-card {
     position: relative;
     display: flex;
