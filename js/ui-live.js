@@ -699,7 +699,10 @@ async function ouvrirModalDetails(id) {
         badgeText = t.pdfGuestCount;
     }
 
-    document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;
+    document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;const identifierEl = document.getElementById('modalIdentifierLabel');
+if (identifierEl) {
+    identifierEl.innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;
+}
     
     if (entry.is_spa) {
         const serialClean = String(entry.spa_serial || roomNum || '').replace(/SPA\s*#?/gi, '').trim();
