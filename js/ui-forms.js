@@ -4,6 +4,7 @@
 // ⚠️ Chargé APRÈS ui-core.js
 // PHASE E.3 : Long-press +5 / Clic-droit Set Qty
 // PHASE E.5 : Undo save (7s toast)
+// ✨ SPRINT 1 : setLang() tolérant + navigation premium (classList)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -468,30 +469,46 @@ function validateRoomNumber() {
 
 // ═══════════════════════════════════════════════════════════════════
 // LANGUE
+// ✨ SPRINT 1 : version tolérante (ne crashe plus si un élément est absent)
 // ═══════════════════════════════════════════════════════════════════
 function setLang(lang) {
     currentLang = lang;
     const t = i18n[lang] || i18n.en;
-    document.getElementById('htmlRoot').setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-    document.getElementById('langSelect').value = lang;
+    
+    const htmlRoot = document.getElementById('htmlRoot');
+    if (htmlRoot) htmlRoot.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    
+    const langSelect = document.getElementById('langSelect');
+    if (langSelect) langSelect.value = lang;
 
-    document.getElementById('txtBtnNewRecord').innerText = t.txtBtnNewRecord;
-    document.getElementById('lblFormTitle').innerText = t.lblFormTitle;
-    document.getElementById('lblRoomNum').innerText = t.lblRoomNum;
-    document.getElementById('lblSelectedGarments').innerText = t.lblSelectedGarments;
-    document.getElementById('lblSubTotal').innerText = t.lblSubTotal;
-    document.getElementById('lblGrandTotal').innerText = t.lblGrandTotal;
-    document.getElementById('btnPhotoProof').innerHTML = `<span>📷</span> ${t.btnPhotoProof}`;
-    document.getElementById('btnSaveRecord').innerText = t.btnSaveRecord;
-    document.getElementById('lblArchiveTitle').innerText = t.lblArchiveTitle;
-    document.getElementById('lblRoomError').innerText = t.lblRoomError;
-    document.getElementById('lblActiveRoomsHeader').innerText = t.lblActiveRoomsHeader;
+    // ✅ Helper safe : ne crashe JAMAIS si l'élément n'existe pas
+    const safeSetText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+    };
+    const safeSetHTML = (id, html) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    };
+
+    safeSetText('txtBtnNewRecord', t.txtBtnNewRecord);
+    safeSetText('lblFormTitle', t.lblFormTitle);
+    safeSetText('lblRoomNum', t.lblRoomNum);
+    safeSetText('lblSelectedGarments', t.lblSelectedGarments);
+    safeSetText('lblSubTotal', t.lblSubTotal);
+    safeSetText('lblGrandTotal', t.lblGrandTotal);
+    safeSetHTML('btnPhotoProof', `<span>📷</span> ${t.btnPhotoProof}`);
+    safeSetText('btnSaveRecord', t.btnSaveRecord);
+    safeSetText('lblArchiveTitle', t.lblArchiveTitle);
+    safeSetText('lblRoomError', t.lblRoomError);
+    safeSetText('lblActiveRoomsHeader', t.lblActiveRoomsHeader);
 
     renderItems();
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION SECTIONS
+// ✨ SPRINT 1 : utilise classList au lieu d'écraser className
 // ═══════════════════════════════════════════════════════════════════
 function switchMainSection(section) {
     if (section === 'newRecord') {
@@ -500,11 +517,11 @@ function switchMainSection(section) {
 
     ['newRecord', 'massEntry', 'liveRecord', 'spa', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
         const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
-        if(el) el.classList.add('hidden');
+        if (el) el.classList.add('hidden');
     });
 
     const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
-    if(targetSection) targetSection.classList.remove('hidden');
+    if (targetSection) targetSection.classList.remove('hidden');
 
     const navButtons = {
         'liveRecord': 'navBtnLiveRecord',
@@ -515,22 +532,25 @@ function switchMainSection(section) {
         'dashboard': 'navBtnDashboard'
     };
 
+    // ✅ SPRINT 1 : utilise classList (préserve les classes premium)
     Object.entries(navButtons).forEach(([key, btnId]) => {
         const btn = document.getElementById(btnId);
         if (!btn) return;
         if (key === section) {
-            btn.className = "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow";
+            btn.classList.add('active');
         } else {
-            btn.className = "flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#181614] hover:bg-[#211e1a] text-stone-300 border border-[#2f2820]";
+            btn.classList.remove('active');
         }
     });
 
     const quickActionButtons = document.getElementById('quickActionButtons');
-    if (section === 'liveRecord') {
-        quickActionButtons.classList.remove('hidden');
-        chargerLiveOrders();
-    } else {
-        quickActionButtons.classList.add('hidden');
+    if (quickActionButtons) {
+        if (section === 'liveRecord') {
+            quickActionButtons.classList.remove('hidden');
+            chargerLiveOrders();
+        } else {
+            quickActionButtons.classList.add('hidden');
+        }
     }
 
     if (section === 'pdfList') {
@@ -543,7 +563,9 @@ function switchMainSection(section) {
     
     const navBtnId = navButtons[section];
     if (navBtnId) {
-        setTimeout(() => centrerBoutonNavigation(navBtnId), 100);
+        setTimeout(() => {
+            if (typeof centrerBoutonNavigation === 'function') centrerBoutonNavigation(navBtnId);
+        }, 100);
     }
 }
 
@@ -575,7 +597,7 @@ function switchService(service) {
 // ═══════════════════════════════════════════════════════════════════
 function renderItems() {
     const container = document.getElementById('itemsContainer');
-    if(!container) return;
+    if (!container) return;
     container.innerHTML = '';
     const serviceData = database[currentService];
     for (const [catName, items] of Object.entries(serviceData)) {
@@ -677,18 +699,18 @@ function reinitialiserFormulaire() {
     document.getElementById('roomPmsInfoBox').classList.add('hidden');
     
     const defaultFoldingRadio = document.querySelector('input[name="foldingOption"][value="F — Folding"]');
-    if(defaultFoldingRadio) defaultFoldingRadio.checked = true;
+    if (defaultFoldingRadio) defaultFoldingRadio.checked = true;
 
     for (let i = 0; i < 3; i++) {
-        if(document.getElementById(`customName${i}`)) document.getElementById(`customName${i}`).value = '';
-        if(document.getElementById(`customPrice${i}`)) document.getElementById(`customPrice${i}`).value = '';
-        if(document.getElementById(`customQty${i}`)) document.getElementById(`customQty${i}`).value = '';
+        if (document.getElementById(`customName${i}`)) document.getElementById(`customName${i}`).value = '';
+        if (document.getElementById(`customPrice${i}`)) document.getElementById(`customPrice${i}`).value = '';
+        if (document.getElementById(`customQty${i}`)) document.getElementById(`customQty${i}`).value = '';
     }
 
     const customDetails = document.getElementById('detailsCustomItems');
     const notesDetails = document.getElementById('detailsGarmentNotes');
-    if(customDetails) customDetails.open = false;
-    if(notesDetails) notesDetails.open = false;
+    if (customDetails) customDetails.open = false;
+    if (notesDetails) notesDetails.open = false;
 
     validateRoomNumber();
     
