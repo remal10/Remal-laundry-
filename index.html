@@ -77,15 +77,34 @@
             </div>
         </div>
 
-        <div class="laundry-header-actions">
-            <div id="roleBadgeHeader" class="role-badge">
-                <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
-                <div class="role-badge-info">
-                    <span class="role-badge-name" id="roleBadgeName">---</span>
-                    <span class="role-badge-role" id="roleBadgeRole">Staff</span>
-                </div>
-            </div>
+<div class="laundry-header-actions">
+    <div id="roleBadgeHeader" class="role-badge">
+        <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
+        <div class="role-badge-info">
+            <span class="role-badge-name" id="roleBadgeName">---</span>
+            <span class="role-badge-role" id="roleBadgeRole">Staff</span>
+        </div>
+    </div>
 
+    <button onclick="toggleTheme()" class="header-action-btn" id="themeToggleBtn" title="Toggle theme">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <select id="langSelect" onchange="setLang(this.value)" class="lang-select-premium">
+        <option value="en">EN</option>
+        <option value="ar">AR</option>
+        <option value="hi">HI</option>
+    </select>
+
+    <!-- ✨ NOUVEAU : Menu ⋯ (visible uniquement sur mobile staff) -->
+    <button onclick="toggleStaffMobileMenu()" class="header-action-btn menu-trigger-btn" title="Menu">
+        <i class="fas fa-ellipsis-vertical"></i>
+    </button>
+
+    <button onclick="confirmLogout()" class="header-action-btn danger" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+    </button>
+</div>
             <button onclick="toggleTheme()" class="header-action-btn" title="Toggle theme">
                 <i class="fas fa-moon" id="themeIcon"></i>
             </button>
@@ -102,7 +121,26 @@
         </div>
     </div>
 </header>
+<!-- ✨ Menu mobile staff ⋯ -->
+<div id="staffMobileMenuOverlay" class="staff-mobile-menu-overlay" onclick="closeStaffMobileMenu()"></div>
 
+<div id="staffMobileMenu" class="staff-mobile-menu">
+    <button class="staff-mobile-menu-item" onclick="toggleTheme(); closeStaffMobileMenu();">
+        <i class="fas fa-moon" id="menuThemeIcon"></i>
+        <span>Thème</span>
+    </button>
+    
+    <button class="staff-mobile-menu-item" onclick="cycleLanguage(); closeStaffMobileMenu();">
+        <i class="fas fa-globe"></i>
+        <span>Langue</span>
+        <span class="menu-lang-badge" id="menuLangBadge">EN</span>
+    </button>
+    
+    <button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Déconnexion</span>
+    </button>
+</div>
 <nav id="mainNavContainer" class="laundry-nav no-print">
     <div class="laundry-nav-inner">
         <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="nav-tab-premium active">
