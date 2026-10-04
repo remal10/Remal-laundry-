@@ -1156,3 +1156,347 @@ body.light-mode .quick-action-card {
 }
 
 body.light-mode .quick-action-label { color: #0f172a; }
+/* ═══════════════════════════════════════════════════════════
+   📱 SPRINT 1.5 — MOBILE STAFF OPTIMIZATION
+   ⚠️ N'affecte QUE : body.role-staff + viewport < 640px
+   ⚠️ Desktop + Admin = INCHANGÉS
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+    /* ═══ 1. HEADER COMPACT ═══ */
+    body.role-staff .laundry-header-inner {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    body.role-staff .laundry-brand {
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    body.role-staff .laundry-brand img {
+        height: 36px;
+        max-width: 80px;
+    }
+
+    body.role-staff .laundry-brand-text {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    body.role-staff .laundry-brand-title {
+        font-size: 13px;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    body.role-staff .laundry-brand-sub {
+        font-size: 8px;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Cache badge + boutons individuels → menu ⋯ */
+    body.role-staff .role-badge,
+    body.role-staff #themeToggleBtn,
+    body.role-staff .lang-select-premium,
+    body.role-staff .header-action-btn:not(.menu-trigger-btn) {
+        display: none !important;
+    }
+
+    /* Menu ⋯ visible SEULEMENT sur mobile staff */
+    body.role-staff .menu-trigger-btn {
+        display: flex !important;
+    }
+
+    /* ═══ 2. NAV CENTRÉE + PLUS TACTILE ═══ */
+    body.role-staff .laundry-nav-inner {
+        padding: 8px 12px;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    body.role-staff .nav-tab-premium {
+        padding: 12px 20px;
+        font-size: 11px;
+        gap: 8px;
+        flex: 1;
+        justify-content: center;
+        max-width: 180px;
+    }
+
+    body.role-staff .nav-tab-premium i {
+        font-size: 14px;
+    }
+
+    /* ═══ 3. QUICK ACTIONS EMPILÉES ═══ */
+    body.role-staff .quick-actions-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    body.role-staff .quick-action-card {
+        flex-direction: row;
+        align-items: center;
+        min-height: 88px;
+        padding: 16px 18px;
+        gap: 14px;
+        text-align: left;
+    }
+
+    body.role-staff .quick-action-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    body.role-staff .quick-action-label {
+        font-size: 15px;
+        margin-bottom: 2px;
+    }
+
+    body.role-staff .quick-action-sub {
+        font-size: 11px;
+        margin: 0;
+    }
+
+    /* ═══ 4. CARTES LIVE RECORDS ADAPTÉES ═══ */
+    body.role-staff #liveOrdersList {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    body.role-staff #liveOrdersList > div:not(.col-span-full) {
+        padding: 16px !important;
+        border-radius: 20px !important;
+        min-height: 100px;
+    }
+
+    /* Checkbox plus gros et centré */
+    body.role-staff #liveOrdersList input[type="checkbox"].room-checkbox {
+        width: 32px !important;
+        height: 32px !important;
+        margin-right: 12px;
+    }
+
+    /* Ajustement global de la section */
+    body.role-staff .laundry-section {
+        padding: 16px 12px 32px;
+    }
+
+    /* ═══ 5. BOUTONS D'ACTION PLUS GROS ═══ */
+    body.role-staff button:not(.nav-tab-premium):not(.quick-action-card) {
+        min-height: 44px;
+    }
+
+    /* ═══ 6. TOASTS PLEINE LARGEUR ═══ */
+    body.role-staff #undoToast,
+    body.role-staff #batchStatusToast,
+    body.role-staff .quick-action-toast {
+        left: 12px !important;
+        right: 12px !important;
+        transform: none !important;
+        max-width: none !important;
+        bottom: 12px !important;
+    }
+
+    /* ═══ 7. BOTTOM-SHEET POUR MODALES ═══ */
+    body.role-staff #detailModal > div,
+    body.role-staff #activeRoomsListModal > div,
+    body.role-staff #setQtyModal > div {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        max-width: 100% !important;
+        border-radius: 24px 24px 0 0 !important;
+        max-height: 92vh;
+        animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUpModal {
+        from {
+            transform: translateY(100%);
+            opacity: 0.5;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Poignée décorative en haut du bottom-sheet */
+    body.role-staff #detailModal > div::before,
+    body.role-staff #activeRoomsListModal > div::before,
+    body.role-staff #setQtyModal > div::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: rgba(220, 167, 115, 0.4);
+        border-radius: 2px;
+        margin: 8px auto 12px;
+    }
+
+    /* ═══ 8. TITRES DE SECTION PLUS COMPACTS ═══ */
+    body.role-staff .text-xs.font-bold.uppercase {
+        font-size: 11px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📱 BOUTON MENU ⋯ (visible uniquement mobile staff)
+   ═══════════════════════════════════════════════════════════ */
+
+.menu-trigger-btn {
+    display: none; /* caché par défaut */
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 22, 18, 0.8);
+    border: 1px solid rgba(220, 167, 115, 0.25);
+    color: #DCA773;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.menu-trigger-btn:active {
+    transform: scale(0.94);
+    background: rgba(220, 167, 115, 0.15);
+}
+
+/* Menu déroulant ⋯ */
+.staff-mobile-menu {
+    position: fixed;
+    top: 70px;
+    right: 12px;
+    z-index: 100;
+    background: linear-gradient(180deg, #1a1612 0%, #12100e 100%);
+    border: 1.5px solid rgba(220, 167, 115, 0.4);
+    border-radius: 18px;
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(220, 167, 115, 0.1);
+    padding: 6px;
+    min-width: 200px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px) scale(0.95);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.staff-mobile-menu.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0) scale(1);
+}
+
+.staff-mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    color: #f5f5f4;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.staff-mobile-menu-item:hover,
+.staff-mobile-menu-item:active {
+    background: rgba(220, 167, 115, 0.12);
+    color: #DCA773;
+}
+
+.staff-mobile-menu-item i {
+    width: 18px;
+    font-size: 14px;
+    color: #DCA773;
+    text-align: center;
+}
+
+.staff-mobile-menu-item .menu-lang-badge {
+    margin-left: auto;
+    background: rgba(220, 167, 115, 0.15);
+    color: #DCA773;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+}
+
+.staff-mobile-menu-item.danger {
+    color: #f43f5e;
+}
+
+.staff-mobile-menu-item.danger i {
+    color: #f43f5e;
+}
+
+.staff-mobile-menu-item.danger:hover,
+.staff-mobile-menu-item.danger:active {
+    background: rgba(244, 63, 94, 0.12);
+}
+
+/* Overlay sombre derrière le menu */
+.staff-mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.staff-mobile-menu-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ═══ MODE CLAIR ═══ */
+@media (max-width: 640px) {
+    body.light-mode.role-staff .menu-trigger-btn {
+        background: rgba(241, 245, 249, 0.9);
+        border-color: rgba(180, 122, 62, 0.3);
+        color: #b47a3e;
+    }
+}
+
+body.light-mode .staff-mobile-menu {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-color: rgba(180, 122, 62, 0.4);
+}
+
+body.light-mode .staff-mobile-menu-item {
+    color: #0f172a;
+}
+
+body.light-mode .staff-mobile-menu-item i {
+    color: #b47a3e;
+}
+
+body.light-mode .staff-mobile-menu-item:hover {
+    background: rgba(180, 122, 62, 0.08);
+}
