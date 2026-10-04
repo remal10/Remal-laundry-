@@ -67,51 +67,41 @@
         <button onclick="event.stopPropagation(); dismissGuestNotificationBanner();" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">Close ✕</button>
     </div>
 
-    <header class="relative bg-[#12100e] overflow-hidden border-b border-[#DCA773]/30 shadow-2xl no-print">
-        <div class="absolute inset-0 z-0 bg-gradient-to-r from-black via-[#1a1612] to-black opacity-90"></div>
-        <div class="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(#DCA773_1px,transparent_1px)] [background-size:16px_16px]"></div>
-
-        <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-5 flex justify-between items-center">
-            <div class="flex items-center space-x-4 lg:space-x-6">
-                <div class="flex flex-col items-start cursor-pointer" onclick="switchMainSection('liveRecord')">
-                    <img 
-                        src="assets/remal-logo.png" 
-                        alt="Remal Hotel & Villas" 
-                        class="h-14 sm:h-16 lg:h-20 w-auto object-contain"
-                    >
-                    <div class="flex items-center space-x-2 text-[9px] lg:text-[10px] text-[#DCA773]/80 uppercase tracking-[0.3em] font-bold mt-1">
-                        <span>Al Ruwais City</span>
-                    </div>
-                </div>
-
-                <div class="border-l border-[#DCA773]/40 pl-4 lg:pl-6 hidden sm:block">
-                    <p class="text-xs sm:text-sm font-serif-luxury text-[#DCA773] font-bold tracking-[0.25em] uppercase">LAUNDRY OS</p>
-                    <p class="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Front Desk System</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-2 sm:gap-3">
-                <div id="staffIndicatorHeader" class="hidden sm:flex items-center gap-2 bg-[#181614] border border-[#DCA773]/40 rounded-xl px-3 py-2">
-                    <span class="text-[#DCA773] text-sm">👤</span>
-                    <span id="staffNameHeader" class="text-xs font-bold text-stone-200">---</span>
-                </div>
-
-                <button onclick="toggleTheme()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Toggle Dark/Light Mode">
-                    <i class="fas fa-moon" id="themeIcon"></i>
-                </button>
-
-                <select id="langSelect" onchange="setLang(this.value)" class="bg-stone-900/90 text-stone-200 text-xs sm:text-sm border border-[#DCA773]/40 rounded-xl px-3.5 py-2.5 outline-none font-semibold cursor-pointer hover:bg-stone-800 transition h-11">
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                    <option value="hi">हिन्दी</option>
-                </select>
-
-                <button onclick="confirmLogout()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 w-11 h-11 rounded-xl text-sm flex items-center justify-center shadow transition" title="Logout">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
+   <header class="laundry-header no-print">
+    <div class="laundry-header-inner">
+        <div class="laundry-brand" onclick="switchMainSection('liveRecord')">
+            <img src="assets/remal-logo.png" alt="Remal">
+            <div class="laundry-brand-text">
+                <span class="laundry-brand-title">Laundry OS</span>
+                <span class="laundry-brand-sub">Al Ruwais · Front Desk</span>
             </div>
         </div>
-    </header>
+
+        <div class="laundry-header-actions">
+            <div id="roleBadgeHeader" class="role-badge">
+                <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
+                <div class="role-badge-info">
+                    <span class="role-badge-name" id="roleBadgeName">---</span>
+                    <span class="role-badge-role" id="roleBadgeRole">Staff</span>
+                </div>
+            </div>
+
+            <button onclick="toggleTheme()" class="header-action-btn" title="Toggle theme">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+
+            <select id="langSelect" onchange="setLang(this.value)" class="lang-select-premium">
+                <option value="en">EN</option>
+                <option value="ar">AR</option>
+                <option value="hi">HI</option>
+            </select>
+
+            <button onclick="confirmLogout()" class="header-action-btn danger" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+</header>
 
     <div id="mainNavContainer" class="sticky top-0 z-50 flex flex-nowrap bg-[#12100e] border-b border-[#DCA773]/30 px-4 py-2 gap-3 overflow-x-auto scrollbar-none shadow-2xl no-print">
         <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="flex-shrink-0 px-5 py-3 rounded-xl transition text-xs sm:text-sm font-bold bg-[#DCA773] text-stone-950 shadow">Active Rooms</button>
