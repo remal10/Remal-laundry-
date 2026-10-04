@@ -1098,7 +1098,7 @@ async function genererPDF(entryId = null) {
     const entry = cachedSlips.find(e => String(e.id) === String(targetId));
     if (!entry) return;
 
-    // ✨ FIX : Scroll en haut pour éviter le décalage html2canvas
+    // ✨ FIX : Scroll en haut avant capture
     const modalContainer = document.querySelector('#detailModal > div');
     if (modalContainer) modalContainer.scrollTop = 0;
     window.scrollTo(0, 0);
@@ -1114,26 +1114,28 @@ async function genererPDF(entryId = null) {
         const noPrintElements = printArea.querySelectorAll('.no-print');
         noPrintElements.forEach(el => el.style.display = 'none');
 
-const opt = {
-    margin:       [10, 12, 10, 12],
-    filename:     `${fileTargetName}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { 
-        scale: 2, 
-        useCORS: true, 
-        allowTaint: true,
-        logging: false, 
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: document.documentElement.scrollWidth,
-        windowHeight: document.documentElement.scrollHeight,
-        x: 0,
-        y: 0
-    },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-};
+        // ✨ FIX : Petit délai pour laisser le scroll se faire
+        await new Promise(r => setTimeout(r, 150));
+
+        const opt = {
+            margin:       [10, 12, 12, 12],
+            filename:     `${fileTargetName}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true,
+                allowTaint: true,
+                logging: false, 
+                backgroundColor: '#ffffff',
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: document.documentElement.scrollWidth,
+                windowHeight: document.documentElement.scrollHeight
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
         try {
             await html2pdf().set(opt).from(printArea).save();
         } catch (e) {
@@ -1160,17 +1162,25 @@ const opt = {
     const noPrintElements = printArea.querySelectorAll('.no-print');
     noPrintElements.forEach(el => el.style.display = 'none');
 
+    // ✨ FIX : Scroll modal en haut + attente
+    const modalContent = modalEl.querySelector('div');
+    if (modalContent) modalContent.scrollTop = 0;
+    await new Promise(r => setTimeout(r, 200));
+
     const opt = {
-        margin:       [10, 12, 10, 12],
+        margin:       [10, 12, 12, 12],
         filename:     `${fileTargetName}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
             scale: 2, 
-            useCORS: true, 
+            useCORS: true,
+            allowTaint: true,
             logging: false, 
             backgroundColor: '#ffffff',
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            windowWidth: document.documentElement.scrollWidth,
+            windowHeight: document.documentElement.scrollHeight
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
