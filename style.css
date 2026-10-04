@@ -2699,3 +2699,121 @@ body.light-mode #pdfExportArea {
         break-inside: avoid !important;
     }
 }
+/* ═══════════════════════════════════════════════════════════
+   📄 PDF BORDEREAU — COMPACT FINAL
+   Total Box réduit + Footer réduit → tient sur 1 page A4
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══ TOTAL BOX — Version réduite ═══ */
+#pdfExportArea .receipt-total-box {
+    padding: 8px 14px !important;
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.08) 0%, rgba(248, 233, 192, 0.12) 100%) !important;
+    border: 1px solid rgba(180, 122, 62, 0.35) !important;
+}
+
+/* Ligne "Total Pieces" — compacte */
+#pdfExportArea .receipt-total-box > div:first-child {
+    padding-bottom: 4px !important;
+    margin-bottom: 3px !important;
+    padding-top: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    border-bottom: 1px solid rgba(180, 122, 62, 0.2) !important;
+}
+
+/* Ligne "GRAND TOTAL" — compacte */
+#pdfExportArea .receipt-total-box > div:last-child {
+    padding: 2px 0 !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+}
+
+/* Label "GRAND TOTAL" */
+#pdfExportArea .receipt-total-label {
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.12em !important;
+    color: #78716c !important;
+}
+
+/* Valeur "0.00 AED" — réduite mais visible */
+#pdfExportArea .receipt-total-value {
+    font-family: 'Cinzel', 'Playfair Display', serif !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    line-height: 1 !important;
+}
+
+/* ═══ FOOTER — Version réduite ═══ */
+#pdfExportArea .receipt-footer {
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(180, 122, 62, 0.25) !important;
+    text-align: center !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    letter-spacing: 0.18em !important;
+    text-transform: uppercase !important;
+    line-height: 1.3 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+/* ═══ RÉDUCTION GLOBALE DES MARGES ENTRE BLOCS ═══ */
+#pdfExportArea > .space-y-5 > * + * {
+    margin-top: 6px !important;
+}
+
+/* ═══ TABLE ITEMS — Encore plus compacte ═══ */
+#pdfExportArea table tbody td {
+    padding: 6px 12px !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+}
+
+#pdfExportArea table thead th {
+    padding: 7px 12px !important;
+    font-size: 9px !important;
+}
+
+/* ═══ BLOC INFOS — Encore plus compact ═══ */
+#pdfExportArea .receipt-info-box {
+    padding: 10px 14px !important;
+    margin-bottom: 10px !important;
+    gap: 8px !important;
+}
+
+/* ═══ BLOC PACKAGING — Encore plus compact ═══ */
+#pdfExportArea .receipt-packaging {
+    padding: 6px 14px !important;
+    margin-bottom: 10px !important;
+    font-size: 10.5px !important;
+}
+
+/* ═══ CONTENEUR — Padding réduit ═══ */
+#pdfExportArea {
+    padding: 18px 22px 20px 22px !important;
+}
+
+/* ═══ IMPRESSION / PDF — Forcer 1 seule page ═══ */
+@media print {
+    #pdfExportArea {
+        padding: 14px 18px !important;
+    }
+    
+    #pdfExportArea .receipt-total-box {
+        padding: 6px 12px !important;
+        margin-top: 4px !important;
+    }
+    
+    #pdfExportArea .receipt-footer {
+        margin-top: 8px !important;
+        padding-top: 6px !important;
+    }
+}
