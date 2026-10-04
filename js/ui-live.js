@@ -1098,6 +1098,11 @@ async function genererPDF(entryId = null) {
     const entry = cachedSlips.find(e => String(e.id) === String(targetId));
     if (!entry) return;
 
+    // ✨ FIX : Scroll en haut pour éviter le décalage html2canvas
+    const modalContainer = document.querySelector('#detailModal > div');
+    if (modalContainer) modalContainer.scrollTop = 0;
+    window.scrollTo(0, 0);
+
     const roomNum = entry.room_number || entry.room || '---';
 
     if (entry.is_spa) {
