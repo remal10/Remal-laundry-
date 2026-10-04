@@ -145,7 +145,19 @@ function showLuxuryNotificationBanner(normalizedData) {
         console.log("🔔 NOTIFICATION:", textMessage);
     }
 
-    playLuxuryHotelChime();
+    // 🎵 Sélectionne le son selon le type de commande
+    let soundType = 'laundry';  // par défaut : Laundry Guest
+    
+    const serviceType = String(normalizedData.service_type || '').toLowerCase();
+    if (serviceType.includes('spa')) {
+        soundType = 'spa';
+    } else if (serviceType.includes('room') || serviceType.includes('falaj') || serviceType.includes('sarab')) {
+        soundType = 'room_service';
+    } else if (serviceType.includes('laundry')) {
+        soundType = 'laundry';
+    }
+    
+    playAlert(soundType);
 }
 
 // ═══════════════════════════════════════════════════════════════════
