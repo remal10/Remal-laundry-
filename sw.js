@@ -1,139 +1,107 @@
-// ═══════════════════════════════════════════════════════════════════
-// SERVICE WORKER — REMAL LAUNDRY OS
-// Version : v34
-// Stratégie : Network-first pour HTML/CSS/JS (toujours frais)
-//             Cache-first pour images/fonts (performance)
-// ⚠️ Si le SW échoue, l'app continue de fonctionner normalement
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// REMAL LAUNDRY OS — SERVICE WORKER
+// Cache intelligent + offline fallback
+// ═══════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v34';
-const CACHE_NAME = `remal-pwa-${CACHE_VERSION}`;
+const CACHE_NAME = 'remal-laundry-v1.0.0';
+const RUNTIME_CACHE = 'remal-laundry-runtime-v1.0.0';
 
-const PRECACHE_ASSETS = [
-    './',
-    './index.html',
-    './style.css',
-    './assets/css/premium-effects.css',
-    './assets/remal-logo.png',
-    './js/config.js',
-    './js/laundry.js',
-    './js/realtime-listener.js',
-    './js/ui-core.js',
-    './js/ui-forms.js',
-    './js/ui-live.js',
-    './js/ui-modules.js',
-    './js/ui-shortcuts.js',
-    './js/guesthub-integration.js',
-    './security-guard.js'
+// Fichiers à mettre en cache au démarrage
+const PRECACHE_URLS = [
+    '/',
+    '/index.html',
+    '/style.css',
+    '/manifest.json',
+    '/assets/remal-logo.png',
+    '/assets/icon-staff-192.png',
+    '/assets/icon-staff-512.png',
+    '/assets/css/premium-effects.css',
+    '/js/config.js',
+    '/js/laundry.js',
+    '/js/realtime-listener.js',
+    '/js/ui-core.js',
+    '/js/ui-forms.js',
+    '/js/ui-live.js',
+    '/js/ui-modules.js',
+    '/js/ui-shortcuts.js',
+    '/security-guard.js'
 ];
 
-// ─── INSTALL : pré-cache (échec non-bloquant) ──────────────────────
+// Installation — précache
 self.addEventListener('install', (event) => {
-    console.log(`[SW ${CACHE_VERSION}] Installing...`);
-    self.skipWaiting();
-
+    console.log('📦 [SW] Installation...');
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return Promise.all(
-                PRECACHE_ASSETS.map(url =>
-                    cache.add(url).catch(err => {
-                        console.warn(`[SW] Skip precache: ${url}`, err.message);
-                    })
-                )
-            );
-        })
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('📦 [SW] Précache des fichiers');
+                return cache.addAll(PRECACHE_URLS);
+            })
+            .then(() => self.skipWaiting())
+            .catch((err) => console.warn('⚠️ [SW] Erreur précache:', err))
     );
 });
 
-// ─── ACTIVATE : nettoyage des vieux caches ─────────────────────────
+// Activation — nettoyer anciens caches
 self.addEventListener('activate', (event) => {
-    console.log(`[SW ${CACHE_VERSION}] Activating...`);
-
+    console.log('✅ [SW] Activation');
     event.waitUntil(
-        caches.keys().then((keys) => {
+        caches.keys().then((cacheNames) => {
             return Promise.all(
-                keys
-                    .filter(key => key !== CACHE_NAME)
-                    .map(key => {
-                        console.log(`[SW] Deleting old cache: ${key}`);
-                        return caches.delete(key);
+                cacheNames
+                    .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
+                    .map((name) => {
+                        console.log('🗑️ [SW] Suppression ancien cache:', name);
+                        return caches.delete(name);
                     })
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// ─── FETCH : stratégie adaptative ──────────────────────────────────
+// Fetch — stratégie
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Ignorer : non-GET, non-HTTP, Supabase, extensions
+    // Ignorer les requêtes non-GET
     if (request.method !== 'GET') return;
-    if (!request.url.startsWith('http')) return;
-    if (request.url.includes('supabase.co')) return;
-    if (url.protocol === 'chrome-extension:') return;
 
-    const isSameOrigin = url.origin === self.location.origin;
-    const isDocument = request.destination === 'document' || url.pathname.endsWith('.html');
-    const isStyleOrScript = request.destination === 'style' || request.destination === 'script'
-                         || url.pathname.endsWith('.css') || url.pathname.endsWith('.js');
-
-    // ─── HTML / CSS / JS : NETWORK-FIRST ───────────────────────────
-    if (isSameOrigin && (isDocument || isStyleOrScript)) {
-        event.respondWith(networkFirst(request));
+    // Ignorer Supabase et les CDN externes
+    if (url.hostname.includes('supabase.co') ||
+        url.hostname.includes('cdn.jsdelivr.net') ||
+        url.hostname.includes('cdnjs.cloudflare.com') ||
+        url.hostname.includes('fonts.googleapis.com') ||
+        url.hostname.includes('fonts.gstatic.com') ||
+        url.hostname.includes('tailwindcss.com')) {
         return;
     }
 
-    // ─── Images / Fonts / CDN : CACHE-FIRST ────────────────────────
-    event.respondWith(cacheFirst(request));
+    // Ne gérer que les mêmes origines
+    if (url.origin !== self.location.origin) return;
+
+    // Stratégie : Network First pour HTML, Cache First pour assets
+    if (request.destination === 'document') {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+                    return response;
+                })
+                .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+        );
+    } else {
+        event.respondWith(
+            caches.match(request).then((cached) => {
+                if (cached) return cached;
+                return fetch(request).then((response) => {
+                    const copy = response.clone();
+                    caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+                    return response;
+                });
+            })
+        );
+    }
 });
 
-// ─── Stratégie Network-First ───────────────────────────────────────
-async function networkFirst(request) {
-    try {
-        const networkResponse = await fetch(request);
-        if (networkResponse && networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-                cache.put(request, clone).catch(() => {});
-            });
-        }
-        return networkResponse;
-    } catch (err) {
-        // Réseau KO → fallback cache
-        const cached = await caches.match(request);
-        if (cached) return cached;
-
-        // Pour HTML uniquement : fallback sur index.html en cache
-        if (request.destination === 'document') {
-            const fallback = await caches.match('./index.html');
-            if (fallback) return fallback;
-        }
-
-        return new Response('Offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: { 'Content-Type': 'text/plain' }
-        });
-    }
-}
-
-// ─── Stratégie Cache-First ─────────────────────────────────────────
-async function cacheFirst(request) {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-
-    try {
-        const networkResponse = await fetch(request);
-        if (networkResponse && networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-                cache.put(request, clone).catch(() => {});
-            });
-        }
-        return networkResponse;
-    } catch (err) {
-        return new Response('Offline', { status: 503 });
-    }
-}
+console.log('✅ [SW] Service Worker chargé');
