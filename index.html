@@ -128,11 +128,31 @@
 
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-6">
 
-        <div id="quickActionButtons" class="no-print">
-            <button onclick="switchMainSection('newRecord')" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 px-6 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition tracking-wide">
-                <span class="text-lg font-black">+</span> <span id="txtBtnNewRecord">New Record</span>
-            </button>
-        </div>
+<div id="quickActionButtons" class="quick-actions-grid role-admin no-print">
+    <button onclick="switchMainSection('newRecord')" class="quick-action-card">
+        <div class="quick-action-icon"><i class="fas fa-plus"></i></div>
+        <div class="quick-action-label">New Record</div>
+        <div class="quick-action-sub">Laundry entry</div>
+    </button>
+    
+    <button onclick="switchMainSection('spa')" class="quick-action-card">
+        <div class="quick-action-icon"><i class="fas fa-spa"></i></div>
+        <div class="quick-action-label">New SPA</div>
+        <div class="quick-action-sub">SPA sheet</div>
+    </button>
+    
+    <button onclick="switchMainSection('pdfList'); setTimeout(() => document.getElementById('searchRoom')?.focus(), 400);" class="quick-action-card" data-admin-only="true">
+        <div class="quick-action-icon"><i class="fas fa-search"></i></div>
+        <div class="quick-action-label">Search Room</div>
+        <div class="quick-action-sub">Quick find</div>
+    </button>
+    
+    <button onclick="switchMainSection('pdfList')" class="quick-action-card" data-admin-only="true">
+        <div class="quick-action-icon"><i class="fas fa-archive"></i></div>
+        <div class="quick-action-label">Archives</div>
+        <div class="quick-action-sub">View all</div>
+    </button>
+</div>
 
         <div id="sectionNewRecord" class="hidden space-y-4 no-print">
             <div class="remal-card p-6 lg:p-8 rounded-3xl relative max-w-6xl mx-auto">
