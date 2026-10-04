@@ -1859,586 +1859,61 @@ body.light-mode #undoToast .text-stone-400,
 body.light-mode #batchStatusToast .text-stone-400 {
     color: #64748b !important;
 }
+
 /* ═══════════════════════════════════════════════════════════
-   🎨 BORDEREAU PDF — Design Premium
-   Améliore #pdfExportArea SANS casser le PDF existant
-   Compatible mode clair ET mode sombre
-   ═══════════════════════════════════════════════════════════ */
-
-/* ═══ Conteneur principal ═══ */
-#pdfExportArea {
-    position: relative;
-    background: #ffffff !important;
-    color: #1c1917 !important;
-    border-radius: 20px;
-    padding: 32px 28px !important;
-    border: 1.5px solid rgba(180, 122, 62, 0.25);
-    box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.08),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
-}
-/* Bande décorative dorée en haut */
-#pdfExportArea::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, #DCA773, #F8E9C0, #DCA773, transparent);
-    border-radius: 0 0 4px 4px;
-}
-
-/* ═══ En-tête du bordereau ═══ */
-#pdfExportArea .receipt-header {
-    text-align: center;
-    padding-bottom: 20px;
-    margin-bottom: 24px;
-    border-bottom: 1.5px solid rgba(180, 122, 62, 0.15);
-    position: relative;
-}
-
-/* Logo Remal centré */
-#pdfExportArea .receipt-logo {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 12px;
-}
-
-#pdfExportArea .receipt-logo img {
-    height: 60px;
-    width: auto;
-    max-width: 200px;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 12px rgba(220, 167, 115, 0.25));
-}
-
-/* Titre principal */
-#pdfExportArea .receipt-title {
-    font-family: 'Cinzel', 'Playfair Display', serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: #b47a3e;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin: 0;
-    line-height: 1.2;
-}
-
-/* Sous-titre */
-#pdfExportArea .receipt-subtitle {
-    font-size: 10px;
-    color: #78716c;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    font-weight: 600;
-    margin: 6px 0 0 0;
-}
-
-/* Service (LAUNDRY SERVICE) */
-#pdfExportArea .receipt-service {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 5px 16px;
-    background: linear-gradient(135deg, rgba(220, 167, 115, 0.15) 0%, rgba(220, 167, 115, 0.05) 100%);
-    border: 1px solid rgba(180, 122, 62, 0.3);
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 800;
-    color: #b47a3e;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
-
-/* Receipt ID */
-#pdfExportArea .receipt-id {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: #78716c;
-    margin-top: 8px;
-    letter-spacing: 0.05em;
-}
-
-#pdfExportArea .receipt-id strong {
-    color: #1c1917;
-    font-weight: 700;
-}
-
-/* ═══ Bloc infos Guest/Room (fond clair) ═══ */
-#pdfExportArea .receipt-info-box {
-    background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 100%) !important;
-    border: 1px solid rgba(180, 122, 62, 0.18) !important;
-    border-radius: 14px;
-    padding: 16px 18px !important;
-    margin-bottom: 16px;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Petite barre dorée à gauche du bloc infos */
-#pdfExportArea .receipt-info-box::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(180deg, #DCA773 0%, #F8E9C0 100%);
-}
-
-/* Lignes infos */
-#pdfExportArea .receipt-info-box .flex {
-    padding: 4px 0;
-}
-
-#pdfExportArea .receipt-info-box span {
-    font-size: 11.5px;
-}
-
-#pdfExportArea .receipt-info-box .font-bold,
-#pdfExportArea .receipt-info-box strong {
-    color: #1c1917;
-    font-weight: 700;
-}
-
-/* ═══ Bloc Packaging ═══ */
-#pdfExportArea .receipt-packaging {
-    background: #fafaf9;
-    border: 1px solid rgba(180, 122, 62, 0.15);
-    border-radius: 12px;
-    padding: 10px 16px !important;
-    margin-bottom: 16px;
-    font-size: 11.5px;
-}
-
-#pdfExportArea .receipt-packaging .font-bold {
-    color: #78716c;
-}
-
-#pdfExportArea .receipt-packaging .text-amber-700 {
-    color: #b47a3e !important;
-    font-weight: 700;
-}
-
-/* ═══ Table items ═══ */
-#pdfExportArea table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-bottom: 16px;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid rgba(180, 122, 62, 0.15);
-}
-
-#pdfExportArea table thead tr {
-    background: linear-gradient(135deg, #1c1917 0%, #292524 100%) !important;
-}
-
-#pdfExportArea table thead th {
-    padding: 12px 14px !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #DCA773 !important;
-    text-align: left;
-}
-
-#pdfExportArea table thead th.text-center {
-    text-align: center;
-}
-
-#pdfExportArea table thead th.text-right {
-    text-align: right;
-}
-
-#pdfExportArea table tbody tr {
-    border-bottom: 1px solid rgba(180, 122, 62, 0.08);
-    transition: background 0.2s ease;
-}
-
-#pdfExportArea table tbody tr:nth-child(even) {
-    background: #fafaf9;
-}
-
-#pdfExportArea table tbody tr:last-child {
-    border-bottom: none;
-}
-
-#pdfExportArea table tbody td {
-    padding: 11px 14px !important;
-    font-size: 11.5px !important;
-    color: #1c1917;
-}
-
-/* ═══ Bloc TOTAL (mise en avant) ═══ */
-#pdfExportArea .receipt-total-box {
-    background: linear-gradient(135deg, rgba(220, 167, 115, 0.12) 0%, rgba(248, 233, 192, 0.2) 100%) !important;
-    border: 1.5px solid rgba(180, 122, 62, 0.4) !important;
-    border-radius: 14px;
-    padding: 16px 20px !important;
-    margin-top: 8px;
-    position: relative;
-    overflow: hidden;
-}
-
-#pdfExportArea .receipt-total-box::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle at top right, rgba(220, 167, 115, 0.15) 0%, transparent 70%);
-    pointer-events: none;
-}
-
-#pdfExportArea .receipt-total-label {
-    font-size: 10px;
-    font-weight: 800;
-    color: #78716c;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-}
-
-#pdfExportArea .receipt-total-value {
-    font-family: 'Cinzel', 'Playfair Display', serif;
-    font-size: 26px !important;
-    font-weight: 700;
-    color: #b47a3e !important;
-    line-height: 1.1;
-}
-
-/* ═══ Note / Défauts ═══ */
-#pdfExportArea #modalNoteBox {
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-    border: 1px solid #fde68a !important;
-    border-radius: 12px;
-    padding: 12px 16px !important;
-    margin-top: 14px;
-}
-
-#pdfExportArea #modalNoteBox p:first-child {
-    font-size: 10px !important;
-    letter-spacing: 0.1em;
-    color: #78350f !important;
-}
-
-#pdfExportArea #modalNoteBox p:last-child {
-    color: #1c1917 !important;
-    font-size: 11.5px;
-    line-height: 1.5;
-}
-
-/* ═══ Pied de page / signature ═══ */
-#pdfExportArea .receipt-footer {
-    margin-top: 28px;
-    padding-top: 18px;
-    border-top: 1px solid rgba(180, 122, 62, 0.35);
-    text-align: center;
-    font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 700;
-    color: #b47a3e;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    line-height: 1.6;
-    page-break-inside: avoid;
-    break-inside: avoid;
-    /* ✨ FIX : Empêche le débordement */
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-#pdfExportArea .receipt-footer strong {
-    color: #b47a3e;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-}
-
-/* ═══ Animation d'apparition ═══ */
-#pdfExportArea .receipt-logo,
-#pdfExportArea .receipt-title {
-    animation: receiptFadeIn 0.5s ease;
-}
-
-@keyframes receiptFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ═══ Mode clair (déjà light, mais on adapte) ═══ */
-body.light-mode #pdfExportArea {
-    background: #ffffff !important;
-    border-color: rgba(180, 122, 62, 0.3) !important;
-    box-shadow:
-        0 20px 50px rgba(180, 122, 62, 0.1),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
-}
-
-/* ═══ Impression / PDF ═══ */
-@media print {
-    #pdfExportArea {
-        box-shadow: none !important;
-        border: 1px solid #d1d5db !important;
-        padding: 20px !important;
-    }
-    
-    #pdfExportArea::before {
-        display: none;
-    }
-}
-/* ═══════════════════════════════════════════════════════════
-   📄 PDF BORDEREAU — Version COMPACTE 1 page A4
-   ⚠️ Cible UNIQUEMENT #pdfExportArea — Modale à l'écran intacte
-   ═══════════════════════════════════════════════════════════ */
-
-/* ═══ 1. HEADER COMPACT (badge à gauche, logo à droite) ═══ */
-#pdfExportArea .receipt-header-compact {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    padding-bottom: 12px !important;
-    margin-bottom: 14px !important;
-    border-bottom: 1px solid rgba(180, 122, 62, 0.3) !important;
-    position: relative !important;
-}
-
-#pdfExportArea .receipt-header-left {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 3px !important;
-    flex: 1 !important;
-    min-width: 0 !important;
-}
-
-#pdfExportArea .receipt-header-right {
-    flex-shrink: 0 !important;
-}
-
-#pdfExportArea .receipt-service-compact {
-    display: inline-block !important;
-    padding: 4px 12px !important;
-    background: linear-gradient(135deg, rgba(220, 167, 115, 0.15) 0%, rgba(220, 167, 115, 0.05) 100%) !important;
-    border: 1px solid rgba(180, 122, 62, 0.35) !important;
-    border-radius: 9999px !important;
-    font-size: 10.5px !important;
-    font-weight: 800 !important;
-    color: #b47a3e !important;
-    letter-spacing: 0.08em !important;
-    text-transform: uppercase !important;
-    margin: 0 !important;
-    width: fit-content !important;
-}
-
-#pdfExportArea .receipt-id-compact {
-    font-family: 'Courier New', monospace !important;
-    font-size: 9px !important;
-    color: #78716c !important;
-    margin: 0 !important;
-    letter-spacing: 0.03em !important;
-    line-height: 1.3 !important;
-}
-
-#pdfExportArea .receipt-id-compact strong {
-    color: #1c1917 !important;
-    font-weight: 700 !important;
-}
-
-/* Logo compact à droite */
-#pdfExportArea .receipt-logo-compact {
-    height: 32px !important;
-    width: auto !important;
-    max-width: 90px !important;
-    object-fit: contain !important;
-    display: block !important;
-    filter: drop-shadow(0 2px 6px rgba(220, 167, 115, 0.2)) !important;
-}
-
-/* Bouton fermer (masqué dans le PDF) */
-#pdfExportArea .receipt-close-btn {
-    position: absolute !important;
-    top: -8px !important;
-    right: -8px !important;
-    background: transparent !important;
-    border: none !important;
-    color: #78716c !important;
-    font-size: 20px !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
-    padding: 4px 8px !important;
-    line-height: 1 !important;
-}
-
-#pdfExportArea .receipt-close-btn:hover {
-    color: #1c1917 !important;
-}
-
-/* ═══ 2. BLOC INFOS COMPACT (2 colonnes) ═══ */
-/* Réduction du bloc "Agency/Quota Box" interne */
-#pdfExportArea #modalAgencyQuotaBox {
-    padding-top: 6px !important;
-    margin-top: 2px !important;
-    gap: 2px !important;
-    font-size: 10px !important;
-}
-
-#pdfExportArea #modalAgencyQuotaBox > div {
-    padding: 1px 0 !important;
-    line-height: 1.3 !important;
-}
-
-/* ═══ 3. BLOC PACKAGING COMPACT ═══ */
-#pdfExportArea .receipt-packaging {
-    padding: 6px 14px !important;
-    margin-bottom: 10px !important;
-    font-size: 10.5px !important;
-    border-radius: 8px !important;
-}
-
-/* ═══ 4. TABLEAU ITEMS COMPACT ═══ */
-#pdfExportArea table thead th {
-    padding: 7px 12px !important;
-    font-size: 9.5px !important;
-    letter-spacing: 0.1em !important;
-}
-
-#pdfExportArea table tbody td {
-    padding: 6px 12px !important;
-    font-size: 10.5px !important;
-    line-height: 1.3 !important;
-}
-
-/* ═══ 5. BLOC TOTAL COMPACT ═══ */
-#pdfExportArea .receipt-total-box {
-    padding: 10px 16px !important;
-    margin-top: 8px !important;
-    border-radius: 10px !important;
-}
-
-#pdfExportArea .receipt-total-box > div:first-child {
-    padding-bottom: 6px !important;
-    margin-bottom: 4px !important;
-    font-size: 10.5px !important;
-}
-
-#pdfExportArea .receipt-total-value {
-    font-size: 22px !important;
-}
-
-/* ═══ 6. FOOTER COMPACT ═══ */
-#pdfExportArea .receipt-footer {
-    margin-top: 16px !important;
-    padding-top: 12px !important;
-    font-size: 11px !important;
-}
-
-/* ═══ 7. RÉDUCTION GLOBALE DES ESPACEMENTS ═══ */
-#pdfExportArea {
-    padding: 20px 24px 30px 24px !important;
-}
-
-#pdfExportArea > .space-y-5 > * + * {
-    margin-top: 10px !important;
-}
-
-/* ═══ 8. SUPPRESSION DES ANCIENS ÉLÉMENTS (cachés) ═══ */
-#pdfExportArea .receipt-logo,
-#pdfExportArea .receipt-title,
-#pdfExportArea .receipt-subtitle {
-    display: none !important;
-}
-
-/* ═══ 9. IMPRESSION : ÉVITER LES COUPURES ═══ */
-@media print {
-    #pdfExportArea {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 15px 20px !important;
-    }
-    
-    #pdfExportArea .receipt-header-compact {
-        margin-bottom: 10px !important;
-        padding-bottom: 8px !important;
-    }
-    
-    #pdfExportArea table {
-        page-break-inside: avoid !important;
-    }
-    
-    #pdfExportArea .receipt-total-box,
-    #pdfExportArea .receipt-footer {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-}
-/* ═══════════════════════════════════════════════════════════
-   📄 PDF BORDEREAU — VERSION FINALE (override tout)
-   Placé en DERNIER pour écraser les anciens blocs
+   📄 PDF BORDEREAU — VERSION UNIQUE ET DÉFINITIVE
+   Compact 1 page A4 + header logo gauche + infos + footer
    Cible UNIQUEMENT #pdfExportArea
    ═══════════════════════════════════════════════════════════ */
 
 /* ═══ Conteneur principal ═══ */
 #pdfExportArea {
-    position: relative !important;
+    position: relative;
     background: #ffffff !important;
     color: #1c1917 !important;
-    border-radius: 16px !important;
-    padding: 24px 26px 30px 26px !important;
-    border: 1.5px solid rgba(180, 122, 62, 0.25) !important;
-    box-shadow: none !important;
-    font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
-    width: auto !important;
+    border-radius: 16px;
+    padding: 16px 20px 16px 20px !important;
+    border: 1.5px solid rgba(180, 122, 62, 0.25);
+    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+    width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
+    box-sizing: border-box !important;
 }
 
 /* Bande décorative dorée en haut */
 #pdfExportArea::before {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: 60% !important;
-    height: 3px !important;
-    background: linear-gradient(90deg, transparent, #DCA773, #F8E9C0, #DCA773, transparent) !important;
-    border-radius: 0 0 3px 3px !important;
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60%; height: 3px;
+    background: linear-gradient(90deg, transparent, #DCA773, #F8E9C0, #DCA773, transparent);
+    border-radius: 0 0 3px 3px;
 }
 
-/* ═══ 1. HEADER COMPACT — Logo à gauche + Badge à droite ═══ */
+/* ═══ 1. HEADER — Logo gauche + Badge droite ═══ */
 #pdfExportArea .receipt-header-compact {
     display: flex !important;
     align-items: center !important;
-    gap: 18px !important;
-    padding: 4px 4px 14px 4px !important;
-    margin-bottom: 16px !important;
+    gap: 16px !important;
+    padding: 4px 4px 10px 4px !important;
+    margin-bottom: 10px !important;
     border-bottom: 1.5px solid rgba(180, 122, 62, 0.2) !important;
-    position: relative !important;
-    background: transparent !important;
 }
 
 #pdfExportArea .receipt-header-logo {
     flex-shrink: 0 !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    padding-right: 18px !important;
+    padding-right: 16px !important;
     border-right: 1px solid rgba(180, 122, 62, 0.2) !important;
 }
 
 #pdfExportArea .receipt-logo-compact {
-    height: 52px !important;
+    height: 42px !important;
     width: auto !important;
-    max-width: 130px !important;
+    max-width: 110px !important;
     object-fit: contain !important;
     display: block !important;
 }
@@ -2446,19 +1921,18 @@ body.light-mode #pdfExportArea {
 #pdfExportArea .receipt-header-info {
     display: flex !important;
     flex-direction: column !important;
-    gap: 5px !important;
+    gap: 4px !important;
     flex: 1 !important;
     min-width: 0 !important;
-    align-items: flex-start !important;
 }
 
 #pdfExportArea .receipt-service-compact {
     display: inline-block !important;
-    padding: 5px 14px !important;
+    padding: 4px 12px !important;
     background: rgba(220, 167, 115, 0.12) !important;
     border: 1px solid rgba(180, 122, 62, 0.4) !important;
     border-radius: 9999px !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
     font-weight: 800 !important;
     color: #b47a3e !important;
     letter-spacing: 0.1em !important;
@@ -2469,10 +1943,9 @@ body.light-mode #pdfExportArea {
 
 #pdfExportArea .receipt-id-compact {
     font-family: 'Courier New', monospace !important;
-    font-size: 10px !important;
+    font-size: 9px !important;
     color: #78716c !important;
     margin: 0 !important;
-    letter-spacing: 0.04em !important;
     line-height: 1.3 !important;
 }
 
@@ -2483,402 +1956,44 @@ body.light-mode #pdfExportArea {
 
 #pdfExportArea .receipt-close-btn {
     position: absolute !important;
-    top: 4px !important;
-    right: 4px !important;
+    top: 6px !important;
+    right: 6px !important;
     background: transparent !important;
     border: none !important;
     color: #a8a29e !important;
-    font-size: 16px !important;
+    font-size: 14px !important;
     cursor: pointer !important;
-    padding: 4px 8px !important;
-    line-height: 1 !important;
-    z-index: 10 !important;
+    padding: 4px 6px !important;
 }
 
-#pdfExportArea .receipt-close-btn:hover {
-    color: #1c1917 !important;
-}
-
-/* ═══ 2. BLOC INFOS — RETOUR À L'ORIGINAL (comme la modale) ═══ */
-/* On annule les overrides précédents */
+/* ═══ 2. BLOC INFOS — Style original conservé ═══ */
 #pdfExportArea .receipt-info-box {
     background: #f9fafb !important;
     border: 1px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    padding: 16px !important;
-    margin-bottom: 16px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-    box-shadow: none !important;
-}
-
-/* On retire la barre dorée à gauche (peut causer des soucis) */
-#pdfExportArea .receipt-info-box::before {
-    display: none !important;
-}
-
-/* Le bloc "Room + Date" en haut */
-#pdfExportArea .receipt-info-box > .flex:first-child {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding-bottom: 0 !important;
-    border-bottom: none !important;
-    margin-bottom: 0 !important;
-    gap: 12px !important;
-}
-
-/* Le bloc "grid-cols-2" (Arr/Dep) — garde son style original */
-#pdfExportArea .receipt-info-box .grid-cols-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    padding: 8px 10px !important;
-    margin: 0 !important;
-    font-size: 11px !important;
-    background: rgba(24, 22, 20, 0.03) !important;
     border-radius: 10px !important;
-    border-top: 1px solid #e5e7eb !important;
-    border-bottom: 1px solid #e5e7eb !important;
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
 }
 
-/* Le bloc "Agency/Quota Box" — garde son style original */
-#pdfExportArea #modalAgencyQuotaBox {
-    padding-top: 8px !important;
-    margin-top: 0 !important;
-    gap: 4px !important;
-    font-size: 11px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    border-top: 1px solid #e5e7eb !important;
-}
-
-#pdfExportArea #modalAgencyQuotaBox > div {
-    padding: 3px 0 !important;
-    line-height: 1.4 !important;
-}
-
-/* Lignes génériques dans le bloc infos */
 #pdfExportArea .receipt-info-box .flex {
-    padding: 3px 0 !important;
-    font-size: 11px !important;
-    line-height: 1.4 !important;
-}
-
-#pdfExportArea .receipt-info-box .text-xs {
+    padding: 2px 0 !important;
     font-size: 10.5px !important;
-}
-
-#pdfExportArea .receipt-info-box .text-2xl {
-    font-size: 22px !important;
-    font-weight: 700 !important;
-}
-
-/* ═══ 3. BLOC PACKAGING — RETOUR À L'ORIGINAL ═══ */
-#pdfExportArea .receipt-packaging {
-    background: #f9fafb !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 10px !important;
-    padding: 10px 16px !important;
-    margin-bottom: 14px !important;
-    font-size: 11.5px !important;
-}
-
-/* ═══ 4. TABLE ITEMS — Compact élégant ═══ */
-#pdfExportArea table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    margin-bottom: 14px !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(180, 122, 62, 0.15) !important;
-}
-
-#pdfExportArea table thead tr {
-    background: #1c1917 !important;
-}
-
-#pdfExportArea table thead th {
-    padding: 9px 14px !important;
-    font-size: 9.5px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.1em !important;
-    text-transform: uppercase !important;
-    color: #DCA773 !important;
-    text-align: left !important;
-}
-
-#pdfExportArea table tbody td {
-    padding: 8px 14px !important;
-    font-size: 10.5px !important;
-    color: #1c1917 !important;
     line-height: 1.35 !important;
 }
 
-#pdfExportArea table tbody tr {
-    border-bottom: 1px solid rgba(180, 122, 62, 0.08) !important;
-}
-
-#pdfExportArea table tbody tr:nth-child(even) {
-    background: #fafaf9 !important;
-}
-
-/* ═══ 5. BLOC TOTAL — Mise en avant dorée ═══ */
-#pdfExportArea .receipt-total-box {
-    background: linear-gradient(135deg, rgba(220, 167, 115, 0.1) 0%, rgba(248, 233, 192, 0.15) 100%) !important;
-    border: 1.5px solid rgba(180, 122, 62, 0.4) !important;
-    border-radius: 12px !important;
-    padding: 12px 18px !important;
-    margin-top: 8px !important;
-}
-
-#pdfExportArea .receipt-total-box > div:first-child {
-    padding-bottom: 6px !important;
-    margin-bottom: 4px !important;
-    font-size: 11px !important;
-}
-
-#pdfExportArea .receipt-total-label {
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    color: #78716c !important;
-    letter-spacing: 0.15em !important;
-    text-transform: uppercase !important;
-}
-
-#pdfExportArea .receipt-total-value {
-    font-family: 'Cinzel', 'Playfair Display', serif !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    color: #b47a3e !important;
-    line-height: 1.1 !important;
-}
-
-/* ═══ 6. FOOTER — Compact et propre ═══ */
-#pdfExportArea .receipt-footer {
-    margin-top: 20px !important;
-    padding-top: 14px !important;
-    border-top: 1px solid rgba(180, 122, 62, 0.3) !important;
-    text-align: center !important;
-    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    color: #b47a3e !important;
-    letter-spacing: 0.15em !important;
-    text-transform: uppercase !important;
-    line-height: 1.6 !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-}
-
-/* ═══ 7. CACHER LES ANCIENS ÉLÉMENTS (obsolètes) ═══ */
-#pdfExportArea .receipt-header,
-#pdfExportArea .receipt-logo,
-#pdfExportArea .receipt-title,
-#pdfExportArea .receipt-subtitle {
-    display: none !important;
-}
-
-/* ═══ 8. IMPRESSION / PDF ═══ */
-@media print {
-    #pdfExportArea {
-        padding: 16px 20px !important;
-        box-shadow: none !important;
-    }
-    
-    #pdfExportArea .receipt-header-compact {
-        margin-bottom: 12px !important;
-        padding-bottom: 10px !important;
-    }
-    
-    #pdfExportArea table,
-    #pdfExportArea .receipt-total-box,
-    #pdfExportArea .receipt-footer {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-}
-/* ═══════════════════════════════════════════════════════════
-   📄 PDF BORDEREAU — COMPACT FINAL
-   Total Box réduit + Footer réduit → tient sur 1 page A4
-   ═══════════════════════════════════════════════════════════ */
-
-/* ═══ TOTAL BOX — Version réduite ═══ */
-#pdfExportArea .receipt-total-box {
-    padding: 8px 14px !important;
-    margin-top: 6px !important;
-    margin-bottom: 0 !important;
-    border-radius: 10px !important;
-    background: linear-gradient(135deg, rgba(220, 167, 115, 0.08) 0%, rgba(248, 233, 192, 0.12) 100%) !important;
-    border: 1px solid rgba(180, 122, 62, 0.35) !important;
-}
-
-/* Ligne "Total Pieces" — compacte */
-#pdfExportArea .receipt-total-box > div:first-child {
-    padding-bottom: 4px !important;
-    margin-bottom: 3px !important;
-    padding-top: 0 !important;
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-    border-bottom: 1px solid rgba(180, 122, 62, 0.2) !important;
-}
-
-/* Ligne "GRAND TOTAL" — compacte */
-#pdfExportArea .receipt-total-box > div:last-child {
-    padding: 2px 0 !important;
-    margin: 0 !important;
-    line-height: 1.1 !important;
-}
-
-/* Label "GRAND TOTAL" */
-#pdfExportArea .receipt-total-label {
-    font-size: 9.5px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.12em !important;
-    color: #78716c !important;
-}
-
-/* Valeur "0.00 AED" — réduite mais visible */
-#pdfExportArea .receipt-total-value {
-    font-family: 'Cinzel', 'Playfair Display', serif !important;
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    color: #b47a3e !important;
-    line-height: 1 !important;
-}
-
-/* ═══ FOOTER — Version réduite ═══ */
-#pdfExportArea .receipt-footer {
-    margin-top: 10px !important;
-    padding-top: 8px !important;
-    border-top: 1px solid rgba(180, 122, 62, 0.25) !important;
-    text-align: center !important;
-    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
-    font-size: 9px !important;
-    font-weight: 700 !important;
-    color: #b47a3e !important;
-    letter-spacing: 0.18em !important;
-    text-transform: uppercase !important;
-    line-height: 1.3 !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-}
-
-/* ═══ RÉDUCTION GLOBALE DES MARGES ENTRE BLOCS ═══ */
-#pdfExportArea > .space-y-5 > * + * {
-    margin-top: 6px !important;
-}
-
-/* ═══ TABLE ITEMS — Encore plus compacte ═══ */
-#pdfExportArea table tbody td {
-    padding: 6px 12px !important;
-    font-size: 10px !important;
-    line-height: 1.25 !important;
-}
-
-#pdfExportArea table thead th {
-    padding: 7px 12px !important;
-    font-size: 9px !important;
-}
-
-/* ═══ BLOC INFOS — Encore plus compact ═══ */
-#pdfExportArea .receipt-info-box {
-    padding: 10px 14px !important;
-    margin-bottom: 10px !important;
-    gap: 8px !important;
-}
-
-/* ═══ BLOC PACKAGING — Encore plus compact ═══ */
-#pdfExportArea .receipt-packaging {
-    padding: 6px 14px !important;
-    margin-bottom: 10px !important;
-    font-size: 10.5px !important;
-}
-
-/* ═══ CONTENEUR — Padding réduit ═══ */
-#pdfExportArea {
-    padding: 18px 22px 20px 22px !important;
-}
-
-/* ═══ IMPRESSION / PDF — Forcer 1 seule page ═══ */
-@media print {
-    #pdfExportArea {
-        padding: 14px 18px !important;
-    }
-    
-    #pdfExportArea .receipt-total-box {
-        padding: 6px 12px !important;
-        margin-top: 4px !important;
-    }
-    
-    #pdfExportArea .receipt-footer {
-        margin-top: 8px !important;
-        padding-top: 6px !important;
-    }
-}
-/* ═══════════════════════════════════════════════════════════
-   📄 PDF BORDEREAU — ULTRA COMPACT (fix 2 pages → 1 page)
-   Réductions finales pour tenir sur 1 SEULE page A4
-   ═══════════════════════════════════════════════════════════ */
-
-/* ═══ 1. CONTENEUR — Padding minimal ═══ */
-#pdfExportArea {
-    padding: 14px 18px 14px 18px !important;
-}
-
-/* ═══ 2. HEADER — Plus compact ═══ */
-#pdfExportArea .receipt-header-compact {
-    padding: 2px 4px 8px 4px !important;
-    margin-bottom: 10px !important;
-    gap: 14px !important;
-}
-
-#pdfExportArea .receipt-header-logo {
-    padding-right: 14px !important;
-}
-
-#pdfExportArea .receipt-logo-compact {
-    height: 42px !important;
-    max-width: 110px !important;
-}
-
-#pdfExportArea .receipt-service-compact {
-    padding: 4px 12px !important;
-    font-size: 10px !important;
-}
-
-#pdfExportArea .receipt-id-compact {
-    font-size: 9px !important;
-}
-
-/* ═══ 3. BLOC INFOS — Beaucoup plus compact ═══ */
-#pdfExportArea .receipt-info-box {
-    padding: 8px 12px !important;
-    margin-bottom: 8px !important;
-    gap: 6px !important;
-    border-radius: 10px !important;
-}
-
-#pdfExportArea .receipt-info-box .flex {
-    padding: 2px 0 !important;
-    font-size: 10px !important;
-    line-height: 1.3 !important;
-}
-
 #pdfExportArea .receipt-info-box .text-xs {
-    font-size: 9.5px !important;
+    font-size: 10px !important;
 }
 
 #pdfExportArea .receipt-info-box .text-2xl {
-    font-size: 18px !important;
+    font-size: 20px !important;
 }
 
 #pdfExportArea .receipt-info-box .grid-cols-2 {
-    padding: 4px 6px !important;
+    padding: 5px 8px !important;
     font-size: 9.5px !important;
     gap: 4px !important;
-    margin: 2px 0 !important;
+    margin: 3px 0 !important;
 }
 
 #pdfExportArea #modalAgencyQuotaBox {
@@ -2889,65 +2004,93 @@ body.light-mode #pdfExportArea {
 
 #pdfExportArea #modalAgencyQuotaBox > div {
     padding: 1px 0 !important;
-    line-height: 1.25 !important;
+    line-height: 1.3 !important;
 }
 
-/* ═══ 4. BLOC PACKAGING — Plus compact ═══ */
+/* ═══ 3. BLOC PACKAGING ═══ */
 #pdfExportArea .receipt-packaging {
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
     padding: 5px 12px !important;
     margin-bottom: 8px !important;
     font-size: 10px !important;
 }
 
-/* ═══ 5. TABLE ITEMS — Ultra compacte ═══ */
+/* ═══ 4. TABLE ITEMS ═══ */
 #pdfExportArea table {
+    width: 100% !important;
+    border-collapse: collapse !important;
     margin-bottom: 8px !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(180, 122, 62, 0.15) !important;
+}
+
+#pdfExportArea table thead tr {
+    background: #1c1917 !important;
 }
 
 #pdfExportArea table thead th {
-    padding: 5px 10px !important;
-    font-size: 8.5px !important;
+    padding: 6px 12px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
     letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: #DCA773 !important;
+    text-align: left !important;
 }
 
 #pdfExportArea table tbody td {
-    padding: 4px 10px !important;
-    font-size: 9.5px !important;
-    line-height: 1.2 !important;
+    padding: 5px 12px !important;
+    font-size: 10px !important;
+    color: #1c1917 !important;
+    line-height: 1.25 !important;
 }
 
-/* ═══ 6. TOTAL BOX — Très compact ═══ */
+#pdfExportArea table tbody tr:nth-child(even) {
+    background: #fafaf9 !important;
+}
+
+/* ═══ 5. TOTAL BOX ═══ */
 #pdfExportArea .receipt-total-box {
-    padding: 6px 12px !important;
-    margin-top: 4px !important;
-    margin-bottom: 0 !important;
-    border-radius: 8px !important;
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.1) 0%, rgba(248, 233, 192, 0.15) 100%) !important;
+    border: 1.5px solid rgba(180, 122, 62, 0.4) !important;
+    border-radius: 10px !important;
+    padding: 8px 14px !important;
+    margin-top: 6px !important;
 }
 
 #pdfExportArea .receipt-total-box > div:first-child {
-    padding-bottom: 3px !important;
-    margin-bottom: 2px !important;
-    font-size: 9px !important;
-    line-height: 1.15 !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 3px !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+    border-bottom: 1px solid rgba(180, 122, 62, 0.2) !important;
 }
 
 #pdfExportArea .receipt-total-box > div:last-child {
     padding: 0 !important;
-    margin: 0 !important;
     line-height: 1 !important;
 }
 
 #pdfExportArea .receipt-total-label {
-    font-size: 8.5px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    color: #78716c !important;
     letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
 }
 
 #pdfExportArea .receipt-total-value {
-    font-size: 16px !important;
+    font-family: 'Cinzel', 'Playfair Display', serif !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
     line-height: 1 !important;
 }
 
-/* ═══ 7. FOOTER — Très compact, visible, en bas de page 1 ═══ */
+/* ═══ 6. FOOTER — VISIBLE ET COMPACT ═══ */
 #pdfExportArea .receipt-footer {
     display: block !important;
     visibility: visible !important;
@@ -2958,57 +2101,27 @@ body.light-mode #pdfExportArea {
     border-top: 1px solid rgba(180, 122, 62, 0.25) !important;
     text-align: center !important;
     font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
-    font-size: 8.5px !important;
+    font-size: 9px !important;
     font-weight: 700 !important;
     color: #b47a3e !important;
     letter-spacing: 0.16em !important;
     text-transform: uppercase !important;
-    line-height: 1.2 !important;
+    line-height: 1.3 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    page-break-before: avoid !important;
-    break-before: avoid !important;
 }
 
-/* ═══ 8. RÉDUCTION DES MARGES ENTRE BLOCS ═══ */
-#pdfExportArea > .space-y-5 > * + * {
-    margin-top: 5px !important;
+/* ═══ 7. CACHER ANCIENS ÉLÉMENTS ═══ */
+#pdfExportArea .receipt-header,
+#pdfExportArea .receipt-logo,
+#pdfExportArea .receipt-title,
+#pdfExportArea .receipt-subtitle {
+    display: none !important;
 }
 
-/* ═══ 9. IMPRESSION / PDF — Forcer 1 seule page ═══ */
+/* ═══ 8. IMPRESSION / PDF ═══ */
 @media print {
     #pdfExportArea {
         padding: 12px 16px !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-    }
-    
-    #pdfExportArea .receipt-header-compact {
-        margin-bottom: 8px !important;
-        padding-bottom: 6px !important;
-    }
-    
-    #pdfExportArea .receipt-info-box {
-        margin-bottom: 6px !important;
-        padding: 6px 10px !important;
-    }
-    
-    #pdfExportArea .receipt-packaging {
-        margin-bottom: 6px !important;
-        padding: 4px 10px !important;
-    }
-    
-    #pdfExportArea table {
-        margin-bottom: 6px !important;
-    }
-    
-    #pdfExportArea .receipt-total-box {
-        margin-top: 4px !important;
-        padding: 5px 10px !important;
-    }
-    
-    #pdfExportArea .receipt-footer {
-        margin-top: 6px !important;
-        padding-top: 5px !important;
     }
 }
