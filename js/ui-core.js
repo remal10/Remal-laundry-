@@ -281,9 +281,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const spaDateEl = document.getElementById('spa-current-date');
     if(spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
-    const serialEl = document.getElementById('spa-serial-no');
-    if(serialEl && !serialEl.value) serialEl.value = String(23).padStart(4, '0');
-
+// Serial No — laissé VIDE par défaut (saisie manuelle)
+const serialEl = document.getElementById('spa-serial-no');
+if (serialEl && !serialEl.value) serialEl.value = '';
     const now = new Date();
     const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const timeIso = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
