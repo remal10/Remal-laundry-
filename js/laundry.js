@@ -678,7 +678,6 @@ if (!isNewSpa) {
 
 sauvegarderDonneesLocalStorage();
 await writeRecordToFile(targetRecord);
-switchMainSection('liveRecord');
 if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
 
 // ✨ PHASE E.5 : Undo sur nouvelle création SPA
