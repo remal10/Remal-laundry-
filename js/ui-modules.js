@@ -1675,7 +1675,6 @@ window.supprimerSpaRecord = supprimerSpaRecord;
 console.log('✅ [SPA Modal] Fonctions chargées');
 // ═══════════════════════════════════════════════════════════════════
 // 📄 EXPORT SPA PDF — Simple et direct
-// ═══════════════════════════════════════════════════════════════════
 async function printSpaDetail() {
     const content = document.getElementById('spaDetailContent');
     if (!content) {
@@ -1687,12 +1686,76 @@ async function printSpaDetail() {
     const dateClean = new Date().toISOString().split('T')[0];
     const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
 
+    // ═══ 1. Masquer les boutons + régler le scroll de la modale ═══
     const modal = document.querySelector('#spaDetailModal > div');
     const actionButtons = modal?.querySelector('.no-print');
     if (actionButtons) actionButtons.style.display = 'none';
+    
+    const originalScroll = modal.scrollTop;
+    modal.scrollTop = 0;
 
-    await new Promise(r => setTimeout(r, 300));
+    // ═══ 2. Déplacer la zone dans <body> pour capture propre ═══
+    const originalParent = content.parentNode;
+    const originalNextSibling = content.nextSibling;
+    
+    // Créer un wrapper temporaire pour la capture
+    const wrapper = document.createElement('div');
+    wrapper.id = 'spaPdfWrapperTemp';
+    wrapper.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 700px;
+        background: #ffffff;
+        z-index: 999999;
+        padding: 0;
+        margin: 0;
+        pointer-events: none;
+    `;
+    document.body.appendChild(wrapper);
+    wrapper.appendChild(content);
 
+    // ═══ 3. Attendre le rendu ═══
+    await new Promise(r => setTimeout(r, 400));
+
+    const opt = {
+        margin:       [8, 8, 8, 8],
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            allowTaint: true,
+            logging: false, 
+            backgroundColor: '#ffffff',
+            scrollX: 0,
+            scrollY: 0,
+            width: 700,
+            windowWidth: 700
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(content).save();
+        console.log('✅ [SPA PDF] Généré:', filename);
+    } catch (e) {
+        console.error("Erreur PDF SPA:", e);
+        alert("⚠️ Error generating SPA PDF.");
+    } finally {
+        // ═══ 4. Restaurer ═══
+        if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+            originalParent.insertBefore(content, originalNextSibling);
+        } else {
+            originalParent.appendChild(content);
+        }
+        if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+        
+        if (actionButtons) actionButtons.style.display = '';
+        if (modal) modal.scrollTop = originalScroll;
+    }
+}
     const opt = {
         margin:       [8, 8, 8, 8],
         filename:     filename,
