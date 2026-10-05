@@ -1341,6 +1341,7 @@ await new Promise(r => setTimeout(r, 500));
     spaPdfArea.style.left = '';
     spaPdfArea.style.top = '';
     spaPdfArea.style.width = '';
+    spaPdfArea.style.maxWidth = '';
     spaPdfArea.style.zIndex = '';
     
     if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
