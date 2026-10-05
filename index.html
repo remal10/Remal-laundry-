@@ -852,27 +852,32 @@
 
 <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3 receipt-info-box">
     <div class="flex justify-between items-start">
-        <!-- GAUCHE : LAUNDRY SERVICE + Receipt ID (ancienne place Room:) -->
         <div class="receipt-info-left">
             <span id="modalIdentifierLabel" style="display:none;">Room:</span>
             <p id="modalPdfLaundryService" class="receipt-service-compact">LAUNDRY SERVICE</p>
             <p id="modalPdfReceiptId" class="receipt-id-compact">Receipt ID: <strong id="modalReceiptIdDisplay">---</strong></p>
         </div>
-        <!-- DROITE : Date + Hotel Count -->
         <div class="text-right">
             <p id="modalDate" class="text-xs text-stone-500 font-bold"></p>
             <span id="modalTypeBadgeInline" class="text-[10px] bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300 inline-block mt-1">Hotel Count</span>
+            <!-- ✨ SPA : Serial No (affiché uniquement pour SPA) -->
+            <p id="modalSpaSerialLine" style="display:none;" class="text-xs text-stone-700 font-bold mt-1">
+                Serial No: <span id="modalSpaSerial" class="text-[#b47a3e] font-black">---</span>
+            </p>
         </div>
     </div>
-                    <div id="modalAgencyQuotaBox" class="hidden pt-3 border-t border-stone-200 text-xs space-y-1.5 text-stone-700 font-bold">
-                        <div class="flex justify-between"><span id="modalLblGuestName">Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span id="modalLblRoomTyp">Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span id="modalLblAgency">Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
-                        <div class="flex justify-between"><span id="modalLblQuota">Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
-                        <div class="flex justify-between border-t border-stone-200 pt-1.5 text-[11px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
-                    </div>
-                </div>
-
+    <div id="modalAgencyQuotaBox" class="hidden pt-3 border-t border-stone-200 text-xs space-y-1.5 text-stone-700 font-bold">
+        <!-- Infos Laundry (Guest, Typ, Agency, Quota) — cachées pour SPA -->
+        <div id="modalLaundryInfosRow">
+            <div class="flex justify-between"><span id="modalLblGuestName">Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
+            <div class="flex justify-between"><span id="modalLblRoomTyp">Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
+            <div class="flex justify-between"><span id="modalLblAgency">Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
+            <div class="flex justify-between"><span id="modalLblQuota">Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
+        </div>
+        <!-- Infos toujours visibles -->
+        <div class="flex justify-between border-t border-stone-200 pt-1.5 text-[11px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
+    </div>
+</div>
 <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
     <span id="modalLblPackaging">Packaging:</span>
                     <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
