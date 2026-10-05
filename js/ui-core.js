@@ -50,7 +50,11 @@ function activerSwipeNavigation() {
     const body = document.getElementById('bodyRoot') || document.body;
     if (!body.classList.contains('is-touch')) return;
     
-    const sections = ['liveRecord', 'spa', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
+    // 🔒 Filtrer les sections selon le rôle
+    const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
+    const sections = isAdminUser
+    ? ['liveRecord', 'spa', 'lostfound', 'pdfList', 'massEntry', 'dashboard']
+    : ['liveRecord', 'spa'];   // Staff : uniquement Laundry + SPA
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
