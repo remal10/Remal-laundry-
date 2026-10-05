@@ -576,7 +576,76 @@
                 </button>
             </div>
         </section>
+         <!-- ═══════════════════════════════════════════════════════════
+     📄 PDF SPA — Zone cachée 100% DÉDIÉE (ne touche PAS Laundry)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="spaPdfExportArea" style="display:none;">
 
+    <!-- HEADER : 2 logos opposés + SPA centre -->
+    <div class="spa-pdf-header">
+        <div class="spa-pdf-logo-left">
+            <img src="assets/remal-logo.png" alt="Remal" class="spa-pdf-logo-img">
+        </div>
+        <div class="spa-pdf-title-center">
+            <h2 class="spa-pdf-title-main">S P A</h2>
+            <p class="spa-pdf-title-sub">Laundry Daily Record Sheet</p>
+        </div>
+        <div class="spa-pdf-logo-right">
+            <img src="assets/velement-logo.png" alt="V Element SPA" class="spa-pdf-logo-img">
+        </div>
+    </div>
+
+    <!-- INFO ROW : Date / Serial / Receipt / Agent / Packaging -->
+    <div class="spa-pdf-info-row">
+        <div class="spa-pdf-info-left">
+            <p><strong>Date :</strong> <span id="spaPdfDate">---</span></p>
+            <p><strong>Given By (Spa) :</strong> <span id="spaPdfGivenBy">---</span></p>
+            <p><strong>Agent :</strong> <span id="spaPdfAgent">---</span></p>
+        </div>
+        <div class="spa-pdf-info-right">
+            <p><strong>Serial No :</strong> <span id="spaPdfSerial">---</span></p>
+            <p><strong>Receipt ID :</strong> <span id="spaPdfReceiptId">---</span></p>
+            <p><strong>Packaging :</strong> <span id="spaPdfPackaging">SPA Daily Sheet</span></p>
+        </div>
+    </div>
+
+    <!-- TABLEAU ITEMS -->
+    <table class="spa-pdf-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-center">Rate (AED)</th>
+                <th class="text-right">Total Amount (AED)</th>
+            </tr>
+        </thead>
+        <tbody id="spaPdfTableBody"></tbody>
+        <tfoot>
+            <tr class="spa-pdf-total-row">
+                <td colspan="3" class="text-right"><strong>GRAND TOTAL :</strong></td>
+                <td class="text-right"><strong id="spaPdfGrandTotal">0.00 AED</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- SIGNATURES -->
+    <div class="spa-pdf-signatures">
+        <div class="spa-pdf-signature-item">
+            <p><strong>Collected By (Laundry) :</strong> <span id="spaPdfCollectedBy">---</span></p>
+            <p class="spa-pdf-signature-date"><strong>Collection :</strong> <span id="spaPdfCollectionDate">---</span></p>
+        </div>
+        <div class="spa-pdf-signature-item">
+            <p><strong>Delivered By (Laundry) :</strong> <span id="spaPdfDeliveredBy">---</span></p>
+            <p class="spa-pdf-signature-date"><strong>Delivery :</strong> <span id="spaPdfDeliveryDate">---</span></p>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="spa-pdf-footer">
+        THANK YOU FOR YOUR STAY
+    </div>
+
+</div>
         <div id="sectionLostfound" class="hidden space-y-6 no-print">
             <div class="flex justify-between items-center bg-[#181614] p-4 sm:p-6 rounded-3xl border border-[#2f2820]">
                 <div>
