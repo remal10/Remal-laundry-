@@ -897,7 +897,99 @@
             </button>
         </div>
     </div>
-    
+    <!-- ═══════════════════════════════════════════════════════════
+     🧘 MODALE DÉTAILS SPA — 100% dédiée (ne touche PAS Laundry)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="spaDetailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
+        
+        <!-- Zone PDF SPA (sera déplacée dans body par la fonction export) -->
+        <div id="spaDetailContent" class="bg-white text-stone-900 rounded-2xl p-6 space-y-5">
+            
+            <!-- HEADER : 2 logos -->
+            <div class="spa-detail-header">
+                <div class="spa-detail-logo-left">
+                    <img src="assets/remal-logo.png" alt="Remal" class="spa-detail-logo" onerror="this.style.display='none';">
+                </div>
+                <div class="spa-detail-title-center">
+                    <h2 class="spa-detail-title-main">S P A</h2>
+                    <p class="spa-detail-title-sub">Laundry Daily Record Sheet</p>
+                </div>
+                <div class="spa-detail-logo-right">
+                    <img src="assets/velement-logo.png" alt="V Element SPA" class="spa-detail-logo" onerror="this.style.display='none';">
+                </div>
+            </div>
+
+            <!-- INFOS -->
+            <div class="spa-detail-info-row">
+                <div class="spa-detail-info-left">
+                    <p><strong>Date :</strong> <span id="spaDetailDate">---</span></p>
+                    <p><strong>Given By (Spa) :</strong> <span id="spaDetailGivenBy">---</span></p>
+                    <p><strong>Agent :</strong> <span id="spaDetailAgent">---</span></p>
+                </div>
+                <div class="spa-detail-info-right">
+                    <p><strong>Serial No :</strong> <span id="spaDetailSerial">---</span></p>
+                    <p><strong>Receipt ID :</strong> <span id="spaDetailReceiptId">---</span></p>
+                    <p><strong>Packaging :</strong> <span id="spaDetailPackaging">SPA Daily Sheet</span></p>
+                </div>
+            </div>
+
+            <!-- TABLEAU -->
+            <table class="spa-detail-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-center">Rate (AED)</th>
+                        <th class="text-right">Total Amount (AED)</th>
+                    </tr>
+                </thead>
+                <tbody id="spaDetailTableBody"></tbody>
+                <tfoot>
+                    <tr class="spa-detail-total-row">
+                        <td colspan="3" class="text-right"><strong>GRAND TOTAL :</strong></td>
+                        <td class="text-right"><strong id="spaDetailGrandTotal">0.00 AED</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- SIGNATURES -->
+            <div class="spa-detail-signatures">
+                <div class="spa-detail-signature-item">
+                    <p><strong>Collected By (Laundry) :</strong> <span id="spaDetailCollectedBy">---</span></p>
+                    <p class="spa-detail-signature-date"><strong>Collection :</strong> <span id="spaDetailCollectionDate">---</span></p>
+                </div>
+                <div class="spa-detail-signature-item">
+                    <p><strong>Delivered By (Laundry) :</strong> <span id="spaDetailDeliveredBy">---</span></p>
+                    <p class="spa-detail-signature-date"><strong>Delivery :</strong> <span id="spaDetailDeliveryDate">---</span></p>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="spa-detail-footer">
+                THANK YOU FOR YOUR STAY
+            </div>
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="space-y-3 pt-2 no-print">
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="exportSpaPDFFromDetail()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">
+                    📥 Download PDF
+                </button>
+                <button onclick="fermerSpaDetailModal()" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">
+                    ✕ Close
+                </button>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="modifierSpaRecord()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow">✏️ Edit</button>
+                <button onclick="dupliquerSpaRecord()" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow">📋 Duplicate</button>
+                <button onclick="supprimerSpaRecord()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow">🗑️ Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- MODALE DETAILS RECEIPT -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
