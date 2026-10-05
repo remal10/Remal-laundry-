@@ -398,3 +398,28 @@ if (typeof originalToggleTheme === 'function') {
 }
 
 console.log('✅ [Sprint 1.5] Menu mobile staff chargé');
+// 🔒 Re-apply role visibility after full DOM render
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof applyRoleVisibility === 'function') {
+            applyRoleVisibility();
+            console.log('🔒 [Role] Re-applied after DOMContentLoaded');
+        }
+    }, 300);
+});
+
+// 🔒 Re-apply après chaque resize (rotation écran mobile)
+window.addEventListener('resize', () => {
+    if (typeof applyRoleVisibility === 'function') {
+        applyRoleVisibility();
+    }
+});
+
+// 🔒 Re-apply après chaque re-render de la nav
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (typeof applyRoleVisibility === 'function') {
+            applyRoleVisibility();
+        }
+    }, 500);
+});
