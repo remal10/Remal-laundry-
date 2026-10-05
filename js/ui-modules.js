@@ -1143,101 +1143,226 @@ function deleteLFItem(id) {
 function renderManagementDashboard() {
     chargerDonneesLocalStorage();
 
-    let totalRevenue = 0;
-    let totalGarments = 0;
-    let statusCounts = { Collected: 0, Washing: 0, Ready: 0, Delivered: 0, Pending: 0 };
-    let revenueByDate = {};
+    // ═══ 1. Filtrer selon la période ═══
+    const now = new Date();
+    let startDate = new Date();
 
-    cachedSlips.forEach(slip => {
-        const rev = Number(slip.grand_total || slip.total || 0);
-        const garments = Number(slip.total_pieces || slip.total_clothes || 0);
-        
-        totalRevenue += rev;
-        totalGarments += garments;
-        
-        let st = slip.status || 'Collected';
-        if (statusCounts[st] !== undefined) {
-            statusCounts[st]++;
-        } else {
-            statusCounts.Collected++;
-        }
+    switch (currentDashboardPeriod) {
+        case 'today':
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case '7d':
+            startDate.setDate(now.getDate() - 7);
+            break;
+        case '30d':
+            startDate.setDate(now.getDate() - 30);
+            break;
+        case '90d':
+            startDate.setDate(now.getDate() - 90);
+            break;
+    }
 
-        if (slip.created_at) {
-            let dStr = slip.created_at.split('T')[0];
-            revenueByDate[dStr] = (revenueByDate[dStr] || 0) + rev;
-        }
+    // Période précédente (pour les deltas)
+    const periodLength = now - startDate;
+    const prevStart = new Date(startDate.getTime() - periodLength);
+    const prevEnd = startDate;
+
+    // ═══ 2. Filtrer les slips ═══
+    const currentSlips = cachedSlips.filter(s => {
+        if (!s.created_at) return false;
+        const d = new Date(s.created_at);
+        return d >= startDate && d <= now;
     });
 
-    const kpiRev = document.getElementById('kpiRevenue');
-    const kpiOrd = document.getElementById('kpiOrders');
-    const kpiGar = document.getElementById('kpiGarments');
+    const prevSlips = cachedSlips.filter(s => {
+        if (!s.created_at) return false;
+        const d = new Date(s.created_at);
+        return d >= prevStart && d < prevEnd;
+    });
 
-    if(kpiRev) kpiRev.innerText = `${totalRevenue.toFixed(2)} AED`;
-    if(kpiOrd) kpiOrd.innerText = cachedSlips.length;
-    if(kpiGar) kpiGar.innerText = `${totalGarments} pcs`;
+    // ═══ 3. Calculer les métriques ═══
+    function computeMetrics(slips) {
+        let revenue = 0, orders = slips.length, garments = 0;
+        let laundry = 0, spa = 0;
+        let statusCounts = { Collected: 0, Washing: 0, Ready: 0, Delivered: 0, Pending: 0 };
+        let revenueByDate = {};
+        let roomRevenue = {};
+        let agencyRevenue = {};
+        let roomGuests = {};
+        let agencyOrders = {};
 
+        slips.forEach(s => {
+            const rev = Number(s.grand_total || s.total || 0);
+            const pcs = Number(s.total_pieces || s.total_clothes || 0);
+
+            revenue += rev;
+            garments += pcs;
+
+            if (s.is_spa) {
+                spa += rev;
+            } else {
+                laundry += rev;
+
+                const room = String(s.room_number || s.room || '---');
+                roomRevenue[room] = (roomRevenue[room] || 0) + rev;
+                if (!roomGuests[room]) roomGuests[room] = s.guest_name || 'Guest';
+
+                const agency = s.agency || 'Direct';
+                agencyRevenue[agency] = (agencyRevenue[agency] || 0) + rev;
+                agencyOrders[agency] = (agencyOrders[agency] || 0) + 1;
+            }
+
+            let st = s.status || 'Collected';
+            if (statusCounts[st] !== undefined) statusCounts[st]++;
+            else statusCounts.Collected++;
+
+            if (s.created_at) {
+                const dStr = s.created_at.split('T')[0];
+                revenueByDate[dStr] = (revenueByDate[dStr] || 0) + rev;
+            }
+        });
+
+        return { revenue, orders, garments, laundry, spa, statusCounts, revenueByDate, roomRevenue, agencyRevenue, roomGuests, agencyOrders };
+    }
+
+    const m = computeMetrics(currentSlips);
+    const p = computeMetrics(prevSlips);
+
+    // ═══ 4. Animer les KPI ═══
+    animateNumber(document.getElementById('kpiRevenue'), m.revenue, 'AED');
+    animateNumber(document.getElementById('kpiOrders'), m.orders, '');
+    animateNumber(document.getElementById('kpiGarments'), m.garments, 'pcs');
+    animateNumber(document.getElementById('kpiLaundry'), m.laundry, 'AED');
+    animateNumber(document.getElementById('kpiSpa'), m.spa, 'AED');
+
+    // ═══ 5. Deltas ═══
+    function updateDelta(elId, curr, prev) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (prev === 0 && curr === 0) { el.style.display = 'none'; return; }
+        if (prev === 0) { el.style.display = 'none'; return; }
+
+        const delta = ((curr - prev) / prev) * 100;
+        el.style.display = 'inline-flex';
+        el.className = 'dashboard-kpi-delta ' + (delta >= 0 ? 'up' : 'down');
+        el.textContent = `${delta >= 0 ? '↑' : '↓'} ${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
+    }
+
+    updateDelta('kpiRevenueDelta', m.revenue, p.revenue);
+    updateDelta('kpiOrdersDelta', m.orders, p.orders);
+    updateDelta('kpiGarmentsDelta', m.garments, p.garments);
+    updateDelta('kpiLaundryDelta', m.laundry, p.laundry);
+    updateDelta('kpiSpaDelta', m.spa, p.spa);
+
+    // ═══ 6. Charts ═══
     requestAnimationFrame(() => {
-        const ctxDoughnutEl = document.getElementById('statusDoughnutChart');
-        if (ctxDoughnutEl) {
-            const ctxDoughnut = ctxDoughnutEl.getContext('2d');
-            if (doughnutChartInstance) doughnutChartInstance.destroy();
-
-            doughnutChartInstance = new Chart(ctxDoughnut, {
+        // Pie : Laundry vs SPA
+        const pieEl = document.getElementById('spaVsLaundryChart');
+        if (pieEl) {
+            if (window._spaVsLaundryChart) window._spaVsLaundryChart.destroy();
+            window._spaVsLaundryChart = new Chart(pieEl.getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
+                    labels: ['Laundry', 'SPA'],
                     datasets: [{
-                        data: [
-                            statusCounts.Collected + statusCounts.Pending, 
-                            statusCounts.Washing, 
-                            statusCounts.Ready, 
-                            statusCounts.Delivered
-                        ],
-                        backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
-                        borderWidth: 0
+                        data: [m.laundry, m.spa],
+                        backgroundColor: ['#93c5fd', '#d8b4fe'],
+                        borderWidth: 0,
+                        hoverOffset: 12
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#d6d3d1' } } }
+                    animation: { duration: 1500, easing: 'easeOutQuart' },
+                    plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } }
                 }
             });
         }
 
-        const dates = Object.keys(revenueByDate).sort();
-        const revenues = dates.map(d => revenueByDate[d]);
+        // Doughnut : statuts
+        const doughnutEl = document.getElementById('statusDoughnutChart');
+        if (doughnutEl) {
+            if (window._statusDoughnutChart) window._statusDoughnutChart.destroy();
+            window._statusDoughnutChart = new Chart(doughnutEl.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
+                    datasets: [{
+                        data: [
+                            m.statusCounts.Collected + m.statusCounts.Pending,
+                            m.statusCounts.Washing,
+                            m.statusCounts.Ready,
+                            m.statusCounts.Delivered
+                        ],
+                        backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutQuart' },
+                    plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } }
+                }
+            });
+        }
 
-        const ctxBarEl = document.getElementById('revenueBarChart');
-        if (ctxBarEl) {
-            const ctxBar = ctxBarEl.getContext('2d');
-            if (barChartInstance) barChartInstance.destroy();
+        // Bar : revenue par date
+        const barEl = document.getElementById('revenueBarChart');
+        if (barEl) {
+            const dates = Object.keys(m.revenueByDate).sort();
+            const revenues = dates.map(d => m.revenueByDate[d]);
 
-            barChartInstance = new Chart(ctxBar, {
+            if (window._revenueBarChart) window._revenueBarChart.destroy();
+            window._revenueBarChart = new Chart(barEl.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: dates.length > 0 ? dates : ['No Data'],
                     datasets: [{
                         label: 'Revenue (AED)',
                         data: revenues.length > 0 ? revenues : [0],
-                        backgroundColor: '#DCA773',
-                        borderRadius: 6
+                        backgroundColor: (ctx) => {
+                            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
+                            g.addColorStop(0, '#F8E9C0');
+                            g.addColorStop(1, '#B88351');
+                            return g;
+                        },
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 1800, easing: 'easeOutQuart' },
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { ticks: { font: { size: 11 }, color: '#d6d3d1' } },
-                        x: { ticks: { font: { size: 11 }, color: '#d6d3d1' } }
+                        y: { ticks: { color: '#a8a29e', font: { size: 11 } }, grid: { color: 'rgba(47,40,32,0.4)' } },
+                        x: { ticks: { color: '#a8a29e', font: { size: 11 } }, grid: { display: false } }
                     }
                 }
             });
         }
     });
-}
 
+    // ═══ 7. Top 5 Rooms ═══
+    const topRooms = Object.entries(m.roomRevenue)
+        .map(([room, value]) => ({ name: `Room ${room}`, value, sub: m.roomGuests[room] || '' }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    renderTopList('topRoomsList', topRooms, true);
+
+    // ═══ 8. Top 5 Agencies ═══
+    const topAgencies = Object.entries(m.agencyRevenue)
+        .map(([agency, value]) => ({ name: agency, value, sub: `${m.agencyOrders[agency]} order${m.agencyOrders[agency] > 1 ? 's' : ''}` }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    renderTopList('topAgenciesList', topAgencies, true);
+}
 // ═══════════════════════════════════════════════════════════════════
 // SPA
 // ═══════════════════════════════════════════════════════════════════
