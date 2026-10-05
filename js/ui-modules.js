@@ -1637,7 +1637,6 @@ async function supprimerSpaRecord() {
 // Exposer
 window.ouvrirSpaDetailModal = ouvrirSpaDetailModal;
 window.fermerSpaDetailModal = fermerSpaDetailModal;
-window.exportSpaPDFFromDetail = exportSpaPDFFromDetail;
 window.modifierSpaRecord = modifierSpaRecord;
 window.dupliquerSpaRecord = dupliquerSpaRecord;
 window.supprimerSpaRecord = supprimerSpaRecord;
