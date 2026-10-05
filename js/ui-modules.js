@@ -1792,3 +1792,79 @@ const opt = {
 }
 window.printSpaDetail = printSpaDetail;
 console.log('✅ [SPA] printSpaDetail chargée');
+// ═══════════════════════════════════════════════════════════════════
+// 📈 DASHBOARD PREMIUM — Helpers
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Animate a number from 0 to target with easing
+ */
+function animateNumber(el, target, suffix = '', duration = 1500) {
+    if (!el) return;
+    const start = 0;
+    const startTime = performance.now();
+    const isFloat = target % 1 !== 0;
+
+    function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = start + (target - start) * eased;
+
+        if (isFloat) {
+            el.textContent = value.toFixed(2) + (suffix ? ' ' + suffix : '');
+        } else {
+            el.textContent = Math.floor(value) + (suffix ? ' ' + suffix : '');
+        }
+
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+
+/**
+ * Render a Top 5 list with animated bars
+ */
+function renderTopList(containerId, items, isCurrency = true) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data for this period.</p>';
+        return;
+    }
+
+    const max = Math.max(...items.map(i => i.value), 1);
+
+    container.innerHTML = items.map((item, i) => `
+        <div class="dashboard-top-item">
+            <div class="dashboard-top-rank">${i + 1}</div>
+            <div class="dashboard-top-info">
+                <div class="dashboard-top-name">${item.name}</div>
+                <div class="dashboard-top-sub">${item.sub || ''}</div>
+            </div>
+            <div class="dashboard-top-value">${isCurrency ? item.value.toFixed(0) + ' AED' : item.value}</div>
+            <div class="dashboard-top-bar" style="width: ${(item.value / max) * 100}%"></div>
+        </div>
+    `).join('');
+}
+
+// État global pour la période du dashboard
+let currentDashboardPeriod = 'today';
+
+/**
+ * Switch dashboard period and re-render
+ */
+function switchDashboardPeriod(period) {
+    currentDashboardPeriod = period;
+
+    document.querySelectorAll('.dashboard-filter-btn').forEach(btn => {
+        if (btn.dataset.period === period) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    renderManagementDashboard();
+}
