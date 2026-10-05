@@ -571,7 +571,7 @@ function afficherListeBordereauxLocal() {
             const totalAmount = entry.grand_total || entry.total || 0;
 
             html += `
-                <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
+                <div onclick="ouvrirSpaDetailModal('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
                     <div>
                         <span class="font-serif-luxury font-bold text-purple-300 text-sm sm:text-base">SPA Sheet #${entry.spa_serial || '---'} — ${entry.guest_name || 'Spa Agent'}</span>
                         <span class="ml-2 luxe-badge luxe-badge-spa">SPA Daily Sheet</span>
