@@ -1580,63 +1580,6 @@ function fermerSpaDetailModal() {
     currentSpaRecordId = null;
 }
 
-async function exportSpaPDFFromDetail() {
-    if (!currentSpaRecordId) return;
-
-    chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
-    if (!entry) return;
-
-    const content = document.getElementById('spaDetailContent');
-    const modal = document.querySelector('#spaDetailModal > div');
-
-    // Masquer les boutons
-    const actionButtons = modal.querySelector('.no-print');
-    if (actionButtons) actionButtons.style.display = 'none';
-
-    // Déplacer la zone dans body
-    const originalParent = content.parentNode;
-    const originalNextSibling = content.nextSibling;
-    document.body.appendChild(content);
-    content.style.position = 'fixed';
-    content.style.left = '-9999px';
-    content.style.top = '0';
-    content.style.width = '700px';
-    content.style.background = '#ffffff';
-
-    await new Promise(r => setTimeout(r, 200));
-
-    const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-    const filename = `REMAL_${dateClean}_SPA-${entry.spa_serial || '0000'}.pdf`;
-
-    const opt = {
-        margin:       [10, 12, 12, 12],
-        filename:     filename,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    try {
-        await html2pdf().set(opt).from(content).save();
-        console.log('✅ [SPA PDF] Généré:', filename);
-    } catch (e) {
-        console.error("Erreur PDF SPA:", e);
-        alert("⚠️ Error generating SPA PDF.");
-    } finally {
-        content.style.position = '';
-        content.style.left = '';
-        content.style.top = '';
-        content.style.width = '';
-        if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
-            originalParent.insertBefore(content, originalNextSibling);
-        } else {
-            originalParent.appendChild(content);
-        }
-        if (actionButtons) actionButtons.style.display = '';
-    }
-}
 
 function modifierSpaRecord() {
     if (!currentSpaRecordId) return;
