@@ -1104,7 +1104,19 @@ async function genererPDF(entryId = null) {
 
     const roomNum = entry.room_number || entry.room || '---';
 
-if (entry.is_spa) {
+  if (entry.is_spa) {
+    // ✅ SPA : déléguer à printSpaDetail() qui utilise #spaDetailContent
+    if (typeof ouvrirSpaDetailModal === 'function') {
+        await ouvrirSpaDetailModal(targetId);
+        await new Promise(r => setTimeout(r, 300));
+    }
+    if (typeof printSpaDetail === 'function') {
+        await printSpaDetail();
+    } else {
+        alert('⚠️ SPA PDF function not available.');
+    }
+    return;
+}
 
     const modalEl = document.getElementById('detailModal');
     const modalWasHidden = modalEl.classList.contains('hidden');
