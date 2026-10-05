@@ -1219,43 +1219,114 @@ async function exportSpaToPDF() {
     const isValid = await validateAndSaveSpaReceipt();
     if (!isValid) return;
 
-    const serialNo = document.getElementById('spa-serial-no').value.trim();
-    const colDate = document.getElementById('spa-collection-date').value || new Date().toISOString().split('T')[0];
-    const spaArea = document.getElementById('spa-laundry-section');
+    // ═══ 1. Récupérer les valeurs du formulaire SPA ═══
+    const serialNo = document.getElementById('spa-serial-no').value.trim() || '---';
+    const givenBy = document.getElementById('spa-given-by').value.trim() || '---';
+    const collectedBy = document.getElementById('spa-collected-by').value.trim() || '---';
+    const deliveredBy = document.getElementById('spa-delivered-by').value.trim() || '---';
+    const colDate = document.getElementById('spa-collection-date').value || '';
+    const colTime = document.getElementById('spa-collection-time').value || '';
+    const delDate = document.getElementById('spa-delivery-date').value || '';
+    const delTime = document.getElementById('spa-delivery-time').value || '';
+    const currentDate = document.getElementById('spa-current-date').innerText || new Date().toLocaleDateString('en-GB');
+    const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name)
+        ? `staff ( ${currentStaffUser.name} )`
+        : 'staff';
 
-    const isHidden = spaArea.classList.contains('hidden');
-    if (isHidden) spaArea.classList.remove('hidden');
+    // ═══ 2. Remplir la zone PDF SPA dédiée ═══
+    document.getElementById('spaPdfDate').innerText = currentDate;
+    document.getElementById('spaPdfGivenBy').innerText = givenBy;
+    document.getElementById('spaPdfSerial').innerText = serialNo;
+    document.getElementById('spaPdfAgent').innerText = staffName;
+    document.getElementById('spaPdfPackaging').innerText = 'SPA Daily Sheet';
+    document.getElementById('spaPdfCollectedBy').innerText = collectedBy;
+    document.getElementById('spaPdfDeliveredBy').innerText = deliveredBy;
+    document.getElementById('spaPdfCollectionDate').innerText = colDate ? `${colDate} ${colTime}` : '---';
+    document.getElementById('spaPdfDeliveryDate').innerText = delDate ? `${delDate} ${delTime}` : '---';
 
-    const actionButtons = document.getElementById('spa-action-buttons');
-    if (actionButtons) actionButtons.style.display = 'none';
+    // Receipt ID (généré)
+    const rid = 'REC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    document.getElementById('spaPdfReceiptId').innerText = '#' + rid;
+
+    // ═══ 3. Construire le tableau des items ═══
+    const spaRows = document.querySelectorAll('#spa-laundry-section tbody tr');
+    const tableBody = document.getElementById('spaPdfTableBody');
+    tableBody.innerHTML = '';
+
+    let grandTotal = 0;
+
+    spaRows.forEach(row => {
+        const input = row.querySelector('.spa-qty-input');
+        const itemNameEl = row.querySelector('td');
+        if (!input || !itemNameEl) return;
+
+        const itemName = itemNameEl.innerText.trim();
+        const qty = parseInt(input.value, 10) || 0;
+        const rate = parseFloat(input.dataset.rate) || 0;
+        const total = qty * rate;
+
+        if (qty > 0) {
+            grandTotal += total;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${itemName}</td>
+                <td class="text-center">${qty}</td>
+                <td class="text-center">${rate.toFixed(2)}</td>
+                <td class="text-right">${total.toFixed(2)} AED</td>
+            `;
+            tableBody.appendChild(tr);
+        }
+    });
+
+    if (tableBody.children.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:#9ca3af;font-style:italic;">No items recorded</td></tr>`;
+    }
+
+    document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
+
+    // ═══ 4. Afficher la zone hors écran pour la capture ═══
+    const spaPdfArea = document.getElementById('spaPdfExportArea');
+    spaPdfArea.style.display = 'block';
+    spaPdfArea.style.position = 'fixed';
+    spaPdfArea.style.left = '-9999px';
+    spaPdfArea.style.top = '0';
+    spaPdfArea.style.width = '700px';
+    spaPdfArea.style.background = '#ffffff';
+
+    await new Promise(r => setTimeout(r, 200));
+
+    // ═══ 5. Générer le PDF ═══
+    const dateClean = colDate || new Date().toISOString().split('T')[0];
+    const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
 
     const opt = {
-        margin:       [10, 10, 10, 10],
-        filename:     `REMAL_${colDate}_SPA-${serialNo}.pdf`,
+        margin:       [10, 12, 12, 12],
+        filename:     filename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
             scale: 2, 
-            useCORS: true, 
+            useCORS: true,
+            allowTaint: true,
             logging: false, 
             backgroundColor: '#ffffff',
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            windowWidth: 700,
+            windowHeight: spaPdfArea.scrollHeight
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     try {
-        await html2pdf().set(opt).from(spaArea).save();
+        await html2pdf().set(opt).from(spaPdfArea).save();
     } catch (e) {
         console.error("Erreur PDF SPA:", e);
         alert("⚠️ Error generating SPA PDF.");
     } finally {
-        if (actionButtons) actionButtons.style.display = '';
-        if (isHidden) spaArea.classList.add('hidden');
+        spaPdfArea.style.display = 'none';
     }
 }
-
 // ═══════════════════════════════════════════════════════════════════
 // SESSION STAFF
 // ═══════════════════════════════════════════════════════════════════
