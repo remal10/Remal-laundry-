@@ -1296,13 +1296,16 @@ document.body.appendChild(spaPdfArea);
 
 spaPdfArea.style.display = 'block';
 spaPdfArea.style.position = 'fixed';
-spaPdfArea.style.left = '-9999px';
+spaPdfArea.style.left = '0';
 spaPdfArea.style.top = '0';
+spaPdfArea.style.opacity = '1';
+spaPdfArea.style.visibility = 'visible';
 spaPdfArea.style.width = '700px';
+spaPdfArea.style.transform = 'translateX(0)';
 spaPdfArea.style.background = '#ffffff';
 spaPdfArea.style.zIndex = '99999';
 
-await new Promise(r => setTimeout(r, 300));
+await new Promise(r => setTimeout(r, 500));
     // ═══ 5. Générer le PDF ═══
     const dateClean = colDate || new Date().toISOString().split('T')[0];
     const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
