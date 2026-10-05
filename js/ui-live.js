@@ -279,7 +279,7 @@ function chargerLiveOrders() {
 
         itemDiv.innerHTML = `
             <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-7 h-7 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
-            <div class="flex-1 min-w-0" onclick="ouvrirModalDetails('${entry.id}')">
+            <div class="flex-1 min-w-0" onclick="${entry.is_spa ? 'ouvrirSpaDetailModal' : 'ouvrirModalDetails'}('${entry.id}')">
                 <div class="flex justify-between items-start gap-3">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap">
