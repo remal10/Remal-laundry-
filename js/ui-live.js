@@ -1104,48 +1104,19 @@ async function genererPDF(entryId = null) {
 
     const roomNum = entry.room_number || entry.room || '---';
 
-    if (entry.is_spa) {
-        ouvrirModalDetails(targetId);
-        const printArea = document.getElementById('pdfExportArea');
-        const dateIso = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-        const fileTargetName = `REMAL_${dateIso}_SPA-${entry.spa_serial || '0000'}`;
-
-        const noPrintElements = printArea.querySelectorAll('.no-print');
-        noPrintElements.forEach(el => el.style.display = 'none');
-
-        // ✨ FIX : Petit délai pour laisser le scroll se faire
-        await new Promise(r => setTimeout(r, 150));
-
-        const opt = {
-            margin:       [10, 12, 12, 12],
-            filename:     `${fileTargetName}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true,
-                allowTaint: true,
-                logging: false, 
-                backgroundColor: '#ffffff',
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: document.documentElement.scrollWidth,
-                windowHeight: document.documentElement.scrollHeight
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
-        try {
-            await html2pdf().set(opt).from(printArea).save();
-        } catch (e) {
-            console.error("Erreur génération PDF SPA:", e);
-            alert("⚠️ Error generating SPA PDF.");
-        } finally {
-            noPrintElements.forEach(el => el.style.display = '');
-            fermerModal();
-        }
-        return;
+  if (entry.is_spa) {
+    // ✅ SPA : déléguer à printSpaDetail() qui utilise #spaDetailContent
+    if (typeof ouvrirSpaDetailModal === 'function') {
+        await ouvrirSpaDetailModal(targetId);
+        await new Promise(r => setTimeout(r, 300));
     }
+    if (typeof printSpaDetail === 'function') {
+        await printSpaDetail();
+    } else {
+        alert('⚠️ SPA PDF function not available.');
+    }
+    return;
+}
 
     const modalEl = document.getElementById('detailModal');
     const modalWasHidden = modalEl.classList.contains('hidden');
