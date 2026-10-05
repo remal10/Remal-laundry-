@@ -3110,3 +3110,23 @@ body.light-mode #batchStatusToast .text-stone-400 {
 #spaDetailModal > div {
     max-width: 750px !important;
 }
+/* ═══════════════════════════════════════════════════════════
+   🔒 STAFF MODE — Masquage strict des éléments admin
+   Empêche tout swipe/scroll de révéler les onglets cachés
+   ═══════════════════════════════════════════════════════════ */
+
+body.role-staff [data-admin-only="true"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+/* Idem pour les enfants cachés */
+body.role-staff [data-admin-only="true"] * {
+    display: none !important;
+}
