@@ -64,22 +64,39 @@ function applyRoleVisibility() {
 
     if (isAdmin()) {
         body.classList.remove('role-staff');
-        // Restaurer les éléments admin (au cas où)
-        document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
-            el.style.removeProperty('display');
-        });
         console.log('[Role] Admin mode — full UI visible');
-    } else {
-        body.classList.add('role-staff');
-        // 🔒 Masquage strict
-        document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
-            el.style.display = 'none';
-            el.setAttribute('hidden', 'true');
-        });
-        console.log('[Role] Staff mode — restricted UI (strict)');
+        return;
     }
-}
 
+    // ═══ STAFF MODE — Masquage strict ET définitif ═══
+    body.classList.add('role-staff');
+    console.log('[Role] Staff mode — restricted UI (strict removal)');
+
+    // 1. Sections réservées admin : on les SUPPRIME du DOM
+    const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard'];
+    ADMIN_SECTIONS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.parentNode) {
+            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
+        }
+    });
+
+    // 2. Boutons de nav admin : on les SUPPRIME du DOM
+    const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard'];
+    ADMIN_NAV_BUTTONS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.parentNode) {
+            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
+        }
+    });
+
+    // 3. Tous les autres éléments marqués data-admin-only : on les SUPPRIME du DOM
+    document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
+        if (el.parentNode) {
+            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
+        }
+    });
+}
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 2.4 — ROOM AUTOCOMPLETE IN SEARCH
 // ═══════════════════════════════════════════════════════════════════
