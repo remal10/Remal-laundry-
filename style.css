@@ -2652,25 +2652,6 @@ body.light-mode #batchStatusToast .text-stone-400 {
     }
 }
 /* ═══════════════════════════════════════════════════════════
-   📄 PDF SPA — Adaptation Serial No (sans # devant)
-   ═══════════════════════════════════════════════════════════ */
-
-#pdfExportArea #modalSpaSerialLine {
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    color: #1c1917 !important;
-    margin-top: 6px !important;
-    text-align: right !important;
-}
-
-#pdfExportArea #modalSpaSerial {
-    font-family: 'Courier New', monospace !important;
-    font-size: 13px !important;
-    font-weight: 900 !important;
-    color: #b47a3e !important;
-    letter-spacing: 0.05em !important;
-}
-/* ═══════════════════════════════════════════════════════════
    📄 PDF SPA — 100% DÉDIÉ (ne touche PAS Laundry)
    ═══════════════════════════════════════════════════════════ */
 
