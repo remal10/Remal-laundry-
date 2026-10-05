@@ -64,10 +64,19 @@ function applyRoleVisibility() {
 
     if (isAdmin()) {
         body.classList.remove('role-staff');
+        // Restaurer les éléments admin (au cas où)
+        document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
+            el.style.removeProperty('display');
+        });
         console.log('[Role] Admin mode — full UI visible');
     } else {
         body.classList.add('role-staff');
-        console.log('[Role] Staff mode — restricted UI');
+        // 🔒 Masquage strict
+        document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
+            el.style.display = 'none';
+            el.setAttribute('hidden', 'true');
+        });
+        console.log('[Role] Staff mode — restricted UI (strict)');
     }
 }
 
