@@ -277,9 +277,9 @@ function chargerLiveOrders() {
         const totalAmount = entry.grand_total || entry.total || 0;
         const subDesc = entry.is_spa ? `Given By: ${entry.guest_name || 'Staff'} · 📦 ${totalPcs} pcs` : `👤 ${entry.guest_name || 'Guest'} · #${receiptId} · 📦 ${totalPcs} pcs`;
 
-        itemDiv.innerHTML = `
-            <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-7 h-7 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
-            <div class="flex-1 min-w-0" onclick="${entry.is_spa ? 'ouvrirSpaDetailModal' : 'ouvrirModalDetails'}('${entry.id}')">
+       itemDiv.innerHTML = `
+    <input type="checkbox" checked data-id="${entry.id}" class="room-checkbox w-7 h-7 accent-[var(--text-accent)] cursor-pointer flex-shrink-0" onchange="updatePrintButtonCount()">
+    <div class="flex-1 min-w-0" onclick="${entry.is_spa ? 'ouvrirSpaDetailModal' : 'ouvrirModalDetails'}('${entry.id}')">
                 <div class="flex justify-between items-start gap-3">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap">
