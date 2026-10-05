@@ -1677,18 +1677,21 @@ console.log('✅ [SPA Modal] Fonctions chargées');
 // 📄 EXPORT SPA PDF — Simple et direct
 // ═══════════════════════════════════════════════════════════════════
 async function printSpaDetail() {
-    // ✅ Utilise #spaPdfExportArea (zone dédiée + validée par exportSpaToPDF)
-    //    Ne touche PAS à #spaDetailContent (modale) ni à #pdfExportArea (Laundry)
+    // ✅ Reprend la méthode d'exportSpaToPDF (validée visuellement)
 
     if (!currentSpaRecordId) {
-        alert('⚠️ Aucun SPA sélectionné.');
-        return;
+        // Fallback : essayer de récupérer le serial depuis la modale
+        const fallbackSerial = document.getElementById('spaDetailSerial')?.innerText?.trim();
+        if (!fallbackSerial) {
+            alert('⚠️ Aucun SPA sélectionné.');
+            return;
+        }
     }
 
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
     if (!entry || !entry.is_spa) {
-        alert('⚠️ SPA introuvable.');
+        alert('⚠️ SPA introuvable. Veuillez rouvrir la fiche.');
         return;
     }
 
@@ -1709,7 +1712,9 @@ async function printSpaDetail() {
     document.getElementById('spaPdfDate').innerText = dateFormatted;
     document.getElementById('spaPdfGivenBy').innerText = givenBy;
     document.getElementById('spaPdfSerial').innerText = serialNo;
-    document.getElementById('spaPdfAgent').innerText = formatAgentDisplay(entry.created_by);
+    document.getElementById('spaPdfAgent').innerText = typeof formatAgentDisplay === 'function'
+        ? formatAgentDisplay(entry.created_by)
+        : (entry.created_by || '---');
     document.getElementById('spaPdfPackaging').innerText = 'SPA Daily Sheet';
     document.getElementById('spaPdfReceiptId').innerText = '#' + (entry.receipt_id || 'REC-' + String(entry.id).slice(-6).toUpperCase());
     document.getElementById('spaPdfCollectedBy').innerText = collectedBy;
@@ -1745,22 +1750,28 @@ async function printSpaDetail() {
 
     document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 
-    // ═══ 3. Déplacer hors écran pour capture propre ═══
+    // ═══ 3. Afficher la zone (même technique que exportSpaToPDF) ═══
     const spaPdfArea = document.getElementById('spaPdfExportArea');
     const originalParent = spaPdfArea.parentNode;
     const originalNextSibling = spaPdfArea.nextSibling;
 
     document.body.appendChild(spaPdfArea);
+
+    // ⚠️ NE PAS utiliser left:-9999px — html2canvas rate la capture
+    //    On affiche brièvement à l'écran puis on cache
     spaPdfArea.style.display = 'block';
     spaPdfArea.style.position = 'fixed';
-    spaPdfArea.style.left = '-9999px';
+    spaPdfArea.style.left = '0';
     spaPdfArea.style.top = '0';
+    spaPdfArea.style.opacity = '1';
+    spaPdfArea.style.visibility = 'visible';
     spaPdfArea.style.width = '700px';
+    spaPdfArea.style.transform = 'translateX(0)';
     spaPdfArea.style.background = '#ffffff';
     spaPdfArea.style.zIndex = '99999';
 
-    // Petit délai pour laisser le layout se stabiliser
-    await new Promise(r => setTimeout(r, 400));
+    // ⏱️ Attente critique pour que le layout + images se chargent
+    await new Promise(r => setTimeout(r, 500));
 
     // ═══ 4. Générer le PDF ═══
     const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
@@ -1792,12 +1803,15 @@ async function printSpaDetail() {
         console.error("Erreur PDF SPA:", e);
         alert("⚠️ Error generating SPA PDF.");
     } finally {
-        // ═══ 5. Restaurer la zone à sa place ═══
+        // ═══ 5. Restaurer la zone ═══
         spaPdfArea.style.display = 'none';
         spaPdfArea.style.position = '';
         spaPdfArea.style.left = '';
         spaPdfArea.style.top = '';
+        spaPdfArea.style.opacity = '';
+        spaPdfArea.style.visibility = '';
         spaPdfArea.style.width = '';
+        spaPdfArea.style.transform = '';
         spaPdfArea.style.zIndex = '';
 
         if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
