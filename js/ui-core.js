@@ -542,4 +542,4 @@ window.premiumWave = premiumWave;
 window.premiumConfetti = premiumConfetti;
 window.premiumRipple = premiumRipple;
 
-console.log('✨ [Premium] Helpers chargés (6 fonctions)');
+console.log('[Premium] Helpers charges (6 fonctions)'););
