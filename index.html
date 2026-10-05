@@ -1105,22 +1105,6 @@
             });
         }
 
-        // PWA Install Prompt (Android)
-        let deferredPrompt = null;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('📱 [PWA] Installation disponible');
-            
-            // Afficher un bouton d'installation (optionnel)
-            const installBanner = document.getElementById('pwaInstallBanner');
-            if (installBanner) installBanner.classList.remove('hidden');
-        });
-
-        window.addEventListener('appinstalled', () => {
-            console.log('✅ [PWA] App installée');
-            deferredPrompt = null;
-        });
     </script>
 </body>
 </html>
