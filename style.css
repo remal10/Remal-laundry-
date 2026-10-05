@@ -3093,3 +3093,20 @@ body.light-mode #batchStatusToast .text-stone-400 {
     letter-spacing: 0.16em !important;
     text-transform: uppercase !important;
 }
+/* ═══════════════════════════════════════════════════════════
+   📄 FIX PDF SPA — Capture propre de la modale
+   ═══════════════════════════════════════════════════════════ */
+
+/* Force la largeur du contenu SPA dans la modale pour la capture */
+#spaDetailModal #spaDetailContent {
+    width: 700px !important;
+    max-width: 700px !important;
+    margin: 0 auto !important;
+    padding: 24px !important;
+    box-sizing: border-box !important;
+}
+
+/* Force le parent à ne pas scroll pendant la capture */
+#spaDetailModal > div {
+    max-width: 750px !important;
+}
