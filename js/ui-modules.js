@@ -1331,9 +1331,21 @@ await new Promise(r => setTimeout(r, 300));
     } catch (e) {
         console.error("Erreur PDF SPA:", e);
         alert("⚠️ Error generating SPA PDF.");
-    } finally {
-        spaPdfArea.style.display = 'none';
+} finally {
+    // 🎯 FIX : Restaurer la zone à sa place originale
+    spaPdfArea.style.display = 'none';
+    spaPdfArea.style.position = '';
+    spaPdfArea.style.left = '';
+    spaPdfArea.style.top = '';
+    spaPdfArea.style.width = '';
+    spaPdfArea.style.zIndex = '';
+    
+    if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+        originalParent.insertBefore(spaPdfArea, originalNextSibling);
+    } else if (originalParent) {
+        originalParent.appendChild(spaPdfArea);
     }
+}
 }
 // ═══════════════════════════════════════════════════════════════════
 // SESSION STAFF
