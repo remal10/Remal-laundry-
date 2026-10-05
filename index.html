@@ -769,27 +769,84 @@
             </div>
         </div>
 
-        <div id="sectionDashboard" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-5xl mx-auto">
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📈 Reception & Management Analytics</h3>
-                    <span class="text-xs bg-amber-950 text-amber-200 border border-amber-800 font-bold px-3 py-1 rounded-full">Executive Overview</span>
-                </div>
+<div id="sectionDashboard" class="hidden space-y-6 no-print">
+    <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-6xl mx-auto">
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820] text-center">
-                        <p class="text-xs font-bold text-stone-400 uppercase">Total Revenue</p>
-                        <p id="kpiRevenue" class="text-lg font-serif-luxury font-bold text-[#DCA773] mt-1">0.00 AED</p>
-                    </div>
-                    <div class="bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820] text-center">
-                        <p class="text-xs font-bold text-stone-400 uppercase">Total Orders</p>
-                        <p id="kpiOrders" class="text-lg font-serif-luxury font-bold mt-1">0</p>
-                    </div>
-                    <div class="bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820] text-center">
-                        <p class="text-xs font-bold text-stone-400 uppercase">Garments Processed</p>
-                        <p id="kpiGarments" class="text-lg font-serif-luxury font-bold mt-1">0 pcs</p>
-                    </div>
-                </div>
+        <!-- TITRE -->
+        <div class="dashboard-title">
+            <h1 class="font-serif-luxury text-base sm:text-lg font-bold text-[#DCA773] tracking-wide">
+                📈 RECEPTION & MANAGEMENT ANALYTICS
+            </h1>
+            <span class="dashboard-badge">Executive Overview</span>
+        </div>
+
+        <!-- FILTRES PÉRIODE -->
+        <div class="dashboard-filter-bar">
+            <button class="dashboard-filter-btn active" data-period="today" onclick="switchDashboardPeriod('today')">Today</button>
+            <button class="dashboard-filter-btn" data-period="7d" onclick="switchDashboardPeriod('7d')">Last 7 days</button>
+            <button class="dashboard-filter-btn" data-period="30d" onclick="switchDashboardPeriod('30d')">Last 30 days</button>
+            <button class="dashboard-filter-btn" data-period="90d" onclick="switchDashboardPeriod('90d')">Last 90 days</button>
+        </div>
+
+        <!-- KPI CARDS -->
+        <div class="dashboard-kpi-grid">
+            <div class="dashboard-kpi-card">
+                <div class="dashboard-kpi-label">💰 TOTAL REVENUE</div>
+                <div class="dashboard-kpi-value" id="kpiRevenue">0 AED</div>
+                <div class="dashboard-kpi-delta" id="kpiRevenueDelta" style="display:none;"></div>
+            </div>
+            <div class="dashboard-kpi-card">
+                <div class="dashboard-kpi-label">📦 TOTAL ORDERS</div>
+                <div class="dashboard-kpi-value blue" id="kpiOrders">0</div>
+                <div class="dashboard-kpi-delta" id="kpiOrdersDelta" style="display:none;"></div>
+            </div>
+            <div class="dashboard-kpi-card">
+                <div class="dashboard-kpi-label">👕 GARMENTS</div>
+                <div class="dashboard-kpi-value green" id="kpiGarments">0 pcs</div>
+                <div class="dashboard-kpi-delta" id="kpiGarmentsDelta" style="display:none;"></div>
+            </div>
+            <div class="dashboard-kpi-card">
+                <div class="dashboard-kpi-label">🏨 LAUNDRY</div>
+                <div class="dashboard-kpi-value blue" id="kpiLaundry">0 AED</div>
+                <div class="dashboard-kpi-delta" id="kpiLaundryDelta" style="display:none;"></div>
+            </div>
+            <div class="dashboard-kpi-card">
+                <div class="dashboard-kpi-label">🧘 SPA</div>
+                <div class="dashboard-kpi-value purple" id="kpiSpa">0 AED</div>
+                <div class="dashboard-kpi-delta" id="kpiSpaDelta" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="dashboard-charts-grid">
+            <div class="dashboard-chart-card">
+                <div class="dashboard-chart-title">🥧 LAUNDRY VS SPA</div>
+                <div class="dashboard-chart-wrap"><canvas id="spaVsLaundryChart"></canvas></div>
+            </div>
+            <div class="dashboard-chart-card">
+                <div class="dashboard-chart-title">🍩 ORDERS BY STATUS</div>
+                <div class="dashboard-chart-wrap"><canvas id="statusDoughnutChart"></canvas></div>
+            </div>
+            <div class="dashboard-chart-card dashboard-chart-full">
+                <div class="dashboard-chart-title">📊 REVENUE EVOLUTION</div>
+                <div class="dashboard-chart-wrap"><canvas id="revenueBarChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- TOP 5 -->
+        <div class="dashboard-top-grid">
+            <div class="dashboard-top-card">
+                <div class="dashboard-chart-title">🏆 TOP 5 ROOMS</div>
+                <div id="topRoomsList"></div>
+            </div>
+            <div class="dashboard-top-card">
+                <div class="dashboard-chart-title">🏢 TOP 5 AGENCIES</div>
+                <div id="topAgenciesList"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                     <div class="bg-[#0f0e0c] p-5 rounded-2xl border border-[#2f2820] space-y-3">
