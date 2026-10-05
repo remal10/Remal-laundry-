@@ -1476,3 +1476,197 @@ function confirmLogout() {
         logoutStaff();
     }
 }
+// ═══════════════════════════════════════════════════════════════════
+// 🧘 MODALE DÉTAILS SPA — fonctions dédiées
+// ═══════════════════════════════════════════════════════════════════
+
+let currentSpaRecordId = null;
+
+async function ouvrirSpaDetailModal(recordId) {
+    if (!recordId) return;
+    currentSpaRecordId = String(recordId);
+
+    chargerDonneesLocalStorage();
+    const entry = cachedSlips.find(s => String(s.id) === String(recordId));
+    if (!entry || !entry.is_spa) {
+        console.warn('[SPA Modal] Record introuvable ou non-SPA:', recordId);
+        return;
+    }
+
+    // ═══ Remplir les infos ═══
+    const dateFormatted = entry.created_at 
+        ? new Date(entry.created_at).toLocaleDateString('en-GB') 
+        : '---';
+
+    document.getElementById('spaDetailDate').innerText = dateFormatted;
+    document.getElementById('spaDetailGivenBy').innerText = entry.guest_name || '---';
+    document.getElementById('spaDetailSerial').innerText = entry.spa_serial || '---';
+    document.getElementById('spaDetailReceiptId').innerText = '#' + (entry.receipt_id || 'REC-' + String(entry.id).slice(-6).toUpperCase());
+    document.getElementById('spaDetailAgent').innerText = formatAgentDisplay(entry.created_by);
+    document.getElementById('spaDetailPackaging').innerText = entry.service_type || 'SPA Daily Sheet';
+    document.getElementById('spaDetailCollectedBy').innerText = entry.options?.collected_by || '---';
+    document.getElementById('spaDetailDeliveredBy').innerText = entry.options?.delivered_by || '---';
+    document.getElementById('spaDetailCollectionDate').innerText = 
+        (entry.options?.collection_date || '---') + ' ' + (entry.options?.collection_time || '');
+    document.getElementById('spaDetailDeliveryDate').innerText = 
+        (entry.options?.delivery_date || '---') + ' ' + (entry.options?.delivery_time || '');
+
+    // ═══ Tableau des items ═══
+    const tableBody = document.getElementById('spaDetailTableBody');
+    tableBody.innerHTML = '';
+    let grandTotal = 0;
+
+    let items = entry.items || [];
+    if (typeof items === 'string') { try { items = JSON.parse(items); } catch(e) { items = []; } }
+    if (!Array.isArray(items)) items = Object.values(items);
+
+    items.forEach(item => {
+        const qty = parseInt(item.quantity || item.qty, 10) || 0;
+        const rate = parseFloat(item.unit_price || item.price) || 0;
+        const total = qty * rate;
+        if (qty <= 0) return;
+        grandTotal += total;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.name || 'Item'}</td>
+            <td class="text-center">${qty}</td>
+            <td class="text-center">${rate.toFixed(2)}</td>
+            <td class="text-right">${total.toFixed(2)} AED</td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    document.getElementById('spaDetailGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
+
+    // ═══ Ouvrir la modale ═══
+    document.getElementById('spaDetailModal').classList.remove('hidden');
+    if (navigator.vibrate) navigator.vibrate(15);
+
+    console.log('🧘 [SPA Modal] Ouverte pour:', entry.spa_serial);
+}
+
+function fermerSpaDetailModal() {
+    document.getElementById('spaDetailModal').classList.add('hidden');
+    currentSpaRecordId = null;
+}
+
+async function exportSpaPDFFromDetail() {
+    if (!currentSpaRecordId) return;
+
+    chargerDonneesLocalStorage();
+    const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
+    if (!entry) return;
+
+    const content = document.getElementById('spaDetailContent');
+    const modal = document.querySelector('#spaDetailModal > div');
+
+    // Masquer les boutons
+    const actionButtons = modal.querySelector('.no-print');
+    if (actionButtons) actionButtons.style.display = 'none';
+
+    // Déplacer la zone dans body
+    const originalParent = content.parentNode;
+    const originalNextSibling = content.nextSibling;
+    document.body.appendChild(content);
+    content.style.position = 'fixed';
+    content.style.left = '-9999px';
+    content.style.top = '0';
+    content.style.width = '700px';
+    content.style.background = '#ffffff';
+
+    await new Promise(r => setTimeout(r, 200));
+
+    const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+    const filename = `REMAL_${dateClean}_SPA-${entry.spa_serial || '0000'}.pdf`;
+
+    const opt = {
+        margin:       [10, 12, 12, 12],
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(content).save();
+        console.log('✅ [SPA PDF] Généré:', filename);
+    } catch (e) {
+        console.error("Erreur PDF SPA:", e);
+        alert("⚠️ Error generating SPA PDF.");
+    } finally {
+        content.style.position = '';
+        content.style.left = '';
+        content.style.top = '';
+        content.style.width = '';
+        if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+            originalParent.insertBefore(content, originalNextSibling);
+        } else {
+            originalParent.appendChild(content);
+        }
+        if (actionButtons) actionButtons.style.display = '';
+    }
+}
+
+function modifierSpaRecord() {
+    if (!currentSpaRecordId) return;
+    fermerSpaDetailModal();
+    // Charger dans le formulaire SPA
+    chargerDonneesLocalStorage();
+    const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
+    if (entry) {
+        switchMainSection('spa');
+        document.getElementById('editingSpaId').value = entry.id;
+        document.getElementById('spa-serial-no').value = entry.spa_serial || '';
+        document.getElementById('spa-given-by').value = entry.guest_name || '';
+        document.getElementById('spa-collected-by').value = entry.options?.collected_by || '';
+        document.getElementById('spa-delivered-by').value = entry.options?.delivered_by || '';
+    }
+}
+
+async function dupliquerSpaRecord() {
+    if (!currentSpaRecordId) return;
+    fermerSpaDetailModal();
+    switchMainSection('spa');
+    // Reset
+    document.getElementById('editingSpaId').value = '';
+    document.getElementById('spa-serial-no').value = '';
+    document.getElementById('spa-given-by').value = '';
+    document.getElementById('spa-collected-by').value = '';
+    document.getElementById('spa-delivered-by').value = '';
+    alert('📋 Formulaire réinitialisé. Remplissez-le et validez.');
+}
+
+async function supprimerSpaRecord() {
+    if (!currentSpaRecordId) return;
+    if (!confirm('🗑️ Supprimer ce SPA Sheet ?')) return;
+
+    const id = currentSpaRecordId;
+    isLocalUpdating = true;
+
+    if (typeof supabaseClient !== 'undefined' && supabaseClient && id.length === 36) {
+        try {
+            await supabaseClient.from('guest_laundry_requests').delete().eq('id', id);
+        } catch (e) { console.warn(e); }
+    }
+
+    chargerDonneesLocalStorage();
+    cachedSlips = cachedSlips.filter(s => String(s.id) !== String(id));
+    sauvegarderDonneesLocalStorage();
+
+    fermerSpaDetailModal();
+    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+    if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
+
+    setTimeout(() => { isLocalUpdating = false; }, 800);
+}
+
+// Exposer
+window.ouvrirSpaDetailModal = ouvrirSpaDetailModal;
+window.fermerSpaDetailModal = fermerSpaDetailModal;
+window.exportSpaPDFFromDetail = exportSpaPDFFromDetail;
+window.modifierSpaRecord = modifierSpaRecord;
+window.dupliquerSpaRecord = dupliquerSpaRecord;
+window.supprimerSpaRecord = supprimerSpaRecord;
+
+console.log('✅ [SPA Modal] Fonctions chargées');
