@@ -1284,17 +1284,25 @@ async function exportSpaToPDF() {
 
     document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 
-    // ═══ 4. Afficher la zone hors écran pour la capture ═══
-    const spaPdfArea = document.getElementById('spaPdfExportArea');
-    spaPdfArea.style.display = 'block';
-    spaPdfArea.style.position = 'fixed';
-    spaPdfArea.style.left = '-9999px';
-    spaPdfArea.style.top = '0';
-    spaPdfArea.style.width = '700px';
-    spaPdfArea.style.background = '#ffffff';
+  // ═══ 4. Afficher la zone hors écran pour la capture ═══
+const spaPdfArea = document.getElementById('spaPdfExportArea');
 
-    await new Promise(r => setTimeout(r, 200));
+// 🎯 FIX : Déplacer la zone directement dans <body>
+// (évite le problème des parents cachés)
+const originalParent = spaPdfArea.parentNode;
+const originalNextSibling = spaPdfArea.nextSibling;
 
+document.body.appendChild(spaPdfArea);
+
+spaPdfArea.style.display = 'block';
+spaPdfArea.style.position = 'fixed';
+spaPdfArea.style.left = '-9999px';
+spaPdfArea.style.top = '0';
+spaPdfArea.style.width = '700px';
+spaPdfArea.style.background = '#ffffff';
+spaPdfArea.style.zIndex = '99999';
+
+await new Promise(r => setTimeout(r, 300));
     // ═══ 5. Générer le PDF ═══
     const dateClean = colDate || new Date().toISOString().split('T')[0];
     const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
