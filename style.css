@@ -2884,3 +2884,212 @@ body.light-mode #batchStatusToast .text-stone-400 {
     letter-spacing: 0.16em !important;
     text-transform: uppercase !important;
 }
+/* ═══════════════════════════════════════════════════════════
+   🧘 MODALE DÉTAILS SPA — 100% dédiée
+   ═══════════════════════════════════════════════════════════ */
+
+#spaDetailModal #spaDetailContent {
+    background: #ffffff !important;
+    padding: 24px 28px !important;
+    border-radius: 16px !important;
+    font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
+    position: relative !important;
+}
+
+#spaDetailModal #spaDetailContent::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 60% !important;
+    height: 3px !important;
+    background: linear-gradient(90deg, transparent, #DCA773, #F8E9C0, #DCA773, transparent) !important;
+    border-radius: 0 0 3px 3px !important;
+}
+
+/* Header 2 logos */
+#spaDetailModal .spa-detail-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+    padding-bottom: 14px !important;
+    margin-bottom: 16px !important;
+    border-bottom: 1.5px solid rgba(180, 122, 62, 0.25) !important;
+}
+
+#spaDetailModal .spa-detail-logo-left,
+#spaDetailModal .spa-detail-logo-right {
+    flex: 0 0 auto !important;
+    min-width: 100px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#spaDetailModal .spa-detail-logo-right { justify-content: flex-end !important; }
+
+#spaDetailModal .spa-detail-logo {
+    height: 50px !important;
+    width: auto !important;
+    max-width: 120px !important;
+    object-fit: contain !important;
+    display: block !important;
+}
+
+#spaDetailModal .spa-detail-title-center {
+    flex: 1 !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 2px !important;
+}
+
+#spaDetailModal .spa-detail-title-main {
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    letter-spacing: 0.3em !important;
+    text-transform: uppercase !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+#spaDetailModal .spa-detail-title-sub {
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    color: #78716c !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase !important;
+    margin: 4px 0 0 0 !important;
+}
+
+/* Infos */
+#spaDetailModal .spa-detail-info-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+    padding: 12px 16px !important;
+    margin-bottom: 16px !important;
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+}
+
+#spaDetailModal .spa-detail-info-left,
+#spaDetailModal .spa-detail-info-right {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+#spaDetailModal .spa-detail-info-left p,
+#spaDetailModal .spa-detail-info-right p {
+    font-size: 11px !important;
+    margin: 0 !important;
+    color: #374151 !important;
+    line-height: 1.4 !important;
+}
+
+#spaDetailModal .spa-detail-info-left strong,
+#spaDetailModal .spa-detail-info-right strong {
+    color: #1c1917 !important;
+    font-weight: 700 !important;
+}
+
+#spaDetailModal #spaDetailSerial {
+    font-family: 'Courier New', monospace !important;
+    font-weight: 900 !important;
+    color: #b47a3e !important;
+    font-size: 13px !important;
+}
+
+/* Tableau */
+#spaDetailModal .spa-detail-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 16px !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(180, 122, 62, 0.15) !important;
+}
+
+#spaDetailModal .spa-detail-table thead tr { background: #1c1917 !important; }
+
+#spaDetailModal .spa-detail-table thead th {
+    padding: 9px 14px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    color: #DCA773 !important;
+    text-align: left !important;
+}
+
+#spaDetailModal .spa-detail-table tbody td {
+    padding: 8px 14px !important;
+    font-size: 11px !important;
+    color: #1c1917 !important;
+    border-bottom: 1px solid rgba(180, 122, 62, 0.08) !important;
+}
+
+#spaDetailModal .spa-detail-table tbody tr:nth-child(even) { background: #fafaf9 !important; }
+
+#spaDetailModal .spa-detail-total-row {
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.12) 0%, rgba(248, 233, 192, 0.15) 100%) !important;
+}
+
+#spaDetailModal .spa-detail-total-row td {
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+    border-top: 1.5px solid rgba(180, 122, 62, 0.4) !important;
+}
+
+#spaDetailModal .spa-detail-total-row td:last-child {
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+}
+
+/* Signatures */
+#spaDetailModal .spa-detail-signatures {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    padding: 12px 16px !important;
+    margin-bottom: 16px !important;
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+}
+
+#spaDetailModal .spa-detail-signature-item p {
+    font-size: 10px !important;
+    margin: 0 0 4px 0 !important;
+    color: #374151 !important;
+}
+
+#spaDetailModal .spa-detail-signature-item strong { color: #1c1917 !important; }
+
+#spaDetailModal .spa-detail-signature-date {
+    font-size: 9px !important;
+    color: #78716c !important;
+}
+
+/* Footer */
+#spaDetailModal .spa-detail-footer {
+    margin-top: 16px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(180, 122, 62, 0.3) !important;
+    text-align: center !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+}
