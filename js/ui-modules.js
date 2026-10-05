@@ -1673,3 +1673,53 @@ window.dupliquerSpaRecord = dupliquerSpaRecord;
 window.supprimerSpaRecord = supprimerSpaRecord;
 
 console.log('✅ [SPA Modal] Fonctions chargées');
+// ═══════════════════════════════════════════════════════════════════
+// 📄 EXPORT SPA PDF — Simple et direct
+// ═══════════════════════════════════════════════════════════════════
+async function printSpaDetail() {
+    const content = document.getElementById('spaDetailContent');
+    if (!content) {
+        alert('⚠️ Zone SPA introuvable.');
+        return;
+    }
+
+    const serialNo = document.getElementById('spaDetailSerial')?.innerText?.trim() || '0000';
+    const dateClean = new Date().toISOString().split('T')[0];
+    const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
+
+    const modal = document.querySelector('#spaDetailModal > div');
+    const actionButtons = modal?.querySelector('.no-print');
+    if (actionButtons) actionButtons.style.display = 'none';
+
+    await new Promise(r => setTimeout(r, 300));
+
+    const opt = {
+        margin:       [8, 8, 8, 8],
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            allowTaint: true,
+            logging: false, 
+            backgroundColor: '#ffffff',
+            scrollX: 0,
+            scrollY: 0
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(content).save();
+        console.log('✅ [SPA PDF] Généré:', filename);
+    } catch (e) {
+        console.error("Erreur PDF SPA:", e);
+        alert("⚠️ Error generating SPA PDF.");
+    } finally {
+        if (actionButtons) actionButtons.style.display = '';
+    }
+}
+
+window.printSpaDetail = printSpaDetail;
+console.log('✅ [SPA] printSpaDetail chargée');
