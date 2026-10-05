@@ -733,30 +733,16 @@ if (entry.is_spa) {
     document.getElementById('modalPackagingStyle').innerText = entry.service_type || entry.options?.service_style || 'F — Folding';
 
 const agencyBox = document.getElementById('modalAgencyQuotaBox');
-const laundryInfosRow = document.getElementById('modalLaundryInfosRow');
-
-// ═══ SPA : cacher les infos Laundry (Guest, Typ, Agency, Quota) ═══
-if (entry.is_spa) {
-    if (laundryInfosRow) laundryInfosRow.style.display = 'none';
-    if (agencyBox) agencyBox.classList.remove('hidden');
-    // Agent toujours visible
+if (entry.guest_name || entry.agency || entry.quota || entry.pms_quota) {
+    document.getElementById('modalGuestDisplay').innerText = entry.guest_name || 'Unknown';
+    document.getElementById('modalTypDisplay').innerText = entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR');
+    document.getElementById('modalAgencyDisplay').innerText = entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct');
+    document.getElementById('modalQuotaDisplay').innerText = entry.pms_quota || entry.quota || (entry.is_spa ? 'V Element SPA' : badgeText);
     document.getElementById('modalCreatedByDisplay').innerText = formatAgentDisplay(entry.created_by);
+    agencyBox.classList.remove('hidden');
 } else {
-    // ═══ Laundry : afficher toutes les infos ═══
-    if (laundryInfosRow) laundryInfosRow.style.display = '';
-    
-    if (entry.guest_name || entry.agency || entry.quota || entry.pms_quota) {
-        document.getElementById('modalGuestDisplay').innerText = entry.guest_name || 'Unknown';
-        document.getElementById('modalTypDisplay').innerText = entry.room_typ || 'DLXR';
-        document.getElementById('modalAgencyDisplay').innerText = entry.agency || 'Direct';
-        document.getElementById('modalQuotaDisplay').innerText = entry.pms_quota || entry.quota || badgeText;
-        document.getElementById('modalCreatedByDisplay').innerText = formatAgentDisplay(entry.created_by);
-        if (agencyBox) agencyBox.classList.remove('hidden');
-    } else {
-        if (agencyBox) agencyBox.classList.add('hidden');
-    }
+    agencyBox.classList.add('hidden');
 }
-
     const tbody = document.getElementById('modalTableBody'); 
     tbody.innerHTML = '';
 
