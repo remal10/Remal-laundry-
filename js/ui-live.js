@@ -699,17 +699,33 @@ async function ouvrirModalDetails(id) {
         badgeText = t.pdfGuestCount;
     }
 
-    document.getElementById('modalIdentifierLabel').innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;const identifierEl = document.getElementById('modalIdentifierLabel');
+// ✨ SPA : cache le #XXX, affiche "Serial No: XXX"
+const identifierEl = document.getElementById('modalIdentifierLabel');
 if (identifierEl) {
     identifierEl.innerText = entry.is_spa ? `${t.pdfSheetSerial}:` : t.pdfRoom;
 }
-    
-    if (entry.is_spa) {
-        const serialClean = String(entry.spa_serial || roomNum || '').replace(/SPA\s*#?/gi, '').trim();
-        document.getElementById('modalRoomNumDisplay').innerText = `#${serialClean}`;
-    } else {
-        document.getElementById('modalRoomNumDisplay').innerText = roomNum;
+
+// ✨ Gestion du numéro de room / serial SPA
+const roomDisplayEl = document.getElementById('modalRoomNumDisplay');
+const spaSerialLine = document.getElementById('modalSpaSerialLine');
+const spaSerialEl = document.getElementById('modalSpaSerial');
+
+if (entry.is_spa) {
+    // SPA : cache le gros #523, affiche "Serial No: 0000"
+    if (roomDisplayEl) roomDisplayEl.style.display = 'none';
+    if (spaSerialLine) spaSerialLine.style.display = 'block';
+    if (spaSerialEl) {
+        const serialClean = String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '').trim();
+        spaSerialEl.innerText = serialClean || '---';
     }
+} else {
+    // Laundry : affiche le gros numéro de room
+    if (roomDisplayEl) {
+        roomDisplayEl.style.display = '';
+        roomDisplayEl.innerText = roomNum;
+    }
+    if (spaSerialLine) spaSerialLine.style.display = 'none';
+}
     
     const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : (currentLang === 'hi' ? 'hi-IN' : 'en-GB')) : '---';
     document.getElementById('modalDate').innerText = `${t.pdfDate} ${dateFormatted}`;
