@@ -1750,51 +1750,51 @@ async function printSpaDetail() {
 
     document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 
-    // ═══ 3. Afficher la zone (même technique que exportSpaToPDF) ═══
-    const spaPdfArea = document.getElementById('spaPdfExportArea');
-    const originalParent = spaPdfArea.parentNode;
-    const originalNextSibling = spaPdfArea.nextSibling;
+// ═══ 3. Afficher la zone (même technique que exportSpaToPDF) ═══
+const spaPdfArea = document.getElementById('spaPdfExportArea');
+const originalParent = spaPdfArea.parentNode;
+const originalNextSibling = spaPdfArea.nextSibling;
 
-    document.body.appendChild(spaPdfArea);
+document.body.appendChild(spaPdfArea);
 
-    // ⚠️ NE PAS utiliser left:-9999px — html2canvas rate la capture
-    //    On affiche brièvement à l'écran puis on cache
-    spaPdfArea.style.display = 'block';
-    spaPdfArea.style.position = 'fixed';
-    spaPdfArea.style.left = '0';
-    spaPdfArea.style.top = '0';
-    spaPdfArea.style.opacity = '1';
-    spaPdfArea.style.visibility = 'visible';
-    spaPdfArea.style.width = '700px';
-    spaPdfArea.style.transform = 'translateX(0)';
-    spaPdfArea.style.background = '#ffffff';
-    spaPdfArea.style.zIndex = '99999';
+// ⚠️ NE PAS forcer de width fixe — html2canvas doit mesurer lui-même
+//    Sinon la capture est tronquée/décalée
+spaPdfArea.style.display = 'block';
+spaPdfArea.style.position = 'fixed';
+spaPdfArea.style.left = '0';
+spaPdfArea.style.top = '0';
+spaPdfArea.style.opacity = '1';
+spaPdfArea.style.visibility = 'visible';
+spaPdfArea.style.width = 'auto';       // ✅ largeur naturelle
+spaPdfArea.style.maxWidth = '750px';   // ✅ plafond raisonnable
+spaPdfArea.style.transform = 'translateX(0)';
+spaPdfArea.style.background = '#ffffff';
+spaPdfArea.style.zIndex = '99999';
 
-    // ⏱️ Attente critique pour que le layout + images se chargent
-    await new Promise(r => setTimeout(r, 500));
+// ⏱️ Attente critique pour que le layout + images se chargent
+await new Promise(r => setTimeout(r, 500));
 
-    // ═══ 4. Générer le PDF ═══
-    const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-    const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
+// ═══ 4. Générer le PDF ═══
+const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
 
-    const opt = {
-        margin:       [10, 12, 12, 12],
-        filename:     filename,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: 700,
-            windowHeight: spaPdfArea.scrollHeight
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+const opt = {
+    margin:       [10, 12, 12, 12],
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0
+        // ✅ windowWidth / windowHeight SUPPRIMÉS → html2canvas mesure seul
+    },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+};
 
     try {
         await html2pdf().set(opt).from(spaPdfArea).save();
