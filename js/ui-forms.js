@@ -511,6 +511,16 @@ function setLang(lang) {
 // ✨ SPRINT 1 : utilise classList au lieu d'écraser className
 // ═══════════════════════════════════════════════════════════════════
 function switchMainSection(section) {
+    // 🔒 Blocage strict : sections réservées admin
+    const ADMIN_ONLY_SECTIONS = ['lostfound', 'pdfList', 'massEntry', 'dashboard'];
+    const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
+
+    if (!isAdminUser && ADMIN_ONLY_SECTIONS.includes(section)) {
+        console.warn('🚫 [Role] Section admin bloquée pour staff:', section);
+        if (navigator.vibrate) navigator.vibrate(30);
+        section = 'liveRecord';  // Redirection silencieuse
+    }
+
     if (section === 'newRecord') {
         reinitialiserFormulaire();
     }
