@@ -6,7 +6,6 @@
     <title>Remal Hotel & Villas - Laundry & Lost & Found OS</title>
 
 <!-- FAVICON & ICONS -->
-<!-- ═══ PWA — Manifest & Meta ═══ -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#DCA773">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,22 +16,19 @@
 <meta name="msapplication-TileColor" content="#DCA773">
 <meta name="msapplication-tap-highlight" content="no">
 
-<!-- ═══ FAVICON & ICONS ═══ -->
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-staff-192.png">
 <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-staff-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-staff-512.png">
 <link rel="shortcut icon" href="assets/icon-staff-192.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="assets/css/premium-effects.css">
-    
-    <!-- FIX LOGO : style inline critique pour éviter le débordement -->
+
     <style>
-        /* Fix logo size - ne dépend PAS de Tailwind CDN */
         #bodyRoot header img[src*="remal-logo"] {
             height: 56px !important;
             width: auto !important;
@@ -40,34 +36,29 @@
             object-fit: contain !important;
             display: block !important;
         }
-        
         @media (min-width: 640px) {
             #bodyRoot header img[src*="remal-logo"] {
                 height: 64px !important;
                 max-width: 240px !important;
             }
         }
-        
         @media (min-width: 1024px) {
             #bodyRoot header img[src*="remal-logo"] {
                 height: 80px !important;
                 max-width: 300px !important;
             }
         }
-        
-        /* Fix global : aucun élément ne doit dépasser la largeur du viewport */
         #bodyRoot {
             overflow-x: hidden !important;
         }
-
-        /* Phase 5 — Hide admin-only elements for staff role */
         body.role-staff [data-admin-only="true"] {
             display: none !important;
         }
     </style>
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
-<!-- 📱 Bannière d'installation PWA -->
+
+<!-- ═══ PWA BANNER ═══ -->
 <div id="pwaInstallBanner" class="hidden fixed bottom-4 left-4 right-4 z-[9999] bg-gradient-to-r from-[#DCA773] to-[#F8E9C0] text-stone-950 rounded-2xl shadow-2xl p-4 flex items-center gap-3 no-print">
     <div class="text-2xl">📱</div>
     <div class="flex-1">
@@ -77,19 +68,21 @@
     <button onclick="installPWA()" class="bg-stone-950 text-[#DCA773] font-bold px-4 py-2 rounded-xl text-xs">Installer</button>
     <button onclick="document.getElementById('pwaInstallBanner').classList.add('hidden')" class="text-stone-700 text-xl">✕</button>
 </div>
-    <!-- VIP REALTIME NOTIFICATION BANNER -->
-    <div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
-        <div class="flex items-center gap-4">
-            <span class="text-2xl">🔔</span>
-            <div>
-                <p class="text-sm font-black uppercase tracking-wider">New Live Guest Request!</p>
-                <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Room --- just submitted a laundry order.</p>
-            </div>
-        </div>
-        <button onclick="event.stopPropagation(); dismissGuestNotificationBanner();" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">Close ✕</button>
-    </div>
 
-   <header class="laundry-header no-print">
+<!-- ═══ VIP REALTIME BANNER ═══ -->
+<div id="guestBannerContainer" onclick="dismissGuestNotificationBanner()" style="display: none;" class="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-6 py-4 shadow-2xl border-b-2 border-emerald-400 animate-bounce justify-between items-center cursor-pointer no-print">
+    <div class="flex items-center gap-4">
+        <span class="text-2xl">🔔</span>
+        <div>
+            <p class="text-sm font-black uppercase tracking-wider">New Live Guest Request!</p>
+            <p id="guestBannerText" class="text-xs font-semibold text-emerald-100">Room --- just submitted a laundry order.</p>
+        </div>
+    </div>
+    <button onclick="event.stopPropagation(); dismissGuestNotificationBanner();" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3 py-1 rounded-lg text-xs" title="Close">Close ✕</button>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="laundry-header no-print">
     <div class="laundry-header-inner">
         <div class="laundry-brand" onclick="switchMainSection('liveRecord')">
             <img src="assets/remal-logo.png" alt="Remal">
@@ -99,37 +92,37 @@
             </div>
         </div>
 
-<div class="laundry-header-actions">
-    <div id="roleBadgeHeader" class="role-badge">
-        <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
-        <div class="role-badge-info">
-            <span class="role-badge-name" id="roleBadgeName">---</span>
-            <span class="role-badge-role" id="roleBadgeRole">Staff</span>
+        <div class="laundry-header-actions">
+            <div id="roleBadgeHeader" class="role-badge">
+                <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
+                <div class="role-badge-info">
+                    <span class="role-badge-name" id="roleBadgeName">---</span>
+                    <span class="role-badge-role" id="roleBadgeRole">Staff</span>
+                </div>
+            </div>
+
+            <button onclick="toggleTheme()" class="header-action-btn" id="themeToggleBtn" title="Toggle theme">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+
+            <select id="langSelect" onchange="setLang(this.value)" class="lang-select-premium">
+                <option value="en">EN</option>
+                <option value="ar">AR</option>
+                <option value="hi">HI</option>
+            </select>
+
+            <button onclick="toggleStaffMobileMenu()" class="header-action-btn menu-trigger-btn" title="Menu">
+                <i class="fas fa-ellipsis-vertical"></i>
+            </button>
+
+            <button onclick="confirmLogout()" class="header-action-btn danger" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
         </div>
     </div>
-
-    <button onclick="toggleTheme()" class="header-action-btn" id="themeToggleBtn" title="Toggle theme">
-        <i class="fas fa-moon" id="themeIcon"></i>
-    </button>
-
-    <select id="langSelect" onchange="setLang(this.value)" class="lang-select-premium">
-        <option value="en">EN</option>
-        <option value="ar">AR</option>
-        <option value="hi">HI</option>
-    </select>
-
-    <!-- ✨ NOUVEAU : Menu ⋯ (visible uniquement sur mobile staff) -->
-    <button onclick="toggleStaffMobileMenu()" class="header-action-btn menu-trigger-btn" title="Menu">
-        <i class="fas fa-ellipsis-vertical"></i>
-    </button>
-
-    <button onclick="confirmLogout()" class="header-action-btn danger" title="Logout">
-        <i class="fas fa-sign-out-alt"></i>
-    </button>
-</div>
-</div>
 </header>
-<!-- ✨ Menu mobile staff ⋯ -->
+
+<!-- ═══ MOBILE MENU ═══ -->
 <div id="staffMobileMenuOverlay" class="staff-mobile-menu-overlay" onclick="closeStaffMobileMenu()"></div>
 
 <div id="staffMobileMenu" class="staff-mobile-menu">
@@ -137,18 +130,18 @@
         <i class="fas fa-moon" id="menuThemeIcon"></i>
         <span>Thème</span>
     </button>
-    
     <button class="staff-mobile-menu-item" onclick="cycleLanguage(); closeStaffMobileMenu();">
         <i class="fas fa-globe"></i>
         <span>Langue</span>
         <span class="menu-lang-badge" id="menuLangBadge">EN</span>
     </button>
-    
     <button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
         <i class="fas fa-sign-out-alt"></i>
         <span>Déconnexion</span>
     </button>
 </div>
+
+<!-- ═══ NAV ═══ -->
 <nav id="mainNavContainer" class="laundry-nav no-print">
     <div class="laundry-nav-inner">
         <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="nav-tab-premium active">
@@ -157,9 +150,9 @@
         <button onclick="switchMainSection('spa')" id="navBtnSpa" class="nav-tab-premium">
             <i class="fas fa-spa"></i><span>SPA</span>
         </button>
-<button onclick="switchMainSection('checkout')" id="navBtnCheckout" data-admin-only="true" class="nav-tab-premium">
-    <i class="fas fa-suitcase-rolling"></i><span>Check-Out</span>
-</button>
+        <button onclick="switchMainSection('checkout')" id="navBtnCheckout" data-admin-only="true" class="nav-tab-premium">
+            <i class="fas fa-suitcase-rolling"></i><span>Check-Out</span>
+        </button>
         <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" data-admin-only="true" class="nav-tab-premium">
             <i class="fas fa-box-open"></i><span>Lost & Found</span>
         </button>
@@ -175,358 +168,710 @@
     </div>
 </nav>
 
-   <div class="laundry-section space-y-6">
+<!-- ═══ LAUNDRY SECTION ═══ -->
+<div class="laundry-section space-y-6">
 
-<div id="quickActionButtons" class="quick-actions-grid role-admin no-print">
-    <button onclick="switchMainSection('newRecord')" class="quick-action-card">
-        <div class="quick-action-icon"><i class="fas fa-plus"></i></div>
-        <div class="quick-action-label">New Record</div>
-        <div class="quick-action-sub">Laundry entry</div>
-    </button>
-    
-    <button onclick="switchMainSection('pdfList'); setTimeout(() => document.getElementById('searchRoom')?.focus(), 400);" class="quick-action-card" data-admin-only="true">
-        <div class="quick-action-icon"><i class="fas fa-search"></i></div>
-        <div class="quick-action-label">Search Room</div>
-        <div class="quick-action-sub">Quick find</div>
-    </button>
-    
-    <button onclick="switchMainSection('pdfList')" class="quick-action-card" data-admin-only="true">
-        <div class="quick-action-icon"><i class="fas fa-archive"></i></div>
-        <div class="quick-action-label">Archives</div>
-        <div class="quick-action-sub">View all</div>
-    </button>
-</div>
+    <!-- QUICK ACTIONS -->
+    <div id="quickActionButtons" class="quick-actions-grid role-admin no-print">
+        <button onclick="switchMainSection('newRecord')" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-plus"></i></div>
+            <div class="quick-action-label">New Record</div>
+            <div class="quick-action-sub">Laundry entry</div>
+        </button>
+        <button onclick="switchMainSection('pdfList'); setTimeout(() => document.getElementById('searchRoom')?.focus(), 400);" class="quick-action-card" data-admin-only="true">
+            <div class="quick-action-icon"><i class="fas fa-search"></i></div>
+            <div class="quick-action-label">Search Room</div>
+            <div class="quick-action-sub">Quick find</div>
+        </button>
+        <button onclick="switchMainSection('pdfList')" class="quick-action-card" data-admin-only="true">
+            <div class="quick-action-icon"><i class="fas fa-archive"></i></div>
+            <div class="quick-action-label">Archives</div>
+            <div class="quick-action-sub">View all</div>
+        </button>
+    </div>
 
-        <div id="sectionNewRecord" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 lg:p-8 rounded-3xl relative max-w-6xl mx-auto">
-                
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-4 mb-6">
-                    <h2 class="text-xl font-serif-luxury font-bold text-[#DCA773]" id="lblFormTitle">New Record</h2>
-                    <button onclick="switchMainSection('liveRecord')" class="text-stone-400 hover:text-stone-200 font-bold text-2xl px-2">✕</button>
-                </div>
-
-                <input type="hidden" id="editingRecordId" value="">
-
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    
-                    <div class="lg:col-span-5 space-y-5">
-                        <div>
-                            <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
-                            
-                            <div class="relative">
-                                <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold" autocomplete="off">
-                                
-                                <div id="roomAutocompleteDropdown" 
-                                     class="hidden absolute left-0 right-0 top-full mt-2 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-80 overflow-y-auto scrollbar-none"></div>
-                            </div>
-                            
-                            <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
-                            
-                            <div id="roomPmsInfoBox" class="hidden mt-3 p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs space-y-2 shadow-inner">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-stone-400 font-medium">Guest Name:</span>
-                                    <span id="pmsInfoGuest" class="font-bold text-stone-100">---</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-stone-400 font-medium">Room Type:</span>
-                                    <span id="pmsInfoTyp" class="font-bold text-stone-200">---</span>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-2 py-2 my-1 border-y border-[#2f2820] bg-[#181614]/60 px-2.5 rounded-xl text-[11px]">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="text-amber-400 font-semibold">🛬 Arr:</span>
-                                        <span id="pmsInfoArrival" class="text-stone-200 font-bold">---</span>
-                                    </div>
-                                    <div class="flex items-center gap-1.5 justify-end">
-                                        <span class="text-amber-400 font-semibold">🛫 Dep:</span>
-                                        <span id="pmsInfoDeparture" class="text-stone-200 font-bold">---</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center">
-                                    <span class="text-stone-400 font-medium">Laundry Quota:</span>
-                                    <span id="pmsInfoQuota" class="font-bold text-emerald-400">---</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-stone-400 font-medium">Agency / Origin:</span>
-                                    <span id="pmsInfoAgency" class="font-bold text-stone-200">---</span>
-                                </div>
-                            </div>
-
-                            <p id="roomErrorMsg" class="hidden text-rose-400 text-xs font-bold mt-2 flex items-center gap-1">
-                                ⚠️ <span id="lblRoomError">Invalid room number! Allowed ranges: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.</span>
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-stone-400 mb-1.5">Account & Quota Type</label>
-                            <div class="grid grid-cols-3 gap-2 bg-[#0f0e0c] p-2 rounded-2xl border border-[#2f2820] text-xs font-bold text-center">
-                                <button onclick="selectCountType('hotel')" id="btn-count-hotel" class="py-3 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow transition leading-tight">Hotel Count (Free)</button>
-                                <button onclick="selectCountType('quota_extra')" id="btn-count-quota-extra" class="py-3 px-1 rounded-xl text-stone-400 transition leading-tight">Hotel & Extra Charged</button>
-                                <button onclick="selectCountType('guest')" id="btn-count-guest" class="py-3 px-1 rounded-xl text-stone-400 transition leading-tight">Guest Count (Full)</button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-stone-400 mb-1.5">Service Type</label>
-                            <div class="flex gap-2 text-xs font-bold">
-                                <button onclick="switchService('laundry')" id="tab-service-laundry" class="flex-1 py-3 rounded-xl bg-[#DCA773] text-stone-950 shadow">LAUNDRY</button>
-                                <button onclick="switchService('dry')" id="tab-service-dry" class="flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">DRY CLEANING</button>
-                                <button onclick="switchService('pressing')" id="tab-service-pressing" class="flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">PRESSING</button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-stone-400 mb-1.5">Packaging</label>
-                            <div class="grid grid-cols-3 gap-2 p-2 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs font-bold text-center text-stone-300">
-                                <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
-                                    <input type="radio" name="foldingOption" value="F — Folding" checked class="accent-[#DCA773] mb-1"> F — Folding
-                                </label>
-                                <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
-                                    <input type="radio" name="foldingOption" value="H/F — Hanger/Folding" class="accent-[#DCA773] mb-1"> H/F — Hanger/Folding
-                                </label>
-                                <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
-                                    <input type="radio" name="foldingOption" value="S — Single" class="accent-[#DCA773] mb-1"> S — Single
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-7 space-y-5">
-                        <div id="itemsContainer" class="space-y-3 max-h-[360px] overflow-y-auto pr-2 scrollbar-none bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]"></div>
-
-                        <details id="detailsCustomItems" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
-                            <summary class="p-3.5 cursor-pointer font-bold text-[#DCA773] text-xs uppercase tracking-wider flex justify-between items-center select-none">
-                                <span>➕ Other / Custom Items (Manual Entry)</span>
-                                <span class="text-stone-400 transition-transform group-open:rotate-180">▼</span>
-                            </summary>
-                            <div class="p-3.5 pt-0 space-y-2.5 border-t border-[#2f2820]/40 mt-1" id="customItemsContainer">
-                                <div class="flex gap-2 items-center">
-                                    <input type="text" placeholder="Item name (e.g. Special Coat)" id="customName0" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
-                                    <input type="number" placeholder="Price" id="customPrice0" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
-                                    <input type="number" placeholder="Qty" id="customQty0" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
-                                </div>
-                                <div class="flex gap-2 items-center">
-                                    <input type="text" placeholder="Item name" id="customName1" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
-                                    <input type="number" placeholder="Price" id="customPrice1" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
-                                    <input type="number" placeholder="Qty" id="customQty1" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
-                                </div>
-                                <div class="flex gap-2 items-center">
-                                    <input type="text" placeholder="Item name" id="customName2" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
-                                    <input type="number" placeholder="Price" id="customPrice2" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
-                                    <input type="number" placeholder="Qty" id="customQty2" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
-                                </div>
-                            </div>
-                        </details>
-
-                        <div class="bg-[#211e1a] border border-[#2f2820] text-[#DCA773] p-3.5 rounded-2xl flex justify-between items-center font-bold text-xs">
-                            <span id="lblSelectedGarments">Total Garments:</span>
-                            <span id="currentBordereauCount" class="bg-[#DCA773] text-stone-950 px-4 py-1.5 rounded-full text-xs font-extrabold">0 pieces</span>
-                        </div>
-
-                        <div class="bg-[#0f0e0c] border border-[#2f2820] p-4 rounded-2xl text-xs space-y-2 font-medium">
-                            <div class="flex justify-between"><span id="lblSubTotal">Subtotal:</span><span id="subTotal">0.00 AED</span></div>
-                            <div class="flex justify-between"><span id="lblVat">VAT (5%):</span><span id="vatAmount">0.00 AED</span></div>
-                            <div class="flex justify-between font-bold text-base border-t border-[#2f2820] pt-2 mt-1"><span id="lblGrandTotal">Grand Total:</span><span id="grandTotal" class="text-[#DCA773] font-serif-luxury text-lg">0.00 AED</span></div>
-                        </div>
-
-                        <details id="detailsGarmentNotes" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
-                            <summary class="p-3.5 cursor-pointer font-bold text-stone-400 text-xs tracking-wide flex justify-between items-center select-none">
-                                <span>📝 Garment Notes / Defects (Optional)</span>
-                                <span class="text-stone-400 transition-transform group-open:rotate-180">▼</span>
-                            </summary>
-                            <div class="p-3.5 pt-0 border-t border-[#2f2820]/40 mt-1">
-                                <textarea id="recordOptionalNote" placeholder="e.g., Stain on collar, small tear on left sleeve, missing button..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none mt-2"></textarea>
-                            </div>
-                        </details>
-
-                        <button onclick="document.getElementById('photoInput').click()" class="w-full bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-300 font-bold p-3.5 rounded-2xl text-xs border border-dashed border-[#2f2820] transition flex items-center justify-center gap-2" id="btnPhotoProof">
-                            <span>📷</span> Take Proof Photo (Camera)
-                        </button>
-                        <input type="file" id="photoInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)">
-                        <img id="imagePreview" class="hidden w-full max-h-48 object-cover rounded-2xl mt-2 border border-[#2f2820]" alt="Preuve">
-
-                        <button onclick="sauvegarderBordereauDepuisFormulaire()" id="btnSaveRecord" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 rounded-2xl text-sm shadow-lg transition tracking-wider uppercase">💾 Save Record</button>
-                    </div>
-                </div>
-
+    <!-- SECTION: NEW RECORD -->
+    <div id="sectionNewRecord" class="hidden space-y-4 no-print">
+        <div class="remal-card p-6 lg:p-8 rounded-3xl relative max-w-6xl mx-auto">
+            <div class="flex justify-between items-center border-b border-[#2f2820] pb-4 mb-6">
+                <h2 class="text-xl font-serif-luxury font-bold text-[#DCA773]" id="lblFormTitle">New Record</h2>
+                <button onclick="switchMainSection('liveRecord')" class="text-stone-400 hover:text-stone-200 font-bold text-2xl px-2">✕</button>
             </div>
-        </div>
 
-        <div id="sectionMassEntry" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-4xl mx-auto">
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+            <input type="hidden" id="editingRecordId" value="">
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-5 space-y-5">
                     <div>
-                        <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] uppercase tracking-wider">PMS Mass Entry & PDF Parser</h2>
-                        <p class="text-xs text-stone-400 mt-0.5">Front Desk Morning Setup Terminal</p>
+                        <label class="block text-xs font-bold text-stone-400 mb-1.5 tracking-wide" id="lblRoomNum">Room Number</label>
+                        <div class="relative">
+                            <input type="number" id="roomNumber" oninput="onRoomNumberInput()" placeholder="e.g., 103, 205, 348..." class="w-full remal-input rounded-2xl p-4 text-base font-bold" autocomplete="off">
+                            <div id="roomAutocompleteDropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-80 overflow-y-auto scrollbar-none"></div>
+                        </div>
+                        <p class="text-[11px] text-stone-400 mt-1.5" id="lblValidRanges">Valid: 103-144 · 201-246 · 301-348 · 401-448 · 501-520 · 601-608</p>
+
+                        <div id="roomPmsInfoBox" class="hidden mt-3 p-3.5 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs space-y-2 shadow-inner">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-400 font-medium">Guest Name:</span>
+                                <span id="pmsInfoGuest" class="font-bold text-stone-100">---</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-400 font-medium">Room Type:</span>
+                                <span id="pmsInfoTyp" class="font-bold text-stone-200">---</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 py-2 my-1 border-y border-[#2f2820] bg-[#181614]/60 px-2.5 rounded-xl text-[11px]">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-amber-400 font-semibold">🛬 Arr:</span>
+                                    <span id="pmsInfoArrival" class="text-stone-200 font-bold">---</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 justify-end">
+                                    <span class="text-amber-400 font-semibold">🛫 Dep:</span>
+                                    <span id="pmsInfoDeparture" class="text-stone-200 font-bold">---</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-400 font-medium">Laundry Quota:</span>
+                                <span id="pmsInfoQuota" class="font-bold text-emerald-400">---</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-400 font-medium">Agency / Origin:</span>
+                                <span id="pmsInfoAgency" class="font-bold text-stone-200">---</span>
+                            </div>
+                        </div>
+
+                        <p id="roomErrorMsg" class="hidden text-rose-400 text-xs font-bold mt-2 flex items-center gap-1">
+                            ⚠️ <span id="lblRoomError">Invalid room number! Allowed ranges: 103-144, 201-246, 301-348, 401-448, 501-520, 601-608.</span>
+                        </p>
                     </div>
-                    <span class="text-[10px] bg-amber-950 text-amber-200 font-bold px-3 py-1 rounded-full border border-amber-800">Accurate Guest Mapping</span>
-                </div>
-                
-                <p class="text-xs text-stone-300">Upload your PMS multi-page PDF report directly or paste the text content below.</p>
 
-                <div class="border-2 border-dashed border-[#2f2820] p-8 text-center rounded-2xl bg-[#0f0e0c] hover:border-[#DCA773] transition cursor-pointer" onclick="document.getElementById('pdfFileReceiver').click()">
-                    <i class="fas fa-file-pdf text-4xl text-[#DCA773] mb-3"></i>
-                    <p class="text-sm font-bold text-stone-200">Click to upload PMS PDF Report</p>
-                    <p class="text-xs text-stone-500 mt-1">Supports multi-page guest list reports</p>
-                    <input type="file" id="pdfFileReceiver" accept=".pdf" onchange="handlePDFUpload(event)" class="hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1.5">Account & Quota Type</label>
+                        <div class="grid grid-cols-3 gap-2 bg-[#0f0e0c] p-2 rounded-2xl border border-[#2f2820] text-xs font-bold text-center">
+                            <button onclick="selectCountType('hotel')" id="btn-count-hotel" class="py-3 px-1 rounded-xl bg-[#DCA773] text-stone-950 shadow transition leading-tight">Hotel Count (Free)</button>
+                            <button onclick="selectCountType('quota_extra')" id="btn-count-quota-extra" class="py-3 px-1 rounded-xl text-stone-400 transition leading-tight">Hotel & Extra Charged</button>
+                            <button onclick="selectCountType('guest')" id="btn-count-guest" class="py-3 px-1 rounded-xl text-stone-400 transition leading-tight">Guest Count (Full)</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1.5">Service Type</label>
+                        <div class="flex gap-2 text-xs font-bold">
+                            <button onclick="switchService('laundry')" id="tab-service-laundry" class="flex-1 py-3 rounded-xl bg-[#DCA773] text-stone-950 shadow">LAUNDRY</button>
+                            <button onclick="switchService('dry')" id="tab-service-dry" class="flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">DRY CLEANING</button>
+                            <button onclick="switchService('pressing')" id="tab-service-pressing" class="flex-1 py-3 rounded-xl bg-[#0f0e0c] text-stone-400 border border-[#2f2820]">PRESSING</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1.5">Packaging</label>
+                        <div class="grid grid-cols-3 gap-2 p-2 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs font-bold text-center text-stone-300">
+                            <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
+                                <input type="radio" name="foldingOption" value="F — Folding" checked class="accent-[#DCA773] mb-1"> F — Folding
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
+                                <input type="radio" name="foldingOption" value="H/F — Hanger/Folding" class="accent-[#DCA773] mb-1"> H/F — Hanger/Folding
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2.5 bg-[#181614] rounded-xl border border-[#2f2820] cursor-pointer hover:border-[#DCA773]">
+                                <input type="radio" name="foldingOption" value="S — Single" class="accent-[#DCA773] mb-1"> S — Single
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
+                <div class="lg:col-span-7 space-y-5">
+                    <div id="itemsContainer" class="space-y-3 max-h-[360px] overflow-y-auto pr-2 scrollbar-none bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]"></div>
+
+                    <details id="detailsCustomItems" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
+                        <summary class="p-3.5 cursor-pointer font-bold text-[#DCA773] text-xs uppercase tracking-wider flex justify-between items-center select-none">
+                            <span>➕ Other / Custom Items (Manual Entry)</span>
+                            <span class="text-stone-400 transition-transform group-open:rotate-180">▼</span>
+                        </summary>
+                        <div class="p-3.5 pt-0 space-y-2.5 border-t border-[#2f2820]/40 mt-1" id="customItemsContainer">
+                            <div class="flex gap-2 items-center">
+                                <input type="text" placeholder="Item name (e.g. Special Coat)" id="customName0" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
+                                <input type="number" placeholder="Price" id="customPrice0" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
+                                <input type="number" placeholder="Qty" id="customQty0" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
+                            </div>
+                            <div class="flex gap-2 items-center">
+                                <input type="text" placeholder="Item name" id="customName1" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
+                                <input type="number" placeholder="Price" id="customPrice1" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
+                                <input type="number" placeholder="Qty" id="customQty1" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
+                            </div>
+                            <div class="flex gap-2 items-center">
+                                <input type="text" placeholder="Item name" id="customName2" oninput="calculateGlobalTotals()" class="flex-1 remal-input rounded-xl px-3 py-2 text-xs font-semibold">
+                                <input type="number" placeholder="Price" id="customPrice2" min="0" step="0.5" oninput="calculateGlobalTotals()" class="w-24 remal-input rounded-xl px-2 py-2 text-xs text-center font-semibold">
+                                <input type="number" placeholder="Qty" id="customQty2" min="0" value="" oninput="calculateGlobalTotals()" class="w-20 remal-input rounded-xl px-2 py-2 text-xs text-center font-bold">
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="bg-[#211e1a] border border-[#2f2820] text-[#DCA773] p-3.5 rounded-2xl flex justify-between items-center font-bold text-xs">
+                        <span id="lblSelectedGarments">Total Garments:</span>
+                        <span id="currentBordereauCount" class="bg-[#DCA773] text-stone-950 px-4 py-1.5 rounded-full text-xs font-extrabold">0 pieces</span>
+                    </div>
+
+                    <div class="bg-[#0f0e0c] border border-[#2f2820] p-4 rounded-2xl text-xs space-y-2 font-medium">
+                        <div class="flex justify-between"><span id="lblSubTotal">Subtotal:</span><span id="subTotal">0.00 AED</span></div>
+                        <div class="flex justify-between"><span id="lblVat">VAT (5%):</span><span id="vatAmount">0.00 AED</span></div>
+                        <div class="flex justify-between font-bold text-base border-t border-[#2f2820] pt-2 mt-1"><span id="lblGrandTotal">Grand Total:</span><span id="grandTotal" class="text-[#DCA773] font-serif-luxury text-lg">0.00 AED</span></div>
+                    </div>
+
+                    <details id="detailsGarmentNotes" class="bg-[#0f0e0c] rounded-2xl border border-[#2f2820] group transition-all duration-300">
+                        <summary class="p-3.5 cursor-pointer font-bold text-stone-400 text-xs tracking-wide flex justify-between items-center select-none">
+                            <span>📝 Garment Notes / Defects (Optional)</span>
+                            <span class="text-stone-400 transition-transform group-open:rotate-180">▼</span>
+                        </summary>
+                        <div class="p-3.5 pt-0 border-t border-[#2f2820]/40 mt-1">
+                            <textarea id="recordOptionalNote" placeholder="e.g., Stain on collar, small tear on left sleeve, missing button..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none mt-2"></textarea>
+                        </div>
+                    </details>
+
+                    <button onclick="document.getElementById('photoInput').click()" class="w-full bg-[#0f0e0c] hover:bg-[#211e1a] text-stone-300 font-bold p-3.5 rounded-2xl text-xs border border-dashed border-[#2f2820] transition flex items-center justify-center gap-2" id="btnPhotoProof">
+                        <span>📷</span> Take Proof Photo (Camera)
+                    </button>
+                    <input type="file" id="photoInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)">
+                    <img id="imagePreview" class="hidden w-full max-h-48 object-cover rounded-2xl mt-2 border border-[#2f2820]" alt="Preuve">
+
+                    <button onclick="sauvegarderBordereauDepuisFormulaire()" id="btnSaveRecord" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 rounded-2xl text-sm shadow-lg transition tracking-wider uppercase">💾 Save Record</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION: MASS ENTRY -->
+    <div id="sectionMassEntry" class="hidden space-y-4 no-print">
+        <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-4xl mx-auto">
+            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
                 <div>
-                    <textarea id="pmsPasteArea" placeholder="Or paste raw copied text from report here..." class="w-full h-32 bg-[#0f0e0c] text-stone-200 p-4 rounded-xl font-mono text-xs outline-none border border-[#2f2820] resize-vertical"></textarea>
-                    <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" class="mt-3 w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow">Analyze & Save Database</button>
+                    <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] uppercase tracking-wider">PMS Mass Entry & PDF Parser</h2>
+                    <p class="text-xs text-stone-400 mt-0.5">Front Desk Morning Setup Terminal</p>
                 </div>
-                <div id="massRecordCounter" class="text-xs font-bold text-emerald-400"></div>
+                <span class="text-[10px] bg-amber-950 text-amber-200 font-bold px-3 py-1 rounded-full border border-amber-800">Accurate Guest Mapping</span>
             </div>
 
-            <div id="massResultsCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-5xl mx-auto">
-                <h3 class="text-sm font-serif-luxury font-bold text-stone-200">In-House Guest Laundry List & Status</h3>
-                <div class="max-h-[500px] overflow-y-auto border border-[#2f2820] rounded-2xl">
-                    <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
-                        <thead class="bg-[#181614] text-stone-300 sticky top-0 z-10 border-b border-[#2f2820]">
-                            <tr>
-                                <th class="p-3.5">Room</th>
-                                <th class="p-3.5">Guest Name</th>
-                                <th class="p-3.5">Typ</th>
-                                <th class="p-3.5 text-amber-500">Company / Agency</th>
-                                <th class="p-3.5">Arrival</th>
-                                <th class="p-3.5">Departure</th>
-                                <th class="p-3.5">Laundry Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]"></tbody>
-                    </table>
+            <p class="text-xs text-stone-300">Upload your PMS multi-page PDF report directly or paste the text content below.</p>
+
+            <div class="border-2 border-dashed border-[#2f2820] p-8 text-center rounded-2xl bg-[#0f0e0c] hover:border-[#DCA773] transition cursor-pointer" onclick="document.getElementById('pdfFileReceiver').click()">
+                <i class="fas fa-file-pdf text-4xl text-[#DCA773] mb-3"></i>
+                <p class="text-sm font-bold text-stone-200">Click to upload PMS PDF Report</p>
+                <p class="text-xs text-stone-500 mt-1">Supports multi-page guest list reports</p>
+                <input type="file" id="pdfFileReceiver" accept=".pdf" onchange="handlePDFUpload(event)" class="hidden">
+            </div>
+
+            <div>
+                <textarea id="pmsPasteArea" placeholder="Or paste raw copied text from report here..." class="w-full h-32 bg-[#0f0e0c] text-stone-200 p-4 rounded-xl font-mono text-xs outline-none border border-[#2f2820] resize-vertical"></textarea>
+                <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" class="mt-3 w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow">Analyze & Save Database</button>
+            </div>
+            <div id="massRecordCounter" class="text-xs font-bold text-emerald-400"></div>
+        </div>
+
+        <div id="massResultsCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-5xl mx-auto">
+            <h3 class="text-sm font-serif-luxury font-bold text-stone-200">In-House Guest Laundry List & Status</h3>
+            <div class="max-h-[500px] overflow-y-auto border border-[#2f2820] rounded-2xl">
+                <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
+                    <thead class="bg-[#181614] text-stone-300 sticky top-0 z-10 border-b border-[#2f2820]">
+                        <tr>
+                            <th class="p-3.5">Room</th>
+                            <th class="p-3.5">Guest Name</th>
+                            <th class="p-3.5">Typ</th>
+                            <th class="p-3.5 text-amber-500">Company / Agency</th>
+                            <th class="p-3.5">Arrival</th>
+                            <th class="p-3.5">Departure</th>
+                            <th class="p-3.5">Laundry Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION: LIVE RECORD -->
+    <div id="sectionLiveRecord" class="space-y-4 no-print">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms & SPA</span>
+                <span id="activeRoomsCountBadge" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="ouvrirModalActiveRoomsList()" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 border border-[#2f2820] font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                    <i class="fas fa-list-ol text-[#DCA773]"></i>
+                    <span>📋 Active Rooms List</span>
+                </button>
+                <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                    <i class="fas fa-print text-sm"></i>
+                    <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
+                </button>
+                <button onclick="telechargerToutesLesChambresDuJour()" id="btnBatchDownload" data-admin-only="true" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
+                    <i class="fas fa-download text-sm"></i>
+                    <span>📥 Download All (PDFs)</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+            <p class="text-xs text-stone-500 text-center py-6 col-span-full">Loading active rooms...</p>
+        </div>
+    </div>
+
+    <!-- SECTION: CHECKOUT -->
+    <div id="sectionCheckout" class="hidden space-y-6 no-print">
+        <div class="checkout-header">
+            <div class="checkout-header-left">
+                <h2 class="checkout-title">🧳 Check-Out Laundry</h2>
+                <p class="checkout-subtitle">Track guest laundry deposits before departure</p>
+            </div>
+            <div class="checkout-header-right">
+                <button onclick="openCheckoutForm()" class="checkout-new-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>New Check-Out</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="checkout-stats-bar">
+            <div class="checkout-stat">
+                <div class="checkout-stat-icon">📦</div>
+                <div>
+                    <div class="checkout-stat-value" id="checkoutStatDeposited">0</div>
+                    <div class="checkout-stat-label">Deposited</div>
+                </div>
+            </div>
+            <div class="checkout-stat">
+                <div class="checkout-stat-icon">🧼</div>
+                <div>
+                    <div class="checkout-stat-value" id="checkoutStatProcessing">0</div>
+                    <div class="checkout-stat-label">Processing</div>
+                </div>
+            </div>
+            <div class="checkout-stat">
+                <div class="checkout-stat-icon">✨</div>
+                <div>
+                    <div class="checkout-stat-value" id="checkoutStatReady">0</div>
+                    <div class="checkout-stat-label">Ready</div>
+                </div>
+            </div>
+            <div class="checkout-stat">
+                <div class="checkout-stat-icon">✅</div>
+                <div>
+                    <div class="checkout-stat-value" id="checkoutStatPickedUp">0</div>
+                    <div class="checkout-stat-label">Picked Up</div>
                 </div>
             </div>
         </div>
 
-        <div id="sectionLiveRecord" class="space-y-4 no-print">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms & SPA</span>
-                    <span id="activeRoomsCountBadge" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
+        <div class="checkout-filters">
+            <button onclick="switchCheckoutFilter('all')" id="checkoutFilterAll" class="checkout-filter-btn active">All</button>
+            <button onclick="switchCheckoutFilter('Deposited')" id="checkoutFilterDeposited" class="checkout-filter-btn">📦 Deposited</button>
+            <button onclick="switchCheckoutFilter('Processing')" id="checkoutFilterProcessing" class="checkout-filter-btn">🧼 Processing</button>
+            <button onclick="switchCheckoutFilter('Ready')" id="checkoutFilterReady" class="checkout-filter-btn">✨ Ready</button>
+            <button onclick="switchCheckoutFilter('Picked Up')" id="checkoutFilterPickedUp" class="checkout-filter-btn">✅ Picked Up</button>
+        </div>
+
+        <div class="checkout-search-wrap">
+            <i class="fas fa-search checkout-search-icon"></i>
+            <input type="text" id="checkoutSearchInput" oninput="renderCheckoutList()" placeholder="Search by serial, guest name, or room..." class="checkout-search-input" autocomplete="off">
+        </div>
+
+        <div id="checkoutList" class="checkout-list">
+            <p class="checkout-empty">Loading check-outs...</p>
+        </div>
+    </div>
+
+    <!-- SECTION: SPA -->
+    <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
+        <input type="hidden" id="editingSpaId" value="">
+
+        <div class="spa-header border-b border-stone-300 pb-6">
+            <div class="spa-header-row">
+                <div class="spa-header-logo-left">
+                    <img src="assets/remal-logo.png" alt="Remal" class="spa-logo-img" onerror="this.style.display='none';">
                 </div>
-                
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="ouvrirModalActiveRoomsList()" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 border border-[#2f2820] font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
-                        <i class="fas fa-list-ol text-[#DCA773]"></i>
-                        <span>📋 Active Rooms List</span>
-                    </button>
-                    <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
-                        <i class="fas fa-print text-sm"></i>
-                        <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
-                    </button>
-                    <button onclick="telechargerToutesLesChambresDuJour()" id="btnBatchDownload" data-admin-only="true" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
-                        <i class="fas fa-download text-sm"></i>
-                        <span>📥 Download All (PDFs)</span>
-                    </button>
+                <div class="spa-header-title">
+                    <h2 class="spa-title-main">S P A</h2>
+                    <p class="spa-title-sub">Laundry Daily Record Sheet</p>
+                </div>
+                <div class="spa-header-logo-right">
+                    <img src="assets/velement-logo.png" alt="V Element SPA" class="spa-logo-img" onerror="this.style.display='none';">
                 </div>
             </div>
-
-            <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
-                <p class="text-xs text-stone-500 text-center py-6 col-span-full">Loading active rooms...</p>
+            <div class="spa-header-date">
+                <div class="flex items-center justify-center gap-2 text-xs text-stone-500">
+                    <span class="font-bold uppercase tracking-wider">Date :</span>
+                    <span id="spa-current-date" class="font-semibold text-stone-800"></span>
+                </div>
+                <h2 id="spaFormTitleLabel" style="display:none;">V Element SPA Laundry Daily Record Sheet</h2>
             </div>
         </div>
-      <!-- ═══════════════════════════════════════════════════════════
-     🧳 SECTION CHECK-OUT LAUNDRY
-     Track guest laundry deposits before departure
-     ═══════════════════════════════════════════════════════════ -->
-<div id="sectionCheckout" class="hidden space-y-6 no-print">
 
-    <!-- HEADER SECTION -->
-    <div class="checkout-header">
-        <div class="checkout-header-left">
-            <h2 class="checkout-title">
-                🧳 Check-Out Laundry
-            </h2>
-            <p class="checkout-subtitle">Track guest laundry deposits before departure</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-stone-50 p-4 rounded-2xl border border-stone-200">
+            <div class="flex items-center gap-2 border-b border-stone-300 py-2">
+                <span class="text-xs font-bold text-stone-600 uppercase min-w-[120px]">Given By (Spa):</span>
+                <input type="text" id="spa-given-by" class="w-full font-semibold focus:outline-none border-none p-0 bg-transparent text-xs text-stone-900" placeholder="Spa Employee Name">
+            </div>
+            <div class="flex items-center gap-2 border-b border-stone-300 py-2 justify-end">
+                <span class="text-xs font-bold text-stone-600 uppercase">SERIAL NO:</span>
+                <input type="text" id="spa-serial-no" class="w-32 text-right text-sm font-black text-amber-700 ml-2 bg-white border border-stone-300 rounded-xl px-3 py-1.5" placeholder="Serial">
+            </div>
         </div>
-        <div class="checkout-header-right">
-            <button onclick="openCheckoutForm()" class="checkout-new-btn">
-                <i class="fas fa-plus-circle"></i>
-                <span>New Check-Out</span>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse border border-stone-300 rounded-2xl overflow-hidden bg-white">
+                <thead>
+                    <tr class="bg-stone-100 text-stone-900 text-xs uppercase tracking-wider text-center border-b border-stone-300 font-bold">
+                        <th class="p-3.5 text-left">Item</th>
+                        <th class="p-3.5">Quantity</th>
+                        <th class="p-3.5">Rate (AED)</th>
+                        <th class="p-3.5">Total Amount (AED)</th>
+                    </tr>
+                </thead>
+                <tbody class="text-xs font-medium divide-y divide-stone-200 text-stone-800">
+                    <tr class="hover:bg-stone-50">
+                        <td class="p-3.5 font-bold">BATH TOWEL</td>
+                        <td class="p-3.5 text-center"><input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()"></td>
+                        <td class="p-3.5 text-center text-stone-600">2.00</td>
+                        <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
+                    </tr>
+                    <tr class="hover:bg-stone-50">
+                        <td class="p-3.5 font-bold">HAND TOWEL</td>
+                        <td class="p-3.5 text-center"><input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()"></td>
+                        <td class="p-3.5 text-center text-stone-600">1.00</td>
+                        <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
+                    </tr>
+                    <tr class="hover:bg-stone-50">
+                        <td class="p-3.5 font-bold">BED SHEET</td>
+                        <td class="p-3.5 text-center"><input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()"></td>
+                        <td class="p-3.5 text-center text-stone-600">2.00</td>
+                        <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
+                    </tr>
+                    <tr class="hover:bg-stone-50">
+                        <td class="p-3.5 font-bold">PILLOW CASE</td>
+                        <td class="p-3.5 text-center"><input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()"></td>
+                        <td class="p-3.5 text-center text-stone-600">1.00</td>
+                        <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
+                    </tr>
+                    <tr class="hover:bg-stone-50">
+                        <td class="p-3.5 font-bold">BATHROBE</td>
+                        <td class="p-3.5 text-center"><input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()"></td>
+                        <td class="p-3.5 text-center text-stone-600">2.00</td>
+                        <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
+                    </tr>
+                    <tr class="bg-stone-100 font-bold text-stone-950">
+                        <td colspan="3" class="p-3.5 text-right uppercase tracking-wider text-xs">Grand Total :</td>
+                        <td id="spa-grand-total" class="p-3.5 text-center text-amber-700 text-lg font-black">0.00 AED</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-stone-50 rounded-2xl border border-stone-200">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Collected By (Laundry) :</label>
+                    <input type="text" id="spa-collected-by" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 text-stone-900 rounded-xl font-semibold text-xs" placeholder="Laundry Collection Agent">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Collection Date & Time :</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="spa-collection-date" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
+                        <input type="time" id="spa-collection-time" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Delivered By (Laundry) :</label>
+                    <input type="text" id="spa-delivered-by" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 text-stone-900 rounded-xl font-semibold text-xs" placeholder="Laundry Delivery Agent">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Delivery Date & Time :</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="spa-delivery-date" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
+                        <input type="time" id="spa-delivery-time" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pdf-footer-template" class="hidden border-t border-stone-300 pt-3 text-stone-600 text-[10px] flex justify-between items-center">
+            <div>Receipt No: <span id="pdf-footer-serial-no" class="font-bold">--</span></div>
+            <div class="text-right">Downloaded: <span id="pdf-footer-download-time" class="font-semibold"></span></div>
+        </div>
+
+        <div id="spa-action-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 no-print">
+            <button onclick="validateAndSaveSpaReceipt()" id="btnSaveSpa" class="w-full py-3.5 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl shadow transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                <i class="fas fa-check-circle"></i> Validate & Save SPA Receipt
+            </button>
+            <button onclick="exportSpaToPDF()" class="w-full py-3.5 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold rounded-xl shadow transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                <i class="fas fa-file-pdf"></i> Export SPA PDF
             </button>
         </div>
-    </div>
+    </section>
 
-    <!-- STATS BAR -->
-    <div class="checkout-stats-bar">
-        <div class="checkout-stat">
-            <div class="checkout-stat-icon">📦</div>
-            <div>
-                <div class="checkout-stat-value" id="checkoutStatDeposited">0</div>
-                <div class="checkout-stat-label">Deposited</div>
+    <!-- PDF SPA zone cachée -->
+    <div id="spaPdfExportArea" style="display:none;">
+        <div class="spa-pdf-header">
+            <div class="spa-pdf-logo-left"><img src="assets/remal-logo.png" alt="Remal" class="spa-pdf-logo-img"></div>
+            <div class="spa-pdf-title-center">
+                <h2 class="spa-pdf-title-main">S P A</h2>
+                <p class="spa-pdf-title-sub">Laundry Daily Record Sheet</p>
+            </div>
+            <div class="spa-pdf-logo-right"><img src="assets/velement-logo.png" alt="V Element SPA" class="spa-pdf-logo-img"></div>
+        </div>
+        <div class="spa-pdf-info-row">
+            <div class="spa-pdf-info-left">
+                <p><strong>Date :</strong> <span id="spaPdfDate">---</span></p>
+                <p><strong>Given By (Spa) :</strong> <span id="spaPdfGivenBy">---</span></p>
+                <p><strong>Agent :</strong> <span id="spaPdfAgent">---</span></p>
+            </div>
+            <div class="spa-pdf-info-right">
+                <p><strong>Serial No :</strong> <span id="spaPdfSerial">---</span></p>
+                <p><strong>Receipt ID :</strong> <span id="spaPdfReceiptId">---</span></p>
+                <p><strong>Packaging :</strong> <span id="spaPdfPackaging">SPA Daily Sheet</span></p>
             </div>
         </div>
-        <div class="checkout-stat">
-            <div class="checkout-stat-icon">🧼</div>
-            <div>
-                <div class="checkout-stat-value" id="checkoutStatProcessing">0</div>
-                <div class="checkout-stat-label">Processing</div>
+        <table class="spa-pdf-table">
+            <thead><tr><th>Item</th><th class="text-center">Quantity</th><th class="text-center">Rate (AED)</th><th class="text-right">Total Amount (AED)</th></tr></thead>
+            <tbody id="spaPdfTableBody"></tbody>
+            <tfoot><tr class="spa-pdf-total-row"><td colspan="3" class="text-right"><strong>GRAND TOTAL :</strong></td><td class="text-right"><strong id="spaPdfGrandTotal">0.00 AED</strong></td></tr></tfoot>
+        </table>
+        <div class="spa-pdf-signatures">
+            <div class="spa-pdf-signature-item">
+                <p><strong>Collected By (Laundry) :</strong> <span id="spaPdfCollectedBy">---</span></p>
+                <p class="spa-pdf-signature-date"><strong>Collection :</strong> <span id="spaPdfCollectionDate">---</span></p>
+            </div>
+            <div class="spa-pdf-signature-item">
+                <p><strong>Delivered By (Laundry) :</strong> <span id="spaPdfDeliveredBy">---</span></p>
+                <p class="spa-pdf-signature-date"><strong>Delivery :</strong> <span id="spaPdfDeliveryDate">---</span></p>
             </div>
         </div>
-        <div class="checkout-stat">
-            <div class="checkout-stat-icon">✨</div>
+        <div class="spa-pdf-footer">THANK YOU FOR YOUR STAY</div>
+    </div>
+
+    <!-- SECTION: LOST & FOUND -->
+    <div id="sectionLostfound" class="hidden space-y-6 no-print">
+        <div class="flex justify-between items-center bg-[#181614] p-4 sm:p-6 rounded-3xl border border-[#2f2820]">
             <div>
-                <div class="checkout-stat-value" id="checkoutStatReady">0</div>
-                <div class="checkout-stat-label">Ready</div>
+                <h2 class="text-base sm:text-lg font-serif-luxury font-bold text-[#DCA773]">Lost & Found Registry</h2>
+                <p class="text-xs text-stone-400 mt-0.5">Hotel Property & Guest Belongings Tracking</p>
             </div>
+            <button onclick="document.getElementById('lfFormCard').classList.toggle('hidden')" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow transition flex items-center gap-2">
+                <span>+</span> Add Lost Item
+            </button>
         </div>
-        <div class="checkout-stat">
-            <div class="checkout-stat-icon">✅</div>
+
+        <div id="lfFormCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-2xl mx-auto">
+            <h3 class="text-sm font-bold text-[#DCA773] border-b border-[#2f2820] pb-2">New Lost & Found Item</h3>
             <div>
-                <div class="checkout-stat-value" id="checkoutStatPickedUp">0</div>
-                <div class="checkout-stat-label">Picked Up</div>
+                <label class="block text-xs font-bold text-stone-400 mb-1">Item Name / Description</label>
+                <input type="text" id="lfItemName" placeholder="e.g., iPhone 15, Gold Ring, Black Jacket..." class="w-full remal-input rounded-xl p-3 text-xs font-semibold">
             </div>
+            <div>
+                <label class="block text-xs font-bold text-stone-400 mb-1">Found Location</label>
+                <input type="text" id="lfItemLoc" placeholder="e.g., Lobby Sofa, Room 204, Poolside..." class="w-full remal-input rounded-xl p-3 text-xs font-semibold">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-stone-400 mb-1">Notes / Condition</label>
+                <textarea id="lfItemNote" placeholder="Additional details, colors, serial number..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-stone-400 mb-1">Photo Evidence</label>
+                <input type="file" id="lfItemPhoto" accept="image/*" capture="environment" onchange="previewLFImage(event)" class="w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#181614] file:text-[#DCA773] hover:file:bg-[#211e1a] cursor-pointer">
+                <img id="lfImagePreview" class="hidden w-full max-h-40 object-cover rounded-xl mt-2 border border-[#2f2820]" alt="Preview">
+            </div>
+            <button onclick="saveLostFoundItem()" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow transition">Save Item</button>
+        </div>
+
+        <div id="lfItemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p class="text-xs text-stone-500 text-center py-6 col-span-full">No lost and found items registered.</p>
         </div>
     </div>
 
-    <!-- FILTERS -->
-    <div class="checkout-filters">
-        <button onclick="switchCheckoutFilter('all')" id="checkoutFilterAll" class="checkout-filter-btn active">
-            All
-        </button>
-        <button onclick="switchCheckoutFilter('Deposited')" id="checkoutFilterDeposited" class="checkout-filter-btn">
-            📦 Deposited
-        </button>
-        <button onclick="switchCheckoutFilter('Processing')" id="checkoutFilterProcessing" class="checkout-filter-btn">
-            🧼 Processing
-        </button>
-        <button onclick="switchCheckoutFilter('Ready')" id="checkoutFilterReady" class="checkout-filter-btn">
-            ✨ Ready
-        </button>
-        <button onclick="switchCheckoutFilter('Picked Up')" id="checkoutFilterPickedUp" class="checkout-filter-btn">
-            ✅ Picked Up
-        </button>
+    <!-- SECTION: PDF LIST (ARCHIVES) -->
+    <div id="sectionPdfList" class="hidden space-y-4 no-print">
+        <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-5xl mx-auto">
+            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+                <h3 class="text-base sm:text-lg font-serif-luxury font-bold text-[#DCA773]" id="lblArchiveTitle">Archives & Search</h3>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="exportAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">⚡ Export Auto (1 Clic)</button>
+                <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">🔄 Import Auto (1 Clic)</button>
+                <button onclick="selectBackupFolder()" class="col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">📁 Choose phone folder (File System)</button>
+            </div>
+
+            <div class="flex bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
+                <button onclick="switchArchiveFilter('all')" id="archiveFilterAll" class="flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">ALL RECORDS</button>
+                <button onclick="switchArchiveFilter('laundry')" id="archiveFilterLaundry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🏨 HOTEL LAUNDRY</button>
+                <button onclick="switchArchiveFilter('spa')" id="archiveFilterSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🧘 SPA LAUNDRY</button>
+            </div>
+
+            <div id="statusFilterBar" class="flex flex-wrap bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
+                <button onclick="switchStatusFilter('all')" id="statusFilterAll" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold">All Status</button>
+                <button onclick="switchStatusFilter('pending')" id="statusFilterPending" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">⏳ Pending</button>
+                <button onclick="switchStatusFilter('washing')" id="statusFilterWashing" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">🧼 Washing</button>
+                <button onclick="switchStatusFilter('ready')" id="statusFilterReady" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">✨ Ready</button>
+                <button onclick="switchStatusFilter('delivered')" id="statusFilterDelivered" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">✅ Delivered</button>
+            </div>
+
+            <div id="archiveDateFilters" class="flex flex-wrap gap-2">
+                <button onclick="switchDateFilter('today')" id="dateFilterToday" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Today</button>
+                <button onclick="switchDateFilter('7d')" id="dateFilter7d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 7 days</button>
+                <button onclick="switchDateFilter('30d')" id="dateFilter30d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 30 days</button>
+                <button onclick="switchDateFilter('90d')" id="dateFilter90d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 90 days</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400 z-10">🔍</span>
+                    <input type="text" id="searchRoom" oninput="onSearchRoomInput(event)" onfocus="onSearchRoomInput(event)" autocomplete="off" placeholder="Search room (103...), guest, or SPA serial (#23)..." class="w-full remal-input rounded-xl pl-10 pr-4 py-3 text-xs">
+                    <div id="searchRoomDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-64 overflow-y-auto scrollbar-none"></div>
+                </div>
+                <div>
+                    <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="w-full remal-input rounded-xl px-4 py-3 text-xs cursor-pointer">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="exportFilteredArchivesToPDF()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">📥 Export PDF</button>
+                <button onclick="exportFilteredArchivesToCSV()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">📊 Export CSV</button>
+            </div>
+
+            <button onclick="ouvrirModaleArchives()" class="w-full bg-[#0f0e0c] hover:bg-[#181614] text-[#DCA773] border border-[#DCA773]/40 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">📦 View Archives (older than 90 days)</button>
+
+            <div id="archivesExportContainer" class="hidden"></div>
+
+            <div id="laundryList" class="space-y-5 pt-1"><p class="text-xs text-stone-500 text-center py-4" id="lblLoadingRecords">Loading records...</p></div>
+        </div>
     </div>
 
-    <!-- SEARCH -->
-    <div class="checkout-search-wrap">
-        <i class="fas fa-search checkout-search-icon"></i>
-        <input
-            type="text"
-            id="checkoutSearchInput"
-            oninput="renderCheckoutList()"
-            placeholder="Search by serial, guest name, or room..."
-            class="checkout-search-input"
-            autocomplete="off"
-        >
-    </div>
+    <!-- SECTION: DASHBOARD -->
+    <div id="sectionDashboard" class="hidden space-y-6 no-print">
+        <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-6xl mx-auto">
 
-    <!-- LIST -->
-    <div id="checkoutList" class="checkout-list">
-        <p class="checkout-empty">Loading check-outs...</p>
+            <div class="dashboard-title">
+                <h1 class="font-serif-luxury text-base sm:text-lg font-bold text-[#DCA773] tracking-wide">📈 RECEPTION & MANAGEMENT ANALYTICS</h1>
+                <div class="dashboard-header-actions">
+                    <span class="dashboard-badge">Executive Overview</span>
+                    <button onclick="genererRapportJournalier()" class="dashboard-report-btn" title="Generate daily report PDF">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>📄 Daily Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="dashboard-filter-bar">
+                <button class="dashboard-filter-btn active" data-period="today" onclick="switchDashboardPeriod('today')">Today</button>
+                <button class="dashboard-filter-btn" data-period="7d" onclick="switchDashboardPeriod('7d')">Last 7 days</button>
+                <button class="dashboard-filter-btn" data-period="30d" onclick="switchDashboardPeriod('30d')">Last 30 days</button>
+                <button class="dashboard-filter-btn" data-period="90d" onclick="switchDashboardPeriod('90d')">Last 90 days</button>
+            </div>
+
+            <div class="dashboard-kpi-grid">
+                <div class="dashboard-kpi-card">
+                    <div class="dashboard-kpi-label">💰 TOTAL REVENUE</div>
+                    <div class="dashboard-kpi-value" id="kpiRevenue">0 AED</div>
+                    <div class="dashboard-kpi-delta" id="kpiRevenueDelta" style="display:none;"></div>
+                </div>
+                <div class="dashboard-kpi-card">
+                    <div class="dashboard-kpi-label">📦 TOTAL ORDERS</div>
+                    <div class="dashboard-kpi-value blue" id="kpiOrders">0</div>
+                    <div class="dashboard-kpi-delta" id="kpiOrdersDelta" style="display:none;"></div>
+                </div>
+                <div class="dashboard-kpi-card">
+                    <div class="dashboard-kpi-label">👕 GARMENTS</div>
+                    <div class="dashboard-kpi-value green" id="kpiGarments">0 pcs</div>
+                    <div class="dashboard-kpi-delta" id="kpiGarmentsDelta" style="display:none;"></div>
+                </div>
+                <div class="dashboard-kpi-card">
+                    <div class="dashboard-kpi-label">🏨 LAUNDRY</div>
+                    <div class="dashboard-kpi-value blue" id="kpiLaundry">0 AED</div>
+                    <div class="dashboard-kpi-delta" id="kpiLaundryDelta" style="display:none;"></div>
+                </div>
+                <div class="dashboard-kpi-card">
+                    <div class="dashboard-kpi-label">🧘 SPA</div>
+                    <div class="dashboard-kpi-value purple" id="kpiSpa">0 AED</div>
+                    <div class="dashboard-kpi-delta" id="kpiSpaDelta" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-charts-grid">
+                <div class="dashboard-chart-card">
+                    <div class="dashboard-chart-title">🥧 LAUNDRY VS SPA</div>
+                    <div class="dashboard-chart-wrap"><canvas id="spaVsLaundryChart"></canvas></div>
+                </div>
+                <div class="dashboard-chart-card">
+                    <div class="dashboard-chart-title">🍩 ORDERS BY STATUS</div>
+                    <div class="dashboard-chart-wrap"><canvas id="statusDoughnutChart"></canvas></div>
+                </div>
+                <div class="dashboard-chart-card dashboard-chart-full">
+                    <div class="dashboard-chart-title">📊 REVENUE EVOLUTION</div>
+                    <div class="dashboard-chart-wrap"><canvas id="revenueBarChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="dashboard-top-grid">
+                <div class="dashboard-top-card">
+                    <div class="dashboard-chart-title">🏆 TOP 5 ROOMS</div>
+                    <div id="topRoomsList"></div>
+                </div>
+                <div class="dashboard-top-card">
+                    <div class="dashboard-chart-title">🏢 TOP 5 AGENCIES</div>
+                    <div id="topAgenciesList"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-times-section">
+                <div class="dashboard-chart-title">
+                    ⏱️ Processing Times
+                    <span id="timesSampleBadge" class="dashboard-times-badge">-- orders</span>
+                </div>
+                <div class="dashboard-times-kpi-grid" id="timesKpiGrid">
+                    <div class="dashboard-time-kpi">
+                        <div class="dashboard-time-label">Average Total Time</div>
+                        <div class="dashboard-time-value" id="kpiAvgTotal">--</div>
+                    </div>
+                    <div class="dashboard-time-kpi">
+                        <div class="dashboard-time-label">Fastest</div>
+                        <div class="dashboard-time-value green" id="kpiFastest">--</div>
+                    </div>
+                    <div class="dashboard-time-kpi">
+                        <div class="dashboard-time-label">Slowest</div>
+                        <div class="dashboard-time-value red" id="kpiSlowest">--</div>
+                    </div>
+                </div>
+                <div class="dashboard-time-distribution" id="timesDistribution">
+                    <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
+                </div>
+                <div class="dashboard-agents-speed-title">⚡ Speed Ranking by Agent</div>
+                <div id="agentsSpeedList" class="dashboard-agents-speed-list">
+                    <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
+                </div>
+            </div>
+
+            <div class="dashboard-agents-section">
+                <div class="dashboard-chart-title">
+                    👥 Performance par Agent
+                    <span id="agentsCountBadge" class="dashboard-agents-badge">0 agents</span>
+                </div>
+                <div id="agentsPerformanceList" class="dashboard-agents-list">
+                    <p class="text-xs text-stone-500 text-center py-4">Chargement...</p>
+                </div>
+            </div>
+
+        </div>
     </div>
 
 </div>
+<!-- ═══ FIN laundry-section ═══ -->
 
-<!-- ═══════════════════════════════════════════════════════════
+
+<!-- ═══════════════════════════════════════════════════════════════════
      🧳 MODAL — NEW CHECK-OUT FORM
-     ═══════════════════════════════════════════════════════════ -->
-<div id="checkoutFormModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4 overflow-y-auto">
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="checkoutFormModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4 overflow-y-auto">
     <div class="checkout-modal-content">
-
-        <!-- MODAL HEADER -->
         <div class="checkout-modal-header">
             <div>
                 <h3 class="checkout-modal-title">🧳 New Check-Out Record</h3>
@@ -535,15 +880,10 @@
             <button onclick="closeCheckoutForm()" class="checkout-modal-close">✕</button>
         </div>
 
-        <!-- MODAL BODY (scrollable) -->
         <div class="checkout-modal-body">
-
             <!-- SECTION 1 : GUEST INFO -->
             <div class="checkout-form-section">
-                <h4 class="checkout-section-title">
-                    <i class="fas fa-user"></i> Guest Information
-                </h4>
-
+                <h4 class="checkout-section-title"><i class="fas fa-user"></i> Guest Information</h4>
                 <div class="checkout-form-grid-2">
                     <div class="checkout-field">
                         <label>Guest Name *</label>
@@ -554,7 +894,6 @@
                         <input type="text" id="checkoutRoomNumber" placeholder="e.g., 204" autocomplete="off">
                     </div>
                 </div>
-
                 <div class="checkout-form-grid-2">
                     <div class="checkout-field">
                         <label>Departure Date</label>
@@ -569,10 +908,7 @@
 
             <!-- SECTION 2 : DEPOSIT DETAILS -->
             <div class="checkout-form-section">
-                <h4 class="checkout-section-title">
-                    <i class="fas fa-clipboard-list"></i> Deposit Details
-                </h4>
-
+                <h4 class="checkout-section-title"><i class="fas fa-clipboard-list"></i> Deposit Details</h4>
                 <div class="checkout-form-grid-2">
                     <div class="checkout-field">
                         <label>Deposited By (Staff)</label>
@@ -583,7 +919,6 @@
                         <input type="number" id="checkoutPieceCount" min="1" placeholder="0">
                     </div>
                 </div>
-
                 <div class="checkout-form-grid-2">
                     <div class="checkout-field">
                         <label>Service Type</label>
@@ -605,7 +940,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="checkout-field">
                     <label>Notes</label>
                     <textarea id="checkoutNotes" rows="3" placeholder="e.g., Stain on collar, handle with care, guest will return Friday..."></textarea>
@@ -614,16 +948,12 @@
 
             <!-- SECTION 3 : RECEIPT PHOTO -->
             <div class="checkout-form-section">
-                <h4 class="checkout-section-title">
-                    <i class="fas fa-camera"></i> Receipt Photo
-                </h4>
-
+                <h4 class="checkout-section-title"><i class="fas fa-camera"></i> Receipt Photo</h4>
                 <button onclick="document.getElementById('checkoutPhotoInput').click()" class="checkout-photo-btn" id="checkoutPhotoBtn">
                     <i class="fas fa-camera"></i>
                     <span id="checkoutPhotoBtnText">📸 Take Photo of Receipt</span>
                 </button>
                 <input type="file" id="checkoutPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="previewCheckoutPhoto(event)">
-
                 <div id="checkoutPhotoPreviewWrap" class="checkout-photo-preview-wrap hidden">
                     <img id="checkoutPhotoPreview" class="checkout-photo-preview" alt="Receipt">
                     <div class="checkout-photo-info">
@@ -632,633 +962,120 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!-- MODAL FOOTER -->
         <div class="checkout-modal-footer">
-            <button onclick="closeCheckoutForm()" class="checkout-btn-cancel">
-                Cancel
-            </button>
+            <button onclick="closeCheckoutForm()" class="checkout-btn-cancel">Cancel</button>
             <button onclick="saveCheckoutRecord()" id="checkoutSaveBtn" class="checkout-btn-save">
                 <i class="fas fa-save"></i>
                 <span>💾 Save Check-Out</span>
             </button>
         </div>
-
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════════════════
      🧳 MODAL — CHECK-OUT DETAILS / RECEIPT
-     ═══════════════════════════════════════════════════════════ -->
-<div id="checkoutDetailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="checkoutDetailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
     <div class="checkout-detail-content">
         <div class="checkout-detail-header">
             <h3>🧳 Check-Out Details</h3>
             <button onclick="closeCheckoutDetail()" class="checkout-modal-close">✕</button>
         </div>
-        <div id="checkoutDetailBody" class="checkout-detail-body">
-            <!-- Content dynamique -->
-        </div>
+        <div id="checkoutDetailBody" class="checkout-detail-body"></div>
         <div class="checkout-detail-footer">
             <button onclick="printCheckoutReceipt()" class="checkout-btn-save">
                 <i class="fas fa-print"></i> Print Receipt
             </button>
-            <button onclick="closeCheckoutDetail()" class="checkout-btn-cancel">
-                Close
+            <button onclick="closeCheckoutDetail()" class="checkout-btn-cancel">Close</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     MODAL — ACTIVE ROOMS LIST
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="activeRoomsListModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
+    <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+            <div>
+                <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">Active Hotel Laundry Rooms Overview</h3>
+                <p class="text-xs text-stone-400">List of the day's rooms (ascending order)</p>
+            </div>
+            <button onclick="fermerModalActiveRoomsList()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
+        </div>
+
+        <div id="activeRoomsPdfExportArea" class="bg-white text-stone-900 p-6 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
+            <div class="text-center border-b border-stone-300 pb-4 mb-4">
+                <h2 class="text-lg font-serif-luxury font-black text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
+                <p class="text-[9px] text-stone-500 uppercase tracking-widest font-bold">Al Ruwais City, Abu Dhabi – UAE</p>
+                <div class="mt-2 flex justify-between items-center px-2 text-xs font-bold text-amber-800 border-t border-stone-200 pt-2">
+                    <span>DAILY LAUNDRY ACTIVE ROOMS LIST</span>
+                    <span id="activeRoomsPdfDate" class="text-stone-600 font-semibold">Date: --</span>
+                </div>
+            </div>
+            <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                    <tr class="bg-stone-100 text-stone-900 font-bold border-b border-stone-300 uppercase tracking-wider text-[10px]">
+                        <th class="p-2.5">Room</th>
+                        <th class="p-2.5">Guest Name</th>
+                        <th class="p-2.5">Packaging</th>
+                        <th class="p-2.5">Account & Quota</th>
+                        <th class="p-2.5 text-right">Pieces</th>
+                    </tr>
+                </thead>
+                <tbody id="activeRoomsTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
+            </table>
+            <div class="mt-4 pt-3 border-t border-stone-300 flex justify-between text-[11px] font-bold text-stone-600">
+                <span>Total Active Rooms: <strong id="activeRoomsTotalCount" class="text-stone-950">0</strong></span>
+                <span>Total Garments: <strong id="activeRoomsTotalPieces" class="text-stone-950">0 pcs</strong></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="exportActiveRoomsListToPDF()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
+                <i class="fas fa-file-pdf"></i> 📥 Download PDF List
             </button>
+            <button onclick="fermerModalActiveRoomsList()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">Close</button>
         </div>
     </div>
 </div>
-        <!-- SECTION SPA -->
-        <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
-            
-            <input type="hidden" id="editingSpaId" value="">
 
-<div class="spa-header border-b border-stone-300 pb-6">
-    
-    <!-- LIGNE 1 : LOGO GAUCHE + SPA CENTRE + LOGO DROITE -->
-    <div class="spa-header-row">
-        <!-- Logo Remal (GAUCHE) -->
-        <div class="spa-header-logo-left">
-            <img src="assets/remal-logo.png" alt="Remal" class="spa-logo-img" onerror="this.style.display='none';">
-        </div>
-        
-        <!-- SPA Élégant (CENTRE) -->
-        <div class="spa-header-title">
-            <h2 class="spa-title-main">S P A</h2>
-            <p class="spa-title-sub">Laundry Daily Record Sheet</p>
-        </div>
-        
-        <!-- Logo V Element (DROITE) -->
-        <div class="spa-header-logo-right">
-            <img src="assets/velement-logo.png" alt="V Element SPA" class="spa-logo-img" onerror="this.style.display='none';">
-        </div>
-    </div>
-    
-    <!-- LIGNE 2 : DATE AU CENTRE -->
-    <div class="spa-header-date">
-        <div class="flex items-center justify-center gap-2 text-xs text-stone-500">
-            <span class="font-bold uppercase tracking-wider">Date :</span>
-            <span id="spa-current-date" class="font-semibold text-stone-800"></span>
-        </div>
-        <!-- Titre caché pour le JS (conservé) -->
-        <h2 id="spaFormTitleLabel" style="display:none;">V Element SPA Laundry Daily Record Sheet</h2>
-    </div>
-    
-</div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-stone-50 p-4 rounded-2xl border border-stone-200">
-                <div class="flex items-center gap-2 border-b border-stone-300 py-2">
-                    <span class="text-xs font-bold text-stone-600 uppercase min-w-[120px]">Given By (Spa):</span>
-                    <input type="text" id="spa-given-by" class="w-full font-semibold focus:outline-none border-none p-0 bg-transparent text-xs text-stone-900" placeholder="Spa Employee Name">
-                </div>
-                <div class="flex items-center gap-2 border-b border-stone-300 py-2 justify-end">
-                    <span class="text-xs font-bold text-stone-600 uppercase">SERIAL NO:</span>
-                    <input type="text" id="spa-serial-no" class="w-32 text-right text-sm font-black text-amber-700 ml-2 bg-white border border-stone-300 rounded-xl px-3 py-1.5" placeholder="Serial">
-                </div>
+<!-- MODAL — ARCHIVES -->
+<div id="archivesModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
+    <div class="bg-[#181614] w-full max-w-4xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+            <div>
+                <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📦 Archived Records</h3>
+                <p class="text-xs text-stone-400 mt-0.5">Records older than 90 days (read-only)</p>
             </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse border border-stone-300 rounded-2xl overflow-hidden bg-white">
-                    <thead>
-                        <tr class="bg-stone-100 text-stone-900 text-xs uppercase tracking-wider text-center border-b border-stone-300 font-bold">
-                            <th class="p-3.5 text-left">Item</th>
-                            <th class="p-3.5">Quantity</th>
-                            <th class="p-3.5">Rate (AED)</th>
-                            <th class="p-3.5">Total Amount (AED)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-xs font-medium divide-y divide-stone-200 text-stone-800">
-                        <tr class="hover:bg-stone-50">
-                            <td class="p-3.5 font-bold">BATH TOWEL</td>
-                            <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3.5 text-center text-stone-600">2.00</td>
-                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-stone-50">
-                            <td class="p-3.5 font-bold">HAND TOWEL</td>
-                            <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3.5 text-center text-stone-600">1.00</td>
-                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-stone-50">
-                            <td class="p-3.5 font-bold">BED SHEET</td>
-                            <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3.5 text-center text-stone-600">2.00</td>
-                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-stone-50">
-                            <td class="p-3.5 font-bold">PILLOW CASE</td>
-                            <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="1" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3.5 text-center text-stone-600">1.00</td>
-                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="hover:bg-stone-50">
-                            <td class="p-3.5 font-bold">BATHROBE</td>
-                            <td class="p-3.5 text-center">
-                                <input type="number" class="spa-qty-input w-20 text-center bg-stone-50 border border-stone-300 text-stone-950 rounded-lg p-1.5 font-bold" min="0" data-rate="2" oninput="calculateSpaTotal()">
-                            </td>
-                            <td class="p-3.5 text-center text-stone-600">2.00</td>
-                            <td class="p-3.5 text-center font-bold text-stone-950 spa-row-amount">0.00</td>
-                        </tr>
-                        <tr class="bg-stone-100 font-bold text-stone-950">
-                            <td colspan="3" class="p-3.5 text-right uppercase tracking-wider text-xs">Grand Total :</td>
-                            <td id="spa-grand-total" class="p-3.5 text-center text-amber-700 text-lg font-black">0.00 AED</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-stone-50 rounded-2xl border border-stone-200">
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Collected By (Laundry) :</label>
-                        <input type="text" id="spa-collected-by" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 text-stone-900 rounded-xl font-semibold text-xs" placeholder="Laundry Collection Agent">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Collection Date & Time :</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="spa-collection-date" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
-                            <input type="time" id="spa-collection-time" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
-                        </div>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Delivered By (Laundry) :</label>
-                        <input type="text" id="spa-delivered-by" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 text-stone-900 rounded-xl font-semibold text-xs" placeholder="Laundry Delivery Agent">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Delivery Date & Time :</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="date" id="spa-delivery-date" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
-                            <input type="time" id="spa-delivery-time" class="px-3 py-2 bg-white border border-stone-300 text-stone-900 rounded-xl font-medium text-xs cursor-pointer">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="pdf-footer-template" class="hidden border-t border-stone-300 pt-3 text-stone-600 text-[10px] flex justify-between items-center">
-                <div>Receipt No: <span id="pdf-footer-serial-no" class="font-bold">--</span></div>
-                <div class="text-right">Downloaded: <span id="pdf-footer-download-time" class="font-semibold"></span></div>
-            </div>
-
-            <div id="spa-action-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 no-print">
-                <button onclick="validateAndSaveSpaReceipt()" id="btnSaveSpa" class="w-full py-3.5 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl shadow transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
-                    <i class="fas fa-check-circle"></i> Validate & Save SPA Receipt
-                </button>
-                <button onclick="exportSpaToPDF()" class="w-full py-3.5 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold rounded-xl shadow transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
-                    <i class="fas fa-file-pdf"></i> Export SPA PDF
-                </button>
-            </div>
-        </section>
-         <!-- ═══════════════════════════════════════════════════════════
-     📄 PDF SPA — Zone cachée 100% DÉDIÉE (ne touche PAS Laundry)
-     ═══════════════════════════════════════════════════════════ -->
-<div id="spaPdfExportArea" style="display:none;">
-
-    <!-- HEADER : 2 logos opposés + SPA centre -->
-    <div class="spa-pdf-header">
-        <div class="spa-pdf-logo-left">
-            <img src="assets/remal-logo.png" alt="Remal" class="spa-pdf-logo-img">
+            <button onclick="fermerModaleArchives()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
         </div>
-        <div class="spa-pdf-title-center">
-            <h2 class="spa-pdf-title-main">S P A</h2>
-            <p class="spa-pdf-title-sub">Laundry Daily Record Sheet</p>
+        <div class="flex flex-wrap gap-3 items-center">
+            <button onclick="chargerArchives()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow">🔄 Refresh</button>
+            <span id="archivesCountBadge" class="text-xs bg-[#0f0e0c] text-stone-300 font-bold px-3 py-2 rounded-xl border border-[#2f2820]">Loading...</span>
         </div>
-        <div class="spa-pdf-logo-right">
-            <img src="assets/velement-logo.png" alt="V Element SPA" class="spa-pdf-logo-img">
+        <div id="archivesList" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-[#2f2820] p-3 space-y-2">
+            <p class="text-xs text-stone-500 text-center py-6">Click "Refresh" to load archived records.</p>
         </div>
-    </div>
-
-    <!-- INFO ROW : Date / Serial / Receipt / Agent / Packaging -->
-    <div class="spa-pdf-info-row">
-        <div class="spa-pdf-info-left">
-            <p><strong>Date :</strong> <span id="spaPdfDate">---</span></p>
-            <p><strong>Given By (Spa) :</strong> <span id="spaPdfGivenBy">---</span></p>
-            <p><strong>Agent :</strong> <span id="spaPdfAgent">---</span></p>
-        </div>
-        <div class="spa-pdf-info-right">
-            <p><strong>Serial No :</strong> <span id="spaPdfSerial">---</span></p>
-            <p><strong>Receipt ID :</strong> <span id="spaPdfReceiptId">---</span></p>
-            <p><strong>Packaging :</strong> <span id="spaPdfPackaging">SPA Daily Sheet</span></p>
-        </div>
-    </div>
-
-    <!-- TABLEAU ITEMS -->
-    <table class="spa-pdf-table">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th class="text-center">Quantity</th>
-                <th class="text-center">Rate (AED)</th>
-                <th class="text-right">Total Amount (AED)</th>
-            </tr>
-        </thead>
-        <tbody id="spaPdfTableBody"></tbody>
-        <tfoot>
-            <tr class="spa-pdf-total-row">
-                <td colspan="3" class="text-right"><strong>GRAND TOTAL :</strong></td>
-                <td class="text-right"><strong id="spaPdfGrandTotal">0.00 AED</strong></td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <!-- SIGNATURES -->
-    <div class="spa-pdf-signatures">
-        <div class="spa-pdf-signature-item">
-            <p><strong>Collected By (Laundry) :</strong> <span id="spaPdfCollectedBy">---</span></p>
-            <p class="spa-pdf-signature-date"><strong>Collection :</strong> <span id="spaPdfCollectionDate">---</span></p>
-        </div>
-        <div class="spa-pdf-signature-item">
-            <p><strong>Delivered By (Laundry) :</strong> <span id="spaPdfDeliveredBy">---</span></p>
-            <p class="spa-pdf-signature-date"><strong>Delivery :</strong> <span id="spaPdfDeliveryDate">---</span></p>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="spa-pdf-footer">
-        THANK YOU FOR YOUR STAY
-    </div>
-
-</div>
-        <div id="sectionLostfound" class="hidden space-y-6 no-print">
-            <div class="flex justify-between items-center bg-[#181614] p-4 sm:p-6 rounded-3xl border border-[#2f2820]">
-                <div>
-                    <h2 class="text-base sm:text-lg font-serif-luxury font-bold text-[#DCA773]">Lost & Found Registry</h2>
-                    <p class="text-xs text-stone-400 mt-0.5">Hotel Property & Guest Belongings Tracking</p>
-                </div>
-                <button onclick="document.getElementById('lfFormCard').classList.toggle('hidden')" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow transition flex items-center gap-2">
-                    <span>+</span> Add Lost Item
-                </button>
-            </div>
-
-            <div id="lfFormCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-2xl mx-auto">
-                <h3 class="text-sm font-bold text-[#DCA773] border-b border-[#2f2820] pb-2">New Lost & Found Item</h3>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Item Name / Description</label>
-                    <input type="text" id="lfItemName" placeholder="e.g., iPhone 15, Gold Ring, Black Jacket..." class="w-full remal-input rounded-xl p-3 text-xs font-semibold">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Found Location</label>
-                    <input type="text" id="lfItemLoc" placeholder="e.g., Lobby Sofa, Room 204, Poolside..." class="w-full remal-input rounded-xl p-3 text-xs font-semibold">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Notes / Condition</label>
-                    <textarea id="lfItemNote" placeholder="Additional details, colors, serial number..." class="w-full h-20 remal-input rounded-xl p-3 text-xs outline-none resize-none"></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Photo Evidence</label>
-                    <input type="file" id="lfItemPhoto" accept="image/*" capture="environment" onchange="previewLFImage(event)" class="w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#181614] file:text-[#DCA773] hover:file:bg-[#211e1a] cursor-pointer">
-                    <img id="lfImagePreview" class="hidden w-full max-h-40 object-cover rounded-xl mt-2 border border-[#2f2820]" alt="Preview">
-                </div>
-                <button onclick="saveLostFoundItem()" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow transition">Save Item</button>
-            </div>
-
-            <div id="lfItemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <p class="text-xs text-stone-500 text-center py-6 col-span-full">No lost and found items registered.</p>
-            </div>
-        </div>
-
-        <div id="sectionPdfList" class="hidden space-y-4 no-print">
-            <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-5 max-w-5xl mx-auto">
-                <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                    <h3 class="text-base sm:text-lg font-serif-luxury font-bold text-[#DCA773]" id="lblArchiveTitle">Archives & Search</h3>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="exportAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                        ⚡ Export Auto (1 Clic)
-                    </button>
-                    <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                        🔄 Import Auto (1 Clic)
-                    </button>
-                    <button onclick="selectBackupFolder()" class="col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                        📁 Choose phone folder (File System)
-                    </button>
-                </div>
-
-                <!-- Category filter: All / Hotel Laundry / SPA Laundry -->
-                <div class="flex bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
-                    <button onclick="switchArchiveFilter('all')" id="archiveFilterAll" class="flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow">ALL RECORDS</button>
-                    <button onclick="switchArchiveFilter('laundry')" id="archiveFilterLaundry" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🏨 HOTEL LAUNDRY</button>
-                    <button onclick="switchArchiveFilter('spa')" id="archiveFilterSpa" class="flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200">🧘 SPA LAUNDRY</button>
-                </div>
-
-                <!-- Phase 2.2 — Status filter chips -->
-                <div id="statusFilterBar" class="flex flex-wrap bg-[#0f0e0c] p-1.5 rounded-2xl border border-[#2f2820] text-xs font-bold gap-1 text-stone-400">
-                    <button onclick="switchStatusFilter('all')" id="statusFilterAll" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold">All Status</button>
-                    <button onclick="switchStatusFilter('pending')" id="statusFilterPending" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">⏳ Pending</button>
-                    <button onclick="switchStatusFilter('washing')" id="statusFilterWashing" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">🧼 Washing</button>
-                    <button onclick="switchStatusFilter('ready')" id="statusFilterReady" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">✨ Ready</button>
-                    <button onclick="switchStatusFilter('delivered')" id="statusFilterDelivered" class="flex-1 min-w-[80px] py-2.5 rounded-xl transition text-center hover:text-stone-200">✅ Delivered</button>
-                </div>
-
-                <!-- Phase 2.3 — Quick date filters -->
-                <div id="archiveDateFilters" class="flex flex-wrap gap-2">
-                    <button onclick="switchDateFilter('today')" id="dateFilterToday" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Today</button>
-                    <button onclick="switchDateFilter('7d')" id="dateFilter7d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 7 days</button>
-                    <button onclick="switchDateFilter('30d')" id="dateFilter30d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 30 days</button>
-                    <button onclick="switchDateFilter('90d')" id="dateFilter90d" class="date-filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition">Last 90 days</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0f0e0c] p-4 rounded-2xl border border-[#2f2820]">
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400 z-10">🔍</span>
-                        <input type="text" id="searchRoom" 
-                               oninput="onSearchRoomInput(event)" 
-                               onfocus="onSearchRoomInput(event)"
-                               autocomplete="off"
-                               placeholder="Search room (103...), guest, or SPA serial (#23)..." 
-                               class="w-full remal-input rounded-xl pl-10 pr-4 py-3 text-xs">
-                        <div id="searchRoomDropdown" 
-                             class="hidden absolute left-0 right-0 top-full mt-1 bg-[#0f0e0c] border border-[#DCA773]/40 rounded-2xl shadow-2xl z-[60] max-h-64 overflow-y-auto scrollbar-none">
-                        </div>
-                    </div>
-                    <div>
-                        <input type="date" id="searchDate" onchange="afficherListeBordereauxLocal()" class="w-full remal-input rounded-xl px-4 py-3 text-xs cursor-pointer">
-                    </div>
-                </div>
-
-                <!-- Phase 3 — Export filtered results -->
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="exportFilteredArchivesToPDF()" 
-                            class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                        📥 Export PDF
-                    </button>
-                    <button onclick="exportFilteredArchivesToCSV()" 
-                            class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                        📊 Export CSV
-                    </button>
-                </div>
-
-                <!-- Phase 4.5 — View Archives button -->
-                <button onclick="ouvrirModaleArchives()" 
-                        class="w-full bg-[#0f0e0c] hover:bg-[#181614] text-[#DCA773] border border-[#DCA773]/40 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">
-                    📦 View Archives (older than 90 days)
-                </button>
-
-                <!-- Hidden export container for PDF rendering -->
-                <div id="archivesExportContainer" class="hidden"></div>
-
-                <div id="laundryList" class="space-y-5 pt-1"><p class="text-xs text-stone-500 text-center py-4" id="lblLoadingRecords">Loading records...</p></div>
-            </div>
-        </div>
-
-<div id="sectionDashboard" class="hidden space-y-6 no-print">
-    <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-6xl mx-auto">
-
-<!-- TITRE -->
-<div class="dashboard-title">
-    <h1 class="font-serif-luxury text-base sm:text-lg font-bold text-[#DCA773] tracking-wide">
-        📈 RECEPTION & MANAGEMENT ANALYTICS
-    </h1>
-    <div class="dashboard-header-actions">
-        <span class="dashboard-badge">Executive Overview</span>
-        <button onclick="genererRapportJournalier()" class="dashboard-report-btn" title="Generate daily report PDF">
-    <i class="fas fa-file-pdf"></i>
-    <span>📄 Daily Report</span>
-</button>
+        <button onclick="fermerModaleArchives()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">Close</button>
     </div>
 </div>
 
-        <!-- FILTRES PÉRIODE -->
-        <div class="dashboard-filter-bar">
-            <button class="dashboard-filter-btn active" data-period="today" onclick="switchDashboardPeriod('today')">Today</button>
-            <button class="dashboard-filter-btn" data-period="7d" onclick="switchDashboardPeriod('7d')">Last 7 days</button>
-            <button class="dashboard-filter-btn" data-period="30d" onclick="switchDashboardPeriod('30d')">Last 30 days</button>
-            <button class="dashboard-filter-btn" data-period="90d" onclick="switchDashboardPeriod('90d')">Last 90 days</button>
-        </div>
-
-        <!-- KPI CARDS -->
-        <div class="dashboard-kpi-grid">
-            <div class="dashboard-kpi-card">
-                <div class="dashboard-kpi-label">💰 TOTAL REVENUE</div>
-                <div class="dashboard-kpi-value" id="kpiRevenue">0 AED</div>
-                <div class="dashboard-kpi-delta" id="kpiRevenueDelta" style="display:none;"></div>
-            </div>
-            <div class="dashboard-kpi-card">
-                <div class="dashboard-kpi-label">📦 TOTAL ORDERS</div>
-                <div class="dashboard-kpi-value blue" id="kpiOrders">0</div>
-                <div class="dashboard-kpi-delta" id="kpiOrdersDelta" style="display:none;"></div>
-            </div>
-            <div class="dashboard-kpi-card">
-                <div class="dashboard-kpi-label">👕 GARMENTS</div>
-                <div class="dashboard-kpi-value green" id="kpiGarments">0 pcs</div>
-                <div class="dashboard-kpi-delta" id="kpiGarmentsDelta" style="display:none;"></div>
-            </div>
-            <div class="dashboard-kpi-card">
-                <div class="dashboard-kpi-label">🏨 LAUNDRY</div>
-                <div class="dashboard-kpi-value blue" id="kpiLaundry">0 AED</div>
-                <div class="dashboard-kpi-delta" id="kpiLaundryDelta" style="display:none;"></div>
-            </div>
-            <div class="dashboard-kpi-card">
-                <div class="dashboard-kpi-label">🧘 SPA</div>
-                <div class="dashboard-kpi-value purple" id="kpiSpa">0 AED</div>
-                <div class="dashboard-kpi-delta" id="kpiSpaDelta" style="display:none;"></div>
-            </div>
-        </div>
-
-        <!-- CHARTS -->
-        <div class="dashboard-charts-grid">
-            <div class="dashboard-chart-card">
-                <div class="dashboard-chart-title">🥧 LAUNDRY VS SPA</div>
-                <div class="dashboard-chart-wrap"><canvas id="spaVsLaundryChart"></canvas></div>
-            </div>
-            <div class="dashboard-chart-card">
-                <div class="dashboard-chart-title">🍩 ORDERS BY STATUS</div>
-                <div class="dashboard-chart-wrap"><canvas id="statusDoughnutChart"></canvas></div>
-            </div>
-            <div class="dashboard-chart-card dashboard-chart-full">
-                <div class="dashboard-chart-title">📊 REVENUE EVOLUTION</div>
-                <div class="dashboard-chart-wrap"><canvas id="revenueBarChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- TOP 5 -->
-        <div class="dashboard-top-grid">
-            <div class="dashboard-top-card">
-                <div class="dashboard-chart-title">🏆 TOP 5 ROOMS</div>
-                <div id="topRoomsList"></div>
-            </div>
-            <div class="dashboard-top-card">
-                <div class="dashboard-chart-title">🏢 TOP 5 AGENCIES</div>
-                <div id="topAgenciesList"></div>
-            </div>
-        </div>
-<!-- ═══════════════════════════════════════════════════════════
-     ⏱️ PROCESSING TIMES
-     ═══════════════════════════════════════════════════════════ -->
-<div class="dashboard-times-section">
-    <div class="dashboard-chart-title">
-        ⏱️ Processing Times
-        <span id="timesSampleBadge" class="dashboard-times-badge">-- orders</span>
-    </div>
-
-    <!-- KPI Temps -->
-    <div class="dashboard-times-kpi-grid" id="timesKpiGrid">
-        <div class="dashboard-time-kpi">
-            <div class="dashboard-time-label">Average Total Time</div>
-            <div class="dashboard-time-value" id="kpiAvgTotal">--</div>
-        </div>
-        <div class="dashboard-time-kpi">
-            <div class="dashboard-time-label">Fastest</div>
-            <div class="dashboard-time-value green" id="kpiFastest">--</div>
-        </div>
-        <div class="dashboard-time-kpi">
-            <div class="dashboard-time-label">Slowest</div>
-            <div class="dashboard-time-value red" id="kpiSlowest">--</div>
-        </div>
-    </div>
-
-    <!-- Distribution -->
-    <div class="dashboard-time-distribution" id="timesDistribution">
-        <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
-    </div>
-
-    <!-- Per-agent speed -->
-    <div class="dashboard-agents-speed-title">⚡ Speed Ranking by Agent</div>
-    <div id="agentsSpeedList" class="dashboard-agents-speed-list">
-        <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
-    </div>
-</div>
-        <!-- ═══════════════════════════════════════════════════════════
-             👥 PERFORMANCE PAR AGENT
-             ═══════════════════════════════════════════════════════════ -->
-        <div class="dashboard-agents-section">
-            <div class="dashboard-chart-title">
-                👥 Performance par Agent
-                <span id="agentsCountBadge" class="dashboard-agents-badge">0 agents</span>
-            </div>
-            <div id="agentsPerformanceList" class="dashboard-agents-list">
-                <p class="text-xs text-stone-500 text-center py-4">Chargement...</p>
-            </div>
-        </div>
-
-    </div>   <!-- ferme .remal-card -->
-</div>       <!-- ferme #sectionDashboard -->
-       
-   </div>       
-    
-    <!-- MODAL LISTE DES CHAMBRES ACTIVES -->
-    <div id="activeRoomsListModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-        <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
-            
-            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                <div>
-                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">Active Hotel Laundry Rooms Overview</h3>
-                    <p class="text-xs text-stone-400">List of the day's rooms (ascending order)</p>
-                </div>
-                <button onclick="fermerModalActiveRoomsList()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
-            </div>
-
-            <div id="activeRoomsPdfExportArea" class="bg-white text-stone-900 p-6 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
-                
-                <div class="text-center border-b border-stone-300 pb-4 mb-4">
-                    <h2 class="text-lg font-serif-luxury font-black text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
-                    <p class="text-[9px] text-stone-500 uppercase tracking-widest font-bold">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <div class="mt-2 flex justify-between items-center px-2 text-xs font-bold text-amber-800 border-t border-stone-200 pt-2">
-                        <span>DAILY LAUNDRY ACTIVE ROOMS LIST</span>
-                        <span id="activeRoomsPdfDate" class="text-stone-600 font-semibold">Date: --</span>
-                    </div>
-                </div>
-
-                <table class="w-full text-xs text-left border-collapse">
-                    <thead>
-                        <tr class="bg-stone-100 text-stone-900 font-bold border-b border-stone-300 uppercase tracking-wider text-[10px]">
-                            <th class="p-2.5">Room</th>
-                            <th class="p-2.5">Guest Name</th>
-                            <th class="p-2.5">Packaging</th>
-                            <th class="p-2.5">Account & Quota</th>
-                            <th class="p-2.5 text-right">Pieces</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activeRoomsTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
-                </table>
-
-                <div class="mt-4 pt-3 border-t border-stone-300 flex justify-between text-[11px] font-bold text-stone-600">
-                    <span>Total Active Rooms: <strong id="activeRoomsTotalCount" class="text-stone-950">0</strong></span>
-                    <span>Total Garments: <strong id="activeRoomsTotalPieces" class="text-stone-950">0 pcs</strong></span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 pt-2">
-                <button onclick="exportActiveRoomsListToPDF()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
-                    <i class="fas fa-file-pdf"></i> 📥 Download PDF List
-                </button>
-                <button onclick="fermerModalActiveRoomsList()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- PHASE 4.5 — ARCHIVED RECORDS MODAL -->
-    <div id="archivesModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-        <div class="bg-[#181614] w-full max-w-4xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
-            
-            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-                <div>
-                    <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">📦 Archived Records</h3>
-                    <p class="text-xs text-stone-400 mt-0.5">Records older than 90 days (read-only)</p>
-                </div>
-                <button onclick="fermerModaleArchives()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
-            </div>
-
-            <div class="flex flex-wrap gap-3 items-center">
-                <button onclick="chargerArchives()" 
-                        class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow">
-                    🔄 Refresh
-                </button>
-                <span id="archivesCountBadge" class="text-xs bg-[#0f0e0c] text-stone-300 font-bold px-3 py-2 rounded-xl border border-[#2f2820]">
-                    Loading...
-                </span>
-            </div>
-
-            <div id="archivesList" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-[#2f2820] p-3 space-y-2">
-                <p class="text-xs text-stone-500 text-center py-6">Click "Refresh" to load archived records.</p>
-            </div>
-
-            <button onclick="fermerModaleArchives()" 
-                    class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                Close
-            </button>
-        </div>
-    </div>
-    <!-- ═══════════════════════════════════════════════════════════
-     🧘 MODALE DÉTAILS SPA — 100% dédiée (ne touche PAS Laundry)
-     ═══════════════════════════════════════════════════════════ -->
+<!-- MODAL — SPA DETAILS -->
 <div id="spaDetailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
     <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
-        
-        <!-- Zone PDF SPA (sera déplacée dans body par la fonction export) -->
         <div id="spaDetailContent" class="bg-white text-stone-900 rounded-2xl p-6 space-y-5">
-            
-            <!-- HEADER : 2 logos -->
             <div class="spa-detail-header">
-                <div class="spa-detail-logo-left">
-                    <img src="assets/remal-logo.png" alt="Remal" class="spa-detail-logo" onerror="this.style.display='none';">
-                </div>
+                <div class="spa-detail-logo-left"><img src="assets/remal-logo.png" alt="Remal" class="spa-detail-logo" onerror="this.style.display='none';"></div>
                 <div class="spa-detail-title-center">
                     <h2 class="spa-detail-title-main">S P A</h2>
                     <p class="spa-detail-title-sub">Laundry Daily Record Sheet</p>
                 </div>
-                <div class="spa-detail-logo-right">
-                    <img src="assets/velement-logo.png" alt="V Element SPA" class="spa-detail-logo" onerror="this.style.display='none';">
-                </div>
+                <div class="spa-detail-logo-right"><img src="assets/velement-logo.png" alt="V Element SPA" class="spa-detail-logo" onerror="this.style.display='none';"></div>
             </div>
-
-            <!-- INFOS -->
             <div class="spa-detail-info-row">
                 <div class="spa-detail-info-left">
                     <p><strong>Date :</strong> <span id="spaDetailDate">---</span></p>
@@ -1271,27 +1088,11 @@
                     <p><strong>Packaging :</strong> <span id="spaDetailPackaging">SPA Daily Sheet</span></p>
                 </div>
             </div>
-
-            <!-- TABLEAU -->
             <table class="spa-detail-table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th class="text-center">Quantity</th>
-                        <th class="text-center">Rate (AED)</th>
-                        <th class="text-right">Total Amount (AED)</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Item</th><th class="text-center">Quantity</th><th class="text-center">Rate (AED)</th><th class="text-right">Total Amount (AED)</th></tr></thead>
                 <tbody id="spaDetailTableBody"></tbody>
-                <tfoot>
-                    <tr class="spa-detail-total-row">
-                        <td colspan="3" class="text-right"><strong>GRAND TOTAL :</strong></td>
-                        <td class="text-right"><strong id="spaDetailGrandTotal">0.00 AED</strong></td>
-                    </tr>
-                </tfoot>
+                <tfoot><tr class="spa-detail-total-row"><td colspan="3" class="text-right"><strong>GRAND TOTAL :</strong></td><td class="text-right"><strong id="spaDetailGrandTotal">0.00 AED</strong></td></tr></tfoot>
             </table>
-
-            <!-- SIGNATURES -->
             <div class="spa-detail-signatures">
                 <div class="spa-detail-signature-item">
                     <p><strong>Collected By (Laundry) :</strong> <span id="spaDetailCollectedBy">---</span></p>
@@ -1302,23 +1103,13 @@
                     <p class="spa-detail-signature-date"><strong>Delivery :</strong> <span id="spaDetailDeliveryDate">---</span></p>
                 </div>
             </div>
-
-            <!-- FOOTER -->
-            <div class="spa-detail-footer">
-                THANK YOU FOR YOUR STAY
-            </div>
-
+            <div class="spa-detail-footer">THANK YOU FOR YOUR STAY</div>
         </div>
 
-        <!-- ACTIONS -->
         <div class="space-y-3 pt-2 no-print">
             <div class="grid grid-cols-2 gap-3">
-              <button onclick="printSpaDetail()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">
-    📥 Download PDF
-</button>
-                <button onclick="fermerSpaDetailModal()" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">
-                    ✕ Close
-                </button>
+                <button onclick="printSpaDetail()" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
+                <button onclick="fermerSpaDetailModal()" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">✕ Close</button>
             </div>
             <div class="grid grid-cols-3 gap-3">
                 <button onclick="modifierSpaRecord()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow">✏️ Edit</button>
@@ -1328,170 +1119,137 @@
         </div>
     </div>
 </div>
-    <!-- MODALE DETAILS RECEIPT -->
-    <div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
-            
-<div id="pdfExportArea" class="p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
 
-<div class="receipt-header-compact">
-    <button onclick="fermerModal()" class="receipt-close-btn no-print">✕</button>
-    
-    <div class="receipt-header-left">
-        <img src="assets/remal-logo.png" alt="Remal" class="receipt-logo-compact" onerror="this.style.display='none';">
-    </div>
-    
- <div class="receipt-header-right">
-    <div id="modalRoomNumDisplay" class="receipt-room-number">---</div>
-</div>
-</div>
-<!-- IDs cachés collés au header (pas de gap) -->
-<h2 id="modalPdfHotelName" style="display:none;margin:0;">REMAL HOTEL & VILLAS</h2>
-<p id="modalPdfHotelSub" style="display:none;margin:0;">Al Ruwais City, Abu Dhabi – UAE</p>
+<!-- MODAL — DETAILS RECEIPT (LAUNDRY) -->
+<div id="detailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-[#181614] w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#2f2820] relative">
+        <div id="pdfExportArea" class="p-6 space-y-5 bg-white text-stone-900 rounded-2xl printable-page max-w-[700px] mx-auto">
+            <div class="receipt-header-compact">
+                <button onclick="fermerModal()" class="receipt-close-btn no-print">✕</button>
+                <div class="receipt-header-left"><img src="assets/remal-logo.png" alt="Remal" class="receipt-logo-compact" onerror="this.style.display='none';"></div>
+                <div class="receipt-header-right"><div id="modalRoomNumDisplay" class="receipt-room-number">---</div></div>
+            </div>
+            <h2 id="modalPdfHotelName" style="display:none;margin:0;">REMAL HOTEL & VILLAS</h2>
+            <p id="modalPdfHotelSub" style="display:none;margin:0;">Al Ruwais City, Abu Dhabi – UAE</p>
 
-<div class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3 receipt-info-box">
-    <div class="flex justify-between items-start">
-        <div class="receipt-info-left">
-            <span id="modalIdentifierLabel" style="display:none;">Room:</span>
-            <p id="modalPdfLaundryService" class="receipt-service-compact">LAUNDRY SERVICE</p>
-            <p id="modalPdfReceiptId" class="receipt-id-compact">Receipt ID: <strong id="modalReceiptIdDisplay">---</strong></p>
-        </div>
-        <div class="text-right">
-            <p id="modalDate" class="text-xs text-stone-500 font-bold"></p>
-            <span id="modalTypeBadgeInline" class="text-[10px] bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300 inline-block mt-1">Hotel Count</span>
-        </div>
-    </div>
-    <div id="modalAgencyQuotaBox" class="hidden pt-3 border-t border-stone-200 text-xs space-y-1.5 text-stone-700 font-bold">
-<div class="flex justify-between"><span id="modalLblGuestName">Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
-<div class="flex justify-between"><span id="modalLblRoomTyp">Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
-<div class="flex justify-between"><span id="modalLblAgency">Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
-<div class="flex justify-between"><span id="modalLblQuota">Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
-        <!-- Infos toujours visibles -->
-        <div class="flex justify-between border-t border-stone-200 pt-1.5 text-[11px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
-    </div>
-</div>
-<div class="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
-    <span id="modalLblPackaging">Packaging:</span>
-                    <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
+            <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3 receipt-info-box">
+                <div class="flex justify-between items-start">
+                    <div class="receipt-info-left">
+                        <span id="modalIdentifierLabel" style="display:none;">Room:</span>
+                        <p id="modalPdfLaundryService" class="receipt-service-compact">LAUNDRY SERVICE</p>
+                        <p id="modalPdfReceiptId" class="receipt-id-compact">Receipt ID: <strong id="modalReceiptIdDisplay">---</strong></p>
+                    </div>
+                    <div class="text-right">
+                        <p id="modalDate" class="text-xs text-stone-500 font-bold"></p>
+                        <span id="modalTypeBadgeInline" class="text-[10px] bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300 inline-block mt-1">Hotel Count</span>
+                    </div>
                 </div>
-
-                <table class="w-full text-xs text-left border-collapse">
-                    <thead>
-                        <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300 uppercase tracking-wider">
-                            <th id="modalThItem" class="p-3">Item</th>
-                            <th id="modalThQty" class="p-3 text-center">Qty</th>
-                            <th id="modalThTotal" class="p-3 text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
-                </table>
-
-<div class="bg-stone-50 p-4 rounded-xl text-xs space-y-2 font-medium text-stone-700 border border-stone-200 receipt-total-box">
-    <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-2"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
-    <div class="flex justify-between font-bold text-lg text-stone-900 pt-1 items-center">
-        <span id="modalLblGrandTotal" class="receipt-total-label">Grand Total:</span>
-        <span id="modalTotal" class="text-amber-700 font-serif-luxury text-xl receipt-total-value">0.00 AED</span>
-    </div>
-</div>
-                <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1 text-stone-800">
-                    <p id="modalLblGarmentNotes" class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
-                    <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
+                <div id="modalAgencyQuotaBox" class="hidden pt-3 border-t border-stone-200 text-xs space-y-1.5 text-stone-700 font-bold">
+                    <div class="flex justify-between"><span id="modalLblGuestName">Guest Name:</span> <span id="modalGuestDisplay" class="text-stone-900">---</span></div>
+                    <div class="flex justify-between"><span id="modalLblRoomTyp">Room Typ:</span> <span id="modalTypDisplay" class="text-stone-900">---</span></div>
+                    <div class="flex justify-between"><span id="modalLblAgency">Agency:</span> <span id="modalAgencyDisplay" class="text-stone-900">---</span></div>
+                    <div class="flex justify-between"><span id="modalLblQuota">Laundry Quota:</span> <span id="modalQuotaDisplay" class="text-rose-600">---</span></div>
+                    <div class="flex justify-between border-t border-stone-200 pt-1.5 text-[11px] text-stone-500"><span id="modalLblAgent">Agent:</span> <span id="modalCreatedByDisplay" class="text-stone-700 font-bold">---</span></div>
                 </div>
-
-<div id="modalPhotoContainer" class="pt-1"></div>
-                
-<!-- ✨ Pied de page bordereau -->
-<div class="receipt-footer">
-    THANK YOU FOR YOUR STAY
-</div>
+            </div>
+            <div class="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 flex justify-between">
+                <span id="modalLblPackaging">Packaging:</span>
+                <span id="modalPackagingStyle" class="text-amber-700">F — Folding</span>
             </div>
 
-            <div class="space-y-3 pt-2 no-print">
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
-                    <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
+            <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                    <tr class="bg-stone-100 text-stone-900 font-bold text-xs border-b border-stone-300 uppercase tracking-wider">
+                        <th id="modalThItem" class="p-3">Item</th>
+                        <th id="modalThQty" class="p-3 text-center">Qty</th>
+                        <th id="modalThTotal" class="p-3 text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody" class="divide-y divide-stone-200 text-stone-800 font-medium"></tbody>
+            </table>
+
+            <div class="bg-stone-50 p-4 rounded-xl text-xs space-y-2 font-medium text-stone-700 border border-stone-200 receipt-total-box">
+                <div class="flex justify-between font-bold text-stone-900 border-b border-stone-200 pb-2"><span id="modalLblTotalPieces">Total Pieces:</span><span id="modalClothesCount">0 pieces</span></div>
+                <div class="flex justify-between font-bold text-lg text-stone-900 pt-1 items-center">
+                    <span id="modalLblGrandTotal" class="receipt-total-label">Grand Total:</span>
+                    <span id="modalTotal" class="text-amber-700 font-serif-luxury text-xl receipt-total-value">0.00 AED</span>
                 </div>
-                <div class="grid grid-cols-3 gap-3">
-                    <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit</button>
-                    <button onclick="dupliquerRecordActuel()" id="btnDuplicateRecord" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📋 Duplicate</button>
-                    <button id="btnDeleteRecord" data-admin-only="true" onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
-                </div>
+            </div>
+
+            <div id="modalNoteBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1 text-stone-800">
+                <p id="modalLblGarmentNotes" class="font-bold text-amber-900 uppercase tracking-wide text-[10px]">Garment Notes / Defects:</p>
+                <p id="modalNoteText" class="font-medium whitespace-pre-wrap"></p>
+            </div>
+
+            <div id="modalPhotoContainer" class="pt-1"></div>
+
+            <div class="receipt-footer">THANK YOU FOR YOUR STAY</div>
+        </div>
+
+        <div class="space-y-3 pt-2 no-print">
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="genererPDF(selectedIdForModal)" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">📥 Download PDF</button>
+                <a id="btnWhatsappShare" href="#" target="_blank" class="bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-2">💬 Share WhatsApp</a>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="modifierBordereauActuel()" class="bg-amber-700 hover:bg-amber-600 text-stone-950 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">✏️ Edit</button>
+                <button onclick="dupliquerRecordActuel()" id="btnDuplicateRecord" class="bg-[#DCA773]/20 hover:bg-[#DCA773]/30 text-[#DCA773] border border-[#DCA773]/40 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">📋 Duplicate</button>
+                <button id="btnDeleteRecord" data-admin-only="true" onclick="supprimerBordereauActuel()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold py-3.5 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">🗑️ Delete</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- AUTHENTICATION STAFF MODAL -->
-    <div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
-            <div>
-                <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">
-                    🔐
-                </div>
-                <h2 class="font-serif-luxury text-2xl font-bold text-[#DCA773]">Staff Authentication</h2>
-                <p class="text-xs text-stone-400 mt-1">Enter your 4-digit PIN code to access Laundry OS.</p>
-            </div>
-
-            <div class="space-y-4">
-                <div>
-                    <input type="password" id="staffPinInput" maxlength="6" placeholder="••••" class="w-full text-center tracking-[1em] text-2xl py-4 remal-input rounded-2xl font-bold outline-none border border-[#2f2820] focus:border-[#DCA773]">
-                </div>
-                <div id="loginErrorMsg" class="text-xs text-rose-400 font-semibold hidden">Invalid PIN code. Please try again.</div>
-                
-                <button onclick="verifyStaffPin()" class="w-full py-4 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-2xl transition shadow-lg text-sm">
-                    Unlock Session
-                </button>
-            </div>
-
-            <div class="pt-2 border-t border-[#2f2820] flex justify-between items-center text-[10px] text-stone-500">
-                <span>Remal Laundry OS v2.6</span>
-                <span id="currentLoggedStaff" class="text-stone-400">Locked</span>
-            </div>
+<!-- MODAL — STAFF LOGIN -->
+<div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
+        <div>
+            <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">🔐</div>
+            <h2 class="font-serif-luxury text-2xl font-bold text-[#DCA773]">Staff Authentication</h2>
+            <p class="text-xs text-stone-400 mt-1">Enter your 4-digit PIN code to access Laundry OS.</p>
+        </div>
+        <div class="space-y-4">
+            <div><input type="password" id="staffPinInput" maxlength="6" placeholder="••••" class="w-full text-center tracking-[1em] text-2xl py-4 remal-input rounded-2xl font-bold outline-none border border-[#2f2820] focus:border-[#DCA773]"></div>
+            <div id="loginErrorMsg" class="text-xs text-rose-400 font-semibold hidden">Invalid PIN code. Please try again.</div>
+            <button onclick="verifyStaffPin()" class="w-full py-4 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-2xl transition shadow-lg text-sm">Unlock Session</button>
+        </div>
+        <div class="pt-2 border-t border-[#2f2820] flex justify-between items-center text-[10px] text-stone-500">
+            <span>Remal Laundry OS v2.6</span>
+            <span id="currentLoggedStaff" class="text-stone-400">Locked</span>
         </div>
     </div>
+</div>
 
-    <!-- ✨ PHASE E.3 : MODALE SET QTY -->
-    <div id="setQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
-        <div class="bg-[#181614] border border-[#DCA773]/40 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
-            
-            <div class="text-center border-b border-[#2f2820] pb-3">
-                <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">🔢 Set Quantity</h3>
-                <p id="setQtyItemName" class="text-xs text-stone-300 mt-1 font-semibold">---</p>
-                <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
-            </div>
-
-            <div class="flex items-center justify-center gap-3">
-                <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
-                <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
-                
-                <input type="number" id="setQtyInput" min="0" placeholder="0" 
-                       class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
-                
-                <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
-                <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 pt-2">
-                <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                    Cancel
-                </button>
-                <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">
-                    ✓ Confirm
-                </button>
-            </div>
-
-            <p class="text-[10px] text-stone-500 text-center">
-                Tip: <strong>Enter</strong> to confirm · <strong>Escape</strong> to close
-            </p>
+<!-- MODAL — SET QTY -->
+<div id="setQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
+    <div class="bg-[#181614] border border-[#DCA773]/40 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
+        <div class="text-center border-b border-[#2f2820] pb-3">
+            <h3 class="text-base font-serif-luxury font-bold text-[#DCA773]">🔢 Set Quantity</h3>
+            <p id="setQtyItemName" class="text-xs text-stone-300 mt-1 font-semibold">---</p>
+            <p id="setQtyItemPrice" class="text-[10px] text-stone-500 mt-0.5">---</p>
         </div>
+        <div class="flex items-center justify-center gap-3">
+            <button onclick="incrementModalSetQty(-5)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-base border border-[#2f2820] active:scale-90 transition">−5</button>
+            <button onclick="incrementModalSetQty(-1)" class="w-12 h-12 bg-[#0f0e0c] text-stone-300 rounded-xl font-black text-xl border border-[#2f2820] active:scale-90 transition">−</button>
+            <input type="number" id="setQtyInput" min="0" placeholder="0" class="w-24 h-14 text-center text-2xl font-black bg-[#0f0e0c] text-[#DCA773] rounded-2xl border-2 border-[#DCA773]/40 outline-none focus:border-[#DCA773]">
+            <button onclick="incrementModalSetQty(1)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-xl active:scale-90 transition">+</button>
+            <button onclick="incrementModalSetQty(5)" class="w-12 h-12 bg-[#DCA773] text-stone-950 rounded-xl font-black text-base active:scale-90 transition">+5</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="fermerModalSetQty()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition">Cancel</button>
+            <button onclick="validerModalSetQty()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow">✓ Confirm</button>
+        </div>
+        <p class="text-[10px] text-stone-500 text-center">Tip: <strong>Enter</strong> to confirm · <strong>Escape</strong> to close</p>
     </div>
+</div>
 
-    <!-- BIBLIOTHÈQUES EXTERNES -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ═══ LIBRARIES ═══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- CHARGEMENT DES SCRIPTS -->
+<!-- ═══ SCRIPTS ═══ -->
 <script src="js/config.js"></script>
 <script src="js/laundry.js"></script>
 <script src="js/realtime-listener.js"></script>
@@ -1502,40 +1260,33 @@
 <script src="js/checkout.js"></script>
 <script src="js/ui-shortcuts.js"></script>
 <script src="js/sound-alerts.js"></script>
+<script src="security-guard.js"></script>
+<script src="js/guesthub-integration.js"></script>
 
-      <script src="security-guard.js"></script>
-    <script src="js/guesthub-integration.js"></script>
-
-    <!-- ═══ PWA — Enregistrement Service Worker ═══ -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((registration) => {
-                        console.log('✅ [PWA] Service Worker enregistré:', registration.scope);
-                        
-                        // Vérifier les mises à jour toutes les heures
-                        setInterval(() => registration.update(), 60 * 60 * 1000);
-                        
-                        // Détecter les nouvelles versions
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            if (newWorker) {
-                                newWorker.addEventListener('statechange', () => {
-                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                        console.log('🔄 [PWA] Nouvelle version disponible');
-                                        // Auto-reload
-                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        window.location.reload();
-                                    }
-                                });
+<!-- ═══ PWA SERVICE WORKER ═══ -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then((registration) => {
+                console.log('✅ [PWA] Service Worker enregistré:', registration.scope);
+                setInterval(() => registration.update(), 60 * 60 * 1000);
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('🔄 [PWA] Nouvelle version disponible');
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                window.location.reload();
                             }
                         });
-                    })
-                    .catch((err) => console.warn('⚠️ [PWA] Service Worker:', err));
-            });
-        }
-
-    </script>
+                    }
+                });
+            })
+            .catch((err) => console.warn('⚠️ [PWA] Service Worker:', err));
+    });
+}
+</script>
 </body>
 </html>
