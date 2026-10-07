@@ -1366,10 +1366,15 @@ function renderManagementDashboard() {
         .slice(0, 5);
 
     renderTopList('topAgenciesList', topAgencies, true);
-// ═══ 9. Performance par Agent ═══
-if (typeof renderAgentPerformance === 'function') {
-    renderAgentPerformance(m ? m.slips : []);
-  }
+    // ═══ 9. Performance par Agent ═══
+    if (typeof renderAgentPerformance === 'function') {
+        renderAgentPerformance(m && m.slips ? m.slips : []);
+    }
+
+    // ═══ 10. Processing Times ═══
+    if (typeof renderProcessingTimes === 'function') {
+        renderProcessingTimes(m && m.slips ? m.slips : []);
+    }
 }
 // ═══════════════════════════════════════════════════════════════════
 // SPA
