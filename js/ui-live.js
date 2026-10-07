@@ -1231,13 +1231,20 @@ async function changerStatutBordereau(recordId, nouveauStatut) {
         }
     }
 
-    chargerDonneesLocalStorage();
-    const item = cachedSlips.find(s => String(s.id).trim() === idStr);
-    if (item) {
-        item.status = nouveauStatut;
-        sauvegarderDonneesLocalStorage();
+   chargerDonneesLocalStorage();
+const item = cachedSlips.find(s => String(s.id).trim() === idStr);
+if (item) {
+    const oldStatus = item.status;
+    
+    // ✨ Log status change BEFORE modifying
+    if (typeof logStatusChange === 'function') {
+        await logStatusChange(idStr, oldStatus, nouveauStatut);
     }
-
+    
+    item.status = nouveauStatut;
+    item.updated_at = new Date().toISOString();  // ✨ Track last update
+    sauvegarderDonneesLocalStorage();
+}
     if (typeof fermerModal === 'function') fermerModal();
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
