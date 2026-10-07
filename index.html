@@ -481,7 +481,77 @@
             <p class="checkout-empty">Loading check-outs...</p>
         </div>
     </div>
+    <!-- ═══════════════════════════════════════════════════════════
+     📦 SECTION STOCK MANAGEMENT
+     ═══════════════════════════════════════════════════════════ -->
+<div id="sectionStock" class="hidden space-y-6 no-print">
 
+    <!-- HEADER -->
+    <div class="stock-header">
+        <div class="stock-header-left">
+            <h2 class="stock-title">📦 Stock Management</h2>
+            <p class="stock-subtitle">Track laundry supplies, chemicals, and consumables</p>
+        </div>
+        <div class="stock-header-right">
+            <button onclick="openStockItemForm()" class="stock-new-btn">
+                <i class="fas fa-plus-circle"></i>
+                <span>New Item</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stock-stats-bar">
+        <div class="stock-stat">
+            <div class="stock-stat-icon">📊</div>
+            <div>
+                <div class="stock-stat-value" id="stockStatTotal">0</div>
+                <div class="stock-stat-label">Total Items</div>
+            </div>
+        </div>
+        <div class="stock-stat">
+            <div class="stock-stat-icon">🟡</div>
+            <div>
+                <div class="stock-stat-value" id="stockStatLow">0</div>
+                <div class="stock-stat-label">Low Stock</div>
+            </div>
+        </div>
+        <div class="stock-stat">
+            <div class="stock-stat-icon">🔴</div>
+            <div>
+                <div class="stock-stat-value" id="stockStatCritical">0</div>
+                <div class="stock-stat-label">Critical</div>
+            </div>
+        </div>
+        <div class="stock-stat">
+            <div class="stock-stat-icon">💰</div>
+            <div>
+                <div class="stock-stat-value" id="stockStatValue">0</div>
+                <div class="stock-stat-label">Total Value (AED)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="stock-filters">
+        <button onclick="switchStockFilter('all')" id="stockFilterAll" class="stock-filter-btn active">All</button>
+        <button onclick="switchStockFilter('ok')" id="stockFilterOk" class="stock-filter-btn">🟢 OK</button>
+        <button onclick="switchStockFilter('low')" id="stockFilterLow" class="stock-filter-btn">🟡 Low</button>
+        <button onclick="switchStockFilter('critical')" id="stockFilterCritical" class="stock-filter-btn">🔴 Critical</button>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="stock-search-wrap">
+        <i class="fas fa-search stock-search-icon"></i>
+        <input type="text" id="stockSearchInput" oninput="renderStockList()" placeholder="Search by product name, category, or supplier..." class="stock-search-input" autocomplete="off">
+    </div>
+
+    <!-- LIST -->
+    <div id="stockList" class="stock-list">
+        <p class="stock-empty">Loading stock items...</p>
+    </div>
+
+</div>
     <!-- SECTION: SPA -->
     <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
         <input type="hidden" id="editingSpaId" value="">
