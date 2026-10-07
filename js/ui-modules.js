@@ -1993,3 +1993,163 @@ function switchDashboardPeriod(period) {
 
     renderManagementDashboard();
 }
+/* ═══════════════════════════════════════════════════════════════════
+   👥 SUPERVISEUR — Performance par Agent
+   Analyse les commandes par created_by et calcule les stats
+   ═══════════════════════════════════════════════════════════════════ */
+
+function renderAgentPerformance(slips) {
+    const container = document.getElementById('agentsPerformanceList');
+    const badge = document.getElementById('agentsCountBadge');
+
+    if (!container) return;
+
+    // Si slips non fourni, on prend tous les cachedSlips
+    if (!slips || !Array.isArray(slips)) {
+        chargerDonneesLocalStorage();
+        slips = cachedSlips;
+    }
+
+    // ═══ 1. Grouper les commandes par agent ═══
+    const agentsMap = {};
+
+    slips.forEach(slip => {
+        const createdBy = slip.created_by || 'pending';
+
+        // Ignorer les commandes "pending" ou "guest app"
+        const isGuestOrder = createdBy === 'pending' 
+            || createdBy === 'Guest App' 
+            || createdBy === 'guest app'
+            || createdBy === 'Guest'
+            || createdBy === 'Guest Portal'
+            || createdBy === 'Staff Laundry OS';
+
+        if (isGuestOrder) return;
+
+        // Extraire le nom propre (enlever "staff ( ... )")
+        let agentName = createdBy;
+        const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
+        if (match) agentName = match[1].trim();
+
+        if (!agentsMap[agentName]) {
+            agentsMap[agentName] = {
+                name: agentName,
+                rawCreatedBy: createdBy,
+                orders: 0,
+                pieces: 0,
+                revenue: 0,
+                lastActivity: null,
+                spaOrders: 0,
+                laundryOrders: 0,
+                isAdmin: false
+            };
+        }
+
+        const agent = agentsMap[agentName];
+        agent.orders += 1;
+        agent.pieces += Number(slip.total_pieces || slip.total_clothes || 0);
+        agent.revenue += Number(slip.grand_total || slip.total || 0);
+
+        if (slip.is_spa) agent.spaOrders += 1;
+        else agent.laundryOrders += 1;
+
+        // Dernière activité
+        const created = slip.created_at ? new Date(slip.created_at) : null;
+        if (created && (!agent.lastActivity || created > agent.lastActivity)) {
+            agent.lastActivity = created;
+        }
+
+        // Détecter si admin (via le rôle stocké sur le slip ou par défaut)
+        if (slip.created_by_role) {
+            agent.isAdmin = String(slip.created_by_role).toLowerCase() === 'admin';
+        }
+    });
+
+    // ═══ 2. Convertir en tableau + trier par CA desc ═══
+    const agents = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
+
+    if (agents.length === 0) {
+        container.innerHTML = `
+            <p class="text-xs text-stone-500 text-center py-4">
+                Aucune activité agent enregistrée pour cette période.
+            </p>`;
+        if (badge) badge.textContent = '0 agent';
+        return;
+    }
+
+    if (badge) {
+        badge.textContent = `${agents.length} agent${agents.length > 1 ? 's' : ''}`;
+    }
+
+    // ═══ 3. Calculer le max pour les barres ═══
+    const maxRevenue = Math.max(...agents.map(a => a.revenue), 1);
+
+    // ═══ 4. Générer le HTML ═══
+    const now = new Date();
+
+    container.innerHTML = agents.map((agent, index) => {
+        const isChampion = index === 0;
+        const initial = agent.name.charAt(0).toUpperCase();
+
+        // Format dernière activité
+        let lastActivityText = '---';
+        if (agent.lastActivity) {
+            const diffMs = now - agent.lastActivity;
+            const diffMin = Math.floor(diffMs / (1000 * 60));
+            const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffMin < 1) lastActivityText = 'À l\'instant';
+            else if (diffMin < 60) lastActivityText = `Il y a ${diffMin} min`;
+            else if (diffHour < 24) lastActivityText = `Il y a ${diffHour} h`;
+            else lastActivityText = `Il y a ${diffDay} j`;
+        }
+
+        // Barre de performance
+        const barWidth = (agent.revenue / maxRevenue) * 100;
+
+        // Badge de rôle
+        const roleBadge = agent.isAdmin 
+            ? '<span class="agent-role-badge admin">👑 Admin</span>'
+            : '<span class="agent-role-badge staff">👤 Staff</span>';
+
+        return `
+            <div class="agent-card ${isChampion ? 'champion' : ''}">
+                <div class="agent-avatar">${initial}</div>
+
+                <div class="agent-info">
+                    <div class="agent-name">
+                        ${agent.name}
+                        ${roleBadge}
+                    </div>
+                    <div class="agent-last-activity">
+                        🕐 ${lastActivityText} · 
+                        ${agent.laundryOrders} laundry · ${agent.spaOrders} SPA
+                    </div>
+                </div>
+
+                <div class="agent-stats">
+                    <div class="agent-stat">
+                        <span class="agent-stat-value blue">${agent.orders}</span>
+                        <span class="agent-stat-label">Ordres</span>
+                    </div>
+                    <div class="agent-stat">
+                        <span class="agent-stat-value green">${agent.pieces}</span>
+                        <span class="agent-stat-label">Pièces</span>
+                    </div>
+                    <div class="agent-stat">
+                        <span class="agent-stat-value">${agent.revenue.toFixed(0)}</span>
+                        <span class="agent-stat-label">AED</span>
+                    </div>
+                </div>
+
+                <div class="agent-performance-bar" style="width: ${barWidth}%;"></div>
+            </div>
+        `;
+    }).join('');
+
+    console.log(`✅ [Agents] ${agents.length} agents analysés`);
+}
+
+window.renderAgentPerformance = renderAgentPerformance;
+console.log('✅ [Superviseur] Performance par Agent chargée');
