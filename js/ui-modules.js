@@ -2547,3 +2547,236 @@ function buildRapportHTML(data) {
 
 window.genererRapportJournalier = genererRapportJournalier;
 console.log('✅ [Report] Daily report generator loaded');
+/* ═══════════════════════════════════════════════════════════════════
+   ⏱️ SUPERVISOR — Processing Times Analytics
+   Computes average processing time per order and per agent
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function renderProcessingTimes(slips) {
+    if (!container_exists('timesKpiGrid')) return;
+
+    const sampleBadge = document.getElementById('timesSampleBadge');
+    const kpiAvgTotal = document.getElementById('kpiAvgTotal');
+    const kpiFastest = document.getElementById('kpiFastest');
+    const kpiSlowest = document.getElementById('kpiSlowest');
+    const distribution = document.getElementById('timesDistribution');
+    const agentsSpeedList = document.getElementById('agentsSpeedList');
+
+    if (!slips || !Array.isArray(slips)) {
+        slips = [];
+    }
+
+    // ═══ 1. Fetch status_history for these requests ═══
+    const requestIds = slips
+        .filter(s => String(s.id).length === 36)  // valid UUIDs
+        .map(s => String(s.id));
+
+    if (requestIds.length === 0) {
+        if (sampleBadge) sampleBadge.textContent = '0 orders';
+        if (kpiAvgTotal) kpiAvgTotal.textContent = '--';
+        if (kpiFastest) kpiFastest.textContent = '--';
+        if (kpiSlowest) kpiSlowest.textContent = '--';
+        if (distribution) {
+            distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available for this period.</p>';
+        }
+        if (agentsSpeedList) {
+            agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available.</p>';
+        }
+        return;
+    }
+
+    let historyData = [];
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('status_history')
+                .select('*')
+                .in('request_id', requestIds)
+                .order('created_at', { ascending: true });
+
+            if (!error && data) {
+                historyData = data;
+            }
+        } catch (e) {
+            console.warn('[Processing Times] Fetch error:', e);
+        }
+    }
+
+    // ═══ 2. Group history by request_id ═══
+    const historyByRequest = {};
+    historyData.forEach(h => {
+        if (!historyByRequest[h.request_id]) historyByRequest[h.request_id] = [];
+        historyByRequest[h.request_id].push(h);
+    });
+
+    // ═══ 3. Compute processing times ═══
+    const orderTimes = [];      // { requestId, agent, durationMs, order }
+    const agentTimes = {};      // { agentName: [durations] }
+
+    slips.forEach(slip => {
+        const requestId = String(slip.id);
+        const history = historyByRequest[requestId] || [];
+
+        // Need at least 2 events to compute duration
+        if (history.length < 2) return;
+
+        // First event = start, last event = end
+        const start = new Date(history[0].created_at);
+        const end = new Date(history[history.length - 1].created_at);
+        const durationMs = end - start;
+
+        // Skip if negative or absurd (>7 days)
+        if (durationMs < 0 || durationMs > 7 * 24 * 60 * 60 * 1000) return;
+
+        // Agent (from created_by)
+        const createdBy = slip.created_by || 'pending';
+        const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
+
+        let agentName = null;
+        if (!isGuestOrder) {
+            const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
+            agentName = match ? match[1].trim() : createdBy;
+        }
+
+        orderTimes.push({
+            requestId,
+            agent: agentName,
+            durationMs,
+            status: slip.status,
+            isSpa: slip.is_spa
+        });
+
+        if (agentName) {
+            if (!agentTimes[agentName]) agentTimes[agentName] = [];
+            agentTimes[agentName].push(durationMs);
+        }
+    });
+
+    // ═══ 4. If no data, show message ═══
+    if (orderTimes.length === 0) {
+        if (sampleBadge) sampleBadge.textContent = '0 orders';
+        if (kpiAvgTotal) kpiAvgTotal.textContent = '--';
+        if (kpiFastest) kpiFastest.textContent = '--';
+        if (kpiSlowest) kpiSlowest.textContent = '--';
+        if (distribution) {
+            distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No processing data yet.<br><span class="text-[10px]">Status changes will start being tracked from now on.</span></p>';
+        }
+        if (agentsSpeedList) {
+            agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>';
+        }
+        return;
+    }
+
+    // ═══ 5. Compute global stats ═══
+    const durations = orderTimes.map(o => o.durationMs);
+    const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length;
+    const minMs = Math.min(...durations);
+    const maxMs = Math.max(...durations);
+
+    if (sampleBadge) {
+        sampleBadge.textContent = `${orderTimes.length} order${orderTimes.length > 1 ? 's' : ''}`;
+    }
+
+    if (kpiAvgTotal) kpiAvgTotal.textContent = formatDuration(avgMs);
+    if (kpiFastest) kpiFastest.textContent = formatDuration(minMs);
+    if (kpiSlowest) kpiSlowest.textContent = formatDuration(maxMs);
+
+    // ═══ 6. Distribution buckets ═══
+    const buckets = [
+        { label: '< 2h',  min: 0, max: 2 * 3600 * 1000, class: 'fast' },
+        { label: '2-6h',  min: 2 * 3600 * 1000, max: 6 * 3600 * 1000, class: 'medium' },
+        { label: '6-12h', min: 6 * 3600 * 1000, max: 12 * 3600 * 1000, class: 'slow' },
+        { label: '> 12h', min: 12 * 3600 * 1000, max: Infinity, class: 'very-slow' }
+    ];
+
+    const total = orderTimes.length;
+    const maxBucketCount = Math.max(...buckets.map(b => 
+        orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length
+    ), 1);
+
+    if (distribution) {
+        distribution.innerHTML = buckets.map(b => {
+            const count = orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length;
+            const percent = total > 0 ? ((count / total) * 100).toFixed(0) : 0;
+            const barWidth = (count / maxBucketCount) * 100;
+
+            return `
+                <div class="time-dist-row">
+                    <span class="time-dist-label">${b.label}</span>
+                    <div class="time-dist-bar-wrap">
+                        <div class="time-dist-bar ${b.class}" style="width: ${barWidth}%;"></div>
+                    </div>
+                    <div class="time-dist-count">
+                        ${count}
+                        <div class="time-dist-percent">${percent}%</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ═══ 7. Speed ranking by agent ═══
+    const agentsSpeed = Object.entries(agentTimes)
+        .map(([name, times]) => ({
+            name,
+            avgMs: times.reduce((a, b) => a + b, 0) / times.length,
+            count: times.length
+        }))
+        .filter(a => a.count >= 1)  // at least 1 order
+        .sort((a, b) => a.avgMs - b.avgMs);  // fastest first
+
+    if (agentsSpeedList) {
+        if (agentsSpeed.length === 0) {
+            agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>';
+        } else {
+            const fastestMs = agentsSpeed[0].avgMs;
+            const slowestMs = agentsSpeed[agentsSpeed.length - 1].avgMs;
+            const range = slowestMs - fastestMs;
+
+            agentsSpeedList.innerHTML = agentsSpeed.slice(0, 5).map((a, i) => {
+                // Determine if "slow" (color red)
+                const isSlow = range > 0 && (a.avgMs - fastestMs) / range > 0.6;
+                const timeClass = isSlow ? 'slow' : '';
+
+                return `
+                    <div class="agent-speed-item">
+                        <div class="agent-speed-rank">${i + 1}</div>
+                        <div class="agent-speed-name">
+                            ${a.name}
+                            <span style="color: var(--text-muted); font-weight: 500; font-size: 10px;">
+                                · ${a.count} order${a.count > 1 ? 's' : ''}
+                            </span>
+                        </div>
+                        <div class="agent-speed-time ${timeClass}">
+                            ⚡ ${formatDuration(a.avgMs)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    console.log(`✅ [Processing Times] ${orderTimes.length} orders analyzed · avg ${formatDuration(avgMs)}`);
+}
+
+/* ─── Helper: Check if element exists ─── */
+function container_exists(id) {
+    return !!document.getElementById(id);
+}
+
+/* ─── Helper: Format duration ms → "2h 45m" ─── */
+function formatDuration(ms) {
+    if (!ms || ms < 0) return '--';
+    
+    const totalMinutes = Math.floor(ms / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours === 0) return `${minutes}m`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes}m`;
+}
+
+window.renderProcessingTimes = renderProcessingTimes;
+window.formatDuration = formatDuration;
+console.log('✅ [Supervisor] Processing Times loaded');
