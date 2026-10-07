@@ -400,3 +400,49 @@ if (typeof originalToggleTheme === 'function') {
         setTimeout(updateStaffMobileMenuState, 100);
     };
 }
+/* ═══════════════════════════════════════════════════════════════════
+   ✨ SUPERVISOR — Status Change Logger
+   Logs every status change for processing time analytics
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
+  if (!requestId || !newStatus) return;
+  if (oldStatus === newStatus) return;
+
+  chargerDonneesLocalStorage();
+  const entry = cachedSlips.find(s => String(s.id) === String(requestId));
+  if (!entry) return;
+
+  const payload = {
+    request_id: String(requestId),
+    room_number: entry.room_number || entry.room || null,
+    guest_name: entry.guest_name || null,
+    old_status: oldStatus || null,
+    new_status: newStatus,
+    changed_by: currentStaffUser?.name 
+      ? `staff ( ${currentStaffUser.name} )` 
+      : 'unknown',
+    changed_role: currentStaffUser?.role || 'staff',
+    source: entry.is_spa ? 'spa_os' : 'staff_os',
+    notes: notes || null
+  };
+
+  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+    try {
+      const { error } = await supabaseClient
+        .from('status_history')
+        .insert([payload]);
+
+      if (error) {
+        console.warn('[Status History] Insert error:', error.message);
+      } else {
+        console.log(`📝 [History] ${oldStatus} → ${newStatus} · ${payload.room_number}`);
+      }
+    } catch (e) {
+      console.warn('[Status History] Exception:', e);
+    }
+  }
+}
+
+window.logStatusChange = logStatusChange;
+console.log('✅ [Supervisor] logStatusChange loaded');
