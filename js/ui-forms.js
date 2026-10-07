@@ -580,13 +580,17 @@ const navButtons = {
         renderManagementDashboard();
     } else if (section === 'lostfound') {
         renderLostFoundItems();
-    } else if (section === 'checkout') {
-        // ✨ Charge la liste des check-outs
-        if (typeof renderCheckoutList === 'function') {
-            renderCheckoutList();
-        }
+   } else if (section === 'checkout') {
+    // ✨ Charge la liste des check-outs
+    if (typeof renderCheckoutList === 'function') {
+        renderCheckoutList();
     }
-    
+} else if (section === 'stock') {
+    // ✨ Charge la liste des stocks
+    if (typeof renderStockList === 'function') {
+        renderStockList();
+    }
+}
     const navBtnId = navButtons[section];
     if (navBtnId) {
         setTimeout(() => {
