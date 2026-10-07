@@ -1066,7 +1066,195 @@
     </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════
+     📦 MODAL — NEW/EDIT STOCK ITEM
+     ═══════════════════════════════════════════════════════════ -->
+<div id="stockItemModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4 overflow-y-auto">
+    <div class="stock-modal-content">
+        <div class="stock-modal-header">
+            <div>
+                <h3 class="stock-modal-title" id="stockModalTitle">📦 New Stock Item</h3>
+                <p class="stock-modal-subtitle" id="stockModalSubtitle">Add a new item to inventory</p>
+            </div>
+            <button onclick="closeStockItemForm()" class="stock-modal-close">✕</button>
+        </div>
 
+        <div class="stock-modal-body">
+            <!-- SECTION 1 : PRODUCT INFO -->
+            <div class="stock-form-section">
+                <h4 class="stock-section-title"><i class="fas fa-tag"></i> Product Info</h4>
+                <div class="stock-form-grid-2">
+                    <div class="stock-field">
+                        <label>Product Name *</label>
+                        <input type="text" id="stockItemName" placeholder="e.g., Liquid Detergent" autocomplete="off">
+                    </div>
+                    <div class="stock-field">
+                        <label>Category *</label>
+                        <input type="text" id="stockItemCategory" placeholder="e.g., Chemicals, Packaging..." list="stockCategoriesList" autocomplete="off">
+                        <datalist id="stockCategoriesList">
+                            <option value="Chemicals">
+                            <option value="Packaging">
+                            <option value="Consumables">
+                            <option value="Equipment">
+                            <option value="Uniforms">
+                            <option value="Other">
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="stock-form-grid-2">
+                    <div class="stock-field">
+                        <label>Unit *</label>
+                        <input type="text" id="stockItemUnit" placeholder="e.g., L, kg, units, rolls..." list="stockUnitsList" autocomplete="off">
+                        <datalist id="stockUnitsList">
+                            <option value="L">
+                            <option value="kg">
+                            <option value="units">
+                            <option value="rolls">
+                            <option value="boxes">
+                            <option value="bottles">
+                            <option value="packs">
+                        </datalist>
+                    </div>
+                    <div class="stock-field">
+                        <label>Supplier</label>
+                        <input type="text" id="stockItemSupplier" placeholder="e.g., CleanPro UAE" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2 : STOCK LEVELS -->
+            <div class="stock-form-section">
+                <h4 class="stock-section-title"><i class="fas fa-cubes"></i> Stock Levels</h4>
+
+                <div class="stock-form-grid-2">
+                    <div class="stock-field">
+                        <label>Current Quantity *</label>
+                        <input type="number" id="stockItemQuantity" min="0" step="0.01" placeholder="0">
+                    </div>
+                    <div class="stock-field">
+                        <label>Unit Price (AED)</label>
+                        <input type="number" id="stockItemPrice" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="stock-form-grid-2">
+                    <div class="stock-field">
+                        <label>Low Stock Threshold * <small style="opacity: 0.6;">(auto = 20%)</small></label>
+                        <input type="number" id="stockItemMin" min="0" step="0.01" placeholder="Auto">
+                    </div>
+                    <div class="stock-field">
+                        <label>Critical Threshold * <small style="opacity: 0.6;">(auto = 5%)</small></label>
+                        <input type="number" id="stockItemCritical" min="0" step="0.01" placeholder="Auto">
+                    </div>
+                </div>
+
+                <div class="stock-hint">
+                    💡 Si tu laisses les seuils vides, ils seront calculés automatiquement à partir de la quantité (20% et 5%).
+                </div>
+            </div>
+
+            <!-- SECTION 3 : NOTES -->
+            <div class="stock-form-section">
+                <h4 class="stock-section-title"><i class="fas fa-sticky-note"></i> Notes</h4>
+                <div class="stock-field">
+                    <textarea id="stockItemNotes" rows="3" placeholder="e.g., Store in cool dry place, avoid direct sunlight..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="stock-modal-footer">
+            <button onclick="closeStockItemForm()" class="stock-btn-cancel">Cancel</button>
+            <button onclick="saveStockItem()" id="stockSaveBtn" class="stock-btn-save">
+                <i class="fas fa-save"></i>
+                <span>💾 Save Item</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     📦 MODAL — STOCK MOVEMENT (IN / OUT)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="stockMovementModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
+    <div class="stock-modal-content" style="max-width: 500px;">
+        <div class="stock-modal-header">
+            <div>
+                <h3 class="stock-modal-title" id="movementModalTitle">📥 Stock Movement</h3>
+                <p class="stock-modal-subtitle" id="movementModalItem">---</p>
+            </div>
+            <button onclick="closeStockMovementForm()" class="stock-modal-close">✕</button>
+        </div>
+
+        <div class="stock-modal-body">
+            <div class="movement-current-stock">
+                <span class="movement-stock-label">Current Stock</span>
+                <span class="movement-stock-value" id="movementCurrentStock">0</span>
+            </div>
+
+            <div class="stock-form-section" style="border-bottom: none; padding-bottom: 0;">
+                <div class="stock-form-grid-2">
+                    <div class="stock-field">
+                        <label>Quantity *</label>
+                        <input type="number" id="movementQuantity" min="0" step="0.01" placeholder="0">
+                    </div>
+                    <div class="stock-field">
+                        <label>Reason</label>
+                        <select id="movementReason">
+                            <option value="Supplier Delivery">Supplier Delivery</option>
+                            <option value="Daily Consumption">Daily Consumption</option>
+                            <option value="Damage / Loss">Damage / Loss</option>
+                            <option value="Manual Adjustment">Manual Adjustment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="stock-field">
+                    <label>Notes</label>
+                    <textarea id="movementNotes" rows="2" placeholder="Optional notes..."></textarea>
+                </div>
+
+                <div class="movement-preview">
+                    <span>New Stock After :</span>
+                    <strong id="movementPreviewNewStock">0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="stock-modal-footer">
+            <button onclick="closeStockMovementForm()" class="stock-btn-cancel">Cancel</button>
+            <button onclick="saveStockMovement()" id="movementSaveBtn" class="stock-btn-save">
+                <i class="fas fa-check"></i>
+                <span>✓ Confirm</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     📦 MODAL — STOCK ITEM DETAILS + HISTORY
+     ═══════════════════════════════════════════════════════════ -->
+<div id="stockDetailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
+    <div class="stock-detail-content">
+        <div class="stock-detail-header">
+            <div>
+                <h3 id="stockDetailTitle" class="stock-modal-title">📦 Item Details</h3>
+                <p id="stockDetailSubtitle" class="stock-modal-subtitle">---</p>
+            </div>
+            <button onclick="closeStockDetail()" class="stock-modal-close">✕</button>
+        </div>
+
+        <div id="stockDetailBody" class="stock-detail-body"></div>
+
+        <div class="stock-detail-footer">
+            <button onclick="editStockItem()" class="stock-btn-cancel" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fbbf24;">
+                ✏️ Edit
+            </button>
+            <button onclick="closeStockDetail()" class="stock-btn-cancel">Close</button>
+        </div>
+    </div>
+</div>
 <!-- ═══════════════════════════════════════════════════════════════════
      MODAL — ACTIVE ROOMS LIST
      ═══════════════════════════════════════════════════════════════════ -->
