@@ -772,13 +772,19 @@
 <div id="sectionDashboard" class="hidden space-y-6 no-print">
     <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-6xl mx-auto">
 
-        <!-- TITRE -->
-        <div class="dashboard-title">
-            <h1 class="font-serif-luxury text-base sm:text-lg font-bold text-[#DCA773] tracking-wide">
-                📈 RECEPTION & MANAGEMENT ANALYTICS
-            </h1>
-            <span class="dashboard-badge">Executive Overview</span>
-        </div>
+<!-- TITRE -->
+<div class="dashboard-title">
+    <h1 class="font-serif-luxury text-base sm:text-lg font-bold text-[#DCA773] tracking-wide">
+        📈 RECEPTION & MANAGEMENT ANALYTICS
+    </h1>
+    <div class="dashboard-header-actions">
+        <span class="dashboard-badge">Executive Overview</span>
+        <button onclick="genererRapportJournalier()" class="dashboard-report-btn" title="Générer le rapport journalier PDF">
+            <i class="fas fa-file-pdf"></i>
+            <span>📄 Rapport journalier</span>
+        </button>
+    </div>
+</div>
 
         <!-- FILTRES PÉRIODE -->
         <div class="dashboard-filter-bar">
