@@ -4346,3 +4346,267 @@ body.light-mode .dashboard-report-btn {
     background: linear-gradient(135deg, #b47a3e 0%, #d9a76a 100%);
     color: #ffffff;
 }
+/* ═══════════════════════════════════════════════════════════════════
+   ⏱️ PROCESSING TIMES — Styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dashboard-times-section {
+    background: linear-gradient(135deg, rgba(26, 22, 18, 0.95) 0%, rgba(33, 30, 26, 0.9) 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: 20px;
+    padding: 22px;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+    animation: dashboardFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.85s backwards;
+}
+
+.dashboard-times-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #10b981, transparent);
+    opacity: 0.7;
+}
+
+.dashboard-times-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    margin-left: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* ─── KPI Grid ─── */
+.dashboard-times-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.dashboard-time-kpi {
+    background: linear-gradient(135deg, rgba(15, 14, 12, 0.95) 0%, rgba(24, 22, 20, 0.9) 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: 14px;
+    padding: 16px 14px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.dashboard-time-kpi:hover {
+    border-color: rgba(16, 185, 129, 0.5);
+    transform: translateY(-2px);
+}
+
+.dashboard-time-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.dashboard-time-value {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #DCA773;
+    line-height: 1;
+}
+
+.dashboard-time-value.green { color: #6ee7b7; }
+.dashboard-time-value.red { color: #fda4af; }
+
+/* ─── Distribution ─── */
+.dashboard-time-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.time-dist-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 50px;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.time-dist-label {
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.time-dist-bar-wrap {
+    background: rgba(47, 40, 32, 0.4);
+    height: 8px;
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+}
+
+.time-dist-bar {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.time-dist-bar.fast {
+    background: linear-gradient(90deg, #10b981, #6ee7b7);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.time-dist-bar.medium {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.time-dist-bar.slow {
+    background: linear-gradient(90deg, #f97316, #fb923c);
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+
+.time-dist-bar.very-slow {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.time-dist-count {
+    text-align: right;
+    color: var(--text-main);
+    font-weight: 900;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+}
+
+.time-dist-percent {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 9px;
+}
+
+/* ─── Agents Speed Ranking ─── */
+.dashboard-agents-speed-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #DCA773;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-gold);
+}
+
+.dashboard-agents-speed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.agent-speed-item {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(15, 14, 12, 0.6);
+    border: 1px solid var(--border-gold);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    animation: agentCardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.agent-speed-item:nth-child(1) { animation-delay: 0.05s; }
+.agent-speed-item:nth-child(2) { animation-delay: 0.10s; }
+.agent-speed-item:nth-child(3) { animation-delay: 0.15s; }
+.agent-speed-item:nth-child(4) { animation-delay: 0.20s; }
+.agent-speed-item:nth-child(5) { animation-delay: 0.25s; }
+
+.agent-speed-item:hover {
+    border-color: rgba(220, 167, 115, 0.4);
+    background: rgba(24, 22, 20, 0.9);
+}
+
+.agent-speed-rank {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 12px;
+    color: #DCA773;
+    text-align: center;
+}
+
+.agent-speed-item:nth-child(1) .agent-speed-rank {
+    color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.agent-speed-name {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.agent-speed-time {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #6ee7b7;
+    text-align: right;
+}
+
+.agent-speed-time.slow {
+    color: #fda4af;
+}
+
+/* ─── Light mode ─── */
+body.light-mode .dashboard-times-section,
+body.light-mode .dashboard-time-kpi,
+body.light-mode .agent-speed-item {
+    background: #ffffff !important;
+    border-color: rgba(180, 122, 62, 0.25) !important;
+}
+
+body.light-mode .dashboard-time-value {
+    color: #b47a3e !important;
+}
+
+body.light-mode .agent-speed-name {
+    color: #0f172a !important;
+}
+
+body.light-mode .time-dist-bar-wrap {
+    background: rgba(226, 232, 240, 0.6);
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 640px) {
+    .dashboard-times-kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .dashboard-time-value {
+        font-size: 20px;
+    }
+    
+    .time-dist-row {
+        grid-template-columns: 80px 1fr 40px;
+        font-size: 10px;
+    }
+}
