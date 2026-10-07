@@ -540,14 +540,15 @@ if (section === 'spa') {
 }
     if (targetSection) targetSection.classList.remove('hidden');
 
-    const navButtons = {
-        'liveRecord': 'navBtnLiveRecord',
-        'spa': 'navBtnSpa',
-        'lostfound': 'navBtnLostfound',
-        'pdfList': 'navBtnPdfList',
-        'massEntry': 'navBtnMassEntry',
-        'dashboard': 'navBtnDashboard'
-    };
+const navButtons = {
+    'liveRecord': 'navBtnLiveRecord',
+    'spa': 'navBtnSpa',
+    'checkout': 'navBtnCheckout',
+    'lostfound': 'navBtnLostfound',
+    'pdfList': 'navBtnPdfList',
+    'massEntry': 'navBtnMassEntry',
+    'dashboard': 'navBtnDashboard'
+};
 
     // ✅ SPRINT 1 : utilise classList (préserve les classes premium)
     Object.entries(navButtons).forEach(([key, btnId]) => {
