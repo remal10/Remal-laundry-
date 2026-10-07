@@ -527,7 +527,7 @@ function switchMainSection(section) {
         reinitialiserFormulaire();
     }
 
-    ['newRecord', 'massEntry', 'liveRecord', 'spa', 'checkout', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
+    ['newRecord', 'massEntry', 'liveRecord', 'spa', 'checkout', 'stock', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
         const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
         if (el) el.classList.add('hidden');
     });
