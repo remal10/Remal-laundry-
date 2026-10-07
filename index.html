@@ -427,7 +427,250 @@
                 <p class="text-xs text-stone-500 text-center py-6 col-span-full">Loading active rooms...</p>
             </div>
         </div>
+      <!-- ═══════════════════════════════════════════════════════════
+     🧳 SECTION CHECK-OUT LAUNDRY
+     Track guest laundry deposits before departure
+     ═══════════════════════════════════════════════════════════ -->
+<div id="sectionCheckout" class="hidden space-y-6 no-print">
 
+    <!-- HEADER SECTION -->
+    <div class="checkout-header">
+        <div class="checkout-header-left">
+            <h2 class="checkout-title">
+                🧳 Check-Out Laundry
+            </h2>
+            <p class="checkout-subtitle">Track guest laundry deposits before departure</p>
+        </div>
+        <div class="checkout-header-right">
+            <button onclick="openCheckoutForm()" class="checkout-new-btn">
+                <i class="fas fa-plus-circle"></i>
+                <span>New Check-Out</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="checkout-stats-bar">
+        <div class="checkout-stat">
+            <div class="checkout-stat-icon">📦</div>
+            <div>
+                <div class="checkout-stat-value" id="checkoutStatDeposited">0</div>
+                <div class="checkout-stat-label">Deposited</div>
+            </div>
+        </div>
+        <div class="checkout-stat">
+            <div class="checkout-stat-icon">🧼</div>
+            <div>
+                <div class="checkout-stat-value" id="checkoutStatProcessing">0</div>
+                <div class="checkout-stat-label">Processing</div>
+            </div>
+        </div>
+        <div class="checkout-stat">
+            <div class="checkout-stat-icon">✨</div>
+            <div>
+                <div class="checkout-stat-value" id="checkoutStatReady">0</div>
+                <div class="checkout-stat-label">Ready</div>
+            </div>
+        </div>
+        <div class="checkout-stat">
+            <div class="checkout-stat-icon">✅</div>
+            <div>
+                <div class="checkout-stat-value" id="checkoutStatPickedUp">0</div>
+                <div class="checkout-stat-label">Picked Up</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="checkout-filters">
+        <button onclick="switchCheckoutFilter('all')" id="checkoutFilterAll" class="checkout-filter-btn active">
+            All
+        </button>
+        <button onclick="switchCheckoutFilter('Deposited')" id="checkoutFilterDeposited" class="checkout-filter-btn">
+            📦 Deposited
+        </button>
+        <button onclick="switchCheckoutFilter('Processing')" id="checkoutFilterProcessing" class="checkout-filter-btn">
+            🧼 Processing
+        </button>
+        <button onclick="switchCheckoutFilter('Ready')" id="checkoutFilterReady" class="checkout-filter-btn">
+            ✨ Ready
+        </button>
+        <button onclick="switchCheckoutFilter('Picked Up')" id="checkoutFilterPickedUp" class="checkout-filter-btn">
+            ✅ Picked Up
+        </button>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="checkout-search-wrap">
+        <i class="fas fa-search checkout-search-icon"></i>
+        <input
+            type="text"
+            id="checkoutSearchInput"
+            oninput="renderCheckoutList()"
+            placeholder="Search by serial, guest name, or room..."
+            class="checkout-search-input"
+            autocomplete="off"
+        >
+    </div>
+
+    <!-- LIST -->
+    <div id="checkoutList" class="checkout-list">
+        <p class="checkout-empty">Loading check-outs...</p>
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     🧳 MODAL — NEW CHECK-OUT FORM
+     ═══════════════════════════════════════════════════════════ -->
+<div id="checkoutFormModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4 overflow-y-auto">
+    <div class="checkout-modal-content">
+
+        <!-- MODAL HEADER -->
+        <div class="checkout-modal-header">
+            <div>
+                <h3 class="checkout-modal-title">🧳 New Check-Out Record</h3>
+                <p class="checkout-modal-subtitle" id="checkoutModalSerial">Serial: --</p>
+            </div>
+            <button onclick="closeCheckoutForm()" class="checkout-modal-close">✕</button>
+        </div>
+
+        <!-- MODAL BODY (scrollable) -->
+        <div class="checkout-modal-body">
+
+            <!-- SECTION 1 : GUEST INFO -->
+            <div class="checkout-form-section">
+                <h4 class="checkout-section-title">
+                    <i class="fas fa-user"></i> Guest Information
+                </h4>
+
+                <div class="checkout-form-grid-2">
+                    <div class="checkout-field">
+                        <label>Guest Name *</label>
+                        <input type="text" id="checkoutGuestName" placeholder="e.g., John Smith" autocomplete="name">
+                    </div>
+                    <div class="checkout-field">
+                        <label>Room Number *</label>
+                        <input type="text" id="checkoutRoomNumber" placeholder="e.g., 204" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="checkout-form-grid-2">
+                    <div class="checkout-field">
+                        <label>Departure Date</label>
+                        <input type="date" id="checkoutDepartureDate">
+                    </div>
+                    <div class="checkout-field">
+                        <label>Contact Phone</label>
+                        <input type="tel" id="checkoutContactPhone" placeholder="+971 50 XXX XXXX" autocomplete="tel">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2 : DEPOSIT DETAILS -->
+            <div class="checkout-form-section">
+                <h4 class="checkout-section-title">
+                    <i class="fas fa-clipboard-list"></i> Deposit Details
+                </h4>
+
+                <div class="checkout-form-grid-2">
+                    <div class="checkout-field">
+                        <label>Deposited By (Staff)</label>
+                        <input type="text" id="checkoutDepositedBy" readonly style="opacity: 0.7; cursor: not-allowed;">
+                    </div>
+                    <div class="checkout-field">
+                        <label>Piece Count *</label>
+                        <input type="number" id="checkoutPieceCount" min="1" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="checkout-form-grid-2">
+                    <div class="checkout-field">
+                        <label>Service Type</label>
+                        <select id="checkoutServiceType">
+                            <option value="Laundry">Laundry</option>
+                            <option value="Dry Cleaning">Dry Cleaning</option>
+                            <option value="Pressing Only">Pressing Only</option>
+                            <option value="Mixed">Mixed</option>
+                        </select>
+                    </div>
+                    <div class="checkout-field">
+                        <label>Recovery Method</label>
+                        <select id="checkoutRecoveryMethod">
+                            <option value="Front Desk">Front Desk</option>
+                            <option value="Return to Room">Return to Room</option>
+                            <option value="Shipping">Shipping</option>
+                            <option value="Third Party">Third Party</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkout-field">
+                    <label>Notes</label>
+                    <textarea id="checkoutNotes" rows="3" placeholder="e.g., Stain on collar, handle with care, guest will return Friday..."></textarea>
+                </div>
+            </div>
+
+            <!-- SECTION 3 : RECEIPT PHOTO -->
+            <div class="checkout-form-section">
+                <h4 class="checkout-section-title">
+                    <i class="fas fa-camera"></i> Receipt Photo
+                </h4>
+
+                <button onclick="document.getElementById('checkoutPhotoInput').click()" class="checkout-photo-btn" id="checkoutPhotoBtn">
+                    <i class="fas fa-camera"></i>
+                    <span id="checkoutPhotoBtnText">📸 Take Photo of Receipt</span>
+                </button>
+                <input type="file" id="checkoutPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="previewCheckoutPhoto(event)">
+
+                <div id="checkoutPhotoPreviewWrap" class="checkout-photo-preview-wrap hidden">
+                    <img id="checkoutPhotoPreview" class="checkout-photo-preview" alt="Receipt">
+                    <div class="checkout-photo-info">
+                        <span id="checkoutPhotoSize" class="checkout-photo-size">-- KB</span>
+                        <button onclick="removeCheckoutPhoto()" class="checkout-photo-remove">✕ Remove</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MODAL FOOTER -->
+        <div class="checkout-modal-footer">
+            <button onclick="closeCheckoutForm()" class="checkout-btn-cancel">
+                Cancel
+            </button>
+            <button onclick="saveCheckoutRecord()" id="checkoutSaveBtn" class="checkout-btn-save">
+                <i class="fas fa-save"></i>
+                <span>💾 Save Check-Out</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     🧳 MODAL — CHECK-OUT DETAILS / RECEIPT
+     ═══════════════════════════════════════════════════════════ -->
+<div id="checkoutDetailModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+    <div class="checkout-detail-content">
+        <div class="checkout-detail-header">
+            <h3>🧳 Check-Out Details</h3>
+            <button onclick="closeCheckoutDetail()" class="checkout-modal-close">✕</button>
+        </div>
+        <div id="checkoutDetailBody" class="checkout-detail-body">
+            <!-- Content dynamique -->
+        </div>
+        <div class="checkout-detail-footer">
+            <button onclick="printCheckoutReceipt()" class="checkout-btn-save">
+                <i class="fas fa-print"></i> Print Receipt
+            </button>
+            <button onclick="closeCheckoutDetail()" class="checkout-btn-cancel">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
         <!-- SECTION SPA -->
         <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
             
