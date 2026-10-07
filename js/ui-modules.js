@@ -2161,3 +2161,399 @@ function renderAgentPerformance(slips) {
 
 window.renderAgentPerformance = renderAgentPerformance;
 console.log('✅ [Superviseur] Performance par Agent chargée');
+/* ═══════════════════════════════════════════════════════════════════
+   📄 SUPERVISEUR — Rapport Journalier PDF
+   Génère un PDF premium pour le GM
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function genererRapportJournalier() {
+    // Détecter le bouton pour l'état loading
+    const btn = document.querySelector('.dashboard-report-btn');
+    if (btn) {
+        btn.classList.add('loading');
+        btn.disabled = true;
+    }
+
+    try {
+        // ═══ 1. Déterminer la date (hier par défaut) ═══
+        const now = new Date();
+        const targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() - 1); // Hier
+        targetDate.setHours(0, 0, 0, 0);
+
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        // ═══ 2. Filtrer les slips du jour ═══
+        chargerDonneesLocalStorage();
+        
+        const daySlips = cachedSlips.filter(s => {
+            if (!s.created_at) return false;
+            const d = new Date(s.created_at);
+            return d >= targetDate && d < nextDay;
+        });
+
+        if (daySlips.length === 0) {
+            alert('⚠️ Aucune activité enregistrée pour hier.\n\nLe rapport sera généré pour aujourd\'hui.');
+            // Fallback : aujourd'hui
+            targetDate.setTime(now.getTime());
+            targetDate.setHours(0, 0, 0, 0);
+            daySlips.push(...cachedSlips.filter(s => {
+                if (!s.created_at) return false;
+                const d = new Date(s.created_at);
+                return d >= targetDate;
+            }));
+        }
+
+        // ═══ 3. Calculer les métriques ═══
+        let totalRevenue = 0;
+        let totalPieces = 0;
+        let laundryRevenue = 0;
+        let spaRevenue = 0;
+        const statusCounts = { Pending: 0, Washing: 0, Ready: 0, Delivered: 0 };
+        const agentsMap = {};
+        const roomRevenue = {};
+        const roomGuests = {};
+        const agencyRevenue = {};
+        const agencyOrders = {};
+
+        daySlips.forEach(s => {
+            const rev = Number(s.grand_total || s.total || 0);
+            const pcs = Number(s.total_pieces || s.total_clothes || 0);
+
+            totalRevenue += rev;
+            totalPieces += pcs;
+
+            if (s.is_spa) {
+                spaRevenue += rev;
+            } else {
+                laundryRevenue += rev;
+
+                const room = String(s.room_number || s.room || '---');
+                roomRevenue[room] = (roomRevenue[room] || 0) + rev;
+                if (!roomGuests[room]) roomGuests[room] = s.guest_name || 'Guest';
+
+                const agency = s.agency || 'Direct';
+                agencyRevenue[agency] = (agencyRevenue[agency] || 0) + rev;
+                agencyOrders[agency] = (agencyOrders[agency] || 0) + 1;
+            }
+
+            // Statuts
+            let st = s.status || 'Collected';
+            if (st === 'Collected' || st === 'Pending') statusCounts.Pending++;
+            else if (st === 'Washing' || st === 'In Progress') statusCounts.Washing++;
+            else if (st === 'Ready') statusCounts.Ready++;
+            else if (st === 'Delivered' || st === 'Completed') statusCounts.Delivered++;
+
+            // Agents
+            const createdBy = s.created_by || 'pending';
+            const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
+            if (!isGuestOrder) {
+                let agentName = createdBy;
+                const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
+                if (match) agentName = match[1].trim();
+
+                if (!agentsMap[agentName]) {
+                    agentsMap[agentName] = { name: agentName, orders: 0, pieces: 0, revenue: 0 };
+                }
+                agentsMap[agentName].orders++;
+                agentsMap[agentName].pieces += pcs;
+                agentsMap[agentName].revenue += rev;
+            }
+        });
+
+        // Top 5 Rooms
+        const topRooms = Object.entries(roomRevenue)
+            .map(([room, value]) => ({ room, guest: roomGuests[room] || '', value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        // Top 5 Agencies
+        const topAgencies = Object.entries(agencyRevenue)
+            .map(([agency, value]) => ({ agency, value, orders: agencyOrders[agency] || 0 }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        // Agents triés
+        const agentsList = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
+
+        // ═══ 4. Générer le HTML ═══
+        const html = buildRapportHTML({
+            date: targetDate,
+            totalRevenue,
+            totalPieces,
+            totalOrders: daySlips.length,
+            laundryRevenue,
+            spaRevenue,
+            statusCounts,
+            topRooms,
+            topAgencies,
+            agentsList,
+            generatedAt: new Date()
+        });
+
+        // ═══ 5. Créer le container et générer le PDF ═══
+        let container = document.getElementById('reportExportContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'reportExportContainer';
+            document.body.appendChild(container);
+        }
+        container.innerHTML = html;
+
+        // Attendre que les images se chargent
+        await new Promise(r => setTimeout(r, 800));
+
+        const dateStr = targetDate.toISOString().split('T')[0];
+        const filename = `REMAL_Rapport_Journalier_${dateStr}.pdf`;
+
+        const opt = {
+            margin: [8, 8, 8, 8],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        await html2pdf().set(opt).from(container).save();
+        
+        console.log('✅ [Rapport] PDF généré:', filename);
+        
+        // Toast succès
+        if (typeof showUndoConfirmedToast === 'function') {
+            // Rien
+        }
+
+    } catch (e) {
+        console.error('[Rapport] Erreur:', e);
+        alert('⚠️ Erreur lors de la génération du rapport.');
+    } finally {
+        // Cleanup
+        const container = document.getElementById('reportExportContainer');
+        if (container) container.innerHTML = '';
+        
+        if (btn) {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+}
+
+function buildRapportHTML(data) {
+    const {
+        date, totalRevenue, totalPieces, totalOrders,
+        laundryRevenue, spaRevenue, statusCounts,
+        topRooms, topAgencies, agentsList, generatedAt
+    } = data;
+
+    const dateFormatted = date.toLocaleDateString('en-GB', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const timeFormatted = generatedAt.toLocaleTimeString('en-GB', {
+        hour: '2-digit', minute: '2-digit'
+    });
+
+    // Agents HTML
+    let agentsHTML = '';
+    if (agentsList.length === 0) {
+        agentsHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">Aucune activité agent enregistrée.</td></tr>`;
+    } else {
+        agentsHTML = agentsList.map((a, i) => `
+            <tr class="${i === 0 ? 'champion' : ''}">
+                <td>${i === 0 ? '🏆 ' : ''}<strong>${a.name}</strong></td>
+                <td style="text-align:center;">${a.orders}</td>
+                <td style="text-align:center;">${a.pieces} pcs</td>
+                <td style="text-align:right;font-weight:700;color:#b45309;">${a.revenue.toFixed(2)} AED</td>
+            </tr>
+        `).join('');
+    }
+
+    // Top Rooms HTML
+    let roomsHTML = '';
+    if (topRooms.length === 0) {
+        roomsHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">Aucune chambre active.</td></tr>`;
+    } else {
+        roomsHTML = topRooms.map((r, i) => `
+            <tr>
+                <td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td>
+                <td><strong>Room ${r.room}</strong>${r.guest ? ' · ' + r.guest : ''}</td>
+                <td style="text-align:right;font-weight:700;">${r.value.toFixed(2)} AED</td>
+            </tr>
+        `).join('');
+    }
+
+    // Top Agencies HTML
+    let agenciesHTML = '';
+    if (topAgencies.length === 0) {
+        agenciesHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">Aucune agence active.</td></tr>`;
+    } else {
+        agenciesHTML = topAgencies.map((a, i) => `
+            <tr>
+                <td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td>
+                <td><strong>${a.agency}</strong> · ${a.orders} commande${a.orders > 1 ? 's' : ''}</td>
+                <td style="text-align:right;font-weight:700;">${a.value.toFixed(2)} AED</td>
+            </tr>
+        `).join('');
+    }
+
+    return `
+        <div class="rapport-header">
+            <div class="rapport-header-left">
+                <img src="assets/remal-logo.png" alt="Remal" class="rapport-logo" onerror="this.style.display='none';">
+                <div>
+                    <h1 class="rapport-hotel-name">REMAL HOTEL & VILLAS</h1>
+                    <p class="rapport-hotel-sub">Al Ruwais City · Abu Dhabi · U.A.E</p>
+                </div>
+            </div>
+            <div class="rapport-header-right">
+                <h2 class="rapport-title">RAPPORT JOURNALIER</h2>
+                <p class="rapport-date">${dateFormatted}</p>
+                <p class="rapport-date" style="font-size:9px;">Généré à ${timeFormatted}</p>
+            </div>
+        </div>
+
+        <div class="rapport-body">
+
+            <!-- KPI -->
+            <div class="rapport-section">
+                <div class="rapport-section-title">💰 Indicateurs clés du jour</div>
+                <div class="rapport-kpi-grid">
+                    <div class="rapport-kpi">
+                        <div class="rapport-kpi-label">Chiffre d'affaires</div>
+                        <div class="rapport-kpi-value">${totalRevenue.toFixed(2)}</div>
+                        <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
+                    </div>
+                    <div class="rapport-kpi">
+                        <div class="rapport-kpi-label">Commandes</div>
+                        <div class="rapport-kpi-value blue">${totalOrders}</div>
+                    </div>
+                    <div class="rapport-kpi">
+                        <div class="rapport-kpi-label">Pièces</div>
+                        <div class="rapport-kpi-value green">${totalPieces}</div>
+                    </div>
+                    <div class="rapport-kpi">
+                        <div class="rapport-kpi-label">Laundry</div>
+                        <div class="rapport-kpi-value blue">${laundryRevenue.toFixed(0)}</div>
+                        <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
+                    </div>
+                    <div class="rapport-kpi">
+                        <div class="rapport-kpi-label">SPA</div>
+                        <div class="rapport-kpi-value purple">${spaRevenue.toFixed(0)}</div>
+                        <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statuts -->
+            <div class="rapport-section">
+                <div class="rapport-section-title">📊 Répartition des statuts</div>
+                <div class="rapport-status-grid">
+                    <div class="rapport-status-item pending">
+                        <div class="rapport-status-icon">⏳</div>
+                        <div class="rapport-status-label">En attente</div>
+                        <div class="rapport-status-value">${statusCounts.Pending}</div>
+                    </div>
+                    <div class="rapport-status-item washing">
+                        <div class="rapport-status-icon">🧼</div>
+                        <div class="rapport-status-label">En lavage</div>
+                        <div class="rapport-status-value">${statusCounts.Washing}</div>
+                    </div>
+                    <div class="rapport-status-item ready">
+                        <div class="rapport-status-icon">✨</div>
+                        <div class="rapport-status-label">Prêt</div>
+                        <div class="rapport-status-value">${statusCounts.Ready}</div>
+                    </div>
+                    <div class="rapport-status-item delivered">
+                        <div class="rapport-status-icon">✅</div>
+                        <div class="rapport-status-label">Livré</div>
+                        <div class="rapport-status-value">${statusCounts.Delivered}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agents -->
+            <div class="rapport-section">
+                <div class="rapport-section-title">👥 Performance par agent</div>
+                <table class="rapport-table">
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            <th style="text-align:center;">Commandes</th>
+                            <th style="text-align:center;">Pièces</th>
+                            <th style="text-align:right;">CA (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${agentsHTML}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Top Rooms -->
+            <div class="rapport-section">
+                <div class="rapport-section-title">🏆 Top 5 Chambres</div>
+                <table class="rapport-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;text-align:center;">#</th>
+                            <th>Chambre / Client</th>
+                            <th style="text-align:right;">CA (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${roomsHTML}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Top Agencies -->
+            <div class="rapport-section">
+                <div class="rapport-section-title">🏢 Top 5 Agences</div>
+                <table class="rapport-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;text-align:center;">#</th>
+                            <th>Agence</th>
+                            <th style="text-align:right;">CA (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${agenciesHTML}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Signatures -->
+            <div class="rapport-signatures">
+                <div class="rapport-signature-item">
+                    <div class="rapport-signature-line"></div>
+                    <div class="rapport-signature-label">Préparé par</div>
+                    <div style="font-size:9px;color:#9ca3af;margin-top:4px;">
+                        ${currentStaffUser?.name || 'Superviseur Laundry'}
+                    </div>
+                </div>
+                <div class="rapport-signature-item">
+                    <div class="rapport-signature-line"></div>
+                    <div class="rapport-signature-label">Approuvé par</div>
+                    <div style="font-size:9px;color:#9ca3af;margin-top:4px;">General Manager</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="rapport-footer">
+            Remal Laundry OS · Document généré automatiquement · Confidential
+        </div>
+    `;
+}
+
+window.genererRapportJournalier = genererRapportJournalier;
+console.log('✅ [Rapport] Generateur de rapport chargé');
