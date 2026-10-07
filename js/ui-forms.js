@@ -514,7 +514,7 @@ function setLang(lang) {
 // ═══════════════════════════════════════════════════════════════════
 function switchMainSection(section) {
     // 🔒 Blocage strict : sections réservées admin
-    const ADMIN_ONLY_SECTIONS = ['checkout', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
+   const ADMIN_ONLY_SECTIONS = ['checkout', 'stock', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
     const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
 
     if (!isAdminUser && ADMIN_ONLY_SECTIONS.includes(section)) {
