@@ -5,6 +5,7 @@
 // PHASE E.3 : Long-press +5 / Clic-droit Set Qty
 // PHASE E.5 : Undo save (7s toast)
 // ✨ SPRINT 1 : setLang() tolérant + navigation premium (classList)
+// ✨ CHECKOUT : admin-only + renderCheckoutList()
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -509,10 +510,11 @@ function setLang(lang) {
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION SECTIONS
 // ✨ SPRINT 1 : utilise classList au lieu d'écraser className
+// ✨ CHECKOUT : admin-only + chargement de la liste
 // ═══════════════════════════════════════════════════════════════════
 function switchMainSection(section) {
     // 🔒 Blocage strict : sections réservées admin
-    const ADMIN_ONLY_SECTIONS = ['lostfound', 'pdfList', 'massEntry', 'dashboard'];
+    const ADMIN_ONLY_SECTIONS = ['checkout', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
     const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
 
     if (!isAdminUser && ADMIN_ONLY_SECTIONS.includes(section)) {
@@ -525,30 +527,30 @@ function switchMainSection(section) {
         reinitialiserFormulaire();
     }
 
-   ['newRecord', 'massEntry', 'liveRecord', 'spa', 'checkout', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
+    ['newRecord', 'massEntry', 'liveRecord', 'spa', 'checkout', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
         const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
         if (el) el.classList.add('hidden');
     });
 
-   let targetSection;
-if (section === 'spa') {
-    targetSection = document.getElementById('spa-laundry-section');
-} else if (section === 'checkout') {
-    targetSection = document.getElementById('sectionCheckout');
-} else {
-    targetSection = document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
-}
+    let targetSection;
+    if (section === 'spa') {
+        targetSection = document.getElementById('spa-laundry-section');
+    } else if (section === 'checkout') {
+        targetSection = document.getElementById('sectionCheckout');
+    } else {
+        targetSection = document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
+    }
     if (targetSection) targetSection.classList.remove('hidden');
 
-const navButtons = {
-    'liveRecord': 'navBtnLiveRecord',
-    'spa': 'navBtnSpa',
-    'checkout': 'navBtnCheckout',
-    'lostfound': 'navBtnLostfound',
-    'pdfList': 'navBtnPdfList',
-    'massEntry': 'navBtnMassEntry',
-    'dashboard': 'navBtnDashboard'
-};
+    const navButtons = {
+        'liveRecord': 'navBtnLiveRecord',
+        'spa': 'navBtnSpa',
+        'checkout': 'navBtnCheckout',
+        'lostfound': 'navBtnLostfound',
+        'pdfList': 'navBtnPdfList',
+        'massEntry': 'navBtnMassEntry',
+        'dashboard': 'navBtnDashboard'
+    };
 
     // ✅ SPRINT 1 : utilise classList (préserve les classes premium)
     Object.entries(navButtons).forEach(([key, btnId]) => {
@@ -577,6 +579,11 @@ const navButtons = {
         renderManagementDashboard();
     } else if (section === 'lostfound') {
         renderLostFoundItems();
+    } else if (section === 'checkout') {
+        // ✨ Charge la liste des check-outs
+        if (typeof renderCheckoutList === 'function') {
+            renderCheckoutList();
+        }
     }
     
     const navBtnId = navButtons[section];
