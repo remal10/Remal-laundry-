@@ -2162,12 +2162,11 @@ function renderAgentPerformance(slips) {
 window.renderAgentPerformance = renderAgentPerformance;
 console.log('✅ [Superviseur] Performance par Agent chargée');
 /* ═══════════════════════════════════════════════════════════════════
-   📄 SUPERVISEUR — Rapport Journalier PDF
-   Génère un PDF premium pour le GM
+   📄 SUPERVISOR — Daily Report PDF (English)
+   Generates a premium PDF report for the GM
    ═══════════════════════════════════════════════════════════════════ */
 
 async function genererRapportJournalier() {
-    // Détecter le bouton pour l'état loading
     const btn = document.querySelector('.dashboard-report-btn');
     if (btn) {
         btn.classList.add('loading');
@@ -2175,37 +2174,43 @@ async function genererRapportJournalier() {
     }
 
     try {
-        // ═══ 1. Déterminer la date (hier par défaut) ═══
+        // ═══ 1. Target date = yesterday ═══
         const now = new Date();
         const targetDate = new Date(now);
-        targetDate.setDate(targetDate.getDate() - 1); // Hier
+        targetDate.setDate(targetDate.getDate() - 1);
         targetDate.setHours(0, 0, 0, 0);
 
         const nextDay = new Date(targetDate);
         nextDay.setDate(nextDay.getDate() + 1);
 
-        // ═══ 2. Filtrer les slips du jour ═══
+        // ═══ 2. Filter slips of the day ═══
         chargerDonneesLocalStorage();
-        
-        const daySlips = cachedSlips.filter(s => {
+
+        let daySlips = cachedSlips.filter(s => {
             if (!s.created_at) return false;
             const d = new Date(s.created_at);
             return d >= targetDate && d < nextDay;
         });
 
         if (daySlips.length === 0) {
-            alert('⚠️ Aucune activité enregistrée pour hier.\n\nLe rapport sera généré pour aujourd\'hui.');
-            // Fallback : aujourd'hui
+            const confirmed = confirm('No activity found for yesterday.\n\nGenerate report for TODAY instead?');
+            if (!confirmed) {
+                if (btn) {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }
+                return;
+            }
             targetDate.setTime(now.getTime());
             targetDate.setHours(0, 0, 0, 0);
-            daySlips.push(...cachedSlips.filter(s => {
+            daySlips = cachedSlips.filter(s => {
                 if (!s.created_at) return false;
                 const d = new Date(s.created_at);
                 return d >= targetDate;
-            }));
+            });
         }
 
-        // ═══ 3. Calculer les métriques ═══
+        // ═══ 3. Compute metrics ═══
         let totalRevenue = 0;
         let totalPieces = 0;
         let laundryRevenue = 0;
@@ -2238,14 +2243,12 @@ async function genererRapportJournalier() {
                 agencyOrders[agency] = (agencyOrders[agency] || 0) + 1;
             }
 
-            // Statuts
             let st = s.status || 'Collected';
             if (st === 'Collected' || st === 'Pending') statusCounts.Pending++;
             else if (st === 'Washing' || st === 'In Progress') statusCounts.Washing++;
             else if (st === 'Ready') statusCounts.Ready++;
             else if (st === 'Delivered' || st === 'Completed') statusCounts.Delivered++;
 
-            // Agents
             const createdBy = s.created_by || 'pending';
             const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
             if (!isGuestOrder) {
@@ -2262,22 +2265,19 @@ async function genererRapportJournalier() {
             }
         });
 
-        // Top 5 Rooms
         const topRooms = Object.entries(roomRevenue)
             .map(([room, value]) => ({ room, guest: roomGuests[room] || '', value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 5);
 
-        // Top 5 Agencies
         const topAgencies = Object.entries(agencyRevenue)
             .map(([agency, value]) => ({ agency, value, orders: agencyOrders[agency] || 0 }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 5);
 
-        // Agents triés
         const agentsList = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
 
-        // ═══ 4. Générer le HTML ═══
+        // ═══ 4. Build HTML ═══
         const html = buildRapportHTML({
             date: targetDate,
             totalRevenue,
@@ -2292,7 +2292,7 @@ async function genererRapportJournalier() {
             generatedAt: new Date()
         });
 
-        // ═══ 5. Créer le container et générer le PDF ═══
+        // ═══ 5. Create container + generate PDF ═══
         let container = document.getElementById('reportExportContainer');
         if (!container) {
             container = document.createElement('div');
@@ -2301,11 +2301,10 @@ async function genererRapportJournalier() {
         }
         container.innerHTML = html;
 
-        // Attendre que les images se chargent
         await new Promise(r => setTimeout(r, 800));
 
         const dateStr = targetDate.toISOString().split('T')[0];
-        const filename = `REMAL_Rapport_Journalier_${dateStr}.pdf`;
+        const filename = `REMAL_Daily_Report_${dateStr}.pdf`;
 
         const opt = {
             margin: [8, 8, 8, 8],
@@ -2323,22 +2322,16 @@ async function genererRapportJournalier() {
         };
 
         await html2pdf().set(opt).from(container).save();
-        
-        console.log('✅ [Rapport] PDF généré:', filename);
-        
-        // Toast succès
-        if (typeof showUndoConfirmedToast === 'function') {
-            // Rien
-        }
+
+        console.log('✅ [Report] PDF generated:', filename);
 
     } catch (e) {
-        console.error('[Rapport] Erreur:', e);
-        alert('⚠️ Erreur lors de la génération du rapport.');
+        console.error('[Report] Error:', e);
+        alert('⚠️ Error generating report.');
     } finally {
-        // Cleanup
         const container = document.getElementById('reportExportContainer');
         if (container) container.innerHTML = '';
-        
+
         if (btn) {
             btn.classList.remove('loading');
             btn.disabled = false;
@@ -2361,10 +2354,9 @@ function buildRapportHTML(data) {
         hour: '2-digit', minute: '2-digit'
     });
 
-    // Agents HTML
     let agentsHTML = '';
     if (agentsList.length === 0) {
-        agentsHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">Aucune activité agent enregistrée.</td></tr>`;
+        agentsHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No agent activity recorded.</td></tr>`;
     } else {
         agentsHTML = agentsList.map((a, i) => `
             <tr class="${i === 0 ? 'champion' : ''}">
@@ -2376,10 +2368,9 @@ function buildRapportHTML(data) {
         `).join('');
     }
 
-    // Top Rooms HTML
     let roomsHTML = '';
     if (topRooms.length === 0) {
-        roomsHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">Aucune chambre active.</td></tr>`;
+        roomsHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active rooms.</td></tr>`;
     } else {
         roomsHTML = topRooms.map((r, i) => `
             <tr>
@@ -2390,15 +2381,14 @@ function buildRapportHTML(data) {
         `).join('');
     }
 
-    // Top Agencies HTML
     let agenciesHTML = '';
     if (topAgencies.length === 0) {
-        agenciesHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">Aucune agence active.</td></tr>`;
+        agenciesHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active agencies.</td></tr>`;
     } else {
         agenciesHTML = topAgencies.map((a, i) => `
             <tr>
                 <td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td>
-                <td><strong>${a.agency}</strong> · ${a.orders} commande${a.orders > 1 ? 's' : ''}</td>
+                <td><strong>${a.agency}</strong> · ${a.orders} order${a.orders > 1 ? 's' : ''}</td>
                 <td style="text-align:right;font-weight:700;">${a.value.toFixed(2)} AED</td>
             </tr>
         `).join('');
@@ -2414,9 +2404,9 @@ function buildRapportHTML(data) {
                 </div>
             </div>
             <div class="rapport-header-right">
-                <h2 class="rapport-title">RAPPORT JOURNALIER</h2>
+                <h2 class="rapport-title">DAILY REPORT</h2>
                 <p class="rapport-date">${dateFormatted}</p>
-                <p class="rapport-date" style="font-size:9px;">Généré à ${timeFormatted}</p>
+                <p class="rapport-date" style="font-size:9px;">Generated at ${timeFormatted}</p>
             </div>
         </div>
 
@@ -2424,19 +2414,19 @@ function buildRapportHTML(data) {
 
             <!-- KPI -->
             <div class="rapport-section">
-                <div class="rapport-section-title">💰 Indicateurs clés du jour</div>
+                <div class="rapport-section-title">💰 Key Indicators</div>
                 <div class="rapport-kpi-grid">
                     <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Chiffre d'affaires</div>
+                        <div class="rapport-kpi-label">Total Revenue</div>
                         <div class="rapport-kpi-value">${totalRevenue.toFixed(2)}</div>
                         <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
                     </div>
                     <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Commandes</div>
+                        <div class="rapport-kpi-label">Orders</div>
                         <div class="rapport-kpi-value blue">${totalOrders}</div>
                     </div>
                     <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Pièces</div>
+                        <div class="rapport-kpi-label">Garments</div>
                         <div class="rapport-kpi-value green">${totalPieces}</div>
                     </div>
                     <div class="rapport-kpi">
@@ -2452,28 +2442,28 @@ function buildRapportHTML(data) {
                 </div>
             </div>
 
-            <!-- Statuts -->
+            <!-- Status -->
             <div class="rapport-section">
-                <div class="rapport-section-title">📊 Répartition des statuts</div>
+                <div class="rapport-section-title">📊 Status Breakdown</div>
                 <div class="rapport-status-grid">
                     <div class="rapport-status-item pending">
                         <div class="rapport-status-icon">⏳</div>
-                        <div class="rapport-status-label">En attente</div>
+                        <div class="rapport-status-label">Pending</div>
                         <div class="rapport-status-value">${statusCounts.Pending}</div>
                     </div>
                     <div class="rapport-status-item washing">
                         <div class="rapport-status-icon">🧼</div>
-                        <div class="rapport-status-label">En lavage</div>
+                        <div class="rapport-status-label">Washing</div>
                         <div class="rapport-status-value">${statusCounts.Washing}</div>
                     </div>
                     <div class="rapport-status-item ready">
                         <div class="rapport-status-icon">✨</div>
-                        <div class="rapport-status-label">Prêt</div>
+                        <div class="rapport-status-label">Ready</div>
                         <div class="rapport-status-value">${statusCounts.Ready}</div>
                     </div>
                     <div class="rapport-status-item delivered">
                         <div class="rapport-status-icon">✅</div>
-                        <div class="rapport-status-label">Livré</div>
+                        <div class="rapport-status-label">Delivered</div>
                         <div class="rapport-status-value">${statusCounts.Delivered}</div>
                     </div>
                 </div>
@@ -2481,14 +2471,14 @@ function buildRapportHTML(data) {
 
             <!-- Agents -->
             <div class="rapport-section">
-                <div class="rapport-section-title">👥 Performance par agent</div>
+                <div class="rapport-section-title">👥 Agent Performance</div>
                 <table class="rapport-table">
                     <thead>
                         <tr>
                             <th>Agent</th>
-                            <th style="text-align:center;">Commandes</th>
-                            <th style="text-align:center;">Pièces</th>
-                            <th style="text-align:right;">CA (AED)</th>
+                            <th style="text-align:center;">Orders</th>
+                            <th style="text-align:center;">Pieces</th>
+                            <th style="text-align:right;">Revenue (AED)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2499,13 +2489,13 @@ function buildRapportHTML(data) {
 
             <!-- Top Rooms -->
             <div class="rapport-section">
-                <div class="rapport-section-title">🏆 Top 5 Chambres</div>
+                <div class="rapport-section-title">🏆 Top 5 Rooms</div>
                 <table class="rapport-table">
                     <thead>
                         <tr>
                             <th style="width:40px;text-align:center;">#</th>
-                            <th>Chambre / Client</th>
-                            <th style="text-align:right;">CA (AED)</th>
+                            <th>Room / Guest</th>
+                            <th style="text-align:right;">Revenue (AED)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2516,13 +2506,13 @@ function buildRapportHTML(data) {
 
             <!-- Top Agencies -->
             <div class="rapport-section">
-                <div class="rapport-section-title">🏢 Top 5 Agences</div>
+                <div class="rapport-section-title">🏢 Top 5 Agencies</div>
                 <table class="rapport-table">
                     <thead>
                         <tr>
                             <th style="width:40px;text-align:center;">#</th>
-                            <th>Agence</th>
-                            <th style="text-align:right;">CA (AED)</th>
+                            <th>Agency</th>
+                            <th style="text-align:right;">Revenue (AED)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2535,14 +2525,14 @@ function buildRapportHTML(data) {
             <div class="rapport-signatures">
                 <div class="rapport-signature-item">
                     <div class="rapport-signature-line"></div>
-                    <div class="rapport-signature-label">Préparé par</div>
+                    <div class="rapport-signature-label">Prepared by</div>
                     <div style="font-size:9px;color:#9ca3af;margin-top:4px;">
-                        ${currentStaffUser?.name || 'Superviseur Laundry'}
+                        ${currentStaffUser?.name || 'Laundry Supervisor'}
                     </div>
                 </div>
                 <div class="rapport-signature-item">
                     <div class="rapport-signature-line"></div>
-                    <div class="rapport-signature-label">Approuvé par</div>
+                    <div class="rapport-signature-label">Approved by</div>
                     <div style="font-size:9px;color:#9ca3af;margin-top:4px;">General Manager</div>
                 </div>
             </div>
@@ -2550,10 +2540,10 @@ function buildRapportHTML(data) {
         </div>
 
         <div class="rapport-footer">
-            Remal Laundry OS · Document généré automatiquement · Confidential
+            Remal Laundry OS · Auto-generated document · Confidential
         </div>
     `;
 }
 
 window.genererRapportJournalier = genererRapportJournalier;
-console.log('✅ [Rapport] Generateur de rapport chargé');
+console.log('✅ [Report] Daily report generator loaded');
