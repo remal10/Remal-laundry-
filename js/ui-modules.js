@@ -1222,9 +1222,13 @@ function renderManagementDashboard() {
             }
         });
 
-        return { revenue, orders, garments, laundry, spa, statusCounts, revenueByDate, roomRevenue, agencyRevenue, roomGuests, agencyOrders };
-    }
-
+            return { 
+        revenue, orders, garments, laundry, spa, 
+        statusCounts, revenueByDate, roomRevenue, agencyRevenue, 
+        roomGuests, agencyOrders,
+        slips: slips
+    };
+}
     const m = computeMetrics(currentSlips);
     const p = computeMetrics(prevSlips);
 
