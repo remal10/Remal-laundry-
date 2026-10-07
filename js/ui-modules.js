@@ -1362,10 +1362,9 @@ function renderManagementDashboard() {
         .slice(0, 5);
 
     renderTopList('topAgenciesList', topAgencies, true);
-}
 // ═══ 9. Performance par Agent ═══
 if (typeof renderAgentPerformance === 'function') {
-    renderAgentPerformance(currentSlips);
+    renderAgentPerformance(m ? m.slips : []);
 }
 // ═══════════════════════════════════════════════════════════════════
 // SPA
