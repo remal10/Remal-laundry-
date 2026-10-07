@@ -850,7 +850,42 @@
                 <div id="topAgenciesList"></div>
             </div>
         </div>
+<!-- ═══════════════════════════════════════════════════════════
+     ⏱️ PROCESSING TIMES
+     ═══════════════════════════════════════════════════════════ -->
+<div class="dashboard-times-section">
+    <div class="dashboard-chart-title">
+        ⏱️ Processing Times
+        <span id="timesSampleBadge" class="dashboard-times-badge">-- orders</span>
+    </div>
 
+    <!-- KPI Temps -->
+    <div class="dashboard-times-kpi-grid" id="timesKpiGrid">
+        <div class="dashboard-time-kpi">
+            <div class="dashboard-time-label">Average Total Time</div>
+            <div class="dashboard-time-value" id="kpiAvgTotal">--</div>
+        </div>
+        <div class="dashboard-time-kpi">
+            <div class="dashboard-time-label">Fastest</div>
+            <div class="dashboard-time-value green" id="kpiFastest">--</div>
+        </div>
+        <div class="dashboard-time-kpi">
+            <div class="dashboard-time-label">Slowest</div>
+            <div class="dashboard-time-value red" id="kpiSlowest">--</div>
+        </div>
+    </div>
+
+    <!-- Distribution -->
+    <div class="dashboard-time-distribution" id="timesDistribution">
+        <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
+    </div>
+
+    <!-- Per-agent speed -->
+    <div class="dashboard-agents-speed-title">⚡ Speed Ranking by Agent</div>
+    <div id="agentsSpeedList" class="dashboard-agents-speed-list">
+        <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
+    </div>
+</div>
         <!-- ═══════════════════════════════════════════════════════════
              👥 PERFORMANCE PAR AGENT
              ═══════════════════════════════════════════════════════════ -->
