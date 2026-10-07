@@ -530,7 +530,14 @@ function switchMainSection(section) {
         if (el) el.classList.add('hidden');
     });
 
-    const targetSection = section === 'spa' ? document.getElementById('spa-laundry-section') : document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
+   let targetSection;
+if (section === 'spa') {
+    targetSection = document.getElementById('spa-laundry-section');
+} else if (section === 'checkout') {
+    targetSection = document.getElementById('sectionCheckout');
+} else {
+    targetSection = document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
+}
     if (targetSection) targetSection.classList.remove('hidden');
 
     const navButtons = {
