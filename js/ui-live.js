@@ -1281,15 +1281,25 @@ async function appliquerStatutEnLot(nouveauStatut) {
 
     isLocalUpdating = true;
 
-    chargerDonneesLocalStorage();
-    const previousStatuses = {};
-    cachedSlips.forEach(s => {
-        if (selectedIds.includes(String(s.id))) {
-            previousStatuses[String(s.id)] = s.status || 'Collected';
-            s.status = nouveauStatut;
+   chargerDonneesLocalStorage();
+const previousStatuses = {};
+
+// ✨ Log each change BEFORE modifying
+for (const id of selectedIds) {
+    const entry = cachedSlips.find(s => String(s.id) === String(id));
+    if (entry) {
+        previousStatuses[String(id)] = entry.status || 'Collected';
+        
+        if (typeof logStatusChange === 'function') {
+            await logStatusChange(id, entry.status, nouveauStatut, 'batch');
         }
-    });
-    sauvegarderDonneesLocalStorage();
+        
+        entry.status = nouveauStatut;
+        entry.updated_at = new Date().toISOString();
+    }
+}
+
+sauvegarderDonneesLocalStorage();
 
     chargerLiveOrders();
 
