@@ -1116,13 +1116,13 @@ function buildStockReportHTML(data) {
                 </div>
             </div>
 
-            <!-- Alerts -->
-            <div class="stock-pdf-section">
-                <div class="stock-pdf-section-title">⚠️ Alerts (${alerts.length} item${alerts.length > 1 ? 's' : ''})</div>
-                <div class="stock-pdf-alerts">
-                    ${alertsHTML}
-                </div>
-            </div>
+<!-- Alerts -->
+<div class="stock-pdf-section">
+    <div class="stock-pdf-section-title">⚠️ Alerts (${alerts.length} item${alerts.length > 1 ? 's' : ''})</div>
+    <div class="stock-pdf-alerts ${alerts.length === 0 ? '' : alerts.some(a => computeStockStatus(a) === 'critical') ? 'danger' : 'warning'}">
+        ${alertsHTML}
+    </div>
+</div>
 
             <!-- Full Inventory -->
             <div class="stock-pdf-section">
