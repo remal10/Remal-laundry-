@@ -2,7 +2,7 @@
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
 // ⚠️ Chargé AVANT ui.js
 // ✅ MASS ENTRY V2 — Parser PMS robuste
-// ✅ AGENCY V8 — Arrêt strict après mot-clé (fin des codes parasites)
+// ✅ AGENCY V9 — Extraction par mot-clé + arrêt strict + préfixe propre
 // ✅ QUOTA V3 — "X pieces per day for AED Y" → X PCS
 // ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
 // =============================================================
@@ -78,24 +78,50 @@ const BLOCKED_CODES_AGENCY = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// 🏢 MOTS-CLÉS COMPANY
+// 🏢 MOTS-CLÉS COMPANY (liste COMPLÈTE du PDF Remal)
 // ═══════════════════════════════════════════════════════════════════
 const COMPANY_KEYWORDS_V7 = [
-    // Companies spécifiques du PDF Remal
-    'HONEYWELL MIDDLE EAST LIMITED', 'Fertiglobe Holding Investment Limited',
-    'HONEYWELL MIDDLE EAST', 'Toshiba Energy Systems & Services Gulf',
+    // ═══ Companies spécifiques du PDF Remal ═══
+    'HONEYWELL MIDDLE EAST LIMITED',
     'SAMSUNG E & ADNOC WASTE HEAT RECOVERY PROJECT',
-    'OMV Downstream Middle East & Asia', 'Tazweed for Oil Field Services',
-    'Power Mech Projects Limited', 'Rotary Engineering Pte Ltd',
-    'Siemens Industrial LLC', 'Bureau Veritas', 'WebBeds FZ LLC',
-    'GHQ Moral Guidance', 'ADNOC GAS PROCESSING', 'ADNOC REFINING',
-    'ADNOC GS & A', 'Homat Al Watan', 'INCO GROUP OF COMPANIES',
-    'HABSHAN TRADING COMPANY', 'Excelerate Energy Inc', 'Hunter Tourism LLC',
-    'Borouge 4 LLC', 'Borouge LLC', 'Siemens Energy', 'Generation 5',
-    'EXPEDIA', 'Booking.com', 'ETIMAD', 'FERTIL', 'CEGSPA', 'AXEN GROUP',
-    'AXEN FALAJ', 'alfalaval', 'fbmhudson', 'Qateintl.com', 'Direct Booking',
-    'ERTH Staff', 'IPCO',
-    // Mots-clés génériques (fallback)
+    'OMV Downstream Middle East & Asia',
+    'Fertiglobe Holding Investment Limited',
+    'Toshiba Energy Systems & Services Gulf',
+    'Power Mech Projects Limited',
+    'Tazweed for Oil Field Services',
+    'Rotary Engineering Pte Ltd',
+    'HABSHAN TRADING COMPANY',
+    'INCO GROUP OF COMPANIES',
+    'HONEYWELL MIDDLE EAST',
+    'Siemens Industrial LLC',
+    'ADNOC GAS PROCESSING',
+    'Bureau Veritas',
+    'WebBeds FZ LLC',
+    'GHQ Moral Guidance',
+    'Excelerate Energy Inc',
+    'Hunter Tourism LLC',
+    'Siemens Energy',
+    'ADNOC REFINING',
+    'Homat Al Watan',
+    'Borouge 4 LLC',
+    'Borouge LLC',
+    'Generation 5',
+    'ADNOC GS & A',
+    'Direct Booking',
+    'Booking.com',
+    'ERTH Staff',
+    'Qateintl.com',
+    'AXEN FALAJ',
+    'AXEN GROUP',
+    'CEGSPA',
+    'alfalaval',
+    'fbmhudson',
+    'EXPEDIA',
+    'ETIMAD',
+    'FERTIL',
+    'IPCO',
+
+    // ═══ Mots-clés génériques (fallback) ═══
     'LLC', 'LIMITED', 'Inc', 'Inc.', 'GROUP', 'Holding', 'Tourism', 'Travel',
     'Energy', 'Systems', 'Services', 'Trading', 'Company', 'COMPANY',
     'Corporation', 'Corp', 'Ltd', 'LTD', 'W.L.L', 'Refining',
@@ -412,10 +438,7 @@ async function sauvegarderBordereauLocal() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENCY V8 — Extraction par mot-clé + arrêt strict
-// Corrige : "FERTIL Pay By" → "FERTIL"
-//           "Power Mech Projects Limited BBF" → "Power Mech Projects Limited"
-//           "OTA EXPEDIA RM" → "EXPEDIA"
+// AGENCY V9 — Extraction par mot-clé + arrêt strict + préfixe propre
 // ═══════════════════════════════════════════════════════════════════
 function extractAgencyFromText(text) {
     if (!text || typeof text !== 'string') return 'Direct';
@@ -428,7 +451,7 @@ function extractAgencyFromText(text) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // ═══ ÉTAPE 1 : Trouver le mot-clé company le PLUS LONG ═══
+    // ═══ ÉTAPE 1 : Trouver le mot-clé le PLUS LONG ═══
     let bestKeyword = null;
     let bestIndex = -1;
 
@@ -446,48 +469,59 @@ function extractAgencyFromText(text) {
         return 'Direct';
     }
 
-    // ═══ ÉTAPE 2 : Prendre 40 caractères AVANT pour le préfixe ═══
-    const beforeStart = Math.max(0, bestIndex - 40);
-    const prefix = normalized.substring(beforeStart, bestIndex);
+    // ═══ ÉTAPE 2 : Extraire UNIQUEMENT le mot-clé (pas de préfixe large) ═══
+    const GENERIC_KEYWORDS = ['LLC', 'LIMITED', 'Inc', 'Inc.', 'GROUP', 'Holding',
+                              'Tourism', 'Travel', 'Energy', 'Systems', 'Services',
+                              'Trading', 'Company', 'COMPANY', 'Corporation', 'Corp',
+                              'Ltd', 'LTD', 'W.L.L', 'Refining', 'Processing',
+                              'Engineering', 'Industrial', 'Solutions', 'Industries',
+                              'International', 'Global', 'Enterprises'];
 
-    // ═══ ÉTAPE 3 : Prendre MAX 2 mots APRÈS (extensions légitimes uniquement) ═══
-    const afterKeyword = normalized.substring(bestIndex + bestKeyword.length);
-    const afterWords = afterKeyword.trim().split(/\s+/).filter(w => w.length > 0);
-    const LEGIT_EXTENSIONS = ['LLC', 'Ltd', 'LTD', 'Limited', 'LIMITED', 'Inc', 'Inc.',
-                              'W.L.L', 'w.l.l', 'Corp', 'CORP', 'Group', 'GROUP',
-                              'Company', 'COMPANY', 'Pte', 'PTE', 'Gulf',
-                              'Services', 'SERVICES', 'Systems', 'SYSTEMS', 'Holding',
-                              'HOLDING', 'Trading', 'TRADING', 'Refining', 'Processing',
-                              'Engineering', 'Industrial', 'Solutions', 'International',
-                              'Global', 'FALAJ'];
-    let extension = '';
-    for (let i = 0; i < Math.min(2, afterWords.length); i++) {
-        const w = afterWords[i];
-        if (LEGIT_EXTENSIONS.includes(w) || LEGIT_EXTENSIONS.includes(w.replace(/\.$/, ''))) {
-            extension += ' ' + w;
-        } else {
-            break;
+    let candidate = '';
+
+    if (GENERIC_KEYWORDS.includes(bestKeyword)) {
+        // Mot-clé générique : remonter pour capturer le nom propre avant
+        const beforeStart = Math.max(0, bestIndex - 40);
+        const prefix = normalized.substring(beforeStart, bestIndex);
+        candidate = prefix + bestKeyword;
+    } else {
+        // Mot-clé spécifique : prendre UNIQUEMENT le mot-clé + extensions légitimes
+        candidate = bestKeyword;
+
+        const afterKeyword = normalized.substring(bestIndex + bestKeyword.length);
+        const afterWords = afterKeyword.trim().split(/\s+/).filter(w => w.length > 0);
+        const LEGIT_EXTENSIONS = ['LLC', 'Ltd', 'LTD', 'Limited', 'LIMITED', 'Inc', 'Inc.',
+                                  'W.L.L', 'Corp', 'CORP', 'Group', 'GROUP',
+                                  'Company', 'Pte', 'PTE', 'Gulf', 'Services', 'SERVICES',
+                                  'Systems', 'SYSTEMS', 'Holding', 'HOLDING', 'Trading',
+                                  'TRADING', 'Refining', 'Processing', 'Engineering',
+                                  'Industrial', 'Solutions', 'International', 'Global',
+                                  'FALAJ'];
+        for (let i = 0; i < Math.min(2, afterWords.length); i++) {
+            const w = afterWords[i];
+            if (LEGIT_EXTENSIONS.includes(w) || LEGIT_EXTENSIONS.includes(w.replace(/\.$/, ''))) {
+                candidate += ' ' + w;
+            } else {
+                break;
+            }
         }
     }
 
-    // ═══ ÉTAPE 4 : Reconstruire ═══
-    let candidate = (prefix + bestKeyword + extension).trim();
-
-    // ═══ ÉTAPE 5 : Nettoyage strict ═══
+    // ═══ ÉTAPE 3 : Nettoyage strict ═══
     candidate = candidate
         .replace(/\b\d{2}\/\d{2}\/\d{4}\b/g, ' ')
         .replace(/\b\d{3,6}\b/g, ' ')
         .replace(/\b(BBLA|HBDL|HDL4|HD40|FB24|FB40|BB|HB|FB|BF|LD|HDL|HD|RMLA|ROYS|RO)\b/gi, ' ')
         .replace(/\b(CORP|STAH|WALK|OIL|CITY|NORM|REG|FIT|HOUS|GHQ)\b/gi, ' ')
         .replace(/\b(CASH|VISA|HU|AED|USD|EUR|VCC|NET|GST)\b/gi, ' ')
-        .replace(/\b(RMON|OTA1|ADN2|ADN|B4HB|B4RO|VROM|GDEL|BBF|BBF RM|RM|MCR|CO)\b/gi, ' ')
+        .replace(/\b(RMON|OTA1|ADN2|ADN|B4HB|B4RO|VROM|GDEL|BBF|RM|MCR|CO)\b/gi, ' ')
         .replace(/\b(B\d|V\d)\b/gi, ' ')
         .replace(/\b(DLXR|PRMR|EXCS|EXTW|VILLA|PREM|ACCR)\b/gi, ' ')
         .replace(/\b(Mr\.|Ms\.|Mrs\.|Dr\.|MR|MS|MRS|DR)\b/g, ' ')
         .replace(/\b(PX|PAX|HB|FB|BB|BF|LD)\b/gi, ' ')
-        // Enlever "Pay By", "OTA", "BBF", "RM", "MCR", "CO", "ST"
-        .replace(/\b(Pay By|OTA|BBF|RM|MCR|CO|ST|VCC)\b/gi, ' ')
-        // Enlever doublons (ex: "ETIMAD etimad")
+        // Enlever les mots parasites de facturation
+        .replace(/\b(Pay By|OTA|BBF|RM|MCR|CO|ST|VCC|EXTR|DAILY|LAU|TO COMPANY|COMPANY|CR|DXR|U|B\.|B)\b/gi, ' ')
+        // Enlever doublons
         .replace(/\b(\w+)\s+\1\b/gi, '$1')
         // Enlever les nombres isolés
         .replace(/\b\d+(\.\d+)?\b/g, ' ')
@@ -496,14 +530,20 @@ function extractAgencyFromText(text) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // ═══ ÉTAPE 6 : Si virgule → retirer avant ═══
+    // ═══ ÉTAPE 4 : Si virgule → retirer avant ═══
     if (candidate.includes(',')) {
         const commaIdx = candidate.indexOf(',');
         candidate = candidate.substring(commaIdx + 1).trim();
         candidate = candidate.replace(/^[A-Za-z]+\s+(MR|MS|MRS|Mr\.|Ms\.|Mrs\.)\s+/i, '');
     }
 
-    // ═══ ÉTAPE 7 : Validation ═══
+    // ═══ ÉTAPE 5 : Nettoyer "B. Borouge" → "Borouge" ═══
+    candidate = candidate
+        .replace(/^[A-Z]\.\s+/, '')
+        .replace(/^B\s+(?=Borouge)/i, '')
+        .trim();
+
+    // ═══ ÉTAPE 6 : Validation ═══
     const lettersCount = (candidate.match(/[A-Za-z]/g) || []).length;
     if (lettersCount < 3) return 'Direct';
 
@@ -570,7 +610,6 @@ function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
     const t = text.toLowerCase();
 
-    // "X pieces per day"
     let m = text.match(/(\d{1,2})\s*(?:pieces?|pcs?)\s*per\s*day/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -666,7 +705,6 @@ async function processTextData(rawData) {
             quotaText = `${String(finalPcs).padStart(2, '0')} PCS ${quota.type === 'extra' ? 'EXTRA' : 'LAU DAILY'} (×${pax} PAX)`;
         }
 
-        // AGENCY V8 : ré-extraire depuis le texte complet
         const agencyFromFullText = extractAgencyFromText(accumulatedText);
 
         parsedData.push({
@@ -1066,4 +1104,4 @@ async function importAutoDirect() {
     }
 }
 
-console.log('✅ [laundry.js] Loaded with Agency V8 + Quota V3');
+console.log('✅ [laundry.js] Loaded with Agency V9 + Quota V3');
