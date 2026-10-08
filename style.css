@@ -6374,16 +6374,21 @@ body.light-mode .stock-card-icon {
 @keyframes stockSpin {
     to { transform: rotate(360deg); }
 }
+/* ═══════════════════════════════════════════════════════════════
+   📄 STOCK REPORT PDF — Styles optimisés POUR IMPRESSION
+   Principe : fond clair + bordures dorées + texte noir
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ═══ Styles du rapport PDF ═══ */
+/* ═══ HEADER ═══ */
 .stock-pdf-header {
-    background: linear-gradient(135deg, #1a1612 0%, #2f170d 100%);
-    color: #ffffff;
-    padding: 24px 30px;
+    background: #ffffff;
+    color: #1c1917;
+    padding: 20px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 3px solid #DCA773;
+    border-top: 6px solid #DCA773;
 }
 
 .stock-pdf-header-left {
@@ -6393,47 +6398,52 @@ body.light-mode .stock-card-icon {
 }
 
 .stock-pdf-logo {
-    width: 60px;
-    height: 60px;
+    width: 55px;
+    height: 55px;
     object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    padding: 4px;
     background: #ffffff;
-    border-radius: 12px;
-    padding: 6px;
 }
 
 .stock-pdf-hotel-name {
     font-family: 'Playfair Display', 'Cinzel', serif;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
-    color: #DCA773;
+    color: #1c1917;
     letter-spacing: 0.05em;
     margin: 0;
 }
 
 .stock-pdf-hotel-sub {
-    font-size: 10px;
-    color: #a8a29e;
+    font-size: 9px;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    margin: 2px 0 0;
+    margin: 3px 0 0;
+    font-weight: 600;
 }
 
 .stock-pdf-title {
     font-family: 'Playfair Display', serif;
     font-size: 22px;
     font-weight: 900;
-    color: #ffffff;
+    color: #b45309;
     margin: 0;
     text-align: right;
+    letter-spacing: 0.05em;
 }
 
 .stock-pdf-date {
-    font-size: 11px;
-    color: #a8a29e;
+    font-size: 10px;
+    color: #6b7280;
     margin: 4px 0 0;
     text-align: right;
+    font-weight: 600;
 }
 
+/* ═══ BODY ═══ */
 .stock-pdf-body {
     background: #ffffff;
     padding: 24px 30px;
@@ -6447,17 +6457,17 @@ body.light-mode .stock-card-icon {
 }
 
 .stock-pdf-section-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     color: #b45309;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     border-bottom: 2px solid #fcd34d;
     padding-bottom: 6px;
     margin-bottom: 12px;
 }
 
-/* KPI Grid */
+/* ═══ KPI GRID ═══ */
 .stock-pdf-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -6466,7 +6476,7 @@ body.light-mode .stock-card-icon {
 
 .stock-pdf-kpi {
     background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    border: 1.5px solid #e5e7eb;
     border-radius: 10px;
     padding: 14px 12px;
     text-align: center;
@@ -6478,44 +6488,62 @@ body.light-mode .stock-card-icon {
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .stock-pdf-kpi-value {
     font-family: 'Playfair Display', serif;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 900;
-    color: #b45309;
+    color: #1c1917;
     line-height: 1;
 }
 
-.stock-pdf-kpi-value.red { color: #dc2626; }
-.stock-pdf-kpi-value.yellow { color: #d97706; }
-.stock-pdf-kpi-value.green { color: #059669; }
+/* Couleurs spécifiques */
+.stock-pdf-kpi:nth-child(1) .stock-pdf-kpi-value { color: #2563eb; }   /* Total Items - bleu */
+.stock-pdf-kpi:nth-child(2) .stock-pdf-kpi-value { color: #d97706; }   /* Low Stock - orange */
+.stock-pdf-kpi:nth-child(3) .stock-pdf-kpi-value { color: #dc2626; }   /* Critical - rouge */
+.stock-pdf-kpi:nth-child(4) .stock-pdf-kpi-value { color: #059669; }   /* Total Value - vert */
 
-/* Alerts */
+/* ═══ ALERTS (dynamiques) ═══ */
 .stock-pdf-alerts {
-    background: #fef3c7;
-    border: 1px solid #fcd34d;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-left: 4px solid #10b981;
     border-radius: 10px;
     padding: 14px 18px;
+}
+
+.stock-pdf-alerts.warning {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    border-left-color: #f59e0b;
+}
+
+.stock-pdf-alerts.danger {
+    background: #fef2f2;
+    border-color: #fecaca;
+    border-left-color: #dc2626;
 }
 
 .stock-pdf-alerts-title {
     font-size: 10px;
     font-weight: 900;
-    color: #78350f;
+    color: #065f46;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-bottom: 8px;
 }
+
+.stock-pdf-alerts.warning .stock-pdf-alerts-title { color: #78350f; }
+.stock-pdf-alerts.danger .stock-pdf-alerts-title { color: #991b1b; }
 
 .stock-pdf-alert-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 6px 0;
-    border-bottom: 1px dashed rgba(120, 53, 15, 0.2);
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
     font-size: 11px;
 }
 
@@ -6555,78 +6583,100 @@ body.light-mode .stock-card-icon {
     color: #ffffff;
 }
 
-/* Table */
+/* ═══ TABLE ═══ */
 .stock-pdf-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 10px;
+    border: 1px solid #e5e7eb;
 }
 
 .stock-pdf-table thead th {
-    background: #1c1917;
-    color: #DCA773;
-    padding: 8px 10px;
+    background: #f3f4f6;
+    color: #1c1917;
+    padding: 9px 10px;
     text-align: left;
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-weight: 800;
+    font-weight: 900;
+    border-bottom: 2px solid #DCA773;
 }
 
 .stock-pdf-table tbody td {
     padding: 8px 10px;
     border-bottom: 1px solid #e5e7eb;
     color: #1c1917;
+    font-weight: 500;
 }
 
 .stock-pdf-table tbody tr:nth-child(even) {
-    background: #f9fafb;
+    background: #fafafa;
 }
 
 .stock-pdf-table tbody tr.status-low {
-    background: #fffbeb;
+    background: #fffbeb !important;
 }
 
 .stock-pdf-table tbody tr.status-critical {
-    background: #fef2f2;
+    background: #fef2f2 !important;
 }
 
+.stock-pdf-table tbody tr.status-low td:first-child {
+    border-left: 3px solid #f59e0b;
+}
+
+.stock-pdf-table tbody tr.status-critical td:first-child {
+    border-left: 3px solid #dc2626;
+}
+
+/* Status badge */
 .stock-pdf-table .status-badge {
     display: inline-block;
     font-size: 8px;
     font-weight: 900;
-    padding: 2px 6px;
+    padding: 3px 8px;
     border-radius: 9999px;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .stock-pdf-table .status-badge.ok {
     background: #d1fae5;
     color: #065f46;
+    border: 1px solid #86efac;
 }
 
 .stock-pdf-table .status-badge.low {
     background: #fef3c7;
     color: #92400e;
+    border: 1px solid #fcd34d;
 }
 
 .stock-pdf-table .status-badge.critical {
     background: #fee2e2;
     color: #991b1b;
+    border: 1px solid #fecaca;
 }
 
-/* Top 5 */
+/* ═══ TOP 5 ═══ */
 .stock-pdf-top-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 8px 12px;
     border-bottom: 1px solid #f3f4f6;
     font-size: 11px;
 }
 
 .stock-pdf-top-item:last-child {
     border-bottom: none;
+}
+
+.stock-pdf-top-item:nth-child(1) {
+    background: #fef3c7;
+    border-radius: 6px 6px 0 0;
+    border-left: 3px solid #f59e0b;
 }
 
 .stock-pdf-top-rank {
@@ -6636,11 +6686,16 @@ body.light-mode .stock-card-icon {
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    background: #fef3c7;
-    color: #78350f;
+    background: #e5e7eb;
+    color: #374151;
     font-weight: 900;
     font-size: 10px;
     margin-right: 10px;
+}
+
+.stock-pdf-top-item:nth-child(1) .stock-pdf-top-rank {
+    background: #f59e0b;
+    color: #ffffff;
 }
 
 .stock-pdf-top-name {
@@ -6655,7 +6710,7 @@ body.light-mode .stock-card-icon {
     color: #b45309;
 }
 
-/* Footer */
+/* ═══ SIGNATURES ═══ */
 .stock-pdf-signatures {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -6683,14 +6738,17 @@ body.light-mode .stock-card-icon {
     letter-spacing: 0.1em;
 }
 
+/* ═══ FOOTER ═══ */
 .stock-pdf-footer {
     text-align: center;
-    padding: 16px 30px;
-    background: #1c1917;
-    color: #a8a29e;
+    padding: 14px 30px;
+    background: #f9fafb;
+    color: #6b7280;
     font-size: 9px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
+    font-weight: 700;
+    border-top: 3px solid #DCA773;
 }
 
 /* ═══ Light mode ═══ */
