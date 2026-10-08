@@ -2,7 +2,8 @@
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
 // ⚠️ Chargé AVANT ui.js
 // ✅ MASS ENTRY V2 — Parser PMS robuste
-// ✅ AGENCY V4 — Extraction fidèle par position (anti-parasites)
+// ✅ AGENCY V5 — Extraction par position + anti-codes-plan (BBLA, FB24…)
+// ✅ QUOTA V3 — "X pieces per day for AED Y" → X PCS (pas Y)
 // ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
 // =============================================================
 
@@ -54,6 +55,34 @@ function chargerPmsLocalStorage() {
 function sauvegarderPmsLocalStorage() {
     localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// ⚙️ CODES BLOQUÉS — Plans, Mrkt, Pay-by, Channel, Headers PDF
+// ═══════════════════════════════════════════════════════════════════
+const BLOCKED_CODES_AGENCY = [
+    // Plans tarifaires
+    'BBLA', 'HBDL', 'HDL4', 'HD40', 'FB24', 'FB40', 'BB', 'HB', 'FB', 'BF', 'LD',
+    'HDL', 'HD', 'RO', 'RMLA', 'ROYS',
+    // Mrkt / Class
+    'CORP', 'STAH', 'WALK', 'OIL', 'CITY', 'NORM', 'REG', 'FIT', 'HOUS', 'GHQ',
+    // Pay by / Devise
+    'CASH', 'VISA', 'HU', 'AED', 'USD', 'EUR', 'VCC', 'NET', 'GST',
+    // Channel
+    'RMON', 'OTA1', 'ADN2', 'ADN', 'B4HB', 'B4RO', 'VROM', 'GDEL',
+    // Titres / PAX
+    'MR', 'MS', 'MRS', 'DR', 'PX', 'PAX',
+    // Room types
+    'DLXR', 'PRMR', 'EXCS', 'EXTW', 'VILLA', 'PREM', 'ACCR',
+    // Headers PDF
+    'ROOM', 'BLOCK', 'GUEST', 'COMPANY', 'AGENT', 'ARRIVAL', 'DEPARTURE',
+    'TOTAL', 'ROOMS', 'PRINTED', 'PROLOGIC', 'FIRST', 'INHOUSE',
+    'LIST', 'HOTEL', 'REMAL', 'VEHICLE', 'CONFIRM', 'BILLING', 'INSTRUCTIONS',
+    'GROUP', 'CLASS', 'TEXT', 'PLAN', 'BALANCE', 'CHANNEL', 'ACTIVITY',
+    'INCLUSIVE', 'DESCRIPTION', 'FROM', 'TO', 'SORTED', 'SUPPRESSED',
+    'NOTES', 'COMPLAINTS', 'FEEDBACK', 'TASK', 'INFORMATION', 'PREFERENCES',
+    'NOTIFICATIONS', 'NIGHT', 'NIGHTS', 'SHORT', 'STAY', 'LONG', 'ONLY',
+    'NUMBER', 'CHECK', 'CHECKOUT', 'PRINT'
+];
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS MÉTIER
@@ -364,12 +393,14 @@ async function sauvegarderBordereauLocal() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENCY V4 — EXTRACTION FIDÈLE PAR POSITION
+// AGENCY V5 — EXTRACTION PAR POSITION (entre "Mr./Ms." et 1ère date)
+// Corrige : BBLA, //.//FB, HDL B HB, codes plan parasites
+// Préserve : "Toshiba Energy Systems & Services Gulf"
 // ═══════════════════════════════════════════════════════════════════
 function extractAgencyFromText(text) {
     if (!text || typeof text !== 'string') return 'Direct';
 
-    // ÉTAPE 0 — Normalisation
+    // ÉTAPE 0 — Normalisation douce (préserve & et .)
     let normalized = text
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replace(/([a-zA-Z])(\d)/g, '$1 $2')
@@ -395,93 +426,82 @@ function extractAgencyFromText(text) {
     }
     if (lastTitleMatch) guestEndIndex = lastTitleMatch.index + lastTitleMatch.length;
 
-    // ÉTAPE 2 — 1ère date
+    // ÉTAPE 2 — 1ère date (arrival)
     const dateMatch = normalized.match(/\b\d{2}\/\d{2}\/\d{4}\b/);
     const dateStartIndex = dateMatch ? dateMatch.index : -1;
 
-    // ÉTAPE 3 — Extraction entre guestEnd et dateStart
+    // ÉTAPE 3 — Extraction principale entre guestEnd et dateStart
     let candidate = '';
     if (guestEndIndex > 0 && dateStartIndex > guestEndIndex) {
         candidate = normalized.substring(guestEndIndex, dateStartIndex).trim();
-    } else if (guestEndIndex > 0) {
-        candidate = normalized.substring(guestEndIndex).trim();
-    } else if (dateStartIndex > 0) {
-        const start = Math.max(0, dateStartIndex - 60);
-        candidate = normalized.substring(start, dateStartIndex).trim();
-        candidate = candidate.replace(/^[\d\s\-\/\.]+/, '').trim();
     }
 
-    // ÉTAPE 4 — Nettoyage ULTRA-STRICT
+    // ÉTAPE 4 — Nettoyage ULTRA-STRICT (préserve & et .)
     candidate = candidate
-        // Enlever les séparateurs // / . |
-        .replace(/[\/\.\|]+/g, ' ')
-        // Enlever les codes plan/rate isolés
-        .replace(/\b(PX|HB|FB|BB|BF|LD|ADN|HDL|HD\d*|FB\d*|RMON|RM|DXR|AED|GST|NET|ACC|ST|NORM|REG|CORP|OIL|CITY|VISA|CASH|FIT|STA|WALK|HOUS|GHQ|VILA|VROM)\b/gi, ' ')
-        // Enlever les fragments 1-2 lettres isolés
-        .replace(/\b[A-Z]{1,2}\b/g, ' ')
-        // Enlever les nombres et rates
+        // Enlever uniquement / et |
+        .replace(/[\/\|]+/g, ' ')
+        // Enlever codes plan/rate/mrkt/channel/pay-by
+        .replace(/\b(BBLA|HBDL|HDL4|HD40|FB24|FB40|BB|HB|FB|BF|LD|HDL|HD|RMLA|ROYS|RO)\b/gi, ' ')
+        .replace(/\b(CORP|STAH|WALK|OIL|CITY|NORM|REG|FIT|HOUS|GHQ)\b/gi, ' ')
+        .replace(/\b(CASH|VISA|HU|AED|USD|EUR|VCC|NET|GST)\b/gi, ' ')
+        .replace(/\b(RMON|OTA1|ADN2|ADN|B4HB|B4RO|VROM|GDEL|CC\d+|GG\d+)\b/gi, ' ')
+        // Enlever blocks/vehicles isolés (B1, B2, V1)
+        .replace(/\b(B\d|V\d)\b/gi, ' ')
+        // Enlever room types
+        .replace(/\b(DLXR|PRMR|EXCS|EXTW|VILLA|PREM|ACCR)\b/gi, ' ')
+        // Enlever nombres et rates
         .replace(/\b\d+(\.\d+)?\b/g, ' ')
-        // Enlever symboles
+        // Enlever symboles parasites (mais GARDE le & et le .)
         .replace(/[\(\)\[\]<>«»]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-    // Enlever les mots parasites en début/fin
+    // Retirer préfixes parasites en début
     candidate = candidate
         .replace(/^(ADN|HB|FB|BB|PX|BF|LD|RO|ONLY|ONLY\.)\s+/gi, '')
-        .replace(/\s+(HB|FB|BB|PX|BF|LD|RO|ONLY|B|L|H)$/gi, '')
         .trim();
 
-    // ÉTAPE 5 — Validation
+    // ÉTAPE 5 — Validation du candidat principal
     const lettersCount = (candidate.match(/[A-Za-z]/g) || []).length;
 
-    if (!candidate || lettersCount < 3 || candidate.includes(',')) {
-        // Fallback : chercher un mot long en MAJUSCULES/Capitalized
-        const capsMatch = text.match(/\b([A-Z][A-Za-z&\.]+(?:\s+[A-Z][A-Za-z&\.]+)*)\b/g);
-        if (capsMatch) {
-            const BLOCKED = [
-                'DLXR','PRMR','ROYS','EXCS','EXTW','VILLA','PREM','BBLA','HBDL','HDL4','HD40','FB24',
-                'CORP','STAH','WALK','OIL','CITY','NORM','REG','MR','MS','MRS','DR','PX','HB','FB',
-                'BF','LD','DXR','AED','GST','ACC','B4HB','B4RO','VISA','CASH','HU','OTA1','ADN2',
-                'RMON','VILA','GHQ','NET','FB40','CHECK','IN','CHECKOUT','LONG','STAY','NIGHT','NIGHTS',
-                'ROOM','ONLY','NUMBER','TOTAL','ROOMS','PAX','PRINTED','PROLOGIC','FIRST','INHOUSE',
-                'GUEST','LIST','HOTEL','REMAL','VEHICLE','CONFIRM','BILLING','INSTRUCTIONS','GROUP',
-                'DEPARTURE','CLASS','TEXT','PLAN','BALANCE','CHANNEL','ACTIVITY','INCLUSIVE',
-                'DESCRIPTION','FROM','TO','ARRIVAL','SORTED','SUPPRESSED','NOTES','COMPLAINTS',
-                'FEEDBACK','TASK','INFORMATION','PREFERENCES','NOTIFICATIONS'
-            ];
-
-            let bestMatch = null;
-            for (const m of capsMatch) {
-                const clean = m.trim();
-                if (clean.length < 4) continue;
-                if (BLOCKED.includes(clean.toUpperCase())) continue;
-                if (/^(Mr|Ms|Mrs|Dr|The|And|Or|For|With|From|Note|Plan|Room|Rate|Short|Long|Guest|Cash|City|NORM|CORP|REG|OIL)$/i.test(clean)) continue;
-                if (clean.split(/\s+/).length > 8) continue;
-
-                if (!bestMatch || clean.length > bestMatch.length) {
-                    bestMatch = clean;
-                }
-            }
-
-            if (bestMatch) {
-                return bestMatch.length > 80 ? bestMatch.substring(0, 80).trim() : bestMatch;
-            }
+    if (candidate && lettersCount >= 3 && !candidate.includes(',')) {
+        const words = candidate.toUpperCase().split(/\s+/);
+        const validWords = words.filter(w => w.length >= 2 && !BLOCKED_CODES_AGENCY.includes(w));
+        if (validWords.length >= 1 && candidate.length <= 80) {
+            return candidate;
         }
-        return 'Direct';
     }
 
-    if (candidate.length > 80) candidate = candidate.substring(0, 80).trim();
+    // ÉTAPE 6 — FALLBACK : chercher mots en MAJUSCULES uniquement AVANT la date
+    const searchZone = dateStartIndex > 0
+        ? normalized.substring(0, dateStartIndex)
+        : normalized;
 
-    candidate = candidate
-        .replace(/\s+(HARV|SGL|DBL|ACCT|RO|Net|NET|SALE|COMPANY|ACCOUNT|FOLLOW|ORGANIZATION|NIGHT|SHORT|LONG|STAY|ROOM|ONLY)$/i, '')
-        .replace(/\s+[A-Z]$/, '')
-        .trim();
+    const capsMatches = searchZone.match(/\b([A-Z][A-Za-z&\.]+(?:\s+[A-Z][A-Za-z&\.]+){0,5})\b/g) || [];
 
-    const finalLetters = (candidate.match(/[A-Za-z]/g) || []).length;
-    if (finalLetters < 3) return 'Direct';
+    let bestMatch = null;
+    for (const m of capsMatches) {
+        const clean = m.trim();
+        if (clean.length < 4) continue;
+        const upper = clean.toUpperCase();
+        if (BLOCKED_CODES_AGENCY.includes(upper)) continue;
+        if (/^(Mr|Ms|Mrs|Dr)\.?$/i.test(clean)) continue;
+        if (clean.includes(',')) continue;
+        if (clean.split(/\s+/).length > 8) continue;
 
-    return candidate;
+        const companyHints = /(LLC|INC|LTD|LIMITED|CORP|COMPANY|GROUP|ENERGY|SYSTEMS|SERVICES|TOURISM|TRAVEL|HOLDING|TRADING|GULF|ADNOC|HONEYWELL|TOSHIBA|SIEMENS|FERTIL|BOROUGE|EXPEDIA|BOOKING|ETIMAD|GHQ|RENEWABLE|INDUSTRIES)/i;
+        const score = clean.length + (companyHints.test(clean) ? 100 : 0);
+
+        if (!bestMatch || score > bestMatch.score) {
+            bestMatch = { text: clean, score };
+        }
+    }
+
+    if (bestMatch) {
+        return bestMatch.text.length > 80 ? bestMatch.text.substring(0, 80).trim() : bestMatch.text;
+    }
+
+    return 'Direct';
 }
 
 window.extractAgencyFromText = extractAgencyFromText;
@@ -530,11 +550,28 @@ function parsePaxMultiplier(text) {
     return 1;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// QUOTA V3 — Gère "3 pieces per day for AED 30" = 3 PCS (pas 30)
+// ═══════════════════════════════════════════════════════════════════
 function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
     const t = text.toLowerCase();
 
-    let m = text.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily)/i);
+    // ═══ PATTERN PRIORITAIRE : "X pieces per day" ═══
+    // Ex : "Laundry service: 3 pieces per day for AED 30 net" → 3 PCS
+    let m = text.match(/(\d{1,2})\s*(?:pieces?|pcs?)\s*per\s*day/i);
+    if (m) {
+        const pcs = parseInt(m[1], 10);
+        if (pcs >= 1 && pcs <= 30) {
+            return { pcs, type: 'daily', text: `${String(pcs).padStart(2, '0')} PCS LAU DAILY` };
+        }
+    }
+
+    // ═══ Nettoyer les montants AED AVANT les autres regex ═══
+    let cleaned = text.replace(/AED\s*\d+(\.\d+)?\s*(net|gst|acc|bb)?/gi, ' ');
+
+    // ═══ Pattern : "03PCS/LAU DAILY", "04PCS/LAU@10++" ═══
+    m = cleaned.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
         if (pcs >= 1 && pcs <= 30) {
@@ -543,7 +580,8 @@ function parseQuotaText(text) {
         }
     }
 
-    m = text.match(/incl\.?\s*([0-9]{1,2})\s*(?:pcs|pieces)/i);
+    // ═══ Pattern : "X pieces per day" sans "PCS" ═══
+    m = cleaned.match(/(\d{1,2})\s*pieces?\s*(?:per\s*day|daily)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
         if (pcs >= 1 && pcs <= 30) {
@@ -551,7 +589,17 @@ function parseQuotaText(text) {
         }
     }
 
-    m = text.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*extra/i);
+    // ═══ Pattern : "INCL.5PCS LAU" ═══
+    m = cleaned.match(/incl\.?\s*([0-9]{1,2})\s*(?:pcs|pieces)/i);
+    if (m) {
+        const pcs = parseInt(m[1], 10);
+        if (pcs >= 1 && pcs <= 30) {
+            return { pcs, type: 'daily', text: `${String(pcs).padStart(2, '0')} PCS LAU DAILY` };
+        }
+    }
+
+    // ═══ Pattern : "X PCS EXTRA" ═══
+    m = cleaned.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*extra/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
         if (pcs >= 1 && pcs <= 30) {
@@ -559,6 +607,7 @@ function parseQuotaText(text) {
         }
     }
 
+    // ═══ Fallback : mention laundry sans chiffre ═══
     if (/hdl[0-9]|laundry|lau\s*daily|laun/i.test(t)) {
         return { pcs: 0, type: 'package', text: 'Laundry Package' };
     }
@@ -762,7 +811,8 @@ async function processTextData(rawData) {
 
             let deletedCount = 0;
             if (roomsToDelete.length > 0) {
-                const { error: delErr } = await supabaseClient                    .from('pms_guests')
+                const { error: delErr } = await supabaseClient
+                    .from('pms_guests')
                     .delete()
                     .in('room', roomsToDelete);
 
@@ -1015,4 +1065,4 @@ async function importAutoDirect() {
     }
 }
 
-console.log('✅ [laundry.js] Loaded with Agency V4 + Storage helpers first');
+console.log('✅ [laundry.js] Loaded with Agency V5 + Quota V3 + Storage helpers first');
