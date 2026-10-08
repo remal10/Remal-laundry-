@@ -6375,16 +6375,6 @@ body.light-mode .stock-card-icon {
     to { transform: rotate(360deg); }
 }
 
-/* ═══ Container PDF (caché) ═══ */
-#stockPdfContainer {
-    position: fixed;
-    left: -99999px;
-    top: 0;
-    width: 800px;
-    background: #ffffff;
-    z-index: 99999;
-}
-
 /* ═══ Styles du rapport PDF ═══ */
 .stock-pdf-header {
     background: linear-gradient(135deg, #1a1612 0%, #2f170d 100%);
