@@ -1010,12 +1010,12 @@ function buildStockReportHTML(data) {
 
     // Alerts HTML
     let alertsHTML = '';
-    if (alerts.length === 0) {
-        alertsHTML = `
-            <div style="text-align: center; padding: 20px; color: #059669; font-weight: 700; font-size: 12px;">
-                ✅ All items are in good stock levels
-            </div>
-        `;
+if (alerts.length === 0) {
+    alertsHTML = `
+        <div style="text-align: center; padding: 18px; color: #065f46; font-weight: 700; font-size: 12px; font-family: 'Helvetica', Arial, sans-serif;">
+            ✅ All items are at healthy stock levels
+        </div>
+    `;
     } else {
         alertsHTML = alerts.map(a => {
             const status = computeStockStatus(a);
