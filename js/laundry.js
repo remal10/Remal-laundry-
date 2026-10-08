@@ -4,6 +4,7 @@
 //    (updateQty, chargerDonneesLocalStorage, etc.) sont écrasés par ui.js.
 //    Seules les fonctions UNIQUES à ce fichier sont actives.
 // ✅ Aligné sur la logique created_by de ui.js : 'staff ( nom )' ou 'pending'
+// ✅ MASS ENTRY V2 — Parser PMS robuste (PAX multiplier + Quota + Filtres)
 // =============================================================
 
 async function selectBackupFolder() {
@@ -384,159 +385,382 @@ function sanitizeAgencyName(agencyStr) {
     return cleaned;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MASS ENTRY V2 — HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Detect parasite lines: page numbers, tables of "1 1 1", headers, footers
+ */
+function isParasiteLine(line) {
+    const t = line.trim();
+    if (!t || t.length < 3) return true;
+
+    // Pattern "1 1 1 1 1 1..." (artefact pdf.js)
+    const digitsRatio = (t.match(/\d/g) || []).length / t.length;
+    if (digitsRatio > 0.7 && t.length > 20) return true;
+
+    const lower = t.toLowerCase();
+
+    // Footers / headers Prologic
+    if (lower.includes('prologic first')) return true;
+    if (lower.includes('printed on')) return true;
+    if (lower.includes('business date')) return true;
+    if (lower.includes('inhouse guest list')) return true;
+    if (lower.includes('remal hotel')) return true;
+    if (lower.includes('inclusive plan')) return true;
+    if (lower.includes('total rooms')) return true;
+    if (lower.includes('total pax')) return true;
+    if (lower.includes('grand total')) return true;
+    if (/^page\s+\d+\s+of\s+\d+/i.test(t)) return true;
+
+    // Header colonnes
+    if (/^(room|block|id\/check|guest last|company\/agent|arrival|mrkt|pax|terms|plan)/i.test(t)) return true;
+
+    return false;
+}
+
+/**
+ * Normalize a date "05/10/2026" → "2026-10-05" (ISO sortable) or return original
+ */
+function normalizePmsDate(str) {
+    if (!str) return '';
+    const m = String(str).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!m) return str;
+    return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+/**
+ * Detect PAX multiplier from text like "02-PAX", "1 PX", "10- PAX"
+ * Returns 1 if not found.
+ */
+function parsePaxMultiplier(text) {
+    if (!text) return 1;
+    // "02-PAX", "2-PAX", "10- PAX", "1 PX", "02 PAX"
+    const m = text.match(/(?:^|[\s\-\(])0*([1-9]\d?)\s*[\-\s]?\s*(?:px|pax)(?=[\s\-\)\,]|$)/i);
+    if (m) {
+        const n = parseInt(m[1], 10);
+        if (n >= 1 && n <= 10) return n;
+    }
+    return 1;
+}
+
+/**
+ * Parse laundry quota from text.
+ * Returns { pcs: number, type: 'daily'|'extra'|'comp'|'package'|'chargeable', text: string }
+ */
+function parseQuotaText(text) {
+    if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
+    const t = text.toLowerCase();
+
+    // ═══ Pattern 1 : "03PCS/LAU DAILY", "04PCS/LAU@10++", "5PCS LAU 10++" ═══
+    let m = text.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily)/i);
+    if (m) {
+        const pcs = parseInt(m[1], 10);
+        if (pcs >= 1 && pcs <= 30) {
+            const isComp = t.includes('comp');
+            return { pcs, type: isComp ? 'comp' : 'daily', text: `${String(pcs).padStart(2, '0')} PCS ${isComp ? 'COMP' : 'LAU DAILY'}` };
+        }
+    }
+
+    // ═══ Pattern 2 : "INCL.5PCS LAU", "INCL 5 PCS" ═══
+    m = text.match(/incl\.?\s*([0-9]{1,2})\s*(?:pcs|pieces)/i);
+    if (m) {
+        const pcs = parseInt(m[1], 10);
+        if (pcs >= 1 && pcs <= 30) {
+            return { pcs, type: 'daily', text: `${String(pcs).padStart(2, '0')} PCS LAU DAILY` };
+        }
+    }
+
+    // ═══ Pattern 4 : "X PCS EXTRA" ═══
+    m = text.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*extra/i);
+    if (m) {
+        const pcs = parseInt(m[1], 10);
+        if (pcs >= 1 && pcs <= 30) {
+            return { pcs, type: 'extra', text: `${String(pcs).padStart(2, '0')} PCS EXTRA` };
+        }
+    }
+
+    // ═══ Fallback : mention laundry mais sans chiffre précis ═══
+    if (/hdl[0-9]|laundry|lau\s*daily|laun/i.test(t)) {
+        return { pcs: 0, type: 'package', text: 'Laundry Package' };
+    }
+
+    return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
+}
+
+/**
+ * Extract guest name from a text chunk (Last,First Mr./Ms.)
+ */
+function extractGuestNameFromText(text) {
+    if (!text) return '';
+    if (/total\s+rooms|grand\s+total/i.test(text)) return '';
+    // Pattern principal : "Last,First Mr./Ms."
+    let m = text.match(/([A-Za-z][A-Za-z\s\-\.\']+,\s*[A-Za-z][A-Za-z\s\-\.\']+\s*(?:MR|Mr|MS|Ms|Mr\.|Ms\.)?)/);
+    if (m) {
+        let n = m[1].trim();
+        if (!/total/i.test(n) && n.length > 3) return n;
+    }
+    return '';
+}
+
+/**
+ * Detect a company / agency from text chunk
+ */
+function extractAgencyFromText(text) {
+    if (!text) return 'Direct';
+    const kws = (typeof companyKeywords !== 'undefined' && Array.isArray(companyKeywords))
+        ? companyKeywords
+        : ['llc', 'inc', 'wll', 'w.l.l', 'corp', 'ltd', 'limited', 'company', 'energy', 'systems',
+           'services', 'tourism', 'travel', 'holdings', 'trading', 'group', 'expedia', 'booking',
+           'adnoc', 'etimad', 'siemens', 'rotary', 'generation', 'hunter', 'ghq', 'falaj'];
+
+    // Chercher un nom de company dans la ligne (mots de longueur > 4)
+    const tokens = text.split(/\s{2,}|\t+/).filter(x => x.length > 4);
+    for (const tok of tokens) {
+        if (kws.some(kw => tok.toLowerCase().includes(kw))) {
+            return tok.trim();
+        }
+    }
+    return 'Direct';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MASS ENTRY V2 — PARSER PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════
+
 async function processTextData(rawData) {
     if (!rawData || !rawData.trim()) {
         alert("No data found to process.");
         return;
     }
 
-    const lines = rawData.split('\n');
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 1 — Pré-nettoyage : split + filtre parasites
+    // ═══════════════════════════════════════════════════════════════
+    const rawLines = rawData.split('\n');
+    const cleanLines = rawLines.filter(l => !isParasiteLine(l));
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 2 — Parsing ligne par ligne (2 formats supportés)
+    // ═══════════════════════════════════════════════════════════════
     let parsedData = [];
     let currentRoom = null;
     let currentGuest = "";
-    let currentRoomTyp = "";
+    let currentRoomTyp = "DLXR";
     let currentArrival = "";
     let currentDeparture = "";
     let currentAgency = "Direct";
     let accumulatedText = "";
 
-    lines.forEach((line) => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        
-        const cols = line.split('\t').map(c => c.trim()).filter(c => c !== "");
+    const dateRegex = /\b\d{2}\/\d{2}\/\d{4}\b/g;
 
-        if (/^\d{3,4}$/.test(cols[0])) {
-            if (currentRoom) {
-                parsedData.push({
-                    room: currentRoom,
-                    guestName: currentGuest || 'Unknown Guest',
-                    roomTyp: currentRoomTyp || 'DLXR',
-                    arrival: currentArrival,
-                    departure: currentDeparture,
-                    agency: sanitizeAgencyName(currentAgency),
-                    fullContext: accumulatedText.toLowerCase()
-                });
-            }
-            currentRoom = cols[0];
-            currentGuest = "";
-            currentRoomTyp = "DLXR";
-            currentArrival = "";
-            currentDeparture = "";
-            currentAgency = "Direct";
+    function flushCurrentRoom() {
+        if (!currentRoom) return;
+        const quota = parseQuotaText(accumulatedText);
+        const pax = parsePaxMultiplier(accumulatedText);
+        const finalPcs = quota.pcs * pax;
 
-            for (let i = 1; i < cols.length; i++) {
-                let val = cols[i];
-                let valLower = val.toLowerCase();
-
-                if (isPAXOrInvalid(val)) continue;
-
-                const isCompany = companyKeywords.some(kw => valLower.includes(kw));
-                if (isCompany) {
-                    currentAgency = val;
-                    continue;
-                }
-
-                if (val.length <= 5 && /^[A-Z]+$/.test(val) && !currentRoomTyp) {
-                    currentRoomTyp = val;
-                } 
-                else if (/\d{2}\/\d{2}\/\d{4}/.test(val)) {
-                    if (!currentArrival) currentArrival = val;
-                    else if (!currentDeparture) currentDeparture = val;
-                } 
-                else if (!currentGuest && (val.includes(',') || val.includes('Mr.') || val.includes('Ms.'))) {
-                    currentGuest = val;
-                }
-            }
-
-            let candidateCompany = cols.find(c => companyKeywords.some(kw => c.toLowerCase().includes(kw)) && !isPAXOrInvalid(c));
-            if (candidateCompany) {
-                currentAgency = candidateCompany;
-            }
-
-            accumulatedText = line;
-        } else {
-            accumulatedText += " " + line;
-            let candidateCompany = cols.find(c => companyKeywords.some(kw => c.toLowerCase().includes(kw)) && !isPAXOrInvalid(c));
-            if (candidateCompany && (currentAgency === "Direct" || isPAXOrInvalid(currentAgency))) {
-                currentAgency = candidateCompany;
-            }
+        let quotaText = quota.text;
+        if (pax > 1 && quota.pcs > 0) {
+            quotaText = `${String(finalPcs).padStart(2, '0')} PCS ${quota.type === 'extra' ? 'EXTRA' : 'LAU DAILY'} (×${pax} PAX)`;
         }
-    });
 
-    if (currentRoom) {
         parsedData.push({
             room: currentRoom,
-            guestName: currentGuest || 'Unknown Guest',
-            roomTyp: currentRoomTyp || 'DLXR',
+            guestName: currentGuest || extractGuestNameFromText(accumulatedText) || 'Unknown Guest',
+            roomTyp: currentRoomTyp,
             arrival: currentArrival,
             departure: currentDeparture,
-            agency: sanitizeAgencyName(currentAgency),
+            agency: currentAgency,
+            quotaText: quotaText,
+            isChargeable: quota.type === 'chargeable',
+            paxMultiplier: pax,
             fullContext: accumulatedText.toLowerCase()
         });
     }
 
-    if (parsedData.length > 0) {
-        pmsDatabase = {};
-        let cloudGuestsPayload = [];
+    cleanLines.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
 
-        parsedData.forEach(item => {
-            const laundryRegex = /([0-9]{1,2})\s*(pcs|pieces)?[\/\s]*(lau|lan|laun|laundy|daily)/i;
-            const match = item.fullContext.match(laundryRegex);
-            const hasLaundry = match !== null || /hdl[0-9]|laundry|lau\s*daily/i.test(item.fullContext);
-            
-            let quotaText = "";
-            let isChargeable = false;
+        // ═══ Format A : "115 DLXR B1 161397 ..." ═══
+        // ═══ Format B : "109DLXRB1160801Bade,Sakib..." ═══
+        const fmtA = trimmed.match(/^(\d{3,4})\s+([A-Z0-9]{2,6})?/);
+        const fmtB = trimmed.match(/^(\d{3,4})(DLXR|PRMR|ROYS|EXCS|EXTW|EXTC|EXTP|VILLA|PREM)(B\d)?(\d+)?/i);
 
-            if (match) {
-                const pcsCount = parseInt(match[1], 10);
-                quotaText = `${String(pcsCount).padStart(2, '0')} PIECES LAU DAILY`;
-                isChargeable = false;
-            } else if (hasLaundry) {
-                quotaText = "Laundry Package";
-                isChargeable = false;
-            } else {
-                quotaText = "Chargeable";
-                isChargeable = true;
-            }
+        let roomMatch = null;
+        let remainder = trimmed;
 
-            pmsDatabase[item.room] = {
-                guestName: item.guestName,
-                roomTyp: item.roomTyp,
-                arrival: item.arrival,
-                departure: item.departure,
-                agency: item.agency,
-                quotaText: quotaText,
-                isChargeable: isChargeable
-            };
-
-            cloudGuestsPayload.push({
-                room: item.room,
-                guest_name: item.guestName,
-                room_typ: item.roomTyp,
-                arrival: item.arrival,
-                departure: item.departure,
-                agency: item.agency,
-                quota_text: quotaText,
-                is_chargeable: isChargeable
-            });
-        });
-
-        sauvegarderPmsLocalStorage();
-        if (typeof renderMassPreviewTable === 'function') renderMassPreviewTable();
-
-        if (supabaseClient && cloudGuestsPayload.length > 0) {
-            try {
-                await supabaseClient.from('pms_guests').delete().neq('room', '000');
-                await supabaseClient.from('pms_guests').insert(cloudGuestsPayload);
-                alert(`✅ PMS Report updated successfully! (${parsedData.length} rooms mapped)`);
-            } catch(e) {
-                console.warn("Erreur Supabase PMS Guests:", e);
-            }
+        if (fmtB && isRoomNumberValid(fmtB[1])) {
+            roomMatch = fmtB[1];
+            remainder = trimmed.substring(fmtB[0].length);
+        } else if (fmtA && isRoomNumberValid(fmtA[1]) && trimmed.length > 10) {
+            roomMatch = fmtA[1];
+            remainder = trimmed.substring(fmtA[0].length);
         }
 
-    } else {
+        if (roomMatch) {
+            // Flush précédente
+            flushCurrentRoom();
+
+            // Nouvelle chambre
+            currentRoom = roomMatch;
+            currentGuest = "";
+            currentRoomTyp = (fmtA && fmtA[2] && /^[A-Z]{3,6}$/.test(fmtA[2])) ? fmtA[2] : "DLXR";
+            currentArrival = "";
+            currentDeparture = "";
+            currentAgency = "Direct";
+            accumulatedText = trimmed;
+
+            // Extraction guest depuis cette ligne
+            currentGuest = extractGuestNameFromText(trimmed);
+
+            // Extraction agency
+            const ag = extractAgencyFromText(trimmed);
+            if (ag !== 'Direct') currentAgency = ag;
+
+            // Extraction dates
+            const dates = trimmed.match(dateRegex);
+            if (dates) {
+                currentArrival = dates[0];
+                if (dates[1]) currentDeparture = dates[1];
+            }
+        } else if (currentRoom) {
+            // Ligne de continuation
+            accumulatedText += " " + trimmed;
+
+            // Guest si pas encore trouvé
+            if (!currentGuest || currentGuest === 'Unknown Guest') {
+                const g = extractGuestNameFromText(trimmed);
+                if (g) currentGuest = g;
+            }
+
+            // Agency si pas encore trouvée
+            if (currentAgency === 'Direct') {
+                const ag = extractAgencyFromText(trimmed);
+                if (ag !== 'Direct') currentAgency = ag;
+            }
+
+            // Dates
+            const dates = trimmed.match(dateRegex);
+            if (dates) {
+                dates.forEach(d => {
+                    if (!currentArrival) currentArrival = d;
+                    else if (!currentDeparture && d !== currentArrival) currentDeparture = d;
+                });
+            }
+        }
+    });
+
+    // Flush final
+    flushCurrentRoom();
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 3 — Déduplication par room (dernière occurrence gagne)
+    // ═══════════════════════════════════════════════════════════════
+    const roomMap = new Map();
+    parsedData.forEach(item => roomMap.set(item.room, item));
+    parsedData = Array.from(roomMap.values());
+
+    if (parsedData.length === 0) {
         alert("Could not automatically map data from this format.");
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 4 — Construction payload + UPSERT + DELETE orphelins
+    // ═══════════════════════════════════════════════════════════════
+    const newPmsDatabase = {};
+    const cloudGuestsPayload = [];
+
+    parsedData.forEach(item => {
+        newPmsDatabase[item.room] = {
+            guestName: item.guestName,
+            roomTyp: item.roomTyp,
+            arrival: item.arrival,
+            departure: item.departure,
+            agency: item.agency,
+            quotaText: item.quotaText,
+            isChargeable: item.isChargeable
+        };
+
+        cloudGuestsPayload.push({
+            room: item.room,
+            guest_name: item.guestName,
+            room_typ: item.roomTyp,
+            arrival: item.arrival,
+            departure: item.departure,
+            agency: item.agency,
+            quota_text: item.quotaText,
+            is_chargeable: item.isChargeable
+        });
+    });
+
+    // ═══ Garde-fou anti-catastrophe ═══
+    const oldRooms = Object.keys(pmsDatabase || {});
+    const newRooms = Object.keys(newPmsDatabase);
+
+    if (oldRooms.length >= 30 && newRooms.length < 30) {
+        const confirmed = confirm(
+            `⚠️ SAFETY CHECK\n\n` +
+            `Parser found only ${newRooms.length} rooms, but ${oldRooms.length} rooms currently exist.\n\n` +
+            `This could mean the PDF parsing failed.\n\n` +
+            `Continue anyway? (This will DELETE ${oldRooms.length - newRooms.length} rooms)`
+        );
+        if (!confirmed) {
+            console.warn('[Parser V2] Aborted by user (safety guard)');
+            return;
+        }
+    }
+
+    // ═══ Mise à jour locale immédiate ═══
+    pmsDatabase = newPmsDatabase;
+    sauvegarderPmsLocalStorage();
+
+    if (typeof renderMassPreviewTable === 'function') {
+        renderMassPreviewTable();
+    }
+
+    // ═══ Sync Supabase (UPSERT batch + DELETE orphelins) ═══
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            // 1. UPSERT batch
+            const { error: upsertErr } = await supabaseClient
+                .from('pms_guests')
+                .upsert(cloudGuestsPayload, { onConflict: 'room' });
+
+            if (upsertErr) throw upsertErr;
+
+            // 2. DELETE orphelins (chambres présentes avant, disparues du nouveau PDF)
+            const roomsInPdf = new Set(newRooms);
+            const roomsToDelete = oldRooms.filter(r => !roomsInPdf.has(r));
+
+            let deletedCount = 0;
+            if (roomsToDelete.length > 0) {
+                const { error: delErr } = await supabaseClient
+                    .from('pms_guests')
+                    .delete()
+                    .in('room', roomsToDelete);
+
+                if (delErr) throw delErr;
+                deletedCount = roomsToDelete.length;
+            }
+
+            // 3. Timestamp
+            if (typeof markPmsSynced === 'function') {
+                markPmsSynced();
+            }
+
+            const msg = `✅ PMS Updated: ${cloudGuestsPayload.length} room(s) synced` +
+                        (deletedCount > 0 ? ` · ${deletedCount} checked out` : '');
+            alert(msg);
+            console.log('[Parser V2]', msg);
+
+        } catch (e) {
+            console.error('[Parser V2] Supabase error:', e);
+            alert(`❌ Supabase sync failed: ${e.message}`);
+        }
     }
 }
 
@@ -667,37 +891,37 @@ async function validateAndSaveSpaReceipt() {
     };
     targetRecord.receipt_id = obtenirReceiptId(targetRecord);
 
-const index = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
-const isNewSpa = (index === -1);
+    const index = cachedSlips.findIndex(s => String(s.id) === String(assignedId));
+    const isNewSpa = (index === -1);
 
-if (!isNewSpa) {
-    cachedSlips[index] = targetRecord;
-} else {
-    cachedSlips.unshift(targetRecord);
-}
+    if (!isNewSpa) {
+        cachedSlips[index] = targetRecord;
+    } else {
+        cachedSlips.unshift(targetRecord);
+    }
 
-sauvegarderDonneesLocalStorage();
-await writeRecordToFile(targetRecord);
-if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+    sauvegarderDonneesLocalStorage();
+    await writeRecordToFile(targetRecord);
+    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
 
-// ✨ PHASE E.5 : Undo sur nouvelle création SPA
-if (isNewSpa && typeof showUndoToast === 'function') {
-    showUndoToast(assignedId, `#${serialNo}`, true);
-} else if (!isNewSpa) {
-    // Update SPA → feedback simple
-    const t = document.createElement('div');
-    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
-    t.innerHTML = `✅ <strong>SPA #${serialNo}</strong> updated`;
-    document.body.appendChild(t);
-    setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
-    }, 1800);
-}
+    // ✨ PHASE E.5 : Undo sur nouvelle création SPA
+    if (isNewSpa && typeof showUndoToast === 'function') {
+        showUndoToast(assignedId, `#${serialNo}`, true);
+    } else if (!isNewSpa) {
+        // Update SPA → feedback simple
+        const t = document.createElement('div');
+        t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+        t.innerHTML = `✅ <strong>SPA #${serialNo}</strong> updated`;
+        document.body.appendChild(t);
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+        }, 1800);
+    }
 
-setTimeout(() => { isLocalUpdating = false; }, 1000);
-return true;
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    return true;
 }
 
 async function exportAutoDirect() {
