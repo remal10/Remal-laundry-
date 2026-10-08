@@ -1,5 +1,6 @@
 // ==========================================
 // REALTIME LISTENER & NOTIFICATIONS (REMAL LAUNDRY OS)
+// ✅ Ajout : helpers timestamp PMS Sync
 // ==========================================
 
 // ═══════════════════════════════════════════════════════════════════
@@ -331,3 +332,70 @@ function initRealtimeGuestRequests() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initRealtimeGuestRequests, 1000);
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// ✅ NEW — PMS SYNC TIMESTAMP HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Format an ISO timestamp as relative time: "Just now", "3 min ago", "2h ago"
+ */
+function formatLastSync(isoString) {
+    if (!isoString) return 'Never';
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return 'Never';
+
+    const diffMs = Date.now() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    if (diffHour < 24) return `${diffHour}h ago`;
+    if (diffDay < 7) return `${diffDay}d ago`;
+
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/**
+ * Update the last sync badge in the UI
+ */
+function updateLastSyncDisplay() {
+    const lastSync = localStorage.getItem('remal_pms_last_sync');
+
+    const elHeader = document.getElementById('lastUpdateHeaderDisplay');
+    const elTable = document.getElementById('tableSyncTime');
+    const elBadge = document.getElementById('pmsLastSync');
+
+    const relative = formatLastSync(lastSync);
+
+    if (elHeader) elHeader.textContent = relative;
+    if (elTable) elTable.textContent = `Updated: ${relative}`;
+    if (elBadge) elBadge.textContent = `📅 Last sync: ${relative}`;
+}
+
+/**
+ * Mark PMS as synced now + refresh display
+ */
+function markPmsSynced() {
+    const nowIso = new Date().toISOString();
+    localStorage.setItem('remal_pms_last_sync', nowIso);
+    updateLastSyncDisplay();
+    console.log('[PMS] Marked synced at', nowIso);
+}
+
+// Auto-refresh every minute
+setInterval(updateLastSyncDisplay, 60000);
+
+// Refresh on page ready
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(updateLastSyncDisplay, 500);
+});
+
+// Expose globally
+window.formatLastSync = formatLastSync;
+window.updateLastSyncDisplay = updateLastSyncDisplay;
+window.markPmsSynced = markPmsSynced;
+
+console.log('✅ [PMS Sync] Timestamp helpers loaded');
