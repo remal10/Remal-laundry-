@@ -507,23 +507,129 @@ function extractGuestNameFromText(text) {
 /**
  * Detect a company / agency from text chunk
  */
+/**
+ * Detect a company / agency from text chunk — VERSION ROBUSTE V2
+ * Gère les lignes collées (pas de séparateur \s{2,} ou \t) et 
+ * remonte le nom complet avant le mot-clé (ex: "Excelerate Energy Inc").
+ */
 function extractAgencyFromText(text) {
     if (!text) return 'Direct';
+
+    // ═══ Liste enrichie de mots-clés company (basés sur le PDF réel) ═══
     const kws = (typeof companyKeywords !== 'undefined' && Array.isArray(companyKeywords))
         ? companyKeywords
-        : ['llc', 'inc', 'wll', 'w.l.l', 'corp', 'ltd', 'limited', 'company', 'energy', 'systems',
-           'services', 'tourism', 'travel', 'holdings', 'trading', 'group', 'expedia', 'booking',
-           'adnoc', 'etimad', 'siemens', 'rotary', 'generation', 'hunter', 'ghq', 'falaj'];
+        : [];
 
-    // Chercher un nom de company dans la ligne (mots de longueur > 4)
-    const tokens = text.split(/\s{2,}|\t+/).filter(x => x.length > 4);
-    for (const tok of tokens) {
-        if (kws.some(kw => tok.toLowerCase().includes(kw))) {
-            return tok.trim();
+    // Ajout d'une liste de secours — ces mots DOIVENT toujours matcher
+    const MUST_MATCH = [
+        'excelerate', 'fertiglobe', 'honeywell', 'toshiba', 'siemens', 'borouge',
+        'rotary', 'generation', 'hunter', 'expedia', 'booking', 'adnoc', 'etimad',
+        'ghq', 'ghd', 'hamat', 'homat', 'tazweed', 'cegspa', 'falaj', 'power mech',
+        'omv', 'gulf', 'qateintl', 'webeds', 'borouge', 'wathba', 'samsung',
+        'al watan', 'mcdermott', 'chiyoda', 'petrofac', 'technip', 'fluor',
+        'llc', 'inc', 'corp', 'ltd', 'limited', 'wll', 'w.l.l', 'co.',
+        'energy', 'systems', 'services', 'tourism', 'travel', 'holdings',
+        'trading', 'contracting', 'establishment', 'group', 'international'
+    ];
+
+    const allKws = [...new Set([...kws, ...MUST_MATCH])];
+
+    // ═══ Normaliser le texte : ajouter des espaces autour des séparateurs collés ═══
+    // Ex: "Mr.Excelerate" → "Mr. Excelerate"
+    //     "Inc29/09/2026" → "Inc 29/09/2026"
+    //     "CORP1/0/0" → "CORP 1/0/0"
+    let normalized = text
+        // Ajoute un espace entre une lettre minuscule et une majuscule (camelCase)
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        // Ajoute un espace entre une lettre et un chiffre
+        .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+        // Ajoute un espace entre un chiffre et une lettre
+        .replace(/(\d)([a-zA-Z])/g, '$1 $2');
+
+    // ═══ Étape 1 : Chercher un mot-clé dans le texte normalisé ═══
+    const lower = normalized.toLowerCase();
+    let foundKeywordIndex = -1;
+    let foundKeyword = '';
+
+    for (const kw of allKws) {
+        const idx = lower.indexOf(kw);
+        if (idx !== -1) {
+            // Prend le mot-clé le PLUS LONG (pour éviter que "inc" matche avant "honeywell")
+            if (kw.length > foundKeyword.length) {
+                foundKeywordIndex = idx;
+                foundKeyword = kw;
+            }
         }
     }
-    return 'Direct';
+
+    if (foundKeywordIndex === -1) {
+        // Aucun mot-clé trouvé → tenter de trouver un nom propre long en majuscules
+        // Ex: "ETIMAD", "EXPEDIA", "TALABAT" (tout en majuscules, > 4 lettres)
+        const capsMatch = text.match(/\b([A-Z]{4,}(?:\s+[A-Z]{2,})*)\b/);
+        if (capsMatch) {
+            const candidate = capsMatch[1].trim();
+            // Filtrer les codes indésirables
+            const BAD = ['DLXR', 'PRMR', 'ROYS', 'EXCS', 'EXTW', 'VILLA', 'CORP', 'STAH', 'WALK', 'OIL', 'BBLA', 'HBDL', 'HDL4', 'FB24', 'HD40', 'RMON', 'ADNOC'];
+            if (!BAD.includes(candidate) && candidate.length >= 4) {
+                return candidate;
+            }
+        }
+        return 'Direct';
+    }
+
+    // ═══ Étape 2 : Extraire le nom complet autour du mot-clé ═══
+    // On remonte 3-4 mots AVANT le mot-clé, et on va jusqu'à la fin du mot-clé
+    const beforeKeyword = normalized.substring(0, foundKeywordIndex);
+    const afterKeyword = normalized.substring(foundKeywordIndex + foundKeyword.length);
+
+    // Prendre les 4 mots qui précèdent le mot-clé
+    const beforeWords = beforeKeyword.trim().split(/\s+/);
+    const takeBefore = beforeWords.slice(-4).join(' ');
+
+    // Prendre 1 mot après si c'est une extension (Energy, Tourism, Middle, East...)
+    const afterWords = afterKeyword.trim().split(/\s+/);
+    const firstAfterWord = afterWords[0] || '';
+    const extensionWords = ['energy', 'tourism', 'middle', 'east', 'holdings', 'trading',
+                            'services', 'systems', 'international', 'group', 'gulf', 'refining',
+                            'gas', 'waste', 'heat', 'project', 'solution', 'solutions'];
+    const extension = extensionWords.includes(firstAfterWord.toLowerCase()) ? ' ' + firstAfterWord : '';
+
+    let fullName = (takeBefore + ' ' + foundKeyword + extension).trim();
+
+    // ═══ Étape 3 : Nettoyage ═══
+    fullName = fullName
+        // Enlever les dates
+        .replace(/\d{2}\/\d{2}\/\d{4}/g, '')
+        // Enlever les codes PAX (1/0/0)
+        .replace(/\d+\/\d+\/\d+/g, '')
+        // Enlever les nombres isolés
+        .replace(/\b\d+\b/g, '')
+        // Enlever les codes de chambre/bloc
+        .replace(/\bB\d\b/g, '')
+        // Enlever les rates (ex: 400.00)
+        .replace(/\b\d+\.\d+/g, '')
+        // Enlever les mots parasites
+        .replace(/\b(Mr\.|Ms\.|Mrs\.|Mr|Ms|Dr|CORP|REG|OIL|FIT|STAH|WALK|CITY|NORM|HOUS)\b/gi, '')
+        // Enlever caractères spéciaux en début/fin
+        .replace(/^[\s\-\.,;:]+|[\s\-\.,;:]+$/g, '')
+        // Normaliser les espaces
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // ═══ Étape 4 : Validation finale ═══
+    // Si le résultat est trop court ou contient un nom de guest (avec virgule), rejeter
+    if (fullName.length < 4 || fullName.includes(',')) {
+        // Fallback : utiliser juste le mot-clé capitalisé
+        return foundKeyword.charAt(0).toUpperCase() + foundKeyword.slice(1);
+    }
+
+    // Tronquer à 60 caractères max (au cas où)
+    if (fullName.length > 60) fullName = fullName.substring(0, 60).trim();
+
+    return fullName;
 }
+
+window.extractAgencyFromText = extractAgencyFromText;
 
 // ═══════════════════════════════════════════════════════════════════
 // MASS ENTRY V2 — PARSER PRINCIPAL
