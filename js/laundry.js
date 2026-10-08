@@ -1,9 +1,8 @@
 // =============================================================
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
-// ⚠️ Chargé AVANT ui.js
 // ✅ MASS ENTRY V2 — Parser PMS robuste
-// ✅ AGENCY V9 — Extraction par mot-clé + arrêt strict + préfixe propre
-// ✅ QUOTA V3 — "X pieces per day for AED Y" → X PCS
+// ✅ AGENCY V9 — Extraction par mot-clé + arrêt strict
+// ✅ QUOTA V4 — Détection "X pieces per day for AED Y" → AED (Y/X) per Pcs
 // ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
 // =============================================================
 
@@ -78,14 +77,15 @@ const BLOCKED_CODES_AGENCY = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// 🏢 MOTS-CLÉS COMPANY (liste COMPLÈTE du PDF Remal)
+// 🏢 MOTS-CLÉS COMPANY (liste COMPLÈTE)
 // ═══════════════════════════════════════════════════════════════════
 const COMPANY_KEYWORDS_V7 = [
-    // ═══ Companies spécifiques du PDF Remal ═══
+    // Companies spécifiques du PDF Remal
     'HONEYWELL MIDDLE EAST LIMITED',
     'SAMSUNG E & ADNOC WASTE HEAT RECOVERY PROJECT',
     'OMV Downstream Middle East & Asia',
     'Fertiglobe Holding Investment Limited',
+    'Fertiglohe Holding Investment Limited',
     'Toshiba Energy Systems & Services Gulf',
     'Power Mech Projects Limited',
     'Tazweed for Oil Field Services',
@@ -94,15 +94,20 @@ const COMPANY_KEYWORDS_V7 = [
     'INCO GROUP OF COMPANIES',
     'HONEYWELL MIDDLE EAST',
     'Siemens Industrial LLC',
+    'Archirodon Construction (Overseas) Co. Ltd',
+    'Federal Authority for Nuclear Regulation',
+    'SCHNEIDER ELECTRIC ENGINEERS',
     'ADNOC GAS PROCESSING',
     'Bureau Veritas',
     'WebBeds FZ LLC',
     'GHQ Moral Guidance',
     'Excelerate Energy Inc',
     'Hunter Tourism LLC',
+    'Hotel Booking Engine',
     'Siemens Energy',
     'ADNOC REFINING',
     'Homat Al Watan',
+    'FNC TECHNOLOGY',
     'Borouge 4 LLC',
     'Borouge LLC',
     'Generation 5',
@@ -121,7 +126,7 @@ const COMPANY_KEYWORDS_V7 = [
     'FERTIL',
     'IPCO',
 
-    // ═══ Mots-clés génériques (fallback) ═══
+    // Mots-clés génériques
     'LLC', 'LIMITED', 'Inc', 'Inc.', 'GROUP', 'Holding', 'Tourism', 'Travel',
     'Energy', 'Systems', 'Services', 'Trading', 'Company', 'COMPANY',
     'Corporation', 'Corp', 'Ltd', 'LTD', 'W.L.L', 'Refining',
@@ -443,7 +448,6 @@ async function sauvegarderBordereauLocal() {
 function extractAgencyFromText(text) {
     if (!text || typeof text !== 'string') return 'Direct';
 
-    // Normalisation
     let normalized = text
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replace(/([a-zA-Z])(\d)/g, '$1 $2')
@@ -451,7 +455,6 @@ function extractAgencyFromText(text) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // ═══ ÉTAPE 1 : Trouver le mot-clé le PLUS LONG ═══
     let bestKeyword = null;
     let bestIndex = -1;
 
@@ -469,7 +472,6 @@ function extractAgencyFromText(text) {
         return 'Direct';
     }
 
-    // ═══ ÉTAPE 2 : Extraire UNIQUEMENT le mot-clé (pas de préfixe large) ═══
     const GENERIC_KEYWORDS = ['LLC', 'LIMITED', 'Inc', 'Inc.', 'GROUP', 'Holding',
                               'Tourism', 'Travel', 'Energy', 'Systems', 'Services',
                               'Trading', 'Company', 'COMPANY', 'Corporation', 'Corp',
@@ -480,12 +482,10 @@ function extractAgencyFromText(text) {
     let candidate = '';
 
     if (GENERIC_KEYWORDS.includes(bestKeyword)) {
-        // Mot-clé générique : remonter pour capturer le nom propre avant
         const beforeStart = Math.max(0, bestIndex - 40);
         const prefix = normalized.substring(beforeStart, bestIndex);
         candidate = prefix + bestKeyword;
     } else {
-        // Mot-clé spécifique : prendre UNIQUEMENT le mot-clé + extensions légitimes
         candidate = bestKeyword;
 
         const afterKeyword = normalized.substring(bestIndex + bestKeyword.length);
@@ -507,7 +507,6 @@ function extractAgencyFromText(text) {
         }
     }
 
-    // ═══ ÉTAPE 3 : Nettoyage strict ═══
     candidate = candidate
         .replace(/\b\d{2}\/\d{2}\/\d{4}\b/g, ' ')
         .replace(/\b\d{3,6}\b/g, ' ')
@@ -519,31 +518,24 @@ function extractAgencyFromText(text) {
         .replace(/\b(DLXR|PRMR|EXCS|EXTW|VILLA|PREM|ACCR)\b/gi, ' ')
         .replace(/\b(Mr\.|Ms\.|Mrs\.|Dr\.|MR|MS|MRS|DR)\b/g, ' ')
         .replace(/\b(PX|PAX|HB|FB|BB|BF|LD)\b/gi, ' ')
-        // Enlever les mots parasites de facturation
         .replace(/\b(Pay By|OTA|BBF|RM|MCR|CO|ST|VCC|EXTR|DAILY|LAU|TO COMPANY|COMPANY|CR|DXR|U|B\.|B)\b/gi, ' ')
-        // Enlever doublons
         .replace(/\b(\w+)\s+\1\b/gi, '$1')
-        // Enlever les nombres isolés
         .replace(/\b\d+(\.\d+)?\b/g, ' ')
-        // Symboles
         .replace(/[\(\)\[\]<>«»\/\|]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-    // ═══ ÉTAPE 4 : Si virgule → retirer avant ═══
     if (candidate.includes(',')) {
         const commaIdx = candidate.indexOf(',');
         candidate = candidate.substring(commaIdx + 1).trim();
         candidate = candidate.replace(/^[A-Za-z]+\s+(MR|MS|MRS|Mr\.|Ms\.|Mrs\.)\s+/i, '');
     }
 
-    // ═══ ÉTAPE 5 : Nettoyer "B. Borouge" → "Borouge" ═══
     candidate = candidate
         .replace(/^[A-Z]\.\s+/, '')
         .replace(/^B\s+(?=Borouge)/i, '')
         .trim();
 
-    // ═══ ÉTAPE 6 : Validation ═══
     const lettersCount = (candidate.match(/[A-Za-z]/g) || []).length;
     if (lettersCount < 3) return 'Direct';
 
@@ -604,12 +596,38 @@ function parsePaxMultiplier(text) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// QUOTA V3
+// ✅ QUOTA V4 — Détection "X pieces per day for AED Y" → AED (Y/X) per Pcs
+// Cette règle est PRIORITAIRE sur tous les autres patterns.
 // ═══════════════════════════════════════════════════════════════════
 function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🎯 PRIORITÉ ABSOLUE : "X pieces per day for AED Y net"
+    // Ex : "per mealLaundry service: 3 pieces per day for AED 30 net"
+    //   → calcule 30 ÷ 3 = 10 AED/pc → type 'aed_per_pc'
+    // ═══════════════════════════════════════════════════════════════
+    let aedMatch = text.match(/(\d{1,2})\s*pieces?\s*per\s*day\s*for\s*AED\s*(\d+(?:\.\d+)?)/i);
+    if (aedMatch) {
+        const pcs = parseInt(aedMatch[1], 10);
+        const totalAed = parseFloat(aedMatch[2]);
+        if (pcs >= 1 && pcs <= 30 && totalAed > 0) {
+            const aedPerPc = Math.round(totalAed / pcs);
+            return {
+                pcs: 0,
+                type: 'aed_per_pc',
+                text: `AED ${aedPerPc} per Pcs`,
+                aedPerPc: aedPerPc
+            };
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Pattern normal : "X PCS LAU DAILY" etc.
+    // ═══════════════════════════════════════════════════════════════
     const t = text.toLowerCase();
 
+    // "X pieces per day" (sans "for AED")
     let m = text.match(/(\d{1,2})\s*(?:pieces?|pcs?)\s*per\s*day/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -716,6 +734,8 @@ async function processTextData(rawData) {
             agency: agencyFromFullText,
             quotaText: quotaText,
             isChargeable: quota.type === 'chargeable',
+            isAedPerPc: quota.type === 'aed_per_pc',
+            aedPerPc: quota.aedPerPc || 0,
             paxMultiplier: pax,
             fullContext: accumulatedText.toLowerCase()
         });
@@ -774,7 +794,6 @@ async function processTextData(rawData) {
 
     flushCurrentRoom();
 
-    // Déduplication par room
     const roomMap = new Map();
     parsedData.forEach(item => roomMap.set(item.room, item));
     parsedData = Array.from(roomMap.values());
@@ -784,7 +803,6 @@ async function processTextData(rawData) {
         return;
     }
 
-    // Construction payload
     const newPmsDatabase = {};
     const cloudGuestsPayload = [];
 
@@ -796,7 +814,9 @@ async function processTextData(rawData) {
             departure: item.departure,
             agency: item.agency,
             quotaText: item.quotaText,
-            isChargeable: item.isChargeable
+            isChargeable: item.isChargeable,
+            isAedPerPc: item.isAedPerPc,
+            aedPerPc: item.aedPerPc
         };
 
         cloudGuestsPayload.push({
@@ -811,7 +831,6 @@ async function processTextData(rawData) {
         });
     });
 
-    // Garde-fou anti-catastrophe
     const oldRooms = Object.keys(pmsDatabase || {});
     const newRooms = Object.keys(newPmsDatabase);
 
@@ -828,7 +847,6 @@ async function processTextData(rawData) {
         }
     }
 
-    // Mise à jour locale
     pmsDatabase = newPmsDatabase;
     sauvegarderPmsLocalStorage();
 
@@ -836,7 +854,6 @@ async function processTextData(rawData) {
         renderMassPreviewTable();
     }
 
-    // Sync Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const { error: upsertErr } = await supabaseClient
@@ -1104,4 +1121,4 @@ async function importAutoDirect() {
     }
 }
 
-console.log('✅ [laundry.js] Loaded with Agency V9 + Quota V3');
+console.log('✅ [laundry.js] Loaded with Agency V9 + Quota V4 (AED per Pcs)');
