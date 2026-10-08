@@ -492,12 +492,16 @@
             <h2 class="stock-title">📦 Stock Management</h2>
             <p class="stock-subtitle">Track laundry supplies, chemicals, and consumables</p>
         </div>
-        <div class="stock-header-right">
-            <button onclick="openStockItemForm()" class="stock-new-btn">
-                <i class="fas fa-plus-circle"></i>
-                <span>New Item</span>
-            </button>
-        </div>
+ <div class="stock-header-right">
+    <button onclick="exportStockPDF()" class="stock-new-btn stock-export-btn">
+        <i class="fas fa-file-pdf"></i>
+        <span>📄 Export PDF</span>
+    </button>
+    <button onclick="openStockItemForm()" class="stock-new-btn">
+        <i class="fas fa-plus-circle"></i>
+        <span>New Item</span>
+    </button>
+</div>
     </div>
 
     <!-- STATS BAR -->
