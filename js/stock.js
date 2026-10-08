@@ -834,3 +834,341 @@ window.editStockItem = editStockItem;
 window.deleteStockItem = deleteStockItem;
 
 console.log('✅ [Stock] Module loaded');
+/* ═══════════════════════════════════════════════════════════════════
+   📄 EXPORT STOCK PDF — Rapport pour le GM
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function exportStockPDF() {
+    const btn = document.querySelector('.stock-export-btn');
+    if (btn) {
+        btn.classList.add('loading');
+        btn.disabled = true;
+    }
+
+    try {
+        // 1. Récupérer les données fraîches
+        stockCache.items = null;
+        stockCache.timestamp = 0;
+        
+        const items = await fetchStockItems();
+        
+        if (!items || items.length === 0) {
+            alert('⚠️ No stock items to export.');
+            return;
+        }
+
+        // 2. Récupérer les mouvements du mois en cours (pour le Top 5)
+        let topUsed = [];
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+            const monthStart = new Date();
+            monthStart.setDate(1);
+            monthStart.setHours(0, 0, 0, 0);
+
+            const { data: movements } = await supabaseClient
+                .from('stock_movements')
+                .select('*')
+                .eq('movement_type', 'out')
+                .gte('created_at', monthStart.toISOString());
+
+            if (movements && movements.length > 0) {
+                // Grouper par item_id
+                const usageMap = {};
+                movements.forEach(m => {
+                    if (!usageMap[m.item_id]) {
+                        usageMap[m.item_id] = {
+                            name: m.item_name || 'Unknown',
+                            total: 0
+                        };
+                    }
+                    usageMap[m.item_id].total += Number(m.quantity) || 0;
+                });
+
+                topUsed = Object.values(usageMap)
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 5);
+            }
+        }
+
+        // 3. Calculer les stats
+        const totalItems = items.length;
+        const lowCount = items.filter(i => computeStockStatus(i) === 'low').length;
+        const criticalCount = items.filter(i => computeStockStatus(i) === 'critical').length;
+        const totalValue = items.reduce((sum, i) => {
+            const qty = Number(i.current_quantity) || 0;
+            const price = Number(i.unit_price) || 0;
+            return sum + (qty * price);
+        }, 0);
+
+        // 4. Alerts (Low + Critical)
+        const alerts = items
+            .filter(i => {
+                const status = computeStockStatus(i);
+                return status === 'low' || status === 'critical';
+            })
+            .sort((a, b) => {
+                const statusA = computeStockStatus(a);
+                const statusB = computeStockStatus(b);
+                if (statusA === 'critical' && statusB !== 'critical') return -1;
+                if (statusB === 'critical' && statusA !== 'critical') return 1;
+                return 0;
+            });
+
+        // 5. Items triés par statut puis nom
+        const sortedItems = [...items].sort((a, b) => {
+            const statusOrder = { critical: 0, low: 1, ok: 2 };
+            const statusA = computeStockStatus(a);
+            const statusB = computeStockStatus(b);
+            if (statusOrder[statusA] !== statusOrder[statusB]) {
+                return statusOrder[statusA] - statusOrder[statusB];
+            }
+            return String(a.name || '').localeCompare(String(b.name || ''));
+        });
+
+        // 6. Générer le HTML
+        const html = buildStockReportHTML({
+            items: sortedItems,
+            alerts,
+            topUsed,
+            stats: {
+                totalItems,
+                lowCount,
+                criticalCount,
+                totalValue
+            },
+            generatedAt: new Date(),
+            generatedBy: (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name)
+                ? currentStaffUser.name
+                : 'Admin'
+        });
+
+        // 7. Container + PDF
+        let container = document.getElementById('stockPdfContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'stockPdfContainer';
+            document.body.appendChild(container);
+        }
+        container.innerHTML = html;
+
+        // Attendre images
+        await new Promise(r => setTimeout(r, 800));
+
+        const dateStr = new Date().toISOString().split('T')[0];
+        const filename = `REMAL_Stock_Report_${dateStr}.pdf`;
+
+        const opt = {
+            margin: [8, 8, 8, 8],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        await html2pdf().set(opt).from(container).save();
+
+        console.log('✅ [Stock PDF] Generated:', filename);
+
+        if (typeof showToast === 'function') {
+            showToast('📄 Stock report downloaded');
+        }
+
+    } catch (e) {
+        console.error('[Stock PDF] Error:', e);
+        alert('⚠️ Error generating stock report.');
+    } finally {
+        const container = document.getElementById('stockPdfContainer');
+        if (container) container.innerHTML = '';
+
+        if (btn) {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+}
+
+function buildStockReportHTML(data) {
+    const { items, alerts, topUsed, stats, generatedAt, generatedBy } = data;
+
+    const dateFormatted = generatedAt.toLocaleDateString('en-GB', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const timeFormatted = generatedAt.toLocaleTimeString('en-GB', {
+        hour: '2-digit', minute: '2-digit'
+    });
+
+    // Alerts HTML
+    let alertsHTML = '';
+    if (alerts.length === 0) {
+        alertsHTML = `
+            <div style="text-align: center; padding: 20px; color: #059669; font-weight: 700; font-size: 12px;">
+                ✅ All items are in good stock levels
+            </div>
+        `;
+    } else {
+        alertsHTML = alerts.map(a => {
+            const status = computeStockStatus(a);
+            return `
+                <div class="stock-pdf-alert-item">
+                    <span class="stock-pdf-alert-name">
+                        ${a.name}
+                        <span class="stock-pdf-alert-badge ${status}">${status}</span>
+                    </span>
+                    <span class="stock-pdf-alert-qty">
+                        ${formatStockNumber(a.current_quantity)} ${a.unit || 'units'}
+                    </span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Items HTML
+    const itemsHTML = items.map(item => {
+        const status = computeStockStatus(item);
+        const qty = Number(item.current_quantity) || 0;
+        const min = Number(item.min_threshold) || 0;
+        const price = Number(item.unit_price) || 0;
+        const value = qty * price;
+
+        return `
+            <tr class="status-${status}">
+                <td><strong>${item.name}</strong></td>
+                <td>${item.category || 'General'}</td>
+                <td style="text-align: right; font-weight: 700;">${formatStockNumber(qty)} ${item.unit || 'units'}</td>
+                <td style="text-align: right; color: #6b7280;">${formatStockNumber(min)}</td>
+                <td style="text-align: right; font-weight: 700; color: #b45309;">${value.toFixed(2)} AED</td>
+                <td style="text-align: center;">
+                    <span class="status-badge ${status}">
+                        ${status === 'ok' ? 'OK' : status === 'low' ? 'Low' : 'Critical'}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Top 5 HTML
+    let topUsedHTML = '';
+    if (topUsed.length === 0) {
+        topUsedHTML = `
+            <div style="text-align: center; padding: 20px; color: #6b7280; font-style: italic; font-size: 11px;">
+                No consumption data for this month yet.
+            </div>
+        `;
+    } else {
+        topUsedHTML = topUsed.map((item, i) => `
+            <div class="stock-pdf-top-item">
+                <span class="stock-pdf-top-rank">${i + 1}</span>
+                <span class="stock-pdf-top-name">${item.name}</span>
+                <span class="stock-pdf-top-qty">${formatStockNumber(item.total)}</span>
+            </div>
+        `).join('');
+    }
+
+    return `
+        <div class="stock-pdf-header">
+            <div class="stock-pdf-header-left">
+                <img src="assets/remal-logo.png" alt="Remal" class="stock-pdf-logo" onerror="this.style.display='none';">
+                <div>
+                    <h1 class="stock-pdf-hotel-name">REMAL HOTEL & VILLAS</h1>
+                    <p class="stock-pdf-hotel-sub">Al Ruwais City · Abu Dhabi · U.A.E</p>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <h2 class="stock-pdf-title">STOCK REPORT</h2>
+                <p class="stock-pdf-date">${dateFormatted}</p>
+                <p class="stock-pdf-date" style="font-size: 9px;">Generated at ${timeFormatted} by ${generatedBy}</p>
+            </div>
+        </div>
+
+        <div class="stock-pdf-body">
+
+            <!-- KPI -->
+            <div class="stock-pdf-section">
+                <div class="stock-pdf-section-title">🎯 Key Indicators</div>
+                <div class="stock-pdf-kpi-grid">
+                    <div class="stock-pdf-kpi">
+                        <div class="stock-pdf-kpi-label">Total Items</div>
+                        <div class="stock-pdf-kpi-value">${stats.totalItems}</div>
+                    </div>
+                    <div class="stock-pdf-kpi">
+                        <div class="stock-pdf-kpi-label">Low Stock</div>
+                        <div class="stock-pdf-kpi-value yellow">${stats.lowCount}</div>
+                    </div>
+                    <div class="stock-pdf-kpi">
+                        <div class="stock-pdf-kpi-label">Critical</div>
+                        <div class="stock-pdf-kpi-value red">${stats.criticalCount}</div>
+                    </div>
+                    <div class="stock-pdf-kpi">
+                        <div class="stock-pdf-kpi-label">Total Value</div>
+                        <div class="stock-pdf-kpi-value green">${stats.totalValue.toFixed(0)} AED</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="stock-pdf-section">
+                <div class="stock-pdf-section-title">⚠️ Alerts (${alerts.length} item${alerts.length > 1 ? 's' : ''})</div>
+                <div class="stock-pdf-alerts">
+                    ${alertsHTML}
+                </div>
+            </div>
+
+            <!-- Full Inventory -->
+            <div class="stock-pdf-section">
+                <div class="stock-pdf-section-title">📦 Full Inventory</div>
+                <table class="stock-pdf-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th style="text-align: right;">Quantity</th>
+                            <th style="text-align: right;">Threshold</th>
+                            <th style="text-align: right;">Value (AED)</th>
+                            <th style="text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHTML}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Top 5 Used -->
+            ${topUsed.length > 0 ? `
+                <div class="stock-pdf-section">
+                    <div class="stock-pdf-section-title">📊 Top 5 Most Used This Month</div>
+                    ${topUsedHTML}
+                </div>
+            ` : ''}
+
+            <!-- Signatures -->
+            <div class="stock-pdf-signatures">
+                <div class="stock-pdf-signature-item">
+                    <div class="stock-pdf-signature-line"></div>
+                    <div class="stock-pdf-signature-label">Prepared by</div>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 4px;">${generatedBy}</div>
+                </div>
+                <div class="stock-pdf-signature-item">
+                    <div class="stock-pdf-signature-line"></div>
+                    <div class="stock-pdf-signature-label">Approved by</div>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 4px;">General Manager</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="stock-pdf-footer">
+            Remal Laundry OS · Stock Report · Auto-generated · Confidential
+        </div>
+    `;
+}
+
+/* ═══ Exposer globalement ═══ */
+window.exportStockPDF = exportStockPDF;
+console.log('✅ [Stock] Export PDF loaded');
