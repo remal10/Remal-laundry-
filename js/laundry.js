@@ -2,7 +2,7 @@
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
 // ⚠️ Chargé AVANT ui.js
 // ✅ MASS ENTRY V2 — Parser PMS robuste
-// ✅ AGENCY V5 — Extraction par position + anti-codes-plan (BBLA, FB24…)
+// ✅ AGENCY V6 — Extraction fidèle par position (anti-codes-plan)
 // ✅ QUOTA V3 — "X pieces per day for AED Y" → X PCS (pas Y)
 // ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
 // =============================================================
@@ -393,7 +393,8 @@ async function sauvegarderBordereauLocal() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENCY V5 — EXTRACTION PAR POSITION (entre "Mr./Ms." et 1ère date)
+// AGENCY V6 — EXTRACTION FIDÈLE PAR POSITION
+// Règle : entre "Mr./Ms." et la 1ère date JJ/MM/YYYY
 // Corrige : BBLA, //.//FB, HDL B HB, codes plan parasites
 // Préserve : "Toshiba Energy Systems & Services Gulf"
 // ═══════════════════════════════════════════════════════════════════
@@ -436,30 +437,22 @@ function extractAgencyFromText(text) {
         candidate = normalized.substring(guestEndIndex, dateStartIndex).trim();
     }
 
-    // ÉTAPE 4 — Nettoyage ULTRA-STRICT (préserve & et .)
+    // ÉTAPE 4 — Nettoyage ULTRA-STRICT
     candidate = candidate
-        // Enlever uniquement / et |
         .replace(/[\/\|]+/g, ' ')
-        // Enlever codes plan/rate/mrkt/channel/pay-by
+        // Retirer codes plan/mrkt/pay-by/channel
         .replace(/\b(BBLA|HBDL|HDL4|HD40|FB24|FB40|BB|HB|FB|BF|LD|HDL|HD|RMLA|ROYS|RO)\b/gi, ' ')
         .replace(/\b(CORP|STAH|WALK|OIL|CITY|NORM|REG|FIT|HOUS|GHQ)\b/gi, ' ')
         .replace(/\b(CASH|VISA|HU|AED|USD|EUR|VCC|NET|GST)\b/gi, ' ')
         .replace(/\b(RMON|OTA1|ADN2|ADN|B4HB|B4RO|VROM|GDEL|CC\d+|GG\d+)\b/gi, ' ')
-        // Enlever blocks/vehicles isolés (B1, B2, V1)
         .replace(/\b(B\d|V\d)\b/gi, ' ')
-        // Enlever room types
         .replace(/\b(DLXR|PRMR|EXCS|EXTW|VILLA|PREM|ACCR)\b/gi, ' ')
-        // Enlever nombres et rates
         .replace(/\b\d+(\.\d+)?\b/g, ' ')
-        // Enlever symboles parasites (mais GARDE le & et le .)
         .replace(/[\(\)\[\]<>«»]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-    // Retirer préfixes parasites en début
-    candidate = candidate
-        .replace(/^(ADN|HB|FB|BB|PX|BF|LD|RO|ONLY|ONLY\.)\s+/gi, '')
-        .trim();
+    candidate = candidate.replace(/^(ADN|HB|FB|BB|PX|BF|LD|RO|ONLY|ONLY\.)\s+/gi, '').trim();
 
     // ÉTAPE 5 — Validation du candidat principal
     const lettersCount = (candidate.match(/[A-Za-z]/g) || []).length;
@@ -489,7 +482,7 @@ function extractAgencyFromText(text) {
         if (clean.includes(',')) continue;
         if (clean.split(/\s+/).length > 8) continue;
 
-        const companyHints = /(LLC|INC|LTD|LIMITED|CORP|COMPANY|GROUP|ENERGY|SYSTEMS|SERVICES|TOURISM|TRAVEL|HOLDING|TRADING|GULF|ADNOC|HONEYWELL|TOSHIBA|SIEMENS|FERTIL|BOROUGE|EXPEDIA|BOOKING|ETIMAD|GHQ|RENEWABLE|INDUSTRIES)/i;
+        const companyHints = /(LLC|INC|LTD|LIMITED|CORP|COMPANY|GROUP|ENERGY|SYSTEMS|SERVICES|TOURISM|TRAVEL|HOLDING|TRADING|GULF|ADNOC|HONEYWELL|TOSHIBA|SIEMENS|FERTIL|BOROUGE|EXPEDIA|BOOKING|ETIMAD|GHQ|RENEWABLE|INDUSTRIES|AXEN|CEGSPA|HABSHAN|QATEINTL|ALFALAVAL)/i;
         const score = clean.length + (companyHints.test(clean) ? 100 : 0);
 
         if (!bestMatch || score > bestMatch.score) {
@@ -558,7 +551,6 @@ function parseQuotaText(text) {
     const t = text.toLowerCase();
 
     // ═══ PATTERN PRIORITAIRE : "X pieces per day" ═══
-    // Ex : "Laundry service: 3 pieces per day for AED 30 net" → 3 PCS
     let m = text.match(/(\d{1,2})\s*(?:pieces?|pcs?)\s*per\s*day/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -1065,4 +1057,4 @@ async function importAutoDirect() {
     }
 }
 
-console.log('✅ [laundry.js] Loaded with Agency V5 + Quota V3 + Storage helpers first');
+console.log('✅ [laundry.js] Loaded with Agency V6 + Quota V3 + Storage helpers first');
