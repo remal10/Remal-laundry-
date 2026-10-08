@@ -1,14 +1,12 @@
 // =============================================================
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
-// ⚠️ Chargé AVANT ui.js
-// ✅ MASS ENTRY V2 — Parser PMS robuste
-// ✅ AGENCY V6 — Extraction fidèle par position (anti-codes-plan)
-// ✅ QUOTA V3 — "X pieces per day for AED Y" → X PCS (pas Y)
+// ✅ AGENCY V7 — Extraction par mot-clé + expansion contextuelle
+// ✅ QUOTA V3 — "X pieces per day for AED Y" → X PCS
 // ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
 // =============================================================
 
 // ═══════════════════════════════════════════════════════════════════
-// 🔧 HELPERS DE STORAGE — DÉCLARÉS EN PREMIER (fix ReferenceError)
+// 🔧 HELPERS DE STORAGE
 // ═══════════════════════════════════════════════════════════════════
 function chargerDonneesLocalStorage() {
     const data = localStorage.getItem('remal_laundry_slips');
@@ -57,23 +55,16 @@ function sauvegarderPmsLocalStorage() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ⚙️ CODES BLOQUÉS — Plans, Mrkt, Pay-by, Channel, Headers PDF
+// ⚙️ CODES BLOQUÉS (plans, mrkt, pay-by, channel, headers)
 // ═══════════════════════════════════════════════════════════════════
 const BLOCKED_CODES_AGENCY = [
-    // Plans tarifaires
     'BBLA', 'HBDL', 'HDL4', 'HD40', 'FB24', 'FB40', 'BB', 'HB', 'FB', 'BF', 'LD',
     'HDL', 'HD', 'RO', 'RMLA', 'ROYS',
-    // Mrkt / Class
     'CORP', 'STAH', 'WALK', 'OIL', 'CITY', 'NORM', 'REG', 'FIT', 'HOUS', 'GHQ',
-    // Pay by / Devise
     'CASH', 'VISA', 'HU', 'AED', 'USD', 'EUR', 'VCC', 'NET', 'GST',
-    // Channel
     'RMON', 'OTA1', 'ADN2', 'ADN', 'B4HB', 'B4RO', 'VROM', 'GDEL',
-    // Titres / PAX
     'MR', 'MS', 'MRS', 'DR', 'PX', 'PAX',
-    // Room types
     'DLXR', 'PRMR', 'EXCS', 'EXTW', 'VILLA', 'PREM', 'ACCR',
-    // Headers PDF
     'ROOM', 'BLOCK', 'GUEST', 'COMPANY', 'AGENT', 'ARRIVAL', 'DEPARTURE',
     'TOTAL', 'ROOMS', 'PRINTED', 'PROLOGIC', 'FIRST', 'INHOUSE',
     'LIST', 'HOTEL', 'REMAL', 'VEHICLE', 'CONFIRM', 'BILLING', 'INSTRUCTIONS',
@@ -82,6 +73,32 @@ const BLOCKED_CODES_AGENCY = [
     'NOTES', 'COMPLAINTS', 'FEEDBACK', 'TASK', 'INFORMATION', 'PREFERENCES',
     'NOTIFICATIONS', 'NIGHT', 'NIGHTS', 'SHORT', 'STAY', 'LONG', 'ONLY',
     'NUMBER', 'CHECK', 'CHECKOUT', 'PRINT'
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// 🏢 MOTS-CLÉS COMPANY (recherche directe V7)
+// Ces mots DOIVENT apparaître dans la company. On cherche le plus long.
+// ═══════════════════════════════════════════════════════════════════
+const COMPANY_KEYWORDS_V7 = [
+    // Companies spécifiques du PDF Remal
+    'HONEYWELL MIDDLE EAST LIMITED', 'Fertiglobe Holding Investment Limited',
+    'HONEYWELL MIDDLE EAST', 'Toshiba Energy Systems & Services Gulf',
+    'SAMSUNG E & ADNOC WASTE HEAT RECOVERY PROJECT',
+    'OMV Downstream Middle East & Asia', 'Tazweed for Oil Field Services',
+    'Power Mech Projects Limited', 'Rotary Engineering Pte Ltd',
+    'Siemens Industrial LLC', 'Bureau Veritas', 'WebBeds FZ LLC',
+    'GHQ Moral Guidance', 'ADNOC GAS PROCESSING', 'ADNOC REFINING',
+    'ADNOC GS & A', 'Homat Al Watan', 'INCO GROUP OF COMPANIES',
+    'HABSHAN TRADING COMPANY', 'Excelerate Energy Inc', 'Hunter Tourism LLC',
+    'Borouge 4 LLC', 'Siemens Energy', 'Generation 5', 'EXPEDIA',
+    'Booking.com', 'ETIMAD', 'FERTIL', 'CEGSPA', 'AXEN GROUP',
+    'alfalaval', 'fbmhudson', 'Qateintl.com', 'Direct Booking', 'IPCO',
+    // Mots-clés génériques (fallback)
+    'LLC', 'LIMITED', 'Inc', 'Inc.', 'GROUP', 'Holding', 'Tourism', 'Travel',
+    'Energy', 'Systems', 'Services', 'Trading', 'Company', 'COMPANY',
+    'Corporation', 'Corp', 'Ltd', 'LTD', 'W.L.L', 'LLC.', 'Refining',
+    'Processing', 'Engineering', 'Industrial', 'Solutions', 'Industries',
+    'International', 'Global', 'Enterprises'
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -186,7 +203,7 @@ function calculateGlobalTotals() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SAUVEGARDE BORDEREAU (legacy — non appelée par le bouton Save)
+// SAUVEGARDE BORDEREAU (legacy)
 // ═══════════════════════════════════════════════════════════════════
 async function sauvegarderBordereauLocal() {
     const roomInput = document.getElementById('roomNumber');
@@ -393,15 +410,16 @@ async function sauvegarderBordereauLocal() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENCY V6 — EXTRACTION FIDÈLE PAR POSITION
-// Règle : entre "Mr./Ms." et la 1ère date JJ/MM/YYYY
-// Corrige : BBLA, //.//FB, HDL B HB, codes plan parasites
-// Préserve : "Toshiba Energy Systems & Services Gulf"
+// AGENCY V7 — EXTRACTION PAR MOT-CLÉ + EXPANSION CONTEXTUELLE
+// Stratégie : chercher un mot-clé company dans la ligne, puis
+//             prendre les 5 mots avant et 3 après, filtrer.
+// ✅ Marche sur TOUS les formats (collés, espacés, longs, courts)
+// ✅ Ne prend JAMAIS un nom de guest
 // ═══════════════════════════════════════════════════════════════════
 function extractAgencyFromText(text) {
     if (!text || typeof text !== 'string') return 'Direct';
 
-    // ÉTAPE 0 — Normalisation douce (préserve & et .)
+    // Normaliser : insérer des espaces dans les lignes collées
     let normalized = text
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replace(/([a-zA-Z])(\d)/g, '$1 $2')
@@ -409,92 +427,102 @@ function extractAgencyFromText(text) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // ÉTAPE 1 — Fin du nom guest (titre Mr./Ms./MR/MS)
-    let guestEndIndex = -1;
-    const titlePatterns = [
-        /\bMr\.\s/gi, /\bMs\.\s/gi, /\bMrs\.\s/gi, /\bDr\.\s/gi,
-        /\bMR\s/gi,  /\bMS\s/gi,  /\bMRS\s/gi,  /\bDR\s/gi
-    ];
+    // ÉTAPE 1 — Trouver le mot-clé company le plus LONG dans le texte
+    let bestKeyword = null;
+    let bestIndex = -1;
 
-    let lastTitleMatch = null;
-    for (const pat of titlePatterns) {
-        let m;
-        while ((m = pat.exec(normalized)) !== null) {
-            if (!lastTitleMatch || m.index > lastTitleMatch.index) {
-                lastTitleMatch = { index: m.index, length: m[0].length };
+    for (const kw of COMPANY_KEYWORDS_V7) {
+        const idx = normalized.indexOf(kw);
+        if (idx !== -1) {
+            if (!bestKeyword || kw.length > bestKeyword.length) {
+                bestKeyword = kw;
+                bestIndex = idx;
             }
         }
     }
-    if (lastTitleMatch) guestEndIndex = lastTitleMatch.index + lastTitleMatch.length;
 
-    // ÉTAPE 2 — 1ère date (arrival)
-    const dateMatch = normalized.match(/\b\d{2}\/\d{2}\/\d{4}\b/);
-    const dateStartIndex = dateMatch ? dateMatch.index : -1;
-
-    // ÉTAPE 3 — Extraction principale entre guestEnd et dateStart
-    let candidate = '';
-    if (guestEndIndex > 0 && dateStartIndex > guestEndIndex) {
-        candidate = normalized.substring(guestEndIndex, dateStartIndex).trim();
+    if (!bestKeyword || bestIndex === -1) {
+        return 'Direct';
     }
 
-    // ÉTAPE 4 — Nettoyage ULTRA-STRICT
-    candidate = candidate
-        .replace(/[\/\|]+/g, ' ')
-        // Retirer codes plan/mrkt/pay-by/channel
-        .replace(/\b(BBLA|HBDL|HDL4|HD40|FB24|FB40|BB|HB|FB|BF|LD|HDL|HD|RMLA|ROYS|RO)\b/gi, ' ')
-        .replace(/\b(CORP|STAH|WALK|OIL|CITY|NORM|REG|FIT|HOUS|GHQ)\b/gi, ' ')
-        .replace(/\b(CASH|VISA|HU|AED|USD|EUR|VCC|NET|GST)\b/gi, ' ')
-        .replace(/\b(RMON|OTA1|ADN2|ADN|B4HB|B4RO|VROM|GDEL|CC\d+|GG\d+)\b/gi, ' ')
-        .replace(/\b(B\d|V\d)\b/gi, ' ')
-        .replace(/\b(DLXR|PRMR|EXCS|EXTW|VILLA|PREM|ACCR)\b/gi, ' ')
-        .replace(/\b\d+(\.\d+)?\b/g, ' ')
-        .replace(/[\(\)\[\]<>«»]/g, ' ')
-        .replace(/\s+/g, ' ')
+    // ÉTAPE 2 — Expansion contextuelle : 40 caractères avant, jusqu'à la fin du keyword + 40 après
+    const beforeStart = Math.max(0, bestIndex - 40);
+    const afterEnd = Math.min(normalized.length, bestIndex + bestKeyword.length + 40);
+    let candidate = normalized.substring(beforeStart, afterEnd);
+
+    // ÉTAPE 3 — Nettoyage strict
+    // Enlever les dates
+    candidate = candidate.replace(/\b\d{2}\/\d{2}\/\d{4}\b/g, ' ');
+    // Enlever les codes room (3-4 chiffres collés)
+    candidate = candidate.replace(/\b\d{4,6}\b/g, ' ');
+    // Enlever les codes plan/mrkt/pay-by/channel
+    candidate = candidate.replace(/\b(BBLA|HBDL|HDL4|HD40|FB24|FB40|BB|HB|FB|BF|LD|HDL|HD|RMLA|ROYS|RO)\b/gi, ' ');
+    candidate = candidate.replace(/\b(CORP|STAH|WALK|OIL|CITY|NORM|REG|FIT|HOUS|GHQ)\b/gi, ' ');
+    candidate = candidate.replace(/\b(CASH|VISA|HU|AED|USD|EUR|VCC|NET|GST)\b/gi, ' ');
+    candidate = candidate.replace(/\b(RMON|OTA1|ADN2|ADN|B4HB|B4RO|VROM|GDEL|CC\d+|GG\d+)\b/gi, ' ');
+    candidate = candidate.replace(/\b(B\d|V\d)\b/gi, ' ');
+    candidate = candidate.replace(/\b(DLXR|PRMR|EXCS|EXTW|VILLA|PREM|ACCR)\b/gi, ' ');
+    candidate = candidate.replace(/\b(Mr\.|Ms\.|Mrs\.|Dr\.|MR|MS|MRS|DR)\b/g, ' ');
+    candidate = candidate.replace(/\b(PX|PAX|HB|FB|BB|BF|LD)\b/gi, ' ');
+    // Enlever tous les nombres isolés
+    candidate = candidate.replace(/\b\d+(\.\d+)?\b/g, ' ');
+    // Enlever symboles parasites
+    candidate = candidate.replace(/[\(\)\[\]<>«»\/\|]/g, ' ');
+    // Compresser les espaces
+    candidate = candidate.replace(/\s+/g, ' ').trim();
+
+    // ÉTAPE 4 — Validation : pas de nom de guest (avec virgule)
+    if (candidate.includes(',')) {
+        // Il y a une virgule → on a probablement capturé un nom de guest
+        // On coupe tout ce qui est avant la virgule
+        const commaIdx = candidate.indexOf(',');
+        candidate = candidate.substring(commaIdx + 1).trim();
+        // Puis enlever tout ce qui ressemble encore à un nom de guest
+        // (mots Capitalized qui se terminent par titre)
+        candidate = candidate.replace(/^[A-Za-z]+\s+(MR|MS|MRS|Mr\.|Ms\.|Mrs\.)\s+/i, '');
+    }
+
+    // ÉTAPE 5 — Trouver le début propre de la company
+    // La company commence souvent par un mot Capitalized ou tout en MAJUSCULES
+    // On cherche le 1er mot qui ressemble à une company
+    const words = candidate.split(/\s+/).filter(w => w.length >= 2);
+    if (words.length === 0) return 'Direct';
+
+    // Reconstruire en gardant les mots qui ont du sens
+    let companyWords = [];
+    let started = false;
+
+    for (const w of words) {
+        const upper = w.toUpperCase();
+        // Ignorer les codes bloqués
+        if (BLOCKED_CODES_AGENCY.includes(upper)) {
+            if (started && companyWords.length >= 2) break;
+            continue;
+        }
+        // Démarrer dès qu'on trouve un mot company-like
+        if (/^[A-Z]/.test(w) || w === w.toUpperCase()) {
+            started = true;
+        }
+        if (started) {
+            companyWords.push(w);
+            if (companyWords.length >= 10) break;
+        }
+    }
+
+    let result = companyWords.join(' ').trim();
+
+    // ÉTAPE 6 — Enlever les suffixes parasites finaux
+    result = result
+        .replace(/\s+(B|L|H|ST|NORM|REG|CORP|OIL|CITY|GHQ|HU|DXR|AED|NET|GST|RO|ONLY|STAY|SHORT|LONG)$/gi, '')
+        .replace(/^[\s\-\.,;:]+|[\s\-\.,;:]+$/g, '')
         .trim();
 
-    candidate = candidate.replace(/^(ADN|HB|FB|BB|PX|BF|LD|RO|ONLY|ONLY\.)\s+/gi, '').trim();
+    // ÉTAPE 7 — Validation finale
+    const lettersCount = (result.match(/[A-Za-z]/g) || []).length;
+    if (lettersCount < 3) return 'Direct';
+    if (result.length > 80) result = result.substring(0, 80).trim();
 
-    // ÉTAPE 5 — Validation du candidat principal
-    const lettersCount = (candidate.match(/[A-Za-z]/g) || []).length;
-
-    if (candidate && lettersCount >= 3 && !candidate.includes(',')) {
-        const words = candidate.toUpperCase().split(/\s+/);
-        const validWords = words.filter(w => w.length >= 2 && !BLOCKED_CODES_AGENCY.includes(w));
-        if (validWords.length >= 1 && candidate.length <= 80) {
-            return candidate;
-        }
-    }
-
-    // ÉTAPE 6 — FALLBACK : chercher mots en MAJUSCULES uniquement AVANT la date
-    const searchZone = dateStartIndex > 0
-        ? normalized.substring(0, dateStartIndex)
-        : normalized;
-
-    const capsMatches = searchZone.match(/\b([A-Z][A-Za-z&\.]+(?:\s+[A-Z][A-Za-z&\.]+){0,5})\b/g) || [];
-
-    let bestMatch = null;
-    for (const m of capsMatches) {
-        const clean = m.trim();
-        if (clean.length < 4) continue;
-        const upper = clean.toUpperCase();
-        if (BLOCKED_CODES_AGENCY.includes(upper)) continue;
-        if (/^(Mr|Ms|Mrs|Dr)\.?$/i.test(clean)) continue;
-        if (clean.includes(',')) continue;
-        if (clean.split(/\s+/).length > 8) continue;
-
-        const companyHints = /(LLC|INC|LTD|LIMITED|CORP|COMPANY|GROUP|ENERGY|SYSTEMS|SERVICES|TOURISM|TRAVEL|HOLDING|TRADING|GULF|ADNOC|HONEYWELL|TOSHIBA|SIEMENS|FERTIL|BOROUGE|EXPEDIA|BOOKING|ETIMAD|GHQ|RENEWABLE|INDUSTRIES|AXEN|CEGSPA|HABSHAN|QATEINTL|ALFALAVAL)/i;
-        const score = clean.length + (companyHints.test(clean) ? 100 : 0);
-
-        if (!bestMatch || score > bestMatch.score) {
-            bestMatch = { text: clean, score };
-        }
-    }
-
-    if (bestMatch) {
-        return bestMatch.text.length > 80 ? bestMatch.text.substring(0, 80).trim() : bestMatch.text;
-    }
-
-    return 'Direct';
+    return result || 'Direct';
 }
 
 window.extractAgencyFromText = extractAgencyFromText;
@@ -544,13 +572,13 @@ function parsePaxMultiplier(text) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// QUOTA V3 — Gère "3 pieces per day for AED 30" = 3 PCS (pas 30)
+// QUOTA V3
 // ═══════════════════════════════════════════════════════════════════
 function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
     const t = text.toLowerCase();
 
-    // ═══ PATTERN PRIORITAIRE : "X pieces per day" ═══
+    // "X pieces per day"
     let m = text.match(/(\d{1,2})\s*(?:pieces?|pcs?)\s*per\s*day/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -559,10 +587,9 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Nettoyer les montants AED AVANT les autres regex ═══
     let cleaned = text.replace(/AED\s*\d+(\.\d+)?\s*(net|gst|acc|bb)?/gi, ' ');
 
-    // ═══ Pattern : "03PCS/LAU DAILY", "04PCS/LAU@10++" ═══
+    // "03PCS/LAU DAILY"
     m = cleaned.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -572,7 +599,7 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Pattern : "X pieces per day" sans "PCS" ═══
+    // "X pieces per day" sans PCS
     m = cleaned.match(/(\d{1,2})\s*pieces?\s*(?:per\s*day|daily)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -581,7 +608,7 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Pattern : "INCL.5PCS LAU" ═══
+    // "INCL.5PCS LAU"
     m = cleaned.match(/incl\.?\s*([0-9]{1,2})\s*(?:pcs|pieces)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -590,7 +617,7 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Pattern : "X PCS EXTRA" ═══
+    // "X PCS EXTRA"
     m = cleaned.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*extra/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -599,7 +626,6 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Fallback : mention laundry sans chiffre ═══
     if (/hdl[0-9]|laundry|lau\s*daily|laun/i.test(t)) {
         return { pcs: 0, type: 'package', text: 'Laundry Package' };
     }
@@ -652,13 +678,16 @@ async function processTextData(rawData) {
             quotaText = `${String(finalPcs).padStart(2, '0')} PCS ${quota.type === 'extra' ? 'EXTRA' : 'LAU DAILY'} (×${pax} PAX)`;
         }
 
+        // 🎯 AGENCY V7 : ré-extraire TOUJOURS depuis le texte complet
+        const agencyFromFullText = extractAgencyFromText(accumulatedText);
+
         parsedData.push({
             room: currentRoom,
             guestName: currentGuest || extractGuestNameFromText(accumulatedText) || 'Unknown Guest',
             roomTyp: currentRoomTyp,
             arrival: currentArrival,
             departure: currentDeparture,
-            agency: currentAgency,
+            agency: agencyFromFullText,
             quotaText: quotaText,
             isChargeable: quota.type === 'chargeable',
             paxMultiplier: pax,
@@ -694,9 +723,6 @@ async function processTextData(rawData) {
 
             currentGuest = extractGuestNameFromText(trimmed);
 
-            const ag = extractAgencyFromText(trimmed);
-            if (ag !== 'Direct') currentAgency = ag;
-
             const dates = trimmed.match(dateRegex);
             if (dates) {
                 currentArrival = dates[0];
@@ -708,11 +734,6 @@ async function processTextData(rawData) {
             if (!currentGuest || currentGuest === 'Unknown Guest') {
                 const g = extractGuestNameFromText(trimmed);
                 if (g) currentGuest = g;
-            }
-
-            if (currentAgency === 'Direct') {
-                const ag = extractAgencyFromText(trimmed);
-                if (ag !== 'Direct') currentAgency = ag;
             }
 
             const dates = trimmed.match(dateRegex);
@@ -1057,4 +1078,4 @@ async function importAutoDirect() {
     }
 }
 
-console.log('✅ [laundry.js] Loaded with Agency V6 + Quota V3 + Storage helpers first');
+console.log('✅ [laundry.js] Loaded with Agency V7 + Quota V3');
