@@ -1,12 +1,63 @@
 // =============================================================
 // LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
-// ⚠️ Ce fichier est chargé AVANT ui.js — les doublons de fonctions
-//    (updateQty, chargerDonneesLocalStorage, etc.) sont écrasés par ui.js.
-//    Seules les fonctions UNIQUES à ce fichier sont actives.
-// ✅ Aligné sur la logique created_by de ui.js : 'staff ( nom )' ou 'pending'
-// ✅ MASS ENTRY V2 — Parser PMS robuste (PAX multiplier + Quota + Filtres)
+// ⚠️ Chargé AVANT ui.js
+// ✅ MASS ENTRY V2 — Parser PMS robuste
+// ✅ AGENCY V4 — Extraction fidèle par position (anti-parasites)
+// ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
 // =============================================================
 
+// ═══════════════════════════════════════════════════════════════════
+// 🔧 HELPERS DE STORAGE — DÉCLARÉS EN PREMIER (fix ReferenceError)
+// ═══════════════════════════════════════════════════════════════════
+function chargerDonneesLocalStorage() {
+    const data = localStorage.getItem('remal_laundry_slips');
+    cachedSlips = data ? JSON.parse(data) : [];
+}
+
+function sauvegarderDonneesLocalStorage() {
+    const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const slips90j = cachedSlips.filter(s => s.created_at && s.created_at >= ilYa90Jours);
+
+    try {
+        localStorage.setItem('remal_laundry_slips', JSON.stringify(slips90j));
+        return;
+    } catch (e) {
+        console.warn("⚠️ [Storage] localStorage plein à 90j, réduction à 30j");
+    }
+
+    const ilYa30Jours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const slips30j = cachedSlips.filter(s => s.created_at && s.created_at >= ilYa30Jours);
+
+    try {
+        localStorage.setItem('remal_laundry_slips', JSON.stringify(slips30j));
+        return;
+    } catch (e) {
+        console.warn("⚠️ [Storage] localStorage plein à 30j, réduction à 100 records");
+    }
+
+    try {
+        const last100 = cachedSlips.slice(0, 100);
+        localStorage.setItem('remal_laundry_slips', JSON.stringify(last100));
+        console.error("❌ [Storage] localStorage critique, garde uniquement 100 records");
+    } catch (e) {
+        console.error("❌ [Storage] Impossible de sauvegarder dans localStorage");
+    }
+}
+
+function chargerPmsLocalStorage() {
+    const data = localStorage.getItem('remal_pms_database');
+    if (data) {
+        try { pmsDatabase = JSON.parse(data); } catch(e) { pmsDatabase = {}; }
+    }
+}
+
+function sauvegarderPmsLocalStorage() {
+    localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPERS MÉTIER
+// ═══════════════════════════════════════════════════════════════════
 async function selectBackupFolder() {
     try {
         if (window.showDirectoryPicker) {
@@ -32,56 +83,6 @@ async function writeRecordToFile(record) {
     } catch (err) {
         console.warn("Could not write record to direct folder:", err);
     }
-}
-
-function chargerDonneesLocalStorage() {
-    const data = localStorage.getItem('remal_laundry_slips');
-    cachedSlips = data ? JSON.parse(data) : [];
-}
-
-function sauvegarderDonneesLocalStorage() {
-    // ✅ Phase 1.2 — Dégradation gracieuse
-    // Niveau 1 : 90 derniers jours
-    const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-    const slips90j = cachedSlips.filter(s => s.created_at && s.created_at >= ilYa90Jours);
-    
-    try {
-        localStorage.setItem('remal_laundry_slips', JSON.stringify(slips90j));
-        return;
-    } catch (e) {
-        console.warn("⚠️ [Storage] localStorage plein à 90j, réduction à 30j");
-    }
-
-    // Niveau 2 : 30 derniers jours
-    const ilYa30Jours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const slips30j = cachedSlips.filter(s => s.created_at && s.created_at >= ilYa30Jours);
-    
-    try {
-        localStorage.setItem('remal_laundry_slips', JSON.stringify(slips30j));
-        return;
-    } catch (e) {
-        console.warn("⚠️ [Storage] localStorage plein à 30j, réduction à 100 records");
-    }
-
-    // Niveau 3 : 100 records les plus récents
-    try {
-        const last100 = cachedSlips.slice(0, 100);
-        localStorage.setItem('remal_laundry_slips', JSON.stringify(last100));
-        console.error("❌ [Storage] localStorage critique, garde uniquement 100 records");
-    } catch (e) {
-        console.error("❌ [Storage] Impossible de sauvegarder dans localStorage");
-    }
-}
-
-function chargerPmsLocalStorage() {
-    const data = localStorage.getItem('remal_pms_database');
-    if (data) {
-        try { pmsDatabase = JSON.parse(data); } catch(e) { pmsDatabase = {}; }
-    }
-}
-
-function sauvegarderPmsLocalStorage() {
-    localStorage.setItem('remal_pms_database', JSON.stringify(pmsDatabase));
 }
 
 function isRoomNumberValid(val) {
@@ -114,11 +115,11 @@ function updateFreeQty(key, delta) {
 }
 
 function calculateGlobalTotals() {
-    let totalClothes = 0; 
+    let totalClothes = 0;
     let subtotal = 0;
 
-    Object.values(cart).forEach(item => { 
-        totalClothes += item.qty; 
+    Object.values(cart).forEach(item => {
+        totalClothes += item.qty;
         if (currentCountType === 'guest') {
             subtotal += item.price * item.qty;
         } else if (currentCountType === 'quota_extra') {
@@ -141,9 +142,9 @@ function calculateGlobalTotals() {
         }
     }
 
-    const vat = subtotal * 0.05; 
+    const vat = subtotal * 0.05;
     const grandTotal = subtotal + vat;
-    
+
     const countEl = document.getElementById('currentBordereauCount');
     const subEl = document.getElementById('subTotal');
     const vatEl = document.getElementById('vatAmount');
@@ -155,12 +156,9 @@ function calculateGlobalTotals() {
     if (grandEl) grandEl.innerText = `${grandTotal.toFixed(2)} AED`;
 }
 
-// -------------------------------------------------------------
-// ENREGISTREMENT ET ALIGNEMENT COMPATIBLE GUEST PORTAL & SUPABASE
-// ⚠️ NOTE : cette fonction n'est plus appelée par le bouton Save 
-// (ui.js:sauvegarderBordereauDepuisFormulaire() prend le relais).
-// Conservée pour compatibilité legacy — alignée sur la logique ui.js.
-// -------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+// SAUVEGARDE BORDEREAU (legacy — non appelée par le bouton Save)
+// ═══════════════════════════════════════════════════════════════════
 async function sauvegarderBordereauLocal() {
     const roomInput = document.getElementById('roomNumber');
     const roomNum = roomInput ? roomInput.value.trim() : '';
@@ -274,13 +272,12 @@ async function sauvegarderBordereauLocal() {
         }
     }
 
-    // ✅ ALIGNÉ SUR ui.js : restaure la session + fallback 'pending'
-    const staffSession = (typeof restaurerSessionStaff === 'function') 
-        ? restaurerSessionStaff() 
+    const staffSession = (typeof restaurerSessionStaff === 'function')
+        ? restaurerSessionStaff()
         : (currentStaffUser || null);
 
-    const staffName = staffSession?.name 
-        ? `staff ( ${staffSession.name} )` 
+    const staffName = staffSession?.name
+        ? `staff ( ${staffSession.name} )`
         : 'pending';
 
     const payloadSupabase = {
@@ -323,7 +320,6 @@ async function sauvegarderBordereauLocal() {
                 console.error("❌ ERREUR SUPABASE :", res.error.message);
             } else if (res.data && res.data.length > 0) {
                 assignedId = String(res.data[0].id);
-                console.log("✅ Enregistré sur Supabase avec succès, UUID:", assignedId);
             }
         } catch (e) {
             console.error("Exception d'écriture Supabase :", e);
@@ -367,42 +363,141 @@ async function sauvegarderBordereauLocal() {
     setTimeout(() => { isLocalUpdating = false; }, 1000);
 }
 
-function isPAXOrInvalid(val) {
-    if (!val) return true;
-    let cleaned = val.trim();
-    if (/^\d+[\/\-\.]\d+[\/\-\.]\d+$/.test(cleaned)) return true;
-    if (/^[\d\/\s\-\.]+$/.test(cleaned)) return true;
-    if (/\d{2}\/\d{2}\/\d{4}/.test(cleaned)) return true;
-    const blockedCodes = ['DLXR', 'BBLA', 'HBDL', 'REG', 'IN', 'CN', 'EMA', 'SAM', 'CORP', 'B1', 'B2', '1/0/0', '2/0/0'];
-    if (blockedCodes.includes(cleaned.toUpperCase())) return true;
-    return false;
+// ═══════════════════════════════════════════════════════════════════
+// AGENCY V4 — EXTRACTION FIDÈLE PAR POSITION
+// ═══════════════════════════════════════════════════════════════════
+function extractAgencyFromText(text) {
+    if (!text || typeof text !== 'string') return 'Direct';
+
+    // ÉTAPE 0 — Normalisation
+    let normalized = text
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+        .replace(/(\d)([a-zA-Z])/g, '$1 $2')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // ÉTAPE 1 — Fin du nom guest (titre Mr./Ms./MR/MS)
+    let guestEndIndex = -1;
+    const titlePatterns = [
+        /\bMr\.\s/gi, /\bMs\.\s/gi, /\bMrs\.\s/gi, /\bDr\.\s/gi,
+        /\bMR\s/gi,  /\bMS\s/gi,  /\bMRS\s/gi,  /\bDR\s/gi
+    ];
+
+    let lastTitleMatch = null;
+    for (const pat of titlePatterns) {
+        let m;
+        while ((m = pat.exec(normalized)) !== null) {
+            if (!lastTitleMatch || m.index > lastTitleMatch.index) {
+                lastTitleMatch = { index: m.index, length: m[0].length };
+            }
+        }
+    }
+    if (lastTitleMatch) guestEndIndex = lastTitleMatch.index + lastTitleMatch.length;
+
+    // ÉTAPE 2 — 1ère date
+    const dateMatch = normalized.match(/\b\d{2}\/\d{2}\/\d{4}\b/);
+    const dateStartIndex = dateMatch ? dateMatch.index : -1;
+
+    // ÉTAPE 3 — Extraction entre guestEnd et dateStart
+    let candidate = '';
+    if (guestEndIndex > 0 && dateStartIndex > guestEndIndex) {
+        candidate = normalized.substring(guestEndIndex, dateStartIndex).trim();
+    } else if (guestEndIndex > 0) {
+        candidate = normalized.substring(guestEndIndex).trim();
+    } else if (dateStartIndex > 0) {
+        const start = Math.max(0, dateStartIndex - 60);
+        candidate = normalized.substring(start, dateStartIndex).trim();
+        candidate = candidate.replace(/^[\d\s\-\/\.]+/, '').trim();
+    }
+
+    // ÉTAPE 4 — Nettoyage ULTRA-STRICT
+    candidate = candidate
+        // Enlever les séparateurs // / . |
+        .replace(/[\/\.\|]+/g, ' ')
+        // Enlever les codes plan/rate isolés
+        .replace(/\b(PX|HB|FB|BB|BF|LD|ADN|HDL|HD\d*|FB\d*|RMON|RM|DXR|AED|GST|NET|ACC|ST|NORM|REG|CORP|OIL|CITY|VISA|CASH|FIT|STA|WALK|HOUS|GHQ|VILA|VROM)\b/gi, ' ')
+        // Enlever les fragments 1-2 lettres isolés
+        .replace(/\b[A-Z]{1,2}\b/g, ' ')
+        // Enlever les nombres et rates
+        .replace(/\b\d+(\.\d+)?\b/g, ' ')
+        // Enlever symboles
+        .replace(/[\(\)\[\]<>«»]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // Enlever les mots parasites en début/fin
+    candidate = candidate
+        .replace(/^(ADN|HB|FB|BB|PX|BF|LD|RO|ONLY|ONLY\.)\s+/gi, '')
+        .replace(/\s+(HB|FB|BB|PX|BF|LD|RO|ONLY|B|L|H)$/gi, '')
+        .trim();
+
+    // ÉTAPE 5 — Validation
+    const lettersCount = (candidate.match(/[A-Za-z]/g) || []).length;
+
+    if (!candidate || lettersCount < 3 || candidate.includes(',')) {
+        // Fallback : chercher un mot long en MAJUSCULES/Capitalized
+        const capsMatch = text.match(/\b([A-Z][A-Za-z&\.]+(?:\s+[A-Z][A-Za-z&\.]+)*)\b/g);
+        if (capsMatch) {
+            const BLOCKED = [
+                'DLXR','PRMR','ROYS','EXCS','EXTW','VILLA','PREM','BBLA','HBDL','HDL4','HD40','FB24',
+                'CORP','STAH','WALK','OIL','CITY','NORM','REG','MR','MS','MRS','DR','PX','HB','FB',
+                'BF','LD','DXR','AED','GST','ACC','B4HB','B4RO','VISA','CASH','HU','OTA1','ADN2',
+                'RMON','VILA','GHQ','NET','FB40','CHECK','IN','CHECKOUT','LONG','STAY','NIGHT','NIGHTS',
+                'ROOM','ONLY','NUMBER','TOTAL','ROOMS','PAX','PRINTED','PROLOGIC','FIRST','INHOUSE',
+                'GUEST','LIST','HOTEL','REMAL','VEHICLE','CONFIRM','BILLING','INSTRUCTIONS','GROUP',
+                'DEPARTURE','CLASS','TEXT','PLAN','BALANCE','CHANNEL','ACTIVITY','INCLUSIVE',
+                'DESCRIPTION','FROM','TO','ARRIVAL','SORTED','SUPPRESSED','NOTES','COMPLAINTS',
+                'FEEDBACK','TASK','INFORMATION','PREFERENCES','NOTIFICATIONS'
+            ];
+
+            let bestMatch = null;
+            for (const m of capsMatch) {
+                const clean = m.trim();
+                if (clean.length < 4) continue;
+                if (BLOCKED.includes(clean.toUpperCase())) continue;
+                if (/^(Mr|Ms|Mrs|Dr|The|And|Or|For|With|From|Note|Plan|Room|Rate|Short|Long|Guest|Cash|City|NORM|CORP|REG|OIL)$/i.test(clean)) continue;
+                if (clean.split(/\s+/).length > 8) continue;
+
+                if (!bestMatch || clean.length > bestMatch.length) {
+                    bestMatch = clean;
+                }
+            }
+
+            if (bestMatch) {
+                return bestMatch.length > 80 ? bestMatch.substring(0, 80).trim() : bestMatch;
+            }
+        }
+        return 'Direct';
+    }
+
+    if (candidate.length > 80) candidate = candidate.substring(0, 80).trim();
+
+    candidate = candidate
+        .replace(/\s+(HARV|SGL|DBL|ACCT|RO|Net|NET|SALE|COMPANY|ACCOUNT|FOLLOW|ORGANIZATION|NIGHT|SHORT|LONG|STAY|ROOM|ONLY)$/i, '')
+        .replace(/\s+[A-Z]$/, '')
+        .trim();
+
+    const finalLetters = (candidate.match(/[A-Za-z]/g) || []).length;
+    if (finalLetters < 3) return 'Direct';
+
+    return candidate;
 }
 
-function sanitizeAgencyName(agencyStr) {
-    if (!agencyStr || isPAXOrInvalid(agencyStr)) return "Direct";
-    let cleaned = agencyStr.trim();
-    if (isPAXOrInvalid(cleaned)) return "Direct";
-    return cleaned;
-}
+window.extractAgencyFromText = extractAgencyFromText;
 
 // ═══════════════════════════════════════════════════════════════════
 // MASS ENTRY V2 — HELPERS
 // ═══════════════════════════════════════════════════════════════════
-
-/**
- * Detect parasite lines: page numbers, tables of "1 1 1", headers, footers
- */
 function isParasiteLine(line) {
     const t = line.trim();
     if (!t || t.length < 3) return true;
 
-    // Pattern "1 1 1 1 1 1..." (artefact pdf.js)
     const digitsRatio = (t.match(/\d/g) || []).length / t.length;
     if (digitsRatio > 0.7 && t.length > 20) return true;
 
     const lower = t.toLowerCase();
 
-    // Footers / headers Prologic
     if (lower.includes('prologic first')) return true;
     if (lower.includes('printed on')) return true;
     if (lower.includes('business date')) return true;
@@ -413,16 +508,11 @@ function isParasiteLine(line) {
     if (lower.includes('total pax')) return true;
     if (lower.includes('grand total')) return true;
     if (/^page\s+\d+\s+of\s+\d+/i.test(t)) return true;
-
-    // Header colonnes
     if (/^(room|block|id\/check|guest last|company\/agent|arrival|mrkt|pax|terms|plan)/i.test(t)) return true;
 
     return false;
 }
 
-/**
- * Normalize a date "05/10/2026" → "2026-10-05" (ISO sortable) or return original
- */
 function normalizePmsDate(str) {
     if (!str) return '';
     const m = String(str).match(/(\d{2})\/(\d{2})\/(\d{4})/);
@@ -430,13 +520,8 @@ function normalizePmsDate(str) {
     return `${m[3]}-${m[2]}-${m[1]}`;
 }
 
-/**
- * Detect PAX multiplier from text like "02-PAX", "1 PX", "10- PAX"
- * Returns 1 if not found.
- */
 function parsePaxMultiplier(text) {
     if (!text) return 1;
-    // "02-PAX", "2-PAX", "10- PAX", "1 PX", "02 PAX"
     const m = text.match(/(?:^|[\s\-\(])0*([1-9]\d?)\s*[\-\s]?\s*(?:px|pax)(?=[\s\-\)\,]|$)/i);
     if (m) {
         const n = parseInt(m[1], 10);
@@ -445,15 +530,10 @@ function parsePaxMultiplier(text) {
     return 1;
 }
 
-/**
- * Parse laundry quota from text.
- * Returns { pcs: number, type: 'daily'|'extra'|'comp'|'package'|'chargeable', text: string }
- */
 function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
     const t = text.toLowerCase();
 
-    // ═══ Pattern 1 : "03PCS/LAU DAILY", "04PCS/LAU@10++", "5PCS LAU 10++" ═══
     let m = text.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -463,7 +543,6 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Pattern 2 : "INCL.5PCS LAU", "INCL 5 PCS" ═══
     m = text.match(/incl\.?\s*([0-9]{1,2})\s*(?:pcs|pieces)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -472,7 +551,6 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Pattern 4 : "X PCS EXTRA" ═══
     m = text.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*extra/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -481,7 +559,6 @@ function parseQuotaText(text) {
         }
     }
 
-    // ═══ Fallback : mention laundry mais sans chiffre précis ═══
     if (/hdl[0-9]|laundry|lau\s*daily|laun/i.test(t)) {
         return { pcs: 0, type: 'package', text: 'Laundry Package' };
     }
@@ -489,13 +566,9 @@ function parseQuotaText(text) {
     return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
 }
 
-/**
- * Extract guest name from a text chunk (Last,First Mr./Ms.)
- */
 function extractGuestNameFromText(text) {
     if (!text) return '';
     if (/total\s+rooms|grand\s+total/i.test(text)) return '';
-    // Pattern principal : "Last,First Mr./Ms."
     let m = text.match(/([A-Za-z][A-Za-z\s\-\.\']+,\s*[A-Za-z][A-Za-z\s\-\.\']+\s*(?:MR|Mr|MS|Ms|Mr\.|Ms\.)?)/);
     if (m) {
         let n = m[1].trim();
@@ -504,152 +577,18 @@ function extractGuestNameFromText(text) {
     return '';
 }
 
-/**
- * Detect a company / agency from text chunk
- */
-/**
- * Detect a company / agency from text chunk — VERSION ROBUSTE V2
- * Gère les lignes collées (pas de séparateur \s{2,} ou \t) et 
- * remonte le nom complet avant le mot-clé (ex: "Excelerate Energy Inc").
- */
-function extractAgencyFromText(text) {
-    if (!text) return 'Direct';
-
-    // ═══ Liste enrichie de mots-clés company (basés sur le PDF réel) ═══
-    const kws = (typeof companyKeywords !== 'undefined' && Array.isArray(companyKeywords))
-        ? companyKeywords
-        : [];
-
-    // Ajout d'une liste de secours — ces mots DOIVENT toujours matcher
-    const MUST_MATCH = [
-        'excelerate', 'fertiglobe', 'honeywell', 'toshiba', 'siemens', 'borouge',
-        'rotary', 'generation', 'hunter', 'expedia', 'booking', 'adnoc', 'etimad',
-        'ghq', 'ghd', 'hamat', 'homat', 'tazweed', 'cegspa', 'falaj', 'power mech',
-        'omv', 'gulf', 'qateintl', 'webeds', 'borouge', 'wathba', 'samsung',
-        'al watan', 'mcdermott', 'chiyoda', 'petrofac', 'technip', 'fluor',
-        'llc', 'inc', 'corp', 'ltd', 'limited', 'wll', 'w.l.l', 'co.',
-        'energy', 'systems', 'services', 'tourism', 'travel', 'holdings',
-        'trading', 'contracting', 'establishment', 'group', 'international'
-    ];
-
-    const allKws = [...new Set([...kws, ...MUST_MATCH])];
-
-    // ═══ Normaliser le texte : ajouter des espaces autour des séparateurs collés ═══
-    // Ex: "Mr.Excelerate" → "Mr. Excelerate"
-    //     "Inc29/09/2026" → "Inc 29/09/2026"
-    //     "CORP1/0/0" → "CORP 1/0/0"
-    let normalized = text
-        // Ajoute un espace entre une lettre minuscule et une majuscule (camelCase)
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        // Ajoute un espace entre une lettre et un chiffre
-        .replace(/([a-zA-Z])(\d)/g, '$1 $2')
-        // Ajoute un espace entre un chiffre et une lettre
-        .replace(/(\d)([a-zA-Z])/g, '$1 $2');
-
-    // ═══ Étape 1 : Chercher un mot-clé dans le texte normalisé ═══
-    const lower = normalized.toLowerCase();
-    let foundKeywordIndex = -1;
-    let foundKeyword = '';
-
-    for (const kw of allKws) {
-        const idx = lower.indexOf(kw);
-        if (idx !== -1) {
-            // Prend le mot-clé le PLUS LONG (pour éviter que "inc" matche avant "honeywell")
-            if (kw.length > foundKeyword.length) {
-                foundKeywordIndex = idx;
-                foundKeyword = kw;
-            }
-        }
-    }
-
-    if (foundKeywordIndex === -1) {
-        // Aucun mot-clé trouvé → tenter de trouver un nom propre long en majuscules
-        // Ex: "ETIMAD", "EXPEDIA", "TALABAT" (tout en majuscules, > 4 lettres)
-        const capsMatch = text.match(/\b([A-Z]{4,}(?:\s+[A-Z]{2,})*)\b/);
-        if (capsMatch) {
-            const candidate = capsMatch[1].trim();
-            // Filtrer les codes indésirables
-            const BAD = ['DLXR', 'PRMR', 'ROYS', 'EXCS', 'EXTW', 'VILLA', 'CORP', 'STAH', 'WALK', 'OIL', 'BBLA', 'HBDL', 'HDL4', 'FB24', 'HD40', 'RMON', 'ADNOC'];
-            if (!BAD.includes(candidate) && candidate.length >= 4) {
-                return candidate;
-            }
-        }
-        return 'Direct';
-    }
-
-    // ═══ Étape 2 : Extraire le nom complet autour du mot-clé ═══
-    // On remonte 3-4 mots AVANT le mot-clé, et on va jusqu'à la fin du mot-clé
-    const beforeKeyword = normalized.substring(0, foundKeywordIndex);
-    const afterKeyword = normalized.substring(foundKeywordIndex + foundKeyword.length);
-
-    // Prendre les 4 mots qui précèdent le mot-clé
-    const beforeWords = beforeKeyword.trim().split(/\s+/);
-    const takeBefore = beforeWords.slice(-4).join(' ');
-
-    // Prendre 1 mot après si c'est une extension (Energy, Tourism, Middle, East...)
-    const afterWords = afterKeyword.trim().split(/\s+/);
-    const firstAfterWord = afterWords[0] || '';
-    const extensionWords = ['energy', 'tourism', 'middle', 'east', 'holdings', 'trading',
-                            'services', 'systems', 'international', 'group', 'gulf', 'refining',
-                            'gas', 'waste', 'heat', 'project', 'solution', 'solutions'];
-    const extension = extensionWords.includes(firstAfterWord.toLowerCase()) ? ' ' + firstAfterWord : '';
-
-    let fullName = (takeBefore + ' ' + foundKeyword + extension).trim();
-
-    // ═══ Étape 3 : Nettoyage ═══
-    fullName = fullName
-        // Enlever les dates
-        .replace(/\d{2}\/\d{2}\/\d{4}/g, '')
-        // Enlever les codes PAX (1/0/0)
-        .replace(/\d+\/\d+\/\d+/g, '')
-        // Enlever les nombres isolés
-        .replace(/\b\d+\b/g, '')
-        // Enlever les codes de chambre/bloc
-        .replace(/\bB\d\b/g, '')
-        // Enlever les rates (ex: 400.00)
-        .replace(/\b\d+\.\d+/g, '')
-        // Enlever les mots parasites
-        .replace(/\b(Mr\.|Ms\.|Mrs\.|Mr|Ms|Dr|CORP|REG|OIL|FIT|STAH|WALK|CITY|NORM|HOUS)\b/gi, '')
-        // Enlever caractères spéciaux en début/fin
-        .replace(/^[\s\-\.,;:]+|[\s\-\.,;:]+$/g, '')
-        // Normaliser les espaces
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    // ═══ Étape 4 : Validation finale ═══
-    // Si le résultat est trop court ou contient un nom de guest (avec virgule), rejeter
-    if (fullName.length < 4 || fullName.includes(',')) {
-        // Fallback : utiliser juste le mot-clé capitalisé
-        return foundKeyword.charAt(0).toUpperCase() + foundKeyword.slice(1);
-    }
-
-    // Tronquer à 60 caractères max (au cas où)
-    if (fullName.length > 60) fullName = fullName.substring(0, 60).trim();
-
-    return fullName;
-}
-
-window.extractAgencyFromText = extractAgencyFromText;
-
 // ═══════════════════════════════════════════════════════════════════
 // MASS ENTRY V2 — PARSER PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════
-
 async function processTextData(rawData) {
     if (!rawData || !rawData.trim()) {
         alert("No data found to process.");
         return;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 1 — Pré-nettoyage : split + filtre parasites
-    // ═══════════════════════════════════════════════════════════════
     const rawLines = rawData.split('\n');
     const cleanLines = rawLines.filter(l => !isParasiteLine(l));
 
-    // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 2 — Parsing ligne par ligne (2 formats supportés)
-    // ═══════════════════════════════════════════════════════════════
     let parsedData = [];
     let currentRoom = null;
     let currentGuest = "";
@@ -690,27 +629,20 @@ async function processTextData(rawData) {
         const trimmed = line.trim();
         if (!trimmed) return;
 
-        // ═══ Format A : "115 DLXR B1 161397 ..." ═══
-        // ═══ Format B : "109DLXRB1160801Bade,Sakib..." ═══
         const fmtA = trimmed.match(/^(\d{3,4})\s+([A-Z0-9]{2,6})?/);
-        const fmtB = trimmed.match(/^(\d{3,4})(DLXR|PRMR|ROYS|EXCS|EXTW|EXTC|EXTP|VILLA|PREM)(B\d)?(\d+)?/i);
+        const fmtB = trimmed.match(/^(\d{3,4})(DLXR|PRMR|ROYS|EXCS|EXTW|EXTC|EXTP|VILLA|PREM|ACCR)(B\d)?(\d+)?/i);
 
         let roomMatch = null;
-        let remainder = trimmed;
 
         if (fmtB && isRoomNumberValid(fmtB[1])) {
             roomMatch = fmtB[1];
-            remainder = trimmed.substring(fmtB[0].length);
         } else if (fmtA && isRoomNumberValid(fmtA[1]) && trimmed.length > 10) {
             roomMatch = fmtA[1];
-            remainder = trimmed.substring(fmtA[0].length);
         }
 
         if (roomMatch) {
-            // Flush précédente
             flushCurrentRoom();
 
-            // Nouvelle chambre
             currentRoom = roomMatch;
             currentGuest = "";
             currentRoomTyp = (fmtA && fmtA[2] && /^[A-Z]{3,6}$/.test(fmtA[2])) ? fmtA[2] : "DLXR";
@@ -719,36 +651,29 @@ async function processTextData(rawData) {
             currentAgency = "Direct";
             accumulatedText = trimmed;
 
-            // Extraction guest depuis cette ligne
             currentGuest = extractGuestNameFromText(trimmed);
 
-            // Extraction agency
             const ag = extractAgencyFromText(trimmed);
             if (ag !== 'Direct') currentAgency = ag;
 
-            // Extraction dates
             const dates = trimmed.match(dateRegex);
             if (dates) {
                 currentArrival = dates[0];
                 if (dates[1]) currentDeparture = dates[1];
             }
         } else if (currentRoom) {
-            // Ligne de continuation
             accumulatedText += " " + trimmed;
 
-            // Guest si pas encore trouvé
             if (!currentGuest || currentGuest === 'Unknown Guest') {
                 const g = extractGuestNameFromText(trimmed);
                 if (g) currentGuest = g;
             }
 
-            // Agency si pas encore trouvée
             if (currentAgency === 'Direct') {
                 const ag = extractAgencyFromText(trimmed);
                 if (ag !== 'Direct') currentAgency = ag;
             }
 
-            // Dates
             const dates = trimmed.match(dateRegex);
             if (dates) {
                 dates.forEach(d => {
@@ -759,12 +684,9 @@ async function processTextData(rawData) {
         }
     });
 
-    // Flush final
     flushCurrentRoom();
 
-    // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 3 — Déduplication par room (dernière occurrence gagne)
-    // ═══════════════════════════════════════════════════════════════
+    // Déduplication par room
     const roomMap = new Map();
     parsedData.forEach(item => roomMap.set(item.room, item));
     parsedData = Array.from(roomMap.values());
@@ -774,9 +696,7 @@ async function processTextData(rawData) {
         return;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // ÉTAPE 4 — Construction payload + UPSERT + DELETE orphelins
-    // ═══════════════════════════════════════════════════════════════
+    // Construction payload
     const newPmsDatabase = {};
     const cloudGuestsPayload = [];
 
@@ -803,7 +723,7 @@ async function processTextData(rawData) {
         });
     });
 
-    // ═══ Garde-fou anti-catastrophe ═══
+    // Garde-fou anti-catastrophe
     const oldRooms = Object.keys(pmsDatabase || {});
     const newRooms = Object.keys(newPmsDatabase);
 
@@ -820,7 +740,7 @@ async function processTextData(rawData) {
         }
     }
 
-    // ═══ Mise à jour locale immédiate ═══
+    // Mise à jour locale
     pmsDatabase = newPmsDatabase;
     sauvegarderPmsLocalStorage();
 
@@ -828,24 +748,21 @@ async function processTextData(rawData) {
         renderMassPreviewTable();
     }
 
-    // ═══ Sync Supabase (UPSERT batch + DELETE orphelins) ═══
+    // Sync Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            // 1. UPSERT batch
             const { error: upsertErr } = await supabaseClient
                 .from('pms_guests')
                 .upsert(cloudGuestsPayload, { onConflict: 'room' });
 
             if (upsertErr) throw upsertErr;
 
-            // 2. DELETE orphelins (chambres présentes avant, disparues du nouveau PDF)
             const roomsInPdf = new Set(newRooms);
             const roomsToDelete = oldRooms.filter(r => !roomsInPdf.has(r));
 
             let deletedCount = 0;
             if (roomsToDelete.length > 0) {
-                const { error: delErr } = await supabaseClient
-                    .from('pms_guests')
+                const { error: delErr } = await supabaseClient                    .from('pms_guests')
                     .delete()
                     .in('room', roomsToDelete);
 
@@ -853,7 +770,6 @@ async function processTextData(rawData) {
                 deletedCount = roomsToDelete.length;
             }
 
-            // 3. Timestamp
             if (typeof markPmsSynced === 'function') {
                 markPmsSynced();
             }
@@ -870,22 +786,25 @@ async function processTextData(rawData) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// SPA
+// ═══════════════════════════════════════════════════════════════════
 function calculateSpaTotal() {
     let grandTotal = 0;
     const rows = document.querySelectorAll('#spa-laundry-section tbody tr:not(.bg-stone-100)');
-    
+
     rows.forEach(row => {
         const input = row.querySelector('.spa-qty-input');
         if(!input) return;
         const qty = parseInt(input.value) || 0;
         const rate = parseFloat(input.getAttribute('data-rate')) || 0;
         const rowAmountCell = row.querySelector('.spa-row-amount');
-        
+
         const rowTotal = qty * rate;
         if(rowAmountCell) rowAmountCell.innerText = rowTotal.toFixed(2);
         grandTotal += rowTotal;
     });
-    
+
     const gtEl = document.getElementById('spa-grand-total');
     if(gtEl) gtEl.innerText = grandTotal.toFixed(2) + " AED";
 }
@@ -898,7 +817,7 @@ async function validateAndSaveSpaReceipt() {
     const deliveredBy = document.getElementById('spa-delivered-by').value.trim();
     const givenBy = document.getElementById('spa-given-by').value.trim();
     const editingSpaId = document.getElementById('editingSpaId').value;
-    
+
     const colDate = document.getElementById('spa-collection-date').value;
     const colTime = document.getElementById('spa-collection-time').value;
     const delDate = document.getElementById('spa-delivery-date').value;
@@ -928,13 +847,12 @@ async function validateAndSaveSpaReceipt() {
         }
     });
 
-    // ✅ ALIGNÉ SUR ui.js : restaure la session + fallback 'pending'
-    const staffSession = (typeof restaurerSessionStaff === 'function') 
-        ? restaurerSessionStaff() 
+    const staffSession = (typeof restaurerSessionStaff === 'function')
+        ? restaurerSessionStaff()
         : (currentStaffUser || null);
 
-    const staffName = staffSession?.name 
-        ? `staff ( ${staffSession.name} )` 
+    const staffName = staffSession?.name
+        ? `staff ( ${staffSession.name} )`
         : 'pending';
 
     const payloadSpa = {
@@ -987,11 +905,11 @@ async function validateAndSaveSpaReceipt() {
         count_type: 'guest',
         total_clothes: totalClothes,
         total: grandTotalValue,
-        options: { 
-            service_style: 'SPA Daily Sheet', 
-            collection_date: colDate, collection_time: colTime, 
-            delivery_date: delDate, delivery_time: delTime, 
-            collected_by: collectedBy, delivered_by: deliveredBy 
+        options: {
+            service_style: 'SPA Daily Sheet',
+            collection_date: colDate, collection_time: colTime,
+            delivery_date: delDate, delivery_time: delTime,
+            collected_by: collectedBy, delivered_by: deliveredBy
         },
         created_at: colDate ? `${colDate}T${colTime || '00:00'}:00.000Z` : new Date().toISOString()
     };
@@ -1010,11 +928,9 @@ async function validateAndSaveSpaReceipt() {
     await writeRecordToFile(targetRecord);
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
 
-    // ✨ PHASE E.5 : Undo sur nouvelle création SPA
     if (isNewSpa && typeof showUndoToast === 'function') {
         showUndoToast(assignedId, `#${serialNo}`, true);
     } else if (!isNewSpa) {
-        // Update SPA → feedback simple
         const t = document.createElement('div');
         t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-950 border border-emerald-800 text-emerald-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
         t.innerHTML = `✅ <strong>SPA #${serialNo}</strong> updated`;
@@ -1045,12 +961,12 @@ async function exportAutoDirect() {
         slips: cachedSlips,
         lost_found: lostFoundItems
     };
-    
+
     const jsonString = JSON.stringify(backupData, null, 2);
     const filename = `Remal_Hotel_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
 
     localStorage.setItem('remal_auto_backup_full', JSON.stringify(backupData));
-    
+
     const blob = new Blob([jsonString], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1098,3 +1014,5 @@ async function importAutoDirect() {
         alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
     }
 }
+
+console.log('✅ [laundry.js] Loaded with Agency V4 + Storage helpers first');
