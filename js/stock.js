@@ -317,7 +317,7 @@ async function renderStockList() {
 async function fetchStockItems() {
     // Cache
     const now = Date.now();
-    if (stockCache.items && (now - stockCache.timestamp) < STOCK_CACHE_TTL) {
+    if (stockCache.items && stockCache.items.length > 0 && (now - stockCache.timestamp) < STOCK_CACHE_TTL) {
         return stockCache.items;
     }
 
@@ -326,23 +326,28 @@ async function fetchStockItems() {
     }
 
     try {
+        // ✨ Requête SANS filtre is_active (plus tolérant)
         const { data, error } = await supabaseClient
             .from('stock_items')
             .select('*')
-            .eq('is_active', true)
             .order('name', { ascending: true });
 
         if (error) {
-            console.warn('[Stock] Fetch error:', error.message);
+            console.error('[Stock] Fetch error:', error.message);
             return [];
         }
 
-        stockCache.items = data || [];
+        console.log('[Stock] Fetched from Supabase:', data?.length || 0, 'items');
+
+        // ✨ Filtrer en JS : garder seulement is_active !== false
+        const activeItems = (data || []).filter(item => item.is_active !== false);
+
+        stockCache.items = activeItems;
         stockCache.timestamp = now;
         return stockCache.items;
 
     } catch (e) {
-        console.warn('[Stock] Fetch exception:', e);
+        console.error('[Stock] Fetch exception:', e);
         return [];
     }
 }
