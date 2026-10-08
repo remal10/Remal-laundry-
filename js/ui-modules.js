@@ -2,6 +2,7 @@
 // REMAL LAUNDRY OS — UI MODULES
 // Archives, Lost & Found, Dashboard, SPA, Cloud, Login
 // ⚠️ Chargé APRÈS ui-live.js
+// ✅ MASS ENTRY V2 — renderMassPreviewTable éditable + sauvegarderChampPMS
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -313,6 +314,7 @@ async function chargerDonneesEtAbonnementCloud() {
             });
             sauvegarderPmsLocalStorage();
             renderMassPreviewTable();
+            if (typeof updateLastSyncDisplay === 'function') updateLastSyncDisplay();
         }
 
     } catch (e) {
@@ -321,47 +323,129 @@ async function chargerDonneesEtAbonnementCloud() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TABLE PMS PREVIEW
+// TABLE PMS PREVIEW — ÉDITABLE (MASS ENTRY V2)
 // ═══════════════════════════════════════════════════════════════════
 function renderMassPreviewTable() {
     const container = document.getElementById('massPreviewContainer');
     const counterContainer = document.getElementById('massRecordCounter');
     const resultsCard = document.getElementById('massResultsCard');
 
-    if (!container || Object.keys(pmsDatabase).length === 0) return;
+    if (!container) return;
 
-    let html = ``;
-    const rooms = Object.keys(pmsDatabase).sort((a, b) => parseInt(a) - parseInt(b));
-    
+    const rooms = Object.keys(pmsDatabase || {}).sort((a, b) => parseInt(a) - parseInt(b));
+
+    if (rooms.length === 0) {
+        container.innerHTML = `<tr><td colspan="8" class="p-4 text-stone-500 text-center">No data loaded.</td></tr>`;
+        if (counterContainer) counterContainer.innerHTML = '';
+        if (resultsCard) resultsCard.classList.add('hidden');
+        return;
+    }
+
+    let html = '';
+
     rooms.forEach(room => {
         const item = pmsDatabase[room];
         const hasLaundry = !item.isChargeable;
         let rowClass = hasLaundry ? "laundry-row" : "";
-        
+
         const isMissingAgency = (!item.agency || item.agency === "---" || item.agency === "Direct" || item.agency === "N/A");
         if (isMissingAgency) {
             rowClass += " bg-yellow-950/30 text-yellow-200 border-yellow-800";
         }
 
-        let statusHTML = item.isChargeable ? `<span class="badge-chargeable">Chargeable</span>` : `<span class="badge-green">Included (${item.quotaText})</span>`;
+        const statusHTML = item.isChargeable
+            ? `<span class="badge-chargeable">Chargeable</span>`
+            : `<span class="badge-green">Included (${item.quotaText})</span>`;
+
+        // Cellules éditables : data-field + data-room
+        const editableAttrs = (field) =>
+            `contenteditable="true" data-field="${field}" data-room="${room}" ` +
+            `onblur="sauvegarderChampPMS(this)" ` +
+            `onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" ` +
+            `class="editable-cell outline-none px-1 py-0.5 rounded"`;
 
         html += `
             <tr class="${rowClass}">
                 <td class="p-3.5"><strong>${room}</strong></td>
-                <td class="p-3.5">${item.guestName}</td>
-                <td class="p-3.5">${item.roomTyp}</td>
-                <td class="p-3.5 font-bold ${isMissingAgency ? 'text-yellow-400' : 'text-stone-200'}">${item.agency || '---'}</td>
-                <td class="p-3.5">${item.arrival || '---'}</td>
-                <td class="p-3.5">${item.departure || '---'}</td>
+                <td class="p-3.5"><span ${editableAttrs('guestName')}>${item.guestName || 'Unknown Guest'}</span></td>
+                <td class="p-3.5"><span ${editableAttrs('roomTyp')}>${item.roomTyp || '---'}</span></td>
+                <td class="p-3.5"><span ${editableAttrs('agency')}>${item.agency || '---'}</span></td>
+                <td class="p-3.5"><span ${editableAttrs('arrival')}>${item.arrival || '---'}</span></td>
+                <td class="p-3.5"><span ${editableAttrs('departure')}>${item.departure || '---'}</span></td>
+                <td class="p-3.5"><span ${editableAttrs('quotaText')}>${item.quotaText || 'Chargeable'}</span></td>
                 <td class="p-3.5">${statusHTML}</td>
             </tr>
         `;
     });
 
     container.innerHTML = html;
-    counterContainer.innerHTML = `✅ ${rooms.length} PMS record(s) loaded from memory.`;
-    resultsCard.classList.remove('hidden');
+    if (counterContainer) counterContainer.innerHTML = `✅ ${rooms.length} PMS record(s) loaded from memory.`;
+    if (resultsCard) resultsCard.classList.remove('hidden');
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// SAUVEGARDE D'UN CHAMP ÉDITÉ (blur / Enter sur une cellule)
+// ═══════════════════════════════════════════════════════════════════
+async function sauvegarderChampPMS(cell) {
+    if (!cell) return;
+
+    const room = cell.dataset.room;
+    const field = cell.dataset.field;
+    const newValue = cell.innerText.trim();
+
+    if (!room || !field) return;
+
+    // Valeur actuelle en mémoire
+    const current = pmsDatabase[room];
+    if (!current) return;
+
+    if (String(current[field] || '') === newValue) {
+        // Rien à sauvegarder
+        return;
+    }
+
+    // Mise à jour locale
+    pmsDatabase[room][field] = newValue;
+
+    // Cas spécial : si on édite quotaText → recalculer isChargeable
+    if (field === 'quotaText') {
+        const lower = newValue.toLowerCase();
+        pmsDatabase[room].isChargeable = lower.includes('chargeable') || (!lower.includes('laundry') && !lower.includes('pcs'));
+    }
+
+    sauvegarderPmsLocalStorage();
+
+    // Sync Supabase
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const payload = {};
+        payload[field] = newValue;
+        if (field === 'quotaText') {
+            payload.is_chargeable = pmsDatabase[room].isChargeable;
+        }
+
+        try {
+            const { error } = await supabaseClient
+                .from('pms_guests')
+                .update(payload)
+                .eq('room', room);
+
+            if (error) throw error;
+
+            // Feedback visuel
+            cell.classList.add('bg-emerald-900/50');
+            setTimeout(() => cell.classList.remove('bg-emerald-900/50'), 800);
+
+            console.log(`[PMS Edit] Room ${room} · ${field} → "${newValue}"`);
+        } catch (e) {
+            console.error('[PMS Edit] Save error:', e);
+            cell.classList.add('bg-red-900/50');
+            setTimeout(() => cell.classList.remove('bg-red-900/50'), 1500);
+        }
+    }
+}
+
+window.sauvegarderChampPMS = sauvegarderChampPMS;
+console.log('✅ [Mass Entry V2] renderMassPreviewTable + sauvegarderChampPMS loaded');
 
 // ═══════════════════════════════════════════════════════════════════
 // ARCHIVES
