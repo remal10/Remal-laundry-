@@ -529,8 +529,161 @@ function extractGuestNameFromText(text) {
  *   "133 DLXR B1 161689 47337 Alotaiba,Otaiba You Mr. FERTIL 07/10/2026 OIL 1/0/0..."
  *   → Company = "FERTIL"
  */
+/**
+ * Extract Company / Agent Group from a text line — VERSION V3 FIDÈLE
+ * Stratégie : extraire le texte entre la FIN DU NOM DU GUEST et la 1ère DATE
+ * 
+ * Format réel du PDF :
+ *   [guest + Mr./Ms.]  [COMPANY/AGENT]  [arrival JJ/MM/YYYY]  [mrkt]  [PAX]  ...
+ * 
+ * Exemples :
+ *   "115 DLXR B1 161397 47307 Duraikkannan,Nandhakuma Mr. Fertiglobe Holding Investment Limited 05/10/2026 OIL 1/0/0..."
+ *   → Company = "Fertiglobe Holding Investment Limited"
+ *   
+ *   "109DLXRB1160801Bade,Sakib Dild Mr.Excelerate Energy Inc29/09/2026CORP1/0/0..."
+ *   → Company = "Excelerate Energy Inc"
+ *   
+ *   "133 DLXR B1 161689 47337 Alotaiba,Otaiba You Mr. FERTIL 07/10/2026 OIL 1/0/0..."
+ *   → Company = "FERTIL"
+ */
 function extractAgencyFromText(text) {
     if (!text || typeof text !== 'string') return 'Direct';
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 0 — Normalisation : insérer des espaces dans le texte collé
+    // ═══════════════════════════════════════════════════════════════
+    let normalized = text
+        // "Mr.Excelerate" → "Mr. Excelerate"
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        // "Inc29/09" → "Inc 29/09"
+        .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+        // "5Mr." → "5 Mr."
+        .replace(/(\d)([a-zA-Z])/g, '$1 $2')
+        // Nettoyer les espaces multiples
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 1 — Trouver la position de FIN du nom du guest
+    // ═══════════════════════════════════════════════════════════════
+    let guestEndIndex = -1;
+    const lower = normalized.toLowerCase();
+
+    // Pattern prioritaire : chercher le dernier titre (Mr. / Ms. / MR / MS / MRS)
+    // suivi d'un espace, puis d'un caractère
+    const titlePatterns = [
+        /\bMr\.\s/gi, /\bMs\.\s/gi, /\bMrs\.\s/gi, /\bDr\.\s/gi,
+        /\bMR\s/gi,  /\bMS\s/gi,  /\bMRS\s/gi,  /\bDR\s/gi
+    ];
+
+    let lastTitleMatch = null;
+    for (const pat of titlePatterns) {
+        let m;
+        while ((m = pat.exec(normalized)) !== null) {
+            if (!lastTitleMatch || m.index > lastTitleMatch.index) {
+                lastTitleMatch = { index: m.index, length: m[0].length };
+            }
+        }
+    }
+
+    if (lastTitleMatch) {
+        guestEndIndex = lastTitleMatch.index + lastTitleMatch.length;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 2 — Trouver la position de la 1ère DATE (arrival)
+    // ═══════════════════════════════════════════════════════════════
+    const dateMatch = normalized.match(/\b\d{2}\/\d{2}\/\d{4}\b/);
+    let dateStartIndex = dateMatch ? dateMatch.index : -1;
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 3 — Extraire le texte entre guestEnd et dateStart
+    // ═══════════════════════════════════════════════════════════════
+    let candidate = '';
+
+    if (guestEndIndex > 0 && dateStartIndex > guestEndIndex) {
+        candidate = normalized.substring(guestEndIndex, dateStartIndex).trim();
+    } else if (guestEndIndex > 0) {
+        // Pas de date après le titre → prendre le reste de la ligne
+        candidate = normalized.substring(guestEndIndex).trim();
+    } else if (dateStartIndex > 0) {
+        // Pas de titre trouvé → prendre 60 caractères avant la date
+        const start = Math.max(0, dateStartIndex - 60);
+        candidate = normalized.substring(start, dateStartIndex).trim();
+        // Nettoyer les mots parasites en début
+        candidate = candidate.replace(/^[\d\s\-\/\.]+/, '').trim();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 4 — Nettoyage du candidat
+    // ═══════════════════════════════════════════════════════════════
+    candidate = candidate
+        // Enlever le contenu entre parenthèses qui pourrait rester
+        .replace(/\([^)]*\)/g, '')
+        // Enlever les codes identifiants en début (Id/Check in, Confirm #, etc.)
+        .replace(/^\s*\d{4,}\s+/, '')
+        .replace(/^\s*\d{4,}\s+/, '')
+        // Enlever les codes comme "B1", "B2"
+        .replace(/\bB\d\b/g, '')
+        // Enlever les nombres isolés
+        .replace(/\b\d+\b/g, '')
+        // Enlever les codes mrkt (OIL, CORP, REG, NORM, CITY, RMON, STAH, WALK, HOUS, FIT, GHQ, VILA, VISA, CASH, AED, USD, etc.)
+        .replace(/\b(OIL|CORP|REG|NORM|CITY|RMON|STAH|WALK|HOUS|FIT|GHQ|VILA|VISA|CASH|AED|USD|EUR|B4HB|B4RO|OTA1|ADN2|ADNZ|CC\d+|GG\d+|GDE[L]?|RMON|VROM|VRMO)\b/gi, '')
+        // Enlever les codes de plan (FB24, HDL4, HD40, BBLA, HBDL, RMON, RM LA, etc.)
+        .replace(/\b(FB24|HDL4|HD40|BBLA|HBDL|RMLA|BB|HD\d+|FB\d+)\b/gi, '')
+        // Enlever les termes booking.com / expedia isolés (mais on les GARDE s'ils sont la seule company)
+        // Enlever caractères spéciaux en début/fin
+        .replace(/^[\s\-\.,;:]+|[\s\-\.,;:]+$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // ═══════════════════════════════════════════════════════════════
+    // ÉTAPE 5 — Validation
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Si le candidat est vide, trop court, ou est un nom de guest (contient une virgule), 
+    // → fallback sur un pattern direct dans le texte
+    if (!candidate || candidate.length < 3 || candidate.includes(',')) {
+        // Fallback : chercher un mot long en MAJUSCULES (typique des companies courtes comme FERTIL, CEGSPA)
+        const capsMatch = text.match(/\b([A-Z]{3,}(?:\s+[A-Z]{2,})*)\b/g);
+        if (capsMatch) {
+            const BLOCKED = [
+                'DLXR','PRMR','ROYS','EXCS','EXTW','VILLA','PREM','BBLA','HBDL','HDL4','HD40','FB24',
+                'CORP','STAH','WALK','OIL','CITY','NORM','REG','MR','MS','MRS','DR','PX','HB','FB',
+                'BF','LD','DXR','AED','GST','ACC','B4HB','B4RO','VISARMON','CASHRMON','CASH','VISA',
+                'HU','OTA1','ADN2','CC','GG','B1','B2','RMON','VILA','GHQ','NET','FB40','FB RATE',
+                'PO','CHECK','IN','CHECKOUT','LONG','STAY','NIGHT','NIGHTS','ROOM','ONLY','NUMBER',
+                'TOTAL','ROOMS','PAX','PRINTED','PROLOGIC','FIRST','INHOUSE','GUEST','LIST','HOTEL',
+                'REMAL','VEHICLE','CONFIRM','BILLING','INSTRUCTIONS','GROUP','DEPARTURE','CLASS',
+                'TEXT','PLAN','BALANCE','CHANNEL','ACTIVITY','INCLUSIVE','DESCRIPTION','FROM','TO'
+            ];
+            // Priorité : mots ≥ 4 lettres, en majuscules, pas dans blocked
+            const validCaps = capsMatch
+                .map(c => c.trim())
+                .filter(c => c.length >= 4 && !BLOCKED.includes(c.toUpperCase()))
+                .filter(c => !/^\d+$/.test(c));
+            
+            if (validCaps.length > 0) {
+                // Prendre le plus long (le plus probable d'être la company)
+                validCaps.sort((a, b) => b.length - a.length);
+                return validCaps[0];
+            }
+        }
+        return 'Direct';
+    }
+
+    // Tronquer à 80 caractères max
+    if (candidate.length > 80) candidate = candidate.substring(0, 80).trim();
+
+    // Filtrer les mots parasites à la fin
+    candidate = candidate
+        .replace(/\s+(HARV|SGL|DBL|ACCT|RO|Net|NET|FB|HB|SALE|COMPANY|ACCOUNT|FOLLOW|ORGANIZATION)$/i, '')
+        .trim();
+
+    return candidate || 'Direct';
+}
+
+window.extractAgencyFromText = extractAgencyFromText;
 
     // ═══════════════════════════════════════════════════════════════
     // ÉTAPE 0 — Normalisation : insérer des espaces dans le texte collé
