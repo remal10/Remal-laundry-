@@ -142,9 +142,16 @@
 
 <!-- ═══ PMS LAST SYNC BANNER ═══ -->
 <div class="flex justify-center mt-3 mb-2 no-print">
-    <div class="inline-flex items-center gap-2 text-[11px] text-amber-400/90 font-medium bg-[#181614] px-4 py-1.5 rounded-full border border-[#2f2820]">
-        <span>🕒 PMS Last Sync:</span>
-        <span id="lastUpdateHeaderDisplay" class="font-bold text-emerald-400">Never</span>
+    <div class="inline-flex flex-wrap items-center gap-2 justify-center">
+        <div class="inline-flex items-center gap-2 text-[11px] text-amber-400/90 font-medium bg-[#181614] px-4 py-1.5 rounded-full border border-[#2f2820]">
+            <span>🕒 PMS Last Sync:</span>
+            <span id="lastUpdateHeaderDisplay" class="font-bold text-emerald-400">Never</span>
+        </div>
+        <div class="inline-flex items-center gap-2 text-[11px] font-medium bg-[#181614] px-4 py-1.5 rounded-full border border-[#2f2820]">
+            <span class="text-stone-400">🏨 Occupancy:</span>
+            <span id="occupancyBadge" class="font-bold text-[#DCA773]">--%</span>
+            <span id="occupancyDetail" class="text-[10px] text-stone-500">(0 / 212)</span>
+        </div>
     </div>
 </div>
 
