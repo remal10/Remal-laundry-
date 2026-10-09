@@ -1250,6 +1250,7 @@ function updateCheckoutTodayBadge() {
 }
 
 // ─── OPEN modal (same pattern as Active Rooms List) ────────────────
+
 async function ouvrirCheckoutTodayModal() {
     console.log('🚨 [Checkout] Opening modal...');
     const modal = document.getElementById('checkoutTodayModal');
@@ -1260,8 +1261,9 @@ async function ouvrirCheckoutTodayModal() {
         return;
     }
 
-    // ✅ Same pattern as Active Rooms List — just remove 'hidden', 'flex' takes over
+    // ✅ FIX BULLETPROOF : !important inline écrase toute règle CSS (.no-print, .hidden, etc.)
     modal.classList.remove('hidden');
+    modal.style.setProperty('display', 'flex', 'important');
     if (navigator.vibrate) navigator.vibrate(20);
 
     body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading...</p>`;
@@ -1347,10 +1349,9 @@ async function ouvrirCheckoutTodayModal() {
 
 function fermerCheckoutTodayModal() {
     const m = document.getElementById('checkoutTodayModal');
-    if (m) {
-        m.classList.add('hidden');
-        m.style.display = '';
-    }
+    if (!m) return;
+    m.classList.add('hidden');
+    m.style.setProperty('display', 'none', 'important');
 }
 
 // ─── PRINT Checkout Today ────────────────────────────────────────
