@@ -416,6 +416,11 @@
                     <i class="fas fa-list-ol text-[#DCA773]"></i>
                     <span>📋 Active Rooms List</span>
                 </button>
+                <!-- 🚨 CHECKOUT TODAY ALERT BADGE (admin only) -->
+                <button onclick="ouvrirCheckoutTodayModal()" id="checkoutTodayBadge" data-admin-only="true" class="hidden bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 border-2 border-rose-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-lg animate-pulse transition">
+                    <i class="fas fa-exclamation-triangle text-rose-400"></i>
+                    <span class="checkout-badge-text">🚨 ...</span>
+                </button>
                 <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                     <i class="fas fa-print text-sm"></i>
                     <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
