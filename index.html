@@ -1558,9 +1558,14 @@
             <p class="text-xs text-stone-500 text-center py-6">Loading...</p>
         </div>
 
-        <button onclick="fermerCheckoutTodayModal()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-            Close
-        </button>
+<div class="grid grid-cols-2 gap-3">
+    <button onclick="exportCheckoutTodayToPDF()" class="py-3 bg-gradient-to-r from-[#DCA773] to-[#F8E9C0] hover:from-[#c99563] hover:to-[#DCA773] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
+        <i class="fas fa-file-pdf"></i> 📄 Export PDF
+    </button>
+    <button onclick="fermerCheckoutTodayModal()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+        Close
+    </button>
+</div>
     </div>
 </div>
     
