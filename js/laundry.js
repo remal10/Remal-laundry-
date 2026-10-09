@@ -1390,3 +1390,203 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ [laundry.js] Checkout Today module loaded');
+// ═══════════════════════════════════════════════════════════════════
+// 📄 EXPORT PDF — CHECKOUT TODAY (élégant + dynamique)
+// ═══════════════════════════════════════════════════════════════════
+async function exportCheckoutTodayToPDF() {
+    const rooms = getCheckoutTodayRooms();
+
+    if (rooms.length === 0) {
+        alert('✅ No rooms checking out today — nothing to export.');
+        return;
+    }
+
+    // ═══ Préparer un container caché ═══
+    let container = document.getElementById('checkoutTodayPdfContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'checkoutTodayPdfContainer';
+        container.style.position = 'fixed';
+        container.style.left = '-99999px';
+        container.style.top = '0';
+        container.style.width = '210mm';
+        container.style.background = '#ffffff';
+        document.body.appendChild(container);
+    }
+
+    // ═══ Construire les lignes HTML ═══
+    let rowsHtml = '';
+    rooms.forEach((item, idx) => {
+        const sLower = String(item.laundryStatus || '').toLowerCase();
+        let statusColor = '#7f1d1d';
+        let statusBg = '#fef2f2';
+        let statusBorder = '#dc2626';
+        let statusLabel = item.laundryStatus;
+
+        if (sLower.includes('delivered') || sLower.includes('completed')) {
+            statusColor = '#065f46'; statusBg = '#ecfdf5'; statusBorder = '#10b981';
+        } else if (sLower.includes('ready')) {
+            statusColor = '#6b21a8'; statusBg = '#faf5ff'; statusBorder = '#a855f7';
+        } else if (sLower.includes('washing') || sLower.includes('in_progress')) {
+            statusColor = '#1e40af'; statusBg = '#eff6ff'; statusBorder = '#3b82f6';
+        } else if (sLower.includes('pending') || sLower.includes('collected')) {
+            statusColor = '#92400e'; statusBg = '#fffbeb'; statusBorder = '#f59e0b';
+        } else if (sLower.includes('no slip')) {
+            statusColor = '#44403c'; statusBg = '#f5f5f4'; statusBorder = '#a8a29e';
+            statusLabel = 'No slip yet';
+        }
+
+        // Quota
+        let quotaText = '';
+        if (item.isAedPerPc && item.aedPerPc > 0) {
+            quotaText = `AED ${item.aedPerPc} / pc`;
+        } else if (item.isChargeable) {
+            quotaText = 'Chargeable';
+        } else {
+            quotaText = item.quotaText || 'Included';
+        }
+
+        rowsHtml += `
+            <tr style="border-bottom: 1px solid #e5e7eb; ${idx % 2 === 1 ? 'background: #fafaf9;' : ''}">
+                <td style="padding: 10px 12px; font-family: 'Georgia', serif; font-size: 14px; font-weight: bold; color: #b45309; text-align: center;">${item.room}</td>
+                <td style="padding: 10px 12px; font-size: 11px; color: #1c1917;">
+                    <div style="font-weight: 700;">${item.guestName}</div>
+                    <div style="font-size: 9px; color: #78716c; margin-top: 2px;">${item.agency || 'Direct'}</div>
+                </td>
+                <td style="padding: 10px 12px; font-size: 10px; text-align: center; color: #57534e;">${item.roomTyp || '---'}</td>
+                <td style="padding: 10px 12px; font-size: 10px; color: #44403c; white-space: nowrap;">
+                    <div>Arr: <strong>${item.arrival || '---'}</strong></div>
+                    <div>Dep: <strong style="color: #dc2626;">${item.departure}</strong></div>
+                </td>
+                <td style="padding: 10px 12px; text-align: center;">
+                    <span style="font-size: 9px; font-weight: 700; color: ${statusColor}; background: ${statusBg}; border: 1px solid ${statusBorder}; padding: 3px 8px; border-radius: 5px; display: inline-block;">
+                        ${statusLabel}
+                    </span>
+                </td>
+                <td style="padding: 10px 12px; text-align: center; font-size: 9px; font-weight: 700; color: #b45309; white-space: nowrap;">${quotaText}</td>
+            </tr>
+        `;
+    });
+
+    // ═══ Date / Time ═══
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-GB', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const todayStr = getTodayAbuDhabi();
+
+    // ═══ HTML complet du PDF ═══
+    container.innerHTML = `
+        <div style="padding: 24px 28px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #ffffff;">
+
+            <!-- HEADER -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #DCA773; padding-bottom: 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #DCA773, #F8E9C0); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(220,167,115,0.3);">
+                        <span style="font-size: 28px;">🏨</span>
+                    </div>
+                    <div>
+                        <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 22px; letter-spacing: 3px; color: #1c1917; font-weight: bold;">REMAL HOTEL &amp; VILLAS</h1>
+                        <p style="margin: 2px 0 0 0; font-size: 9px; letter-spacing: 3px; color: #78716c; text-transform: uppercase;">Al Ruwais City · Abu Dhabi · U.A.E</p>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="background: #7f1d1d; color: #ffffff; padding: 6px 14px; border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 3px 8px rgba(127,29,29,0.3);">
+                        🚨 Check-Out Today
+                    </div>
+                    <p style="margin: 8px 0 0 0; font-size: 10px; color: #57534e; font-weight: 600;">${dateFormatted}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 9px; color: #a8a29e;">Business Date: ${todayStr}</p>
+                </div>
+            </div>
+
+            <!-- ALERT BANNER -->
+            <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-left: 5px solid #dc2626; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 28px; line-height: 1;">⚠️</div>
+                <div style="flex: 1;">
+                    <div style="font-size: 13px; font-weight: 900; color: #7f1d1d; letter-spacing: 0.5px; text-transform: uppercase;">
+                        Action Required — ${rooms.length} Room${rooms.length > 1 ? 's' : ''} Checking Out Today
+                    </div>
+                    <div style="font-size: 10px; color: #991b1b; margin-top: 4px;">
+                        Ensure all laundry is processed, ready, and delivered to these rooms <strong>BEFORE</strong> guest departure.
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 6px 14px; background: #7f1d1d; color: #ffffff; border-radius: 10px; min-width: 60px;">
+                    <div style="font-size: 24px; font-weight: 900; line-height: 1;">${rooms.length}</div>
+                    <div style="font-size: 8px; letter-spacing: 1px; opacity: 0.9;">ROOMS</div>
+                </div>
+            </div>
+
+            <!-- TABLE -->
+            <table style="width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+                <thead>
+                    <tr style="background: #1c1917; color: #ffffff;">
+                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 50px;">Room</th>
+                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: left;">Guest &amp; Agency</th>
+                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 50px;">Typ</th>
+                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: left; width: 110px;">Dates</th>
+                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 100px;">Laundry</th>
+                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 90px;">Quota</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- SIGNATURE / FOOTER -->
+            <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px;">Prepared by</div>
+                    <div style="border-top: 1px solid #1c1917; width: 180px; padding-top: 4px; font-size: 10px; color: #57534e;">
+                        ${typeof currentStaffUser !== 'undefined' && currentStaffUser?.name ? currentStaffUser.name : 'Laundry Supervisor'}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px;">Received by Front Desk</div>
+                    <div style="border-top: 1px solid #1c1917; width: 180px; padding-top: 4px; font-size: 10px; color: #57534e;">Name &amp; Signature</div>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div style="margin-top: 22px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #a8a29e;">
+                <div>Remal Laundry OS · Auto-generated · Confidential</div>
+                <div>Generated at ${timeFormatted} · Abu Dhabi (GMT+4)</div>
+            </div>
+
+        </div>
+    `;
+
+    // ═══ Attente pour layout ═══
+    await new Promise(r => setTimeout(r, 400));
+
+    // ═══ Générer PDF ═══
+    const filename = `REMAL_Checkout_Today_${todayStr.replace(/\//g, '-')}.pdf`;
+
+    const opt = {
+        margin: [8, 8, 8, 8],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(container).save();
+        console.log(`✅ [CheckoutToday PDF] Generated: ${filename} (${rooms.length} rooms)`);
+    } catch (e) {
+        console.error('[CheckoutToday PDF] Error:', e);
+        alert('⚠️ Error generating PDF.');
+    } finally {
+        container.innerHTML = '';
+    }
+}
+
+window.exportCheckoutTodayToPDF = exportCheckoutTodayToPDF;
