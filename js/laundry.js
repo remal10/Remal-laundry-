@@ -1244,12 +1244,18 @@ function updateCheckoutTodayBadge() {
 
 // ─── OPEN modal (same pattern as Active Rooms List) ────────────────
 async function ouvrirCheckoutTodayModal() {
+    console.log('🚨 [Checkout] Opening modal...');
     const modal = document.getElementById('checkoutTodayModal');
     const body = document.getElementById('checkoutTodayModalBody');
     const countEl = document.getElementById('checkoutTodayCount');
-    if (!modal || !body) return;
+    if (!modal || !body) {
+        console.error('❌ [Checkout] Modal not found!');
+        return;
+    }
 
+    // FORCE display — méthode robuste mobile + desktop
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';   // ✅ force l'affichage
     if (navigator.vibrate) navigator.vibrate(20);
 
     body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading...</p>`;
