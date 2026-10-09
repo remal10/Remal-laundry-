@@ -1365,9 +1365,9 @@ async function ouvrirCheckoutTodayModal() {
             </div>
         `;
     });
-    body.innerHTML = html;
-    modal.classList.remove('hidden');
-    if (navigator.vibrate) navigator.vibrate(30);
+  body.innerHTML = html;
+modal.style.display = 'flex';    // ← Force l'affichage
+if (navigator.vibrate) navigator.vibrate(30);
 }
 
 async function deciderCheckout(room, decision) {
