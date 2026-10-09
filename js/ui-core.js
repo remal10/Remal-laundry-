@@ -307,6 +307,13 @@ if (serialEl && !serialEl.value) serialEl.value = '';
     checkStaffSession(); 
     // PHASE E — Raccourcis & Auto-complétion
     initPhaseE();
+
+    // 🚨 Init badge Checkout Today (admin only)
+    setTimeout(() => {
+        if (typeof updateCheckoutTodayBadge === 'function') {
+            updateCheckoutTodayBadge();
+        }
+    }, 2500);
 });
 // ═══════════════════════════════════════════════════════════════════
 // ✨ SPRINT 1.5 — MENU MOBILE STAFF (⋯)
