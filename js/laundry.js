@@ -1341,13 +1341,11 @@ async function ouvrirCheckoutTodayModal() {
 
 function fermerCheckoutTodayModal() {
     const m = document.getElementById('checkoutTodayModal');
-    if (m) m.classList.add('hidden');
+    if (m) {
+        m.style.display = 'none';
+        m.classList.add('hidden');
+    }
 }
-
-function imprimerCheckoutToday() {
-    const rooms = getCheckoutTodayRooms();
-    if (rooms.length === 0) { alert('No rooms to print.'); return; }
-
     const todayStr = getTodayAbuDhabi();
     const now = new Date();
     const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
