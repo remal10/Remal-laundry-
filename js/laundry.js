@@ -870,10 +870,9 @@ async function processTextData(rawData) {
                 markPmsSynced();
             }
 
-            if (typeof updateCheckoutTodayBadge === 'function') {
-                updateCheckoutTodayBadge();
-            }
-
+if (typeof updateOccupancyBadge === 'function') {
+    updateOccupancyBadge();
+}
             const msg = `✅ PMS Updated: ${cloudGuestsPayload.length} room(s) synced` +
                         (deletedCount > 0 ? ` · ${deletedCount} checked out` : '');
             alert(msg);
