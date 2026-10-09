@@ -1433,8 +1433,8 @@ async function exportCheckoutTodayToPDF() {
         }
 
         rowsHtml += `
-            <tr style="border-bottom: 1px solid #e5e7eb; ${idx % 2 === 1 ? 'background: #fafaf9;' : ''}">
-                <td style="padding: 10px 12px; font-family: 'Georgia', serif; font-size: 14px; font-weight: bold; color: #b45309; text-align: center;">${item.room}</td>
+            <tr style="border-bottom: 1px solid #e5e7eb; ${idx % 2 === 1 ? 'background: #fafaf9;' : ''}; page-break-inside: avoid;">
+                <td style="padding: 10px 12px; font-family: Georgia, serif; font-size: 14px; font-weight: bold; color: #b45309; text-align: center;">${item.room}</td>
                 <td style="padding: 10px 12px; font-size: 11px; color: #1c1917;">
                     <div style="font-weight: 700;">${item.guestName}</div>
                     <div style="font-size: 9px; color: #78716c; margin-top: 2px;">${item.agency || 'Direct'}</div>
@@ -1461,147 +1461,152 @@ async function exportCheckoutTodayToPDF() {
     const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const todayStr = getTodayAbuDhabi();
 
-    // ═══ Container visible (technique qui marche pour SPA) ═══
-    let container = document.getElementById('checkoutTodayPdfContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'checkoutTodayPdfContainer';
-        document.body.appendChild(container);
-    }
+    // ═══ HTML complet du rapport ═══
+    const reportHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>REMAL Checkout Today — ${todayStr}</title>
+    <style>
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Helvetica', Arial, sans-serif;
+            color: #1c1917;
+            background: #ffffff;
+        }
+        @page {
+            size: A4 portrait;
+            margin: 12mm 10mm;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead { display: table-header-group; }
+        tr { page-break-inside: avoid; }
+    </style>
+</head>
+<body>
 
-    // ⚠️ IMPORTANT : largeur FIXE 780px, display block, pas de flex parent
-    container.style.display = 'block';
-    container.style.position = 'fixed';
-    container.style.left = '0';
-    container.style.top = '0';
-    container.style.width = '780px';
-    container.style.minHeight = '100px';
-    container.style.background = '#ffffff';
-    container.style.zIndex = '99999';
-    container.style.overflow = 'visible';
-    container.style.opacity = '1';
-    container.style.visibility = 'visible';
-    container.style.pointerEvents = 'none';
-    container.style.transform = 'none';
+    <div style="padding: 20px 24px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #ffffff;">
 
-    container.innerHTML = `
-        <div style="padding: 24px 28px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #ffffff; width: 780px; box-sizing: border-box;">
-
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #DCA773; padding-bottom: 16px; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #DCA773, #F8E9C0); display: flex; align-items: center; justify-content: center;">
-                        <span style="font-size: 28px;">🏨</span>
-                    </div>
-                    <div>
-                        <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 22px; letter-spacing: 3px; color: #1c1917; font-weight: bold;">REMAL HOTEL &amp; VILLAS</h1>
-                        <p style="margin: 2px 0 0 0; font-size: 9px; letter-spacing: 3px; color: #78716c; text-transform: uppercase;">Al Ruwais City · Abu Dhabi · U.A.E</p>
-                    </div>
+        <!-- HEADER -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #DCA773; padding-bottom: 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #DCA773, #F8E9C0); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 28px;">🏨</span>
                 </div>
-                <div style="text-align: right;">
-                    <div style="background: #7f1d1d; color: #ffffff; padding: 6px 14px; border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;">
-                        🚨 Check-Out Today
-                    </div>
-                    <p style="margin: 8px 0 0 0; font-size: 10px; color: #57534e; font-weight: 600;">${dateFormatted}</p>
-                    <p style="margin: 2px 0 0 0; font-size: 9px; color: #a8a29e;">Business Date: ${todayStr}</p>
-                </div>
-            </div>
-
-            <div style="background: #fef2f2; border-left: 5px solid #dc2626; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px;">
-                <div style="font-size: 28px; line-height: 1;">⚠️</div>
-                <div style="flex: 1;">
-                    <div style="font-size: 13px; font-weight: 900; color: #7f1d1d; letter-spacing: 0.5px; text-transform: uppercase;">
-                        Action Required — ${rooms.length} Room${rooms.length > 1 ? 's' : ''} Checking Out Today
-                    </div>
-                    <div style="font-size: 10px; color: #991b1b; margin-top: 4px;">
-                        Ensure all laundry is processed, ready, and delivered to these rooms <strong>BEFORE</strong> guest departure.
-                    </div>
-                </div>
-                <div style="text-align: center; padding: 6px 14px; background: #7f1d1d; color: #ffffff; border-radius: 10px; min-width: 60px;">
-                    <div style="font-size: 24px; font-weight: 900; line-height: 1;">${rooms.length}</div>
-                    <div style="font-size: 8px; letter-spacing: 1px;">ROOMS</div>
-                </div>
-            </div>
-
-            <table style="width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden;">
-                <thead>
-                    <tr style="background: #1c1917; color: #ffffff;">
-                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 50px;">Room</th>
-                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: left;">Guest &amp; Agency</th>
-                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 50px;">Typ</th>
-                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: left; width: 110px;">Dates</th>
-                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 100px;">Laundry</th>
-                        <th style="padding: 12px 12px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 90px;">Quota</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHtml}
-                </tbody>
-            </table>
-
-            <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
-                    <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px;">Prepared by</div>
-                    <div style="border-top: 1px solid #1c1917; width: 180px; padding-top: 4px; font-size: 10px; color: #57534e;">
-                        ${typeof currentStaffUser !== 'undefined' && currentStaffUser?.name ? currentStaffUser.name : 'Laundry Supervisor'}
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px;">Received by Front Desk</div>
-                    <div style="border-top: 1px solid #1c1917; width: 180px; padding-top: 4px; font-size: 10px; color: #57534e;">Name &amp; Signature</div>
+                    <h1 style="margin: 0; font-family: Georgia, serif; font-size: 22px; letter-spacing: 3px; color: #1c1917; font-weight: bold;">REMAL HOTEL &amp; VILLAS</h1>
+                    <p style="margin: 2px 0 0 0; font-size: 9px; letter-spacing: 3px; color: #78716c; text-transform: uppercase;">Al Ruwais City · Abu Dhabi · U.A.E</p>
                 </div>
             </div>
-
-            <div style="margin-top: 22px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #a8a29e;">
-                <div>Remal Laundry OS · Auto-generated · Confidential</div>
-                <div>Generated at ${timeFormatted} · Abu Dhabi (GMT+4)</div>
+            <div style="text-align: right;">
+                <div style="background: #7f1d1d; color: #ffffff; padding: 6px 14px; border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;">
+                    🚨 Check-Out Today
+                </div>
+                <p style="margin: 8px 0 0 0; font-size: 10px; color: #57534e; font-weight: 600;">${dateFormatted}</p>
+                <p style="margin: 2px 0 0 0; font-size: 9px; color: #a8a29e;">Business Date: ${todayStr}</p>
             </div>
-
         </div>
+
+        <!-- ALERT BANNER -->
+        <div style="background: #fef2f2; border-left: 5px solid #dc2626; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; page-break-inside: avoid;">
+            <div style="font-size: 28px; line-height: 1;">⚠️</div>
+            <div style="flex: 1;">
+                <div style="font-size: 13px; font-weight: 900; color: #7f1d1d; letter-spacing: 0.5px; text-transform: uppercase;">
+                    Action Required — ${rooms.length} Room${rooms.length > 1 ? 's' : ''} Checking Out Today
+                </div>
+                <div style="font-size: 10px; color: #991b1b; margin-top: 4px;">
+                    Ensure all laundry is processed, ready, and delivered to these rooms <strong>BEFORE</strong> guest departure.
+                </div>
+            </div>
+            <div style="text-align: center; padding: 6px 14px; background: #7f1d1d; color: #ffffff; border-radius: 10px; min-width: 60px;">
+                <div style="font-size: 24px; font-weight: 900; line-height: 1;">${rooms.length}</div>
+                <div style="font-size: 8px; letter-spacing: 1px;">ROOMS</div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <table>
+            <thead>
+                <tr style="background: #1c1917; color: #ffffff;">
+                    <th style="padding: 10px 10px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 55px;">Room</th>
+                    <th style="padding: 10px 10px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: left;">Guest &amp; Agency</th>
+                    <th style="padding: 10px 10px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 50px;">Typ</th>
+                    <th style="padding: 10px 10px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: left; width: 115px;">Dates</th>
+                    <th style="padding: 10px 10px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 105px;">Laundry</th>
+                    <th style="padding: 10px 10px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center; width: 90px;">Quota</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+
+        <!-- SIGNATURES -->
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; page-break-inside: avoid;">
+            <div>
+                <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 24px;">Prepared by</div>
+                <div style="border-top: 1px solid #1c1917; width: 200px; padding-top: 4px; font-size: 10px; color: #57534e;">
+                    ${typeof currentStaffUser !== 'undefined' && currentStaffUser?.name ? currentStaffUser.name : 'Laundry Supervisor'}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 24px;">Received by Front Desk</div>
+                <div style="border-top: 1px solid #1c1917; width: 200px; padding-top: 4px; font-size: 10px; color: #57534e;">Name &amp; Signature</div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="margin-top: 24px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #a8a29e;">
+            <div>Remal Laundry OS · Auto-generated · Confidential</div>
+            <div>Generated at ${timeFormatted} · Abu Dhabi (GMT+4)</div>
+        </div>
+
+    </div>
+
+</body>
+</html>
     `;
 
-    // ⏱️ Attente
-    await new Promise(r => setTimeout(r, 1200));
+    // ═══════════════════════════════════════════════════════════════
+    // 🎯 TECHNIQUE IFRAME + WINDOW.PRINT() (comme Stock PDF)
+    // Crée un iframe invisible, y injecte le HTML, appelle print().
+    // Le navigateur ouvre sa boîte "Enregistrer en PDF".
+    // ═══════════════════════════════════════════════════════════════
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
 
-    // 🔍 DEBUG : vérifier que le container contient bien du HTML
-    console.log('[CheckoutToday PDF] Container size:', {
-        width: container.offsetWidth,
-        height: container.offsetHeight,
-        htmlLength: container.innerHTML.length
-    });
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(reportHtml);
+    doc.close();
 
-    const filename = `REMAL_Checkout_Today_${todayStr.replace(/\//g, '-')}.pdf`;
-
-    // ⚠️ scale: 1 (au lieu de 2) pour éviter le canvas vide
-    const opt = {
-        margin: [8, 8, 8, 8],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: {
-            scale: 1,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: 800,
-            width: 780,
-            x: 0,
-            y: 0
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-    };
+    // ⏱️ Attente pour le layout + fonts
+    await new Promise(r => setTimeout(r, 700));
 
     try {
-        await html2pdf().set(opt).from(container).save();
-        console.log(`✅ [CheckoutToday PDF] Generated: ${filename} (${rooms.length} rooms)`);
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        console.log(`✅ [CheckoutToday PDF] Print dialog opened (${rooms.length} rooms)`);
     } catch (e) {
-        console.error('[CheckoutToday PDF] Error:', e);
-        alert('⚠️ Error generating PDF.');
+        console.error('[CheckoutToday PDF] Print error:', e);
+        alert('⚠️ Error opening print dialog.');
     } finally {
-        container.style.display = 'none';
-        container.innerHTML = '';
+        // Nettoyage après fermeture de la boîte print
+        setTimeout(() => {
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+        }, 1500);
     }
 }
+
 window.exportCheckoutTodayToPDF = exportCheckoutTodayToPDF;
