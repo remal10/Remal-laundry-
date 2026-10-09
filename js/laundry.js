@@ -1168,9 +1168,15 @@ async function loadPmsFromSupabase() {
             };
         });
 
-        sauvegarderPmsLocalStorage();
-        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
-        return true;
+sauvegarderPmsLocalStorage();
+console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
+
+// Update occupancy badge
+if (typeof updateOccupancyBadge === 'function') {
+    updateOccupancyBadge();
+}
+
+return true;
     } catch (e) {
         console.warn('[PMS Load] Exception:', e);
         return false;
