@@ -1531,16 +1531,7 @@ window.imprimerCheckoutToday = imprimerCheckoutToday;
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const m = document.getElementById('checkoutTodayModal');
-        if (m && m.style.display === 'flex') {
-            m.style.display = 'none';
-        }
-    }
-});
-
-document.addEventListener('click', (e) => {
-    const m = document.getElementById('checkoutTodayModal');
-    if (m && m.style.display === 'flex' && e.target === m) {
-        m.style.display = 'none';
+        if (m && !m.classList.contains('hidden')) m.classList.add('hidden');
     }
 });
 
