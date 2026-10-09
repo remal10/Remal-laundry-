@@ -880,6 +880,10 @@ async function processTextData(rawData) {
                 markPmsSynced();
             }
 
+            // 🚨 Mise à jour badge checkout du jour
+          if (typeof updateCheckoutTodayBadge === 'function') {
+               updateCheckoutTodayBadge();
+            }
             const msg = `✅ PMS Updated: ${cloudGuestsPayload.length} room(s) synced` +
                         (deletedCount > 0 ? ` · ${deletedCount} checked out` : '');
             alert(msg);
