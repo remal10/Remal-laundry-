@@ -1357,92 +1357,93 @@ async function ouvrirCheckoutTodayModal() {
     const modal = document.getElementById('checkoutTodayModal');
     const body = document.getElementById('checkoutTodayModalBody');
     const countEl = document.getElementById('checkoutTodayCount');
-    if (!modal || !body) {
-        console.warn('[CheckoutModal] Modal not found');
-        return;
-    }
+    if (!modal || !body) return;
 
-    // FORCE L'AFFICHAGE (avant même de charger)
-    modal.style.display = 'flex';
+    // ✅ Même méthode que Active Rooms List
+    modal.classList.remove('hidden');
     if (navigator.vibrate) navigator.vibrate(20);
 
-    // Afficher "Loading..."
     body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading...</p>`;
 
-    // 1. Auto-load pmsDatabase si vide
+    // Auto-load pmsDatabase si vide
     if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
         await loadPmsFromSupabase();
     }
 
-    // 2. Charger les décisions
-    await loadCheckoutDecisionsToday();
-
-    // 3. Récupérer les chambres
     const rooms = getCheckoutTodayRooms();
     if (countEl) countEl.textContent = rooms.length;
 
-    // 4. Remplir le body
     if (rooms.length === 0) {
         body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">✓ No rooms checking out today.</p>`;
         return;
     }
 
-    let html = '';
+    // === TABLE style (fond blanc, comme Active Rooms List) ===
+    const todayStr = getTodayAbuDhabi();
+
+    let rowsHtml = '';
     rooms.forEach(item => {
         const sLower = String(item.laundryStatus || '').toLowerCase();
-        let statusClass = 'bg-stone-800 text-stone-300 border-stone-700';
+        let statusColor = 'bg-stone-200 text-stone-700';
         let statusIcon = '📭';
         if (sLower.includes('delivered') || sLower.includes('completed')) {
-            statusClass = 'bg-emerald-950 text-emerald-300 border-emerald-800'; statusIcon = '✅';
+            statusColor = 'bg-emerald-100 text-emerald-800'; statusIcon = '✅';
         } else if (sLower.includes('ready')) {
-            statusClass = 'bg-purple-950 text-purple-300 border-purple-800'; statusIcon = '✨';
+            statusColor = 'bg-purple-100 text-purple-800'; statusIcon = '✨';
         } else if (sLower.includes('washing') || sLower.includes('in_progress')) {
-            statusClass = 'bg-blue-950 text-blue-300 border-blue-800'; statusIcon = '🧼';
+            statusColor = 'bg-blue-100 text-blue-800'; statusIcon = '🧼';
         } else if (sLower.includes('pending') || sLower.includes('collected')) {
-            statusClass = 'bg-amber-950 text-amber-300 border-amber-800'; statusIcon = '⏳';
+            statusColor = 'bg-amber-100 text-amber-800'; statusIcon = '⏳';
         }
-        let quotaBadge = '';
-        if (item.isAedPerPc && item.aedPerPc > 0) {
-            quotaBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-md text-[10px] font-bold">AED ${item.aedPerPc} / pc</span>`;
-        } else if (item.isChargeable) {
-            quotaBadge = `<span class="bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded-md text-[10px] font-bold">Chargeable</span>`;
-        } else {
-            quotaBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-md text-[10px] font-bold">${item.quotaText}</span>`;
-        }
-        let decisionBorder = 'border-rose-900/50';
-        let decisionBadge = `<span class="bg-amber-950/50 text-amber-300 border border-amber-800/60 px-2 py-0.5 rounded-md text-[10px] font-bold">⚠️ To decide</span>`;
-        if (item.decision === 'wash') {
-            decisionBorder = 'border-emerald-700/70';
-            decisionBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-black">✅ WASH OK</span>`;
-        } else if (item.decision === 'hold') {
-            decisionBorder = 'border-rose-700/70';
-            decisionBadge = `<span class="bg-rose-950 text-rose-200 border border-rose-700 px-2 py-0.5 rounded-md text-[10px] font-black">⛔ HOLD</span>`;
-        }
-        html += `
-            <div class="p-3 bg-rose-950/20 border-2 ${decisionBorder} rounded-2xl space-y-2">
-                <div class="flex justify-between items-start gap-2">
-                    <div class="flex-1 min-w-0">
-                        <div class="font-bold text-rose-200 text-sm">🏠 Room ${item.room} — ${item.guestName}</div>
-                        <div class="text-[10px] text-stone-400 mt-0.5">${item.roomTyp} · ${item.agency}</div>
-                        <div class="text-[10px] text-stone-400 mt-0.5">📅 Arr: ${item.arrival} → Dep: <span class="text-rose-400 font-bold">${item.departure}</span></div>
-                    </div>
-                    <div class="text-right space-y-1 shrink-0">
-                        <div>${quotaBadge}</div>
-                        <div class="inline-flex items-center gap-1 ${statusClass} border px-2 py-0.5 rounded-md text-[10px] font-bold">${statusIcon} ${item.laundryStatus}</div>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-2 border-t border-rose-900/40">
-                    <div>${decisionBadge}</div>
-                    <div class="flex gap-2">
-                        <button onclick="deciderCheckout('${item.room}', 'wash')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-700 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/80 transition ${item.decision === 'wash' ? 'ring-2 ring-emerald-500' : ''}">✅ Wash OK</button>
-                        <button onclick="deciderCheckout('${item.room}', 'hold')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-rose-700 bg-rose-950/60 text-rose-300 hover:bg-rose-900/80 transition ${item.decision === 'hold' ? 'ring-2 ring-rose-500' : ''}">⛔ Hold</button>
-                    </div>
-                </div>
-            </div>
+
+        let quotaText = '';
+        if (item.isAedPerPc && item.aedPerPc > 0) quotaText = `AED ${item.aedPerPc}/pc`;
+        else if (item.isChargeable) quotaText = 'Chargeable';
+        else quotaText = item.quotaText || 'Included';
+
+        rowsHtml += `
+            <tr class="border-b border-stone-200">
+                <td class="p-2.5 text-center font-black text-amber-700 text-sm">${item.room}</td>
+                <td class="p-2.5">
+                    <div class="font-bold text-stone-900 text-[11px]">${item.guestName}</div>
+                    <div class="text-[9px] text-stone-500 mt-0.5">${item.agency || 'Direct'}</div>
+                </td>
+                <td class="p-2.5 text-center text-[10px] text-stone-700">${item.roomTyp}</td>
+                <td class="p-2.5 text-center text-[10px] font-bold text-rose-700">${item.departure}</td>
+                <td class="p-2.5 text-center">
+                    <span class="${statusColor} text-[9px] font-bold px-2 py-0.5 rounded-md inline-block">${statusIcon} ${item.laundryStatus}</span>
+                </td>
+                <td class="p-2.5 text-center text-[10px] font-bold text-amber-700">${quotaText}</td>
+            </tr>
         `;
     });
 
-    body.innerHTML = html;
+    body.innerHTML = `
+        <div class="text-center border-b border-stone-300 pb-3 mb-3">
+            <h2 class="text-base font-serif-luxury font-black text-stone-950 tracking-wider">REMAL HOTEL & VILLAS</h2>
+            <p class="text-[9px] text-stone-500 uppercase tracking-widest font-bold">Al Ruwais City, Abu Dhabi – UAE</p>
+            <div class="mt-2 flex justify-between items-center px-1 text-[11px] font-bold text-rose-800 border-t border-stone-200 pt-2">
+                <span>🚨 CHECK-OUT TODAY</span>
+                <span class="text-stone-600">Date: ${todayStr}</span>
+            </div>
+        </div>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-stone-100 text-stone-900 font-bold border-b border-stone-300 uppercase tracking-wider text-[9px]">
+                    <th class="p-2.5 text-center">Room</th>
+                    <th class="p-2.5">Guest Name</th>
+                    <th class="p-2.5 text-center">Typ</th>
+                    <th class="p-2.5 text-center">Departure</th>
+                    <th class="p-2.5 text-center">Laundry Status</th>
+                    <th class="p-2.5 text-center">Quota</th>
+                </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="mt-3 pt-2 border-t border-stone-300 text-center text-[11px] font-bold text-stone-700">
+            Total: ${rooms.length} room(s) checking out today
+        </div>
+    `;
 }
 
 async function deciderCheckout(room, decision) {
