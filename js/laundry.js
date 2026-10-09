@@ -1401,19 +1401,6 @@ async function exportCheckoutTodayToPDF() {
         return;
     }
 
-    // ═══ Préparer un container caché ═══
-    let container = document.getElementById('checkoutTodayPdfContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'checkoutTodayPdfContainer';
-        container.style.position = 'fixed';
-        container.style.left = '-99999px';
-        container.style.top = '0';
-        container.style.width = '210mm';
-        container.style.background = '#ffffff';
-        document.body.appendChild(container);
-    }
-
     // ═══ Construire les lignes HTML ═══
     let rowsHtml = '';
     rooms.forEach((item, idx) => {
@@ -1436,7 +1423,6 @@ async function exportCheckoutTodayToPDF() {
             statusLabel = 'No slip yet';
         }
 
-        // Quota
         let quotaText = '';
         if (item.isAedPerPc && item.aedPerPc > 0) {
             quotaText = `AED ${item.aedPerPc} / pc`;
@@ -1468,7 +1454,6 @@ async function exportCheckoutTodayToPDF() {
         `;
     });
 
-    // ═══ Date / Time ═══
     const now = new Date();
     const dateFormatted = now.toLocaleDateString('en-GB', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -1476,11 +1461,17 @@ async function exportCheckoutTodayToPDF() {
     const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const todayStr = getTodayAbuDhabi();
 
-    // ═══ HTML complet du PDF ═══
-    container.innerHTML = `
-        <div style="padding: 24px 28px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #ffffff;">
+    // ═══ Créer le container ═══
+    let container = document.getElementById('checkoutTodayPdfContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'checkoutTodayPdfContainer';
+        document.body.appendChild(container);
+    }
 
-            <!-- HEADER -->
+    container.innerHTML = `
+        <div style="padding: 24px 28px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #ffffff; width: 780px;">
+
             <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #DCA773; padding-bottom: 16px; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 16px;">
                     <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #DCA773, #F8E9C0); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(220,167,115,0.3);">
@@ -1500,7 +1491,6 @@ async function exportCheckoutTodayToPDF() {
                 </div>
             </div>
 
-            <!-- ALERT BANNER -->
             <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-left: 5px solid #dc2626; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px;">
                 <div style="font-size: 28px; line-height: 1;">⚠️</div>
                 <div style="flex: 1;">
@@ -1517,7 +1507,6 @@ async function exportCheckoutTodayToPDF() {
                 </div>
             </div>
 
-            <!-- TABLE -->
             <table style="width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
                 <thead>
                     <tr style="background: #1c1917; color: #ffffff;">
@@ -1534,7 +1523,6 @@ async function exportCheckoutTodayToPDF() {
                 </tbody>
             </table>
 
-            <!-- SIGNATURE / FOOTER -->
             <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
                     <div style="font-size: 9px; color: #78716c; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px;">Prepared by</div>
@@ -1548,7 +1536,6 @@ async function exportCheckoutTodayToPDF() {
                 </div>
             </div>
 
-            <!-- FOOTER -->
             <div style="margin-top: 22px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #a8a29e;">
                 <div>Remal Laundry OS · Auto-generated · Confidential</div>
                 <div>Generated at ${timeFormatted} · Abu Dhabi (GMT+4)</div>
@@ -1557,10 +1544,26 @@ async function exportCheckoutTodayToPDF() {
         </div>
     `;
 
-    // ═══ Attente pour layout ═══
-    await new Promise(r => setTimeout(r, 400));
+    // ═══ Rendre VISIBLE mais caché derrière l'écran (technique html2pdf) ═══
+    const originalParent = container.parentNode;
+    const originalNextSibling = container.nextSibling;
+    document.body.appendChild(container);
 
-    // ═══ Générer PDF ═══
+    container.style.display = 'block';
+    container.style.position = 'fixed';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.opacity = '1';
+    container.style.visibility = 'visible';
+    container.style.width = 'auto';
+    container.style.maxWidth = '800px';
+    container.style.background = '#ffffff';
+    container.style.zIndex = '999999';
+    container.style.pointerEvents = 'none';
+
+    // ⏱️ Attente critique pour layout + fonts
+    await new Promise(r => setTimeout(r, 800));
+
     const filename = `REMAL_Checkout_Today_${todayStr.replace(/\//g, '-')}.pdf`;
 
     const opt = {
@@ -1572,7 +1575,10 @@ async function exportCheckoutTodayToPDF() {
             useCORS: true,
             allowTaint: true,
             logging: false,
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: 800
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -1585,8 +1591,25 @@ async function exportCheckoutTodayToPDF() {
         console.error('[CheckoutToday PDF] Error:', e);
         alert('⚠️ Error generating PDF.');
     } finally {
+        // ═══ Nettoyage ═══
+        container.style.display = 'none';
+        container.style.position = '';
+        container.style.left = '';
+        container.style.top = '';
+        container.style.opacity = '';
+        container.style.visibility = '';
+        container.style.width = '';
+        container.style.maxWidth = '';
+        container.style.background = '';
+        container.style.zIndex = '';
+        container.style.pointerEvents = '';
+
+        if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+            originalParent.insertBefore(container, originalNextSibling);
+        } else if (originalParent) {
+            originalParent.appendChild(container);
+        }
         container.innerHTML = '';
     }
 }
-
 window.exportCheckoutTodayToPDF = exportCheckoutTodayToPDF;
