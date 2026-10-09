@@ -1217,51 +1217,9 @@ function getCheckoutTodayRooms() {
     return checkoutRooms;
 }
 
-function updateCheckoutTodayBadge() {
-    const banner = document.getElementById('checkoutTodayBanner');
-    const textEl = banner?.querySelector('.checkout-banner-text');
-    const iconEl = document.getElementById('checkoutBannerIcon');
-    if (!banner || !textEl || !iconEl) return;
-
-    // Si pmsDatabase est vide → lancer un auto-load (async, ne bloque pas)
-    if ((!pmsDatabase || Object.keys(pmsDatabase).length === 0) &&
-        typeof loadPmsFromSupabase === 'function' &&
-        typeof supabaseClient !== 'undefined' && supabaseClient) {
-        // Éviter les boucles infinies
-        if (!window._checkoutPmsLoadInProgress) {
-            window._checkoutPmsLoadInProgress = true;
-            loadPmsFromSupabase().finally(() => {
-                window._checkoutPmsLoadInProgress = false;
-                // Re-run update une fois chargé
-                setTimeout(() => updateCheckoutTodayBadge(), 300);
-            });
-        }
-    }
-
-    const rooms = getCheckoutTodayRooms();
-    const count = rooms.length;
-
-    // ═══ ÉTAT 1 : 0 checkout → GRIS neutre ═══
-    if (count === 0) {
-        banner.className = 'bg-stone-800/60 hover:bg-stone-700/80 text-stone-300 border border-stone-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow transition';
-        iconEl.className = 'fas fa-check-circle text-emerald-400 text-sm';
-        textEl.textContent = '✓ 0 checkout';
-        banner.title = 'No rooms checking out today';
-        return;
-    }
-
-    // ═══ ÉTAT 2 : > 0 → ROUGE alerte ═══
-    const pending = rooms.filter(r => !r.decision).length;
-    banner.className = 'bg-rose-950/70 hover:bg-rose-900/90 text-rose-100 border-2 border-rose-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow-lg transition animate-pulse';
-    iconEl.className = 'fas fa-exclamation-triangle text-rose-400 text-sm';
-
-    let label = `🚨 ${count}`;
-    if (pending > 0) label += ` · ${pending} pending`;
-    textEl.textContent = label;
-
-    banner.title = `${count} room(s) checking out today · ${pending} to decide`;
-}
-
+body.innerHTML = html;
+modal.style.display = 'flex';    // ← Force l'affichage
+if (navigator.vibrate) navigator.vibrate(30);
 function showCheckoutToast() {
     const rooms = getCheckoutTodayRooms();
     if (rooms.length === 0) return;
