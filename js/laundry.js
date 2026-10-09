@@ -1,15 +1,15 @@
 // =============================================================
-// LOGIQUE MÉTIER BLANCHISSERIE, SPA & TRAITEMENTS DONNÉES (UNIFIÉ)
-// ⚠️ Chargé AVANT ui.js
-// ✅ MASS ENTRY V2 — Parser PMS robuste
-// ✅ AGENCY V9 — Extraction par mot-clé + arrêt strict
-// ✅ QUOTA V4 — Détection "X pieces per day for AED Y" → AED (Y/X) per Pcs
-// ✅ CHECKOUT TODAY — Aide à la décision agent + réception
-// ✅ FIX — chargerDonneesLocalStorage déclarée AVANT tout usage
+// REMAL LAUNDRY OS — BUSINESS LOGIC
+// Loaded BEFORE ui.js
+// ✅ MASS ENTRY V2 — Robust PMS parser
+// ✅ AGENCY V9 — Keyword extraction + strict stop
+// ✅ QUOTA V4 — "X pieces per day for AED Y" → AED (Y/X) per Pcs
+// ✅ CHECK-OUT TODAY — Simple informative list (no decisions)
+// ✅ Storage helpers declared first (fix ReferenceError)
 // =============================================================
 
 // ═══════════════════════════════════════════════════════════════════
-// 🔧 HELPERS DE STORAGE
+// 🔧 STORAGE HELPERS
 // ═══════════════════════════════════════════════════════════════════
 function chargerDonneesLocalStorage() {
     const data = localStorage.getItem('remal_laundry_slips');
@@ -24,7 +24,7 @@ function sauvegarderDonneesLocalStorage() {
         localStorage.setItem('remal_laundry_slips', JSON.stringify(slips90j));
         return;
     } catch (e) {
-        console.warn("⚠️ [Storage] localStorage plein à 90j, réduction à 30j");
+        console.warn("⚠️ [Storage] localStorage full at 90d, reducing to 30d");
     }
 
     const ilYa30Jours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -34,15 +34,15 @@ function sauvegarderDonneesLocalStorage() {
         localStorage.setItem('remal_laundry_slips', JSON.stringify(slips30j));
         return;
     } catch (e) {
-        console.warn("⚠️ [Storage] localStorage plein à 30j, réduction à 100 records");
+        console.warn("⚠️ [Storage] localStorage full at 30d, reducing to 100 records");
     }
 
     try {
         const last100 = cachedSlips.slice(0, 100);
         localStorage.setItem('remal_laundry_slips', JSON.stringify(last100));
-        console.error("❌ [Storage] localStorage critique, garde uniquement 100 records");
+        console.error("❌ [Storage] localStorage critical, keeping only 100 records");
     } catch (e) {
-        console.error("❌ [Storage] Impossible de sauvegarder dans localStorage");
+        console.error("❌ [Storage] Cannot save to localStorage");
     }
 }
 
@@ -58,7 +58,7 @@ function sauvegarderPmsLocalStorage() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ⚙️ CODES BLOQUÉS
+// ⚙️ BLOCKED CODES
 // ═══════════════════════════════════════════════════════════════════
 const BLOCKED_CODES_AGENCY = [
     'BBLA', 'HBDL', 'HDL4', 'HD40', 'FB24', 'FB40', 'BB', 'HB', 'FB', 'BF', 'LD',
@@ -79,10 +79,9 @@ const BLOCKED_CODES_AGENCY = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// 🏢 MOTS-CLÉS COMPANY
+// 🏢 COMPANY KEYWORDS
 // ═══════════════════════════════════════════════════════════════════
 const COMPANY_KEYWORDS_V7 = [
-    // Companies spécifiques du PDF Remal
     'HONEYWELL MIDDLE EAST LIMITED',
     'SAMSUNG E & ADNOC WASTE HEAT RECOVERY PROJECT',
     'OMV Downstream Middle East & Asia',
@@ -127,8 +126,6 @@ const COMPANY_KEYWORDS_V7 = [
     'ETIMAD',
     'FERTIL',
     'IPCO',
-
-    // Mots-clés génériques
     'LLC', 'LIMITED', 'Inc', 'Inc.', 'GROUP', 'Holding', 'Tourism', 'Travel',
     'Energy', 'Systems', 'Services', 'Trading', 'Company', 'COMPANY',
     'Corporation', 'Corp', 'Ltd', 'LTD', 'W.L.L', 'Refining',
@@ -137,15 +134,15 @@ const COMPANY_KEYWORDS_V7 = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// HELPERS MÉTIER
+// HELPERS
 // ═══════════════════════════════════════════════════════════════════
 async function selectBackupFolder() {
     try {
         if (window.showDirectoryPicker) {
             globalDirHandle = await window.showDirectoryPicker();
-            alert("✅ Dossier de sauvegarde direct configuré avec succès !");
+            alert("✅ Direct backup folder configured!");
         } else {
-            alert("⚠️ Votre navigateur ne supporte pas l'accès direct aux dossiers.");
+            alert("⚠️ Your browser does not support direct folder access.");
         }
     } catch (err) {
         console.warn("Folder picker cancelled:", err);
@@ -205,7 +202,7 @@ function calculateGlobalTotals() {
             subtotal += item.price * item.qty;
         } else if (currentCountType === 'quota_extra') {
             let chargeableQty = item.qty - (item.freeQty || 0);
-            if(chargeableQty < 0) chargeableQty = 0;
+            if (chargeableQty < 0) chargeableQty = 0;
             subtotal += item.price * chargeableQty;
         }
     });
@@ -238,7 +235,7 @@ function calculateGlobalTotals() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SAUVEGARDE BORDEREAU (legacy)
+// LEGACY SAVE (not called by main button)
 // ═══════════════════════════════════════════════════════════════════
 async function sauvegarderBordereauLocal() {
     const roomInput = document.getElementById('roomNumber');
@@ -398,12 +395,12 @@ async function sauvegarderBordereauLocal() {
             }
 
             if (res.error) {
-                console.error("❌ ERREUR SUPABASE :", res.error.message);
+                console.error("❌ SUPABASE ERROR:", res.error.message);
             } else if (res.data && res.data.length > 0) {
                 assignedId = String(res.data[0].id);
             }
         } catch (e) {
-            console.error("Exception d'écriture Supabase :", e);
+            console.error("Supabase write exception:", e);
         }
     }
 
@@ -445,7 +442,7 @@ async function sauvegarderBordereauLocal() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENCY V9 — Extraction par mot-clé + arrêt strict + préfixe propre
+// AGENCY V9 — Extraction by keyword + strict stop
 // ═══════════════════════════════════════════════════════════════════
 function extractAgencyFromText(text) {
     if (!text || typeof text !== 'string') return 'Direct';
@@ -603,7 +600,7 @@ function parsePaxMultiplier(text) {
 function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
 
-    // 🎯 PRIORITÉ ABSOLUE : "X pieces per day for AED Y net"
+    // 🎯 ABSOLUTE PRIORITY: "X pieces per day for AED Y net"
     let aedMatch = text.match(/(\d{1,2})\s*pieces?\s*per\s*day\s*for\s*AED\s*(\d+(?:\.\d+)?)/i);
     if (aedMatch) {
         const pcs = parseInt(aedMatch[1], 10);
@@ -621,7 +618,6 @@ function parseQuotaText(text) {
 
     const t = text.toLowerCase();
 
-    // "X pieces per day"
     let m = text.match(/(\d{1,2})\s*(?:pieces?|pcs?)\s*per\s*day/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
@@ -684,7 +680,7 @@ function extractGuestNameFromText(text) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MASS ENTRY V2 — PARSER PRINCIPAL
+// MASS ENTRY V2 — MAIN PARSER
 // ═══════════════════════════════════════════════════════════════════
 async function processTextData(rawData) {
     if (!rawData || !rawData.trim()) {
@@ -874,7 +870,6 @@ async function processTextData(rawData) {
                 markPmsSynced();
             }
 
-            // 🚨 Mise à jour badge checkout du jour
             if (typeof updateCheckoutTodayBadge === 'function') {
                 updateCheckoutTodayBadge();
             }
@@ -900,18 +895,18 @@ function calculateSpaTotal() {
 
     rows.forEach(row => {
         const input = row.querySelector('.spa-qty-input');
-        if(!input) return;
+        if (!input) return;
         const qty = parseInt(input.value) || 0;
         const rate = parseFloat(input.getAttribute('data-rate')) || 0;
         const rowAmountCell = row.querySelector('.spa-row-amount');
 
         const rowTotal = qty * rate;
-        if(rowAmountCell) rowAmountCell.innerText = rowTotal.toFixed(2);
+        if (rowAmountCell) rowAmountCell.innerText = rowTotal.toFixed(2);
         grandTotal += rowTotal;
     });
 
     const gtEl = document.getElementById('spa-grand-total');
-    if(gtEl) gtEl.innerText = grandTotal.toFixed(2) + " AED";
+    if (gtEl) gtEl.innerText = grandTotal.toFixed(2) + " AED";
 }
 
 async function validateAndSaveSpaReceipt() {
@@ -928,9 +923,9 @@ async function validateAndSaveSpaReceipt() {
     const delDate = document.getElementById('spa-delivery-date').value;
     const delTime = document.getElementById('spa-delivery-time').value;
 
-    if (!serialNo) { alert("⚠️ Veuillez entrer un numéro de série (Serial No)."); return false; }
-    if (grandTotalValue <= 0) { alert("⚠️ Le Grand Total doit être supérieur à 0 AED."); return false; }
-    if (!collectedBy || !deliveredBy || !givenBy) { alert("⚠️ Veuillez remplir tous les noms."); return false; }
+    if (!serialNo) { alert("⚠️ Please enter a Serial No."); return false; }
+    if (grandTotalValue <= 0) { alert("⚠️ Grand Total must be greater than 0 AED."); return false; }
+    if (!collectedBy || !deliveredBy || !givenBy) { alert("⚠️ Please fill all names."); return false; }
 
     let spaItemsArray = [];
     let totalClothes = 0;
@@ -939,7 +934,7 @@ async function validateAndSaveSpaReceipt() {
         const input = row.querySelector('.spa-qty-input');
         if (!input) return;
         const qty = parseInt(input.value) || 0;
-        if(qty > 0) {
+        if (qty > 0) {
             const itemName = row.querySelector('td').innerText.trim();
             const rate = parseFloat(input.getAttribute('data-rate')) || 0;
             spaItemsArray.push({
@@ -992,7 +987,7 @@ async function validateAndSaveSpaReceipt() {
                 assignedId = String(res.data[0].id);
             }
         } catch(e) {
-            console.warn("Erreur Supabase SPA:", e);
+            console.warn("Supabase SPA error:", e);
         }
     }
 
@@ -1056,7 +1051,7 @@ async function exportAutoDirect() {
     const lostFoundItems = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
 
     if (cachedSlips.length === 0 && lostFoundItems.length === 0) {
-        alert("⚠️ Aucune donnée à exporter.");
+        alert("⚠️ No data to export.");
         return;
     }
 
@@ -1080,7 +1075,7 @@ async function exportAutoDirect() {
     a.click();
     a.remove();
 
-    alert("✅ Sauvegarde complète (Blanchisserie & Lost & Found) effectuée !");
+    alert("✅ Full backup (Laundry & Lost & Found) done!");
 }
 
 async function importAutoDirect() {
@@ -1114,29 +1109,15 @@ async function importAutoDirect() {
         if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
         if (typeof renderLostFoundItems === 'function') renderLostFoundItems();
 
-        alert(`✅ Données restaurées avec succès !`);
+        alert(`✅ Data restored successfully!`);
     } else {
-        alert("⚠️ Aucune sauvegarde complète trouvée en mémoire.");
+        alert("⚠️ No full backup found in memory.");
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 🚨 CHECK-OUT TODAY — Module complet (Robust)
+// 🚨 CHECK-OUT TODAY — Simple informative list (no decisions)
 // ═══════════════════════════════════════════════════════════════════
-
-// ─── Date helpers ───────────────────────────────────────────────────
-function getTodayAbuDhabiIso() {
-    try {
-        const f = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'Asia/Dubai',
-            year: 'numeric', month: '2-digit', day: '2-digit'
-        });
-        return f.format(new Date());
-    } catch (e) {
-        const n = new Date();
-        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-    }
-}
 
 function getTodayAbuDhabi() {
     try {
@@ -1152,7 +1133,6 @@ function getTodayAbuDhabi() {
     }
 }
 
-// Normalise une date JJ/MM/YYYY en J/M/YYYY (sans zéro) pour comparaison
 function normalizeDateStr(s) {
     if (!s) return '';
     const str = String(s).trim();
@@ -1161,47 +1141,6 @@ function normalizeDateStr(s) {
     return `${parseInt(m[1], 10)}/${parseInt(m[2], 10)}/${m[3]}`;
 }
 
-// ─── Decisions cache ───────────────────────────────────────────────
-let _checkoutDecisionsToday = {};
-
-async function loadCheckoutDecisionsToday() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
-    try {
-        const today = getTodayAbuDhabiIso();
-        const { data, error } = await supabaseClient
-            .from('checkout_decisions')
-            .select('room, decision')
-            .eq('decision_date', today);
-        if (error) { console.warn('[CheckoutDecisions] Load error:', error.message); return; }
-        _checkoutDecisionsToday = {};
-        (data || []).forEach(r => { _checkoutDecisionsToday[r.room] = r.decision; });
-        console.log('📋 [CheckoutDecisions] Loaded:', _checkoutDecisionsToday);
-    } catch (e) { console.warn('[CheckoutDecisions] Exception:', e); }
-}
-
-async function saveCheckoutDecision(room, decision) {
-    if (!room || !['wash', 'hold'].includes(decision)) return false;
-    const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name)
-        ? currentStaffUser.name : 'Agent';
-    _checkoutDecisionsToday[room] = decision;
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) return true;
-    try {
-        const { error } = await supabaseClient
-            .from('checkout_decisions')
-            .upsert({
-                room: String(room),
-                decision_date: getTodayAbuDhabiIso(),
-                decision: decision,
-                decided_by: staffName,
-                decided_at: new Date().toISOString()
-            }, { onConflict: 'room,decision_date' });
-        if (error) { console.warn('[CheckoutDecisions] Save error:', error.message); return false; }
-        console.log(`✅ [CheckoutDecisions] ${room} → ${decision} by ${staffName}`);
-        return true;
-    } catch (e) { console.warn('[CheckoutDecisions] Exception:', e); return false; }
-}
-
-// ─── Load PMS from Supabase ────────────────────────────────────────
 async function loadPmsFromSupabase() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
     try {
@@ -1239,50 +1178,45 @@ async function loadPmsFromSupabase() {
     }
 }
 
-// ─── Get checkout rooms ────────────────────────────────────────────
 function getCheckoutTodayRooms() {
     if (typeof pmsDatabase === 'undefined' || !pmsDatabase) return [];
-
     const todayNorm = normalizeDateStr(getTodayAbuDhabi());
-    const checkoutRooms = [];
-
+    const list = [];
     chargerDonneesLocalStorage();
 
     Object.entries(pmsDatabase).forEach(([room, data]) => {
         if (!data.departure) return;
-        const depNorm = normalizeDateStr(data.departure);
-        if (depNorm !== todayNorm) return;
+        if (normalizeDateStr(data.departure) !== todayNorm) return;
 
         let laundryStatus = 'No slip yet';
-        let slipId = null;
         const slip = cachedSlips.find(s => String(s.room_number || s.room) === String(room) && !s.is_spa);
-        if (slip) { laundryStatus = slip.status || 'Collected'; slipId = String(slip.id); }
+        if (slip) laundryStatus = slip.status || 'Collected';
 
-        checkoutRooms.push({
-            room, guestName: data.guestName || 'Unknown Guest',
-            roomTyp: data.roomTyp || 'DLXR', agency: data.agency || 'Direct',
-            arrival: data.arrival || '---', departure: data.departure,
+        list.push({
+            room,
+            guestName: data.guestName || 'Unknown Guest',
+            roomTyp: data.roomTyp || 'DLXR',
+            agency: data.agency || 'Direct',
+            arrival: data.arrival || '---',
+            departure: data.departure,
             quotaText: data.quotaText || 'Chargeable',
             isChargeable: data.isChargeable,
             isAedPerPc: data.isAedPerPc,
             aedPerPc: data.aedPerPc || 0,
-            laundryStatus, slipId,
-            decision: _checkoutDecisionsToday[room] || null
+            laundryStatus
         });
     });
 
-    checkoutRooms.sort((a, b) => parseInt(a.room) - parseInt(b.room));
-    return checkoutRooms;
+    list.sort((a, b) => parseInt(a.room) - parseInt(b.room));
+    return list;
 }
 
-// ─── Update badge ──────────────────────────────────────────────────
 function updateCheckoutTodayBadge() {
     const banner = document.getElementById('checkoutTodayBanner');
     const textEl = banner?.querySelector('.checkout-banner-text');
     const iconEl = document.getElementById('checkoutBannerIcon');
     if (!banner || !textEl || !iconEl) return;
 
-    // Auto-load pmsDatabase si vide
     if ((!pmsDatabase || Object.keys(pmsDatabase).length === 0) &&
         typeof supabaseClient !== 'undefined' && supabaseClient &&
         !window._checkoutPmsLoadInProgress) {
@@ -1300,72 +1234,26 @@ function updateCheckoutTodayBadge() {
         banner.className = 'bg-stone-800/60 hover:bg-stone-700/80 text-stone-300 border border-stone-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow transition';
         iconEl.className = 'fas fa-check-circle text-emerald-400 text-sm';
         textEl.textContent = '✓ 0 checkout';
-        banner.title = 'No rooms checking out today';
         return;
     }
 
-    const pending = rooms.filter(r => !r.decision).length;
     banner.className = 'bg-rose-950/70 hover:bg-rose-900/90 text-rose-100 border-2 border-rose-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow-lg transition animate-pulse';
     iconEl.className = 'fas fa-exclamation-triangle text-rose-400 text-sm';
-
-    let label = `🚨 ${count}`;
-    if (pending > 0) label += ` · ${pending} pending`;
-    textEl.textContent = label;
-
-    banner.title = `${count} room(s) checking out today · ${pending} to decide`;
+    textEl.textContent = `🚨 ${count}`;
 }
 
-// ─── Toast ─────────────────────────────────────────────────────────
-function showCheckoutToast() {
-    const rooms = getCheckoutTodayRooms();
-    if (rooms.length === 0) return;
-    const key = `remal_checkout_toast_${getTodayAbuDhabiIso()}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, '1');
-    const pending = rooms.filter(r => !r.decision).length;
-    const old = document.getElementById('checkoutToast');
-    if (old) old.remove();
-    const toast = document.createElement('div');
-    toast.id = 'checkoutToast';
-    toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border-2 border-rose-700 text-rose-100 font-bold text-xs px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md cursor-pointer hover:bg-rose-900 transition';
-    toast.onclick = () => {
-        toast.remove();
-        ouvrirCheckoutTodayModal();
-    };
-    toast.innerHTML = `
-        <span class="text-2xl">🚨</span>
-        <div class="flex-1">
-            <div class="text-[13px] font-black text-rose-200 uppercase tracking-wider">Check-Out Alert</div>
-            <div class="text-[11px] text-rose-300 mt-0.5 font-medium">
-                ${rooms.length} room${rooms.length > 1 ? 's' : ''} check-out today${pending > 0 ? ` · ${pending} to validate with reception` : ''}
-            </div>
-        </div>
-        <button onclick="event.stopPropagation(); this.parentElement.remove();" class="text-rose-300 hover:text-rose-100 text-lg font-bold">✕</button>
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.4s ease';
-            setTimeout(() => toast.remove(), 400);
-        }
-    }, 12000);
-}
-
-// ─── Ouvrir modale (ROBUSTE) ──────────────────────────────────────
+// ─── OPEN modal (same pattern as Active Rooms List) ────────────────
 async function ouvrirCheckoutTodayModal() {
     const modal = document.getElementById('checkoutTodayModal');
     const body = document.getElementById('checkoutTodayModalBody');
     const countEl = document.getElementById('checkoutTodayCount');
     if (!modal || !body) return;
 
-    // ✅ Même méthode que Active Rooms List
     modal.classList.remove('hidden');
     if (navigator.vibrate) navigator.vibrate(20);
 
     body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading...</p>`;
 
-    // Auto-load pmsDatabase si vide
     if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
         await loadPmsFromSupabase();
     }
@@ -1378,13 +1266,12 @@ async function ouvrirCheckoutTodayModal() {
         return;
     }
 
-    // === TABLE style (fond blanc, comme Active Rooms List) ===
     const todayStr = getTodayAbuDhabi();
-
     let rowsHtml = '';
+
     rooms.forEach(item => {
         const sLower = String(item.laundryStatus || '').toLowerCase();
-        let statusColor = 'bg-stone-200 text-stone-700';
+        let statusColor = 'bg-stone-100 text-stone-700';
         let statusIcon = '📭';
         if (sLower.includes('delivered') || sLower.includes('completed')) {
             statusColor = 'bg-emerald-100 text-emerald-800'; statusIcon = '✅';
@@ -1434,7 +1321,7 @@ async function ouvrirCheckoutTodayModal() {
                     <th class="p-2.5">Guest Name</th>
                     <th class="p-2.5 text-center">Typ</th>
                     <th class="p-2.5 text-center">Departure</th>
-                    <th class="p-2.5 text-center">Laundry Status</th>
+                    <th class="p-2.5 text-center">Laundry</th>
                     <th class="p-2.5 text-center">Quota</th>
                 </tr>
             </thead>
@@ -1446,46 +1333,35 @@ async function ouvrirCheckoutTodayModal() {
     `;
 }
 
-async function deciderCheckout(room, decision) {
-    const ok = await saveCheckoutDecision(room, decision);
-    if (!ok) { alert('⚠️ Failed to save decision.'); return; }
-    if (navigator.vibrate) navigator.vibrate(15);
-    await ouvrirCheckoutTodayModal();
-    updateCheckoutTodayBadge();
-}
-
-// ─── Fermer modale (ROBUSTE) ──────────────────────────────────────
 function fermerCheckoutTodayModal() {
     const m = document.getElementById('checkoutTodayModal');
-    if (m) m.classList.add('hidden');   // ✅ Même méthode que Active Rooms List
+    if (m) m.classList.add('hidden');
 }
 
-// ─── Print ─────────────────────────────────────────────────────────
 function imprimerCheckoutToday() {
     const rooms = getCheckoutTodayRooms();
     if (rooms.length === 0) { alert('No rooms to print.'); return; }
+
     const todayStr = getTodayAbuDhabi();
     const now = new Date();
     const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name) ? currentStaffUser.name : 'Agent';
+
     let rowsHtml = '';
     rooms.forEach(item => {
-        let decision = 'To decide';
-        if (item.decision === 'wash') decision = '✅ WASH OK';
-        else if (item.decision === 'hold') decision = '⛔ HOLD';
         let quotaText = '';
         if (item.isAedPerPc && item.aedPerPc > 0) quotaText = `AED ${item.aedPerPc}/pc`;
         else if (item.isChargeable) quotaText = 'Chargeable';
         else quotaText = item.quotaText || 'Included';
+
         rowsHtml += `<tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:8px;font-weight:bold;text-align:center;">${item.room}</td>
             <td style="padding:8px;">${item.guestName}<br><span style="font-size:9px;color:#78716c;">${item.agency}</span></td>
             <td style="padding:8px;text-align:center;">${item.departure}</td>
             <td style="padding:8px;text-align:center;">${item.laundryStatus}</td>
             <td style="padding:8px;text-align:center;">${quotaText}</td>
-            <td style="padding:8px;text-align:center;font-weight:bold;">${decision}</td>
         </tr>`;
     });
+
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Check-Out Today — ${todayStr}</title>
 <style>*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 body{font-family:Arial,sans-serif;padding:20px;color:#1c1917;}
@@ -1499,14 +1375,12 @@ th{background:#1c1917;color:white;padding:10px 8px;font-size:9px;letter-spacing:
 <p style="margin:6px 0 0 0;font-size:10px;color:#57534e;">${todayStr} — ${timeFormatted}</p></div></div>
 <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:11px;">
 <strong>⚠️ ${rooms.length} room(s) checking out today.</strong> Coordinate with reception before washing.</div>
-<table><thead><tr><th>Room</th><th>Guest / Agency</th><th>Departure</th><th>Laundry</th><th>Quota</th><th>Decision</th></tr></thead>
+<table><thead><tr><th>Room</th><th>Guest / Agency</th><th>Departure</th><th>Laundry</th><th>Quota</th></tr></thead>
 <tbody>${rowsHtml}</tbody></table>
-<div style="margin-top:24px;display:flex;justify-content:space-between;font-size:10px;color:#57534e;">
-<div>Prepared by: <strong>${staffName}</strong></div>
-<div>Received by Front Desk: _________________</div></div>
 </body></html>`;
+
     const w = window.open('', '_blank', 'width=900,height=700');
-    if (!w) { alert('⚠️ Popup blocked. Please allow popups.'); return; }
+    if (!w) { alert('⚠️ Popup blocked.'); return; }
     w.document.write(html);
     w.document.close();
     setTimeout(() => { w.focus(); w.print(); }, 400);
@@ -1516,18 +1390,12 @@ th{background:#1c1917;color:white;padding:10px 8px;font-size:9px;letter-spacing:
 window.updateCheckoutTodayBadge = updateCheckoutTodayBadge;
 window.getCheckoutTodayRooms = getCheckoutTodayRooms;
 window.getTodayAbuDhabi = getTodayAbuDhabi;
-window.getTodayAbuDhabiIso = getTodayAbuDhabiIso;
-window.normalizeDateStr = normalizeDateStr;
-window.saveCheckoutDecision = saveCheckoutDecision;
-window.loadCheckoutDecisionsToday = loadCheckoutDecisionsToday;
 window.loadPmsFromSupabase = loadPmsFromSupabase;
-window.showCheckoutToast = showCheckoutToast;
 window.ouvrirCheckoutTodayModal = ouvrirCheckoutTodayModal;
-window.deciderCheckout = deciderCheckout;
 window.fermerCheckoutTodayModal = fermerCheckoutTodayModal;
 window.imprimerCheckoutToday = imprimerCheckoutToday;
 
-// ─── Escape + clic overlay ferme la modale ────────────────────────
+// Escape closes modal
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const m = document.getElementById('checkoutTodayModal');
@@ -1535,25 +1403,17 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ─── Auto-refresh ─────────────────────────────────────────────────
+// Auto-refresh badge
 setInterval(() => {
     if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
 }, 60000);
 
-// ─── Init au démarrage ────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
+// Init at startup
+document.addEventListener('DOMContentLoaded', () => {
     setTimeout(async () => {
-        // 1. Charger pmsDatabase depuis Supabase si vide
-        if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
-            await loadPmsFromSupabase();
-        }
-        // 2. Charger les décisions
-        await loadCheckoutDecisionsToday();
-        // 3. Update le badge
+        await loadPmsFromSupabase();
         updateCheckoutTodayBadge();
-        // 4. Toast au premier chargement
-        showCheckoutToast();
     }, 3000);
 });
 
-console.log('✅ [laundry.js] Checkout Today module V3 loaded — Robust');
+console.log('✅ [laundry.js] Checkout Today — Simple list loaded');
