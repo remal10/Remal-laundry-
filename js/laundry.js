@@ -1506,3 +1506,47 @@ async function refreshCheckoutBadgeWithCloud() {
 }
 
 window.refreshCheckoutBadgeWithCloud = refreshCheckoutBadgeWithCloud;
+// ═══════════════════════════════════════════════════════════════════
+// ☁️ LOAD PMS FROM SUPABASE
+// ═══════════════════════════════════════════════════════════════════
+async function loadPmsFromSupabase() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
+    try {
+        const { data, error } = await supabaseClient
+            .from('pms_guests')
+            .select('*')
+            .order('room', { ascending: true });
+
+        if (error || !data || data.length === 0) {
+            console.warn('[PMS Load] No data:', error?.message);
+            return false;
+        }
+
+        pmsDatabase = {};
+        data.forEach(g => {
+            pmsDatabase[String(g.room)] = {
+                guestName: g.guest_name || 'Unknown Guest',
+                roomTyp: g.room_typ || 'DLXR',
+                arrival: g.arrival || '',
+                departure: g.departure || '',
+                agency: g.agency || 'Direct',
+                quotaText: g.quota_text || 'Chargeable',
+                isChargeable: g.is_chargeable !== undefined ? g.is_chargeable : true,
+                isAedPerPc: (g.quota_text || '').toLowerCase().includes('aed'),
+                aedPerPc: 0
+            };
+        });
+
+        sauvegarderPmsLocalStorage();
+        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
+
+        if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
+        if (typeof renderMassPreviewTable === 'function') renderMassPreviewTable();
+        return true;
+    } catch (e) {
+        console.warn('[PMS Load] Exception:', e);
+        return false;
+    }
+}
+
+window.loadPmsFromSupabase = loadPmsFromSupabase;
