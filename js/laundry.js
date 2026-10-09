@@ -1121,9 +1121,10 @@ async function importAutoDirect() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 🚨 CHECK-OUT TODAY — Aide à la décision (agent + réception)
+// 🚨 CHECK-OUT TODAY — Module complet (Robust)
 // ═══════════════════════════════════════════════════════════════════
 
+// ─── Date helpers ───────────────────────────────────────────────────
 function getTodayAbuDhabiIso() {
     try {
         const f = new Intl.DateTimeFormat('en-CA', {
@@ -1151,6 +1152,16 @@ function getTodayAbuDhabi() {
     }
 }
 
+// Normalise une date JJ/MM/YYYY en J/M/YYYY (sans zéro) pour comparaison
+function normalizeDateStr(s) {
+    if (!s) return '';
+    const str = String(s).trim();
+    const m = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!m) return str;
+    return `${parseInt(m[1], 10)}/${parseInt(m[2], 10)}/${m[3]}`;
+}
+
+// ─── Decisions cache ───────────────────────────────────────────────
 let _checkoutDecisionsToday = {};
 
 async function loadCheckoutDecisionsToday() {
@@ -1190,36 +1201,121 @@ async function saveCheckoutDecision(room, decision) {
     } catch (e) { console.warn('[CheckoutDecisions] Exception:', e); return false; }
 }
 
+// ─── Load PMS from Supabase ────────────────────────────────────────
+async function loadPmsFromSupabase() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
+    try {
+        const { data, error } = await supabaseClient
+            .from('pms_guests')
+            .select('*')
+            .order('room', { ascending: true });
+
+        if (error || !data || data.length === 0) {
+            console.warn('[PMS Load] No data:', error?.message);
+            return false;
+        }
+
+        pmsDatabase = {};
+        data.forEach(g => {
+            pmsDatabase[String(g.room)] = {
+                guestName: g.guest_name || 'Unknown Guest',
+                roomTyp: g.room_typ || 'DLXR',
+                arrival: g.arrival || '',
+                departure: g.departure || '',
+                agency: g.agency || 'Direct',
+                quotaText: g.quota_text || 'Chargeable',
+                isChargeable: g.is_chargeable !== undefined ? g.is_chargeable : true,
+                isAedPerPc: (g.quota_text || '').toLowerCase().includes('aed'),
+                aedPerPc: 0
+            };
+        });
+
+        sauvegarderPmsLocalStorage();
+        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
+        return true;
+    } catch (e) {
+        console.warn('[PMS Load] Exception:', e);
+        return false;
+    }
+}
+
+// ─── Get checkout rooms ────────────────────────────────────────────
 function getCheckoutTodayRooms() {
     if (typeof pmsDatabase === 'undefined' || !pmsDatabase) return [];
-    const todayStr = getTodayAbuDhabi();
+
+    const todayNorm = normalizeDateStr(getTodayAbuDhabi());
     const checkoutRooms = [];
+
     chargerDonneesLocalStorage();
+
     Object.entries(pmsDatabase).forEach(([room, data]) => {
         if (!data.departure) return;
-        if (String(data.departure).trim() !== todayStr) return;
+        const depNorm = normalizeDateStr(data.departure);
+        if (depNorm !== todayNorm) return;
+
         let laundryStatus = 'No slip yet';
         let slipId = null;
         const slip = cachedSlips.find(s => String(s.room_number || s.room) === String(room) && !s.is_spa);
         if (slip) { laundryStatus = slip.status || 'Collected'; slipId = String(slip.id); }
+
         checkoutRooms.push({
             room, guestName: data.guestName || 'Unknown Guest',
             roomTyp: data.roomTyp || 'DLXR', agency: data.agency || 'Direct',
             arrival: data.arrival || '---', departure: data.departure,
             quotaText: data.quotaText || 'Chargeable',
-            isChargeable: data.isChargeable, isAedPerPc: data.isAedPerPc,
+            isChargeable: data.isChargeable,
+            isAedPerPc: data.isAedPerPc,
             aedPerPc: data.aedPerPc || 0,
             laundryStatus, slipId,
             decision: _checkoutDecisionsToday[room] || null
         });
     });
+
     checkoutRooms.sort((a, b) => parseInt(a.room) - parseInt(b.room));
     return checkoutRooms;
 }
 
-body.innerHTML = html;
-modal.style.display = 'flex';    // ← Force l'affichage
-if (navigator.vibrate) navigator.vibrate(30);
+// ─── Update badge ──────────────────────────────────────────────────
+function updateCheckoutTodayBadge() {
+    const banner = document.getElementById('checkoutTodayBanner');
+    const textEl = banner?.querySelector('.checkout-banner-text');
+    const iconEl = document.getElementById('checkoutBannerIcon');
+    if (!banner || !textEl || !iconEl) return;
+
+    // Auto-load pmsDatabase si vide
+    if ((!pmsDatabase || Object.keys(pmsDatabase).length === 0) &&
+        typeof supabaseClient !== 'undefined' && supabaseClient &&
+        !window._checkoutPmsLoadInProgress) {
+        window._checkoutPmsLoadInProgress = true;
+        loadPmsFromSupabase().finally(() => {
+            window._checkoutPmsLoadInProgress = false;
+            setTimeout(() => updateCheckoutTodayBadge(), 500);
+        });
+    }
+
+    const rooms = getCheckoutTodayRooms();
+    const count = rooms.length;
+
+    if (count === 0) {
+        banner.className = 'bg-stone-800/60 hover:bg-stone-700/80 text-stone-300 border border-stone-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow transition';
+        iconEl.className = 'fas fa-check-circle text-emerald-400 text-sm';
+        textEl.textContent = '✓ 0 checkout';
+        banner.title = 'No rooms checking out today';
+        return;
+    }
+
+    const pending = rooms.filter(r => !r.decision).length;
+    banner.className = 'bg-rose-950/70 hover:bg-rose-900/90 text-rose-100 border-2 border-rose-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow-lg transition animate-pulse';
+    iconEl.className = 'fas fa-exclamation-triangle text-rose-400 text-sm';
+
+    let label = `🚨 ${count}`;
+    if (pending > 0) label += ` · ${pending} pending`;
+    textEl.textContent = label;
+
+    banner.title = `${count} room(s) checking out today · ${pending} to decide`;
+}
+
+// ─── Toast ─────────────────────────────────────────────────────────
 function showCheckoutToast() {
     const rooms = getCheckoutTodayRooms();
     if (rooms.length === 0) return;
@@ -1234,14 +1330,14 @@ function showCheckoutToast() {
     toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border-2 border-rose-700 text-rose-100 font-bold text-xs px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md cursor-pointer hover:bg-rose-900 transition';
     toast.onclick = () => {
         toast.remove();
-        if (typeof ouvrirCheckoutTodayModal === 'function') ouvrirCheckoutTodayModal();
+        ouvrirCheckoutTodayModal();
     };
     toast.innerHTML = `
         <span class="text-2xl">🚨</span>
         <div class="flex-1">
             <div class="text-[13px] font-black text-rose-200 uppercase tracking-wider">Check-Out Alert</div>
             <div class="text-[11px] text-rose-300 mt-0.5 font-medium">
-                ${rooms.length} room${rooms.length > 1 ? 's' : ''} check-out today${pending > 0 ? ` · ${pending} à valider avec la réception` : ''}
+                ${rooms.length} room${rooms.length > 1 ? 's' : ''} check-out today${pending > 0 ? ` · ${pending} to validate with reception` : ''}
             </div>
         </div>
         <button onclick="event.stopPropagation(); this.parentElement.remove();" class="text-rose-300 hover:text-rose-100 text-lg font-bold">✕</button>
@@ -1256,19 +1352,41 @@ function showCheckoutToast() {
     }, 12000);
 }
 
+// ─── Ouvrir modale (ROBUSTE) ──────────────────────────────────────
 async function ouvrirCheckoutTodayModal() {
     const modal = document.getElementById('checkoutTodayModal');
     const body = document.getElementById('checkoutTodayModalBody');
     const countEl = document.getElementById('checkoutTodayCount');
-    if (!modal || !body) return;
-    await loadCheckoutDecisionsToday();
-    const rooms = getCheckoutTodayRooms();
-    if (countEl) countEl.textContent = rooms.length;
-    if (rooms.length === 0) {
-        body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">✅ No check-outs today.</p>`;
-        modal.classList.remove('hidden');
+    if (!modal || !body) {
+        console.warn('[CheckoutModal] Modal not found');
         return;
     }
+
+    // FORCE L'AFFICHAGE (avant même de charger)
+    modal.style.display = 'flex';
+    if (navigator.vibrate) navigator.vibrate(20);
+
+    // Afficher "Loading..."
+    body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading...</p>`;
+
+    // 1. Auto-load pmsDatabase si vide
+    if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
+        await loadPmsFromSupabase();
+    }
+
+    // 2. Charger les décisions
+    await loadCheckoutDecisionsToday();
+
+    // 3. Récupérer les chambres
+    const rooms = getCheckoutTodayRooms();
+    if (countEl) countEl.textContent = rooms.length;
+
+    // 4. Remplir le body
+    if (rooms.length === 0) {
+        body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">✓ No rooms checking out today.</p>`;
+        return;
+    }
+
     let html = '';
     rooms.forEach(item => {
         const sLower = String(item.laundryStatus || '').toLowerCase();
@@ -1292,7 +1410,7 @@ async function ouvrirCheckoutTodayModal() {
             quotaBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-md text-[10px] font-bold">${item.quotaText}</span>`;
         }
         let decisionBorder = 'border-rose-900/50';
-        let decisionBadge = `<span class="bg-amber-950/50 text-amber-300 border border-amber-800/60 px-2 py-0.5 rounded-md text-[10px] font-bold">⚠️ À décider</span>`;
+        let decisionBadge = `<span class="bg-amber-950/50 text-amber-300 border border-amber-800/60 px-2 py-0.5 rounded-md text-[10px] font-bold">⚠️ To decide</span>`;
         if (item.decision === 'wash') {
             decisionBorder = 'border-emerald-700/70';
             decisionBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-black">✅ WASH OK</span>`;
@@ -1323,9 +1441,8 @@ async function ouvrirCheckoutTodayModal() {
             </div>
         `;
     });
-  body.innerHTML = html;
-modal.style.display = 'flex';    // ← Force l'affichage
-if (navigator.vibrate) navigator.vibrate(30);
+
+    body.innerHTML = html;
 }
 
 async function deciderCheckout(room, decision) {
@@ -1336,11 +1453,14 @@ async function deciderCheckout(room, decision) {
     updateCheckoutTodayBadge();
 }
 
+// ─── Fermer modale (ROBUSTE) ──────────────────────────────────────
 function fermerCheckoutTodayModal() {
     const m = document.getElementById('checkoutTodayModal');
-    if (m) m.classList.add('hidden');
+    if (m) m.style.display = 'none';
+    console.log('[CheckoutModal] Closed');
 }
 
+// ─── Print ─────────────────────────────────────────────────────────
 function imprimerCheckoutToday() {
     const rooms = getCheckoutTodayRooms();
     if (rooms.length === 0) { alert('No rooms to print.'); return; }
@@ -1350,7 +1470,7 @@ function imprimerCheckoutToday() {
     const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name) ? currentStaffUser.name : 'Agent';
     let rowsHtml = '';
     rooms.forEach(item => {
-        let decision = 'À décider';
+        let decision = 'To decide';
         if (item.decision === 'wash') decision = '✅ WASH OK';
         else if (item.decision === 'hold') decision = '⛔ HOLD';
         let quotaText = '';
@@ -1392,161 +1512,57 @@ th{background:#1c1917;color:white;padding:10px 8px;font-size:9px;letter-spacing:
     setTimeout(() => { w.focus(); w.print(); }, 400);
 }
 
+// ─── Expose global ────────────────────────────────────────────────
 window.updateCheckoutTodayBadge = updateCheckoutTodayBadge;
 window.getCheckoutTodayRooms = getCheckoutTodayRooms;
 window.getTodayAbuDhabi = getTodayAbuDhabi;
 window.getTodayAbuDhabiIso = getTodayAbuDhabiIso;
+window.normalizeDateStr = normalizeDateStr;
 window.saveCheckoutDecision = saveCheckoutDecision;
 window.loadCheckoutDecisionsToday = loadCheckoutDecisionsToday;
+window.loadPmsFromSupabase = loadPmsFromSupabase;
 window.showCheckoutToast = showCheckoutToast;
 window.ouvrirCheckoutTodayModal = ouvrirCheckoutTodayModal;
 window.deciderCheckout = deciderCheckout;
 window.fermerCheckoutTodayModal = fermerCheckoutTodayModal;
 window.imprimerCheckoutToday = imprimerCheckoutToday;
 
+// ─── Escape + clic overlay ferme la modale ────────────────────────
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const m = document.getElementById('checkoutTodayModal');
+        if (m && m.style.display === 'flex') {
+            m.style.display = 'none';
+        }
+    }
+});
+
+document.addEventListener('click', (e) => {
+    const m = document.getElementById('checkoutTodayModal');
+    if (m && m.style.display === 'flex' && e.target === m) {
+        m.style.display = 'none';
+    }
+});
+
+// ─── Auto-refresh ─────────────────────────────────────────────────
 setInterval(() => {
     if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
 }, 60000);
 
-setInterval(() => {
-    if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
-}, 60000);
-
+// ─── Init au démarrage ────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(async () => {
         // 1. Charger pmsDatabase depuis Supabase si vide
         if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
             await loadPmsFromSupabase();
         }
-        // 2. Charger les décisions du jour
+        // 2. Charger les décisions
         await loadCheckoutDecisionsToday();
-        // 3. Update badge
+        // 3. Update le badge
         updateCheckoutTodayBadge();
-        // 4. Toast si checkouts
+        // 4. Toast au premier chargement
         showCheckoutToast();
     }, 3000);
 });
-console.log('✅ [laundry.js] Loaded — Agency V9 + Quota V4 + Checkout Today');
-// ═══════════════════════════════════════════════════════════════════
-// ☁️ LOAD PMS FROM SUPABASE — Recharge pmsDatabase depuis la table pms_guests
-// Utilisé au démarrage + auto-refresh si pmsDatabase est vide
-// ═══════════════════════════════════════════════════════════════════
-async function loadPmsFromSupabase() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        console.warn('[PMS Load] Supabase not available');
-        return false;
-    }
 
-    try {
-        const { data, error } = await supabaseClient
-            .from('pms_guests')
-            .select('*')
-            .order('room', { ascending: true });
-
-        if (error) {
-            console.warn('[PMS Load] Supabase error:', error.message);
-            return false;
-        }
-
-        if (!data || data.length === 0) {
-            console.log('[PMS Load] No data in pms_guests');
-            return false;
-        }
-
-        // Remplir pmsDatabase
-        pmsDatabase = {};
-        data.forEach(g => {
-            pmsDatabase[String(g.room)] = {
-                guestName: g.guest_name || g.guestName || 'Unknown Guest',
-                roomTyp: g.room_typ || g.roomTyp || 'DLXR',
-                arrival: g.arrival || '',
-                departure: g.departure || '',
-                agency: g.agency || 'Direct',
-                quotaText: g.quota_text || g.quotaText || 'Chargeable',
-                isChargeable: g.is_chargeable !== undefined ? g.is_chargeable : true,
-                isAedPerPc: (g.quota_text || '').toLowerCase().includes('aed') && (g.quota_text || '').toLowerCase().includes('per pcs'),
-                aedPerPc: 0
-            };
-        });
-
-        sauvegarderPmsLocalStorage();
-        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
-
-        // Refresh badge + table si présents
-        if (typeof updateCheckoutTodayBadge === 'function') {
-            updateCheckoutTodayBadge();
-        }
-        if (typeof renderMassPreviewTable === 'function') {
-            renderMassPreviewTable();
-        }
-
-        return true;
-    } catch (e) {
-        console.warn('[PMS Load] Exception:', e);
-        return false;
-    }
-}
-
-window.loadPmsFromSupabase = loadPmsFromSupabase;
-
-// ═══════════════════════════════════════════════════════════════════
-// 🔄 REFRESH CHECKOUT BADGE — Recharge pmsDatabase si vide puis update badge
-// ═══════════════════════════════════════════════════════════════════
-async function refreshCheckoutBadgeWithCloud() {
-    // Si pmsDatabase est vide → charger depuis Supabase
-    if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
-        console.log('🔄 [Checkout] pmsDatabase empty → loading from Supabase...');
-        await loadPmsFromSupabase();
-    }
-
-    // Update le badge
-    if (typeof updateCheckoutTodayBadge === 'function') {
-        updateCheckoutTodayBadge();
-    }
-}
-
-window.refreshCheckoutBadgeWithCloud = refreshCheckoutBadgeWithCloud;
-// ═══════════════════════════════════════════════════════════════════
-// ☁️ LOAD PMS FROM SUPABASE
-// ═══════════════════════════════════════════════════════════════════
-async function loadPmsFromSupabase() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) return false;
-    try {
-        const { data, error } = await supabaseClient
-            .from('pms_guests')
-            .select('*')
-            .order('room', { ascending: true });
-
-        if (error || !data || data.length === 0) {
-            console.warn('[PMS Load] No data:', error?.message);
-            return false;
-        }
-
-        pmsDatabase = {};
-        data.forEach(g => {
-            pmsDatabase[String(g.room)] = {
-                guestName: g.guest_name || 'Unknown Guest',
-                roomTyp: g.room_typ || 'DLXR',
-                arrival: g.arrival || '',
-                departure: g.departure || '',
-                agency: g.agency || 'Direct',
-                quotaText: g.quota_text || 'Chargeable',
-                isChargeable: g.is_chargeable !== undefined ? g.is_chargeable : true,
-                isAedPerPc: (g.quota_text || '').toLowerCase().includes('aed'),
-                aedPerPc: 0
-            };
-        });
-
-        sauvegarderPmsLocalStorage();
-        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
-
-        if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
-        if (typeof renderMassPreviewTable === 'function') renderMassPreviewTable();
-        return true;
-    } catch (e) {
-        console.warn('[PMS Load] Exception:', e);
-        return false;
-    }
-}
-
-window.loadPmsFromSupabase = loadPmsFromSupabase;
+console.log('✅ [laundry.js] Checkout Today module V3 loaded — Robust');
