@@ -1414,18 +1414,17 @@ setInterval(() => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(async () => {
-        // 1. Charger les décisions du jour
+        // 1. Charger pmsDatabase depuis Supabase si vide
+        if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
+            await loadPmsFromSupabase();
+        }
+        // 2. Charger les décisions du jour
         await loadCheckoutDecisionsToday();
-        
-        // 2. Charger pmsDatabase depuis Supabase si vide
-        await loadPmsFromSupabase();
-        
-        // 3. Update le badge
+        // 3. Update badge
         updateCheckoutTodayBadge();
-        
         // 4. Toast si checkouts
         showCheckoutToast();
-    }, 2500);
+    }, 3000);
 });
 console.log('✅ [laundry.js] Loaded — Agency V9 + Quota V4 + Checkout Today');
 // ═══════════════════════════════════════════════════════════════════
