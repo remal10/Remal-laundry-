@@ -1421,3 +1421,49 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ [laundry.js] Checkout Today — Simple list loaded');
+// ═══════════════════════════════════════════════════════════════════
+// 🏨 OCCUPANCY — Calculate occupancy vs 212 total rooms
+// ═══════════════════════════════════════════════════════════════════
+const TOTAL_HOTEL_ROOMS = 212;
+
+function updateOccupancyBadge() {
+    const badgeEl = document.getElementById('occupancyBadge');
+    const detailEl = document.getElementById('occupancyDetail');
+    if (!badgeEl || !detailEl) return;
+
+    // Count unique rooms in pmsDatabase
+    const occupiedRooms = pmsDatabase ? Object.keys(pmsDatabase).length : 0;
+    const total = TOTAL_HOTEL_ROOMS;
+
+    if (total <= 0) {
+        badgeEl.textContent = '--%';
+        detailEl.textContent = '(0 / ' + total + ')';
+        return;
+    }
+
+    const pct = (occupiedRooms / total) * 100;
+
+    // Display
+    badgeEl.textContent = `${pct.toFixed(1)}%`;
+    detailEl.textContent = `(${occupiedRooms} / ${total})`;
+
+    // Color coding
+    if (pct >= 90) {
+        badgeEl.className = 'font-bold text-emerald-400';
+    } else if (pct >= 70) {
+        badgeEl.className = 'font-bold text-[#DCA773]';
+    } else if (pct >= 50) {
+        badgeEl.className = 'font-bold text-amber-400';
+    } else {
+        badgeEl.className = 'font-bold text-rose-400';
+    }
+}
+
+window.updateOccupancyBadge = updateOccupancyBadge;
+
+// Update occupancy after pmsDatabase is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof updateOccupancyBadge === 'function') updateOccupancyBadge();
+    }, 3500);
+});
