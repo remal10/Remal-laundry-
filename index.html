@@ -1519,8 +1519,8 @@
 <!-- ═══════════════════════════════════════════════════════════════════
      🚨 MODAL — CHECK-OUT TODAY (same style as Active Rooms List)
      ═══════════════════════════════════════════════════════════════════ -->
-<div id="checkoutTodayModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-    <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border border-[#2f2820]">
+<div id="checkoutTodayModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] items-center justify-center p-4 no-print">
+    <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col border border-[#2f2820]">
 
         <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
             <div>
@@ -1542,13 +1542,13 @@
             <span class="text-[10px] text-stone-500">Abu Dhabi (GMT+4)</span>
         </div>
 
-        <div id="checkoutTodayModalBody" class="bg-white text-stone-900 p-6 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
+        <div id="checkoutTodayModalBody" class="bg-white text-stone-900 p-4 rounded-2xl border border-stone-200 overflow-y-auto flex-1 font-sans">
             <p class="text-xs text-stone-500 text-center py-6">Loading...</p>
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-2">
             <button onclick="imprimerCheckoutToday()" class="py-3 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
-                <i class="fas fa-file-pdf"></i> 🖨️ Print List
+                <i class="fas fa-print"></i> 🖨️ Print
             </button>
             <button onclick="fermerCheckoutTodayModal()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
                 Close
