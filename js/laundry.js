@@ -1223,6 +1223,21 @@ function updateCheckoutTodayBadge() {
     const iconEl = document.getElementById('checkoutBannerIcon');
     if (!banner || !textEl || !iconEl) return;
 
+    // Si pmsDatabase est vide → lancer un auto-load (async, ne bloque pas)
+    if ((!pmsDatabase || Object.keys(pmsDatabase).length === 0) &&
+        typeof loadPmsFromSupabase === 'function' &&
+        typeof supabaseClient !== 'undefined' && supabaseClient) {
+        // Éviter les boucles infinies
+        if (!window._checkoutPmsLoadInProgress) {
+            window._checkoutPmsLoadInProgress = true;
+            loadPmsFromSupabase().finally(() => {
+                window._checkoutPmsLoadInProgress = false;
+                // Re-run update une fois chargé
+                setTimeout(() => updateCheckoutTodayBadge(), 300);
+            });
+        }
+    }
+
     const rooms = getCheckoutTodayRooms();
     const count = rooms.length;
 
