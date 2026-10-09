@@ -5,6 +5,7 @@
 // ✅ AGENCY V9 — Keyword extraction + strict stop
 // ✅ QUOTA V4 — "X pieces per day for AED Y" → AED (Y/X) per Pcs
 // ✅ CHECK-OUT TODAY — Simple informative list (no decisions)
+// ✅ OCCUPANCY — % vs 212 rooms
 // ✅ Storage helpers declared first (fix ReferenceError)
 // =============================================================
 
@@ -870,9 +871,10 @@ async function processTextData(rawData) {
                 markPmsSynced();
             }
 
-if (typeof updateOccupancyBadge === 'function') {
-    updateOccupancyBadge();
-}
+            if (typeof updateOccupancyBadge === 'function') {
+                updateOccupancyBadge();
+            }
+
             const msg = `✅ PMS Updated: ${cloudGuestsPayload.length} room(s) synced` +
                         (deletedCount > 0 ? ` · ${deletedCount} checked out` : '');
             alert(msg);
@@ -1168,15 +1170,15 @@ async function loadPmsFromSupabase() {
             };
         });
 
-sauvegarderPmsLocalStorage();
-console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
+        sauvegarderPmsLocalStorage();
+        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
 
-// Update occupancy badge
-if (typeof updateOccupancyBadge === 'function') {
-    updateOccupancyBadge();
-}
+        // Update occupancy badge
+        if (typeof updateOccupancyBadge === 'function') {
+            updateOccupancyBadge();
+        }
 
-return true;
+        return true;
     } catch (e) {
         console.warn('[PMS Load] Exception:', e);
         return false;
@@ -1258,9 +1260,8 @@ async function ouvrirCheckoutTodayModal() {
         return;
     }
 
-    // FORCE display — méthode robuste mobile + desktop
+    // ✅ Same pattern as Active Rooms List — just remove 'hidden', 'flex' takes over
     modal.classList.remove('hidden');
-    modal.style.display = 'flex';   // ✅ force l'affichage
     if (navigator.vibrate) navigator.vibrate(20);
 
     body.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading...</p>`;
@@ -1347,10 +1348,14 @@ async function ouvrirCheckoutTodayModal() {
 function fermerCheckoutTodayModal() {
     const m = document.getElementById('checkoutTodayModal');
     if (m) {
-        m.style.display = 'none';
         m.classList.add('hidden');
+        m.style.display = '';
     }
 }
+
+// ─── PRINT Checkout Today ────────────────────────────────────────
+function imprimerCheckoutToday() {
+    const rooms = getCheckoutTodayRooms();
     const todayStr = getTodayAbuDhabi();
     const now = new Date();
     const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -1408,7 +1413,10 @@ window.imprimerCheckoutToday = imprimerCheckoutToday;
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const m = document.getElementById('checkoutTodayModal');
-        if (m && !m.classList.contains('hidden')) m.classList.add('hidden');
+        if (m && !m.classList.contains('hidden')) {
+            m.classList.add('hidden');
+            m.style.display = '';
+        }
     }
 });
 
@@ -1426,6 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ [laundry.js] Checkout Today — Simple list loaded');
+
 // ═══════════════════════════════════════════════════════════════════
 // 🏨 OCCUPANCY — Calculate occupancy vs 212 total rooms
 // ═══════════════════════════════════════════════════════════════════
@@ -1436,7 +1445,6 @@ function updateOccupancyBadge() {
     const detailEl = document.getElementById('occupancyDetail');
     if (!badgeEl || !detailEl) return;
 
-    // Count unique rooms in pmsDatabase
     const occupiedRooms = pmsDatabase ? Object.keys(pmsDatabase).length : 0;
     const total = TOTAL_HOTEL_ROOMS;
 
@@ -1448,11 +1456,9 @@ function updateOccupancyBadge() {
 
     const pct = (occupiedRooms / total) * 100;
 
-    // Display
     badgeEl.textContent = `${pct.toFixed(1)}%`;
     detailEl.textContent = `(${occupiedRooms} / ${total})`;
 
-    // Color coding
     if (pct >= 90) {
         badgeEl.className = 'font-bold text-emerald-400';
     } else if (pct >= 70) {
