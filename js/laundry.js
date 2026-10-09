@@ -1457,8 +1457,7 @@ async function deciderCheckout(room, decision) {
 // ─── Fermer modale (ROBUSTE) ──────────────────────────────────────
 function fermerCheckoutTodayModal() {
     const m = document.getElementById('checkoutTodayModal');
-    if (m) m.style.display = 'none';
-    console.log('[CheckoutModal] Closed');
+    if (m) m.classList.add('hidden');   // ✅ Même méthode que Active Rooms List
 }
 
 // ─── Print ─────────────────────────────────────────────────────────
