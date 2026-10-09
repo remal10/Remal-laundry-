@@ -1526,7 +1526,44 @@
         <p class="text-[10px] text-stone-500 text-center">Tip: <strong>Enter</strong> to confirm · <strong>Escape</strong> to close</p>
     </div>
 </div>
+<!-- ═══════════════════════════════════════════════════════════════════
+     🚨 MODAL — CHECKOUT TODAY ALERT
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="checkoutTodayModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
+    <div class="bg-[#181614] w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] flex flex-col border-2 border-rose-800/50">
 
+        <div class="flex justify-between items-center border-b border-rose-900/50 pb-3">
+            <div>
+                <h3 class="text-base font-serif-luxury font-bold text-rose-300 flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-rose-500"></i>
+                    Check-Out Today Alert
+                </h3>
+                <p class="text-xs text-stone-400 mt-0.5">
+                    Rooms with departure today — ensure laundry is ready BEFORE guest leaves
+                </p>
+            </div>
+            <button onclick="fermerCheckoutTodayModal()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <span class="text-xs bg-rose-950 text-rose-200 font-bold px-3 py-1 rounded-full border border-rose-800">
+                <span id="checkoutTodayCount">0</span> room(s)
+            </span>
+            <span class="text-[10px] text-stone-500">
+                Timezone: Abu Dhabi (GMT+4) · Auto-refresh 60s
+            </span>
+        </div>
+
+        <div id="checkoutTodayModalBody" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-rose-900/30 p-3 space-y-2">
+            <p class="text-xs text-stone-500 text-center py-6">Loading...</p>
+        </div>
+
+        <button onclick="fermerCheckoutTodayModal()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
+            Close
+        </button>
+    </div>
+</div>
+    
 <!-- ═══ LIBRARIES ═══ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
