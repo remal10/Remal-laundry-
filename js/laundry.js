@@ -1123,75 +1123,102 @@ async function importAutoDirect() {
 
 console.log('✅ [laundry.js] Loaded with Agency V9 + Quota V4 (AED per Pcs)');
 // ═══════════════════════════════════════════════════════════════════
-// 🚨 CHECK-OUT TODAY ALERT — Chambres avec départ aujourd'hui
+// 🚨 CHECK-OUT TODAY — Détection des chambres avec départ aujourd'hui
+// Timezone : Asia/Dubai (GMT+4) — Abu Dhabi
 // ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Retourne la date d'aujourd'hui au format JJ/MM/YYYY en heure Abu Dhabi
+ */
+function getTodayAbuDhabi() {
+    try {
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Dubai',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const parts = formatter.formatToParts(new Date());
+        const day = parts.find(p => p.type === 'day').value;
+        const month = parts.find(p => p.type === 'month').value;
+        const year = parts.find(p => p.type === 'year').value;
+        return `${day}/${month}/${year}`;
+    } catch (e) {
+        // Fallback : calcul local
+        const now = new Date();
+        return String(now.getDate()).padStart(2, '0') + '/' +
+               String(now.getMonth() + 1).padStart(2, '0') + '/' +
+               now.getFullYear();
+    }
+}
+
+/**
+ * Récupère toutes les chambres dont la date de départ = aujourd'hui (heure Abu Dhabi)
+ * @returns {Array} Liste triée par room number
+ */
 function getCheckoutTodayRooms() {
     if (typeof pmsDatabase === 'undefined' || !pmsDatabase) return [];
 
-    // Date d'aujourd'hui au format JJ/MM/YYYY (comme dans le PDF)
-    const now = new Date();
-    const todayStr = String(now.getDate()).padStart(2, '0') + '/' +
-                     String(now.getMonth() + 1).padStart(2, '0') + '/' +
-                     now.getFullYear();
-
+    const todayStr = getTodayAbuDhabi();
     const checkoutRooms = [];
+
+    chargerDonneesLocalStorage();
 
     Object.entries(pmsDatabase).forEach(([room, data]) => {
         if (!data.departure) return;
+        if (String(data.departure).trim() !== todayStr) return;
 
-        // Comparer la date de départ avec aujourd'hui
-        const depDate = String(data.departure).trim();
+        // Chercher le slip correspondant pour avoir le statut laundry
+        let laundryStatus = 'No slip yet';
+        let slipId = null;
 
-        if (depDate === todayStr) {
-            // Trouver le statut laundry actuel depuis cachedSlips
-            let laundryStatus = 'No slip yet';
-            let laundryStatusRaw = null;
+        const slip = cachedSlips.find(s =>
+            String(s.room_number || s.room) === String(room) &&
+            !s.is_spa
+        );
 
-            try {
-                chargerDonneesLocalStorage();
-                const slip = cachedSlips.find(s =>
-                    String(s.room_number || s.room) === String(room) &&
-                    !s.is_spa
-                );
-                if (slip) {
-                    laundryStatusRaw = slip.status || 'Pending';
-                    laundryStatus = laundryStatusRaw;
-                }
-            } catch (e) {
-                console.warn('[CheckoutToday] Error reading slips:', e);
-            }
-
-            checkoutRooms.push({
-                room: room,
-                guestName: data.guestName || 'Unknown Guest',
-                roomTyp: data.roomTyp || 'DLXR',
-                agency: data.agency || 'Direct',
-                arrival: data.arrival || '---',
-                departure: depDate,
-                quotaText: data.quotaText || 'Chargeable',
-                isChargeable: data.isChargeable,
-                isAedPerPc: data.isAedPerPc,
-                aedPerPc: data.aedPerPc || 0,
-                laundryStatus: laundryStatus,
-                laundryStatusRaw: laundryStatusRaw
-            });
+        if (slip) {
+            laundryStatus = slip.status || 'Collected';
+            slipId = String(slip.id);
         }
+
+        checkoutRooms.push({
+            room: room,
+            guestName: data.guestName || 'Unknown Guest',
+            roomTyp: data.roomTyp || 'DLXR',
+            agency: data.agency || 'Direct',
+            arrival: data.arrival || '---',
+            departure: data.departure,
+            quotaText: data.quotaText || 'Chargeable',
+            isChargeable: data.isChargeable,
+            isAedPerPc: data.isAedPerPc,
+            aedPerPc: data.aedPerPc || 0,
+            laundryStatus: laundryStatus,
+            slipId: slipId
+        });
     });
 
-    // Tri par numéro de chambre croissant
+    // Tri : numéro de chambre croissant
     checkoutRooms.sort((a, b) => parseInt(a.room) - parseInt(b.room));
 
     return checkoutRooms;
 }
 
 window.getCheckoutTodayRooms = getCheckoutTodayRooms;
+window.getTodayAbuDhabi = getTodayAbuDhabi;
 
-// ═══════════════════════════════════════════════════════════════════
-// 🔄 METTRE À JOUR LE BADGE CHECKOUT
-// ═══════════════════════════════════════════════════════════════════
+/**
+ * Met à jour le badge "Checkout Today" (visible uniquement admin)
+ */
 function updateCheckoutTodayBadge() {
     const badge = document.getElementById('checkoutTodayBadge');
     if (!badge) return;
+
+    // 🔒 Sécurité : seul admin peut voir ce badge
+    if (typeof isAdmin === 'function' && !isAdmin()) {
+        badge.classList.add('hidden');
+        return;
+    }
 
     const rooms = getCheckoutTodayRooms();
     const count = rooms.length;
@@ -1203,17 +1230,23 @@ function updateCheckoutTodayBadge() {
     }
 
     badge.classList.remove('hidden');
-    badge.textContent = `🚨 ${count} checkout${count > 1 ? 's' : ''} today`;
-    badge.title = `${count} room(s) with departure today`;
 
-    console.log(`🚨 [CheckoutToday] ${count} room(s) will check-out today:`, rooms.map(r => r.room).join(', '));
+    const textEl = badge.querySelector('.checkout-badge-text');
+    if (textEl) {
+        textEl.textContent = `🚨 ${count} checkout${count > 1 ? 's' : ''} today`;
+    } else {
+        badge.textContent = `🚨 ${count} checkout${count > 1 ? 's' : ''} today`;
+    }
+
+    badge.title = `${count} room(s) checking out today (Abu Dhabi time)`;
+    console.log(`🚨 [CheckoutToday] ${count} room(s) :`, rooms.map(r => r.room).join(', '));
 }
 
 window.updateCheckoutTodayBadge = updateCheckoutTodayBadge;
 
-// ═══════════════════════════════════════════════════════════════════
-// 🪟 OUVRIR LA MODALE CHECKOUT TODAY
-// ═══════════════════════════════════════════════════════════════════
+/**
+ * Ouvre la modale Checkout Today
+ */
 function ouvrirCheckoutTodayModal() {
     const modal = document.getElementById('checkoutTodayModal');
     const body = document.getElementById('checkoutTodayModalBody');
@@ -1222,6 +1255,7 @@ function ouvrirCheckoutTodayModal() {
     if (!modal || !body) return;
 
     const rooms = getCheckoutTodayRooms();
+    const todayStr = getTodayAbuDhabi();
 
     if (countEl) countEl.textContent = rooms.length;
 
@@ -1231,29 +1265,30 @@ function ouvrirCheckoutTodayModal() {
         let html = '';
 
         rooms.forEach(item => {
-            // Déterminer la couleur du statut laundry
-            const statusLower = String(item.laundryStatus || '').toLowerCase();
-            let statusBadgeClass = 'bg-stone-800 text-stone-300 border-stone-700';
-            let statusIcon = '⏳';
+            // Couleur du statut laundry
+            const sLower = String(item.laundryStatus || '').toLowerCase();
+            let statusClass = 'bg-rose-950 text-rose-300 border-rose-800';
+            let statusIcon = '🚨';
+            let statusLabel = item.laundryStatus;
 
-            if (statusLower.includes('delivered') || statusLower.includes('completed')) {
-                statusBadgeClass = 'bg-emerald-950 text-emerald-300 border-emerald-800';
+            if (sLower.includes('delivered') || sLower.includes('completed')) {
+                statusClass = 'bg-emerald-950 text-emerald-300 border-emerald-800';
                 statusIcon = '✅';
-            } else if (statusLower.includes('ready')) {
-                statusBadgeClass = 'bg-purple-950 text-purple-300 border-purple-800';
+            } else if (sLower.includes('ready')) {
+                statusClass = 'bg-purple-950 text-purple-300 border-purple-800';
                 statusIcon = '✨';
-            } else if (statusLower.includes('washing') || statusLower.includes('in_progress')) {
-                statusBadgeClass = 'bg-blue-950 text-blue-300 border-blue-800';
+            } else if (sLower.includes('washing') || sLower.includes('in_progress')) {
+                statusClass = 'bg-blue-950 text-blue-300 border-blue-800';
                 statusIcon = '🧼';
-            } else if (statusLower.includes('pending') || statusLower.includes('collected')) {
-                statusBadgeClass = 'bg-amber-950 text-amber-300 border-amber-800';
+            } else if (sLower.includes('pending') || sLower.includes('collected')) {
+                statusClass = 'bg-amber-950 text-amber-300 border-amber-800';
                 statusIcon = '⏳';
-            } else {
-                statusBadgeClass = 'bg-rose-950 text-rose-300 border-rose-800';
-                statusIcon = '🚨';
+            } else if (sLower.includes('no slip')) {
+                statusClass = 'bg-stone-800 text-stone-300 border-stone-700';
+                statusIcon = '📭';
             }
 
-            // Statut quota
+            // Badge quota
             let quotaBadge = '';
             if (item.isAedPerPc && item.aedPerPc > 0) {
                 quotaBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-md text-[10px] font-bold">AED ${item.aedPerPc} per Pcs</span>`;
@@ -1263,10 +1298,14 @@ function ouvrirCheckoutTodayModal() {
                 quotaBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-md text-[10px] font-bold">${item.quotaText}</span>`;
             }
 
+            const canOpenLive = !!item.slipId;
+
             html += `
-                <div class="p-3 bg-rose-950/30 border border-rose-900/50 rounded-2xl space-y-2">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
+                <div
+                    onclick="${canOpenLive ? `allerVersRoomLive('${item.slipId}')` : ''}"
+                    class="p-3 bg-rose-950/30 border border-rose-900/50 rounded-2xl space-y-2 ${canOpenLive ? 'cursor-pointer hover:border-rose-500 transition' : ''}">
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex-1 min-w-0">
                             <div class="font-bold text-rose-200 text-sm">
                                 🏠 Room ${item.room} — ${item.guestName}
                             </div>
@@ -1277,10 +1316,10 @@ function ouvrirCheckoutTodayModal() {
                                 📅 Arr: ${item.arrival} → Dep: <span class="text-rose-400 font-bold">${item.departure}</span>
                             </div>
                         </div>
-                        <div class="text-right space-y-1">
+                        <div class="text-right space-y-1 shrink-0">
                             <div>${quotaBadge}</div>
-                            <div class="inline-flex items-center gap-1 ${statusBadgeClass} border px-2 py-0.5 rounded-md text-[10px] font-bold">
-                                ${statusIcon} ${item.laundryStatus}
+                            <div class="inline-flex items-center gap-1 ${statusClass} border px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                ${statusIcon} ${statusLabel}
                             </div>
                         </div>
                     </div>
@@ -1292,10 +1331,8 @@ function ouvrirCheckoutTodayModal() {
     }
 
     modal.classList.remove('hidden');
-
     if (navigator.vibrate) navigator.vibrate(30);
-
-    console.log(`🚨 [CheckoutToday Modal] Opened with ${rooms.length} room(s)`);
+    console.log(`🚨 [CheckoutToday Modal] Opened with ${rooms.length} room(s) — ${todayStr}`);
 }
 
 window.ouvrirCheckoutTodayModal = ouvrirCheckoutTodayModal;
@@ -1306,3 +1343,46 @@ function fermerCheckoutTodayModal() {
 }
 
 window.fermerCheckoutTodayModal = fermerCheckoutTodayModal;
+
+/**
+ * Navigation : depuis la modale checkout → ouvre la fiche de la room
+ */
+function allerVersRoomLive(slipId) {
+    if (!slipId) return;
+    fermerCheckoutTodayModal();
+    // Laisser la modale se fermer
+    setTimeout(() => {
+        if (typeof ouvrirModalDetails === 'function') {
+            ouvrirModalDetails(slipId);
+        } else if (typeof switchMainSection === 'function') {
+            switchMainSection('liveRecord');
+            if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+        }
+    }, 150);
+}
+
+window.allerVersRoomLive = allerVersRoomLive;
+
+// ═══════════════════════════════════════════════════════════════════
+// 🕛 CHECK MINUIT — Détecte le passage à un nouveau jour
+// ═══════════════════════════════════════════════════════════════════
+function programmerCheckMinuitCheckout() {
+    // Rafraîchit le badge toutes les 60s (suffit pour détecter 00h00)
+    setInterval(() => {
+        if (typeof updateCheckoutTodayBadge === 'function') {
+            updateCheckoutTodayBadge();
+        }
+    }, 60000);
+
+    console.log('✅ [CheckoutToday] Auto-refresh programmé (60s)');
+}
+
+// Démarrer au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        updateCheckoutTodayBadge();
+        programmerCheckMinuitCheckout();
+    }, 2500);
+});
+
+console.log('✅ [laundry.js] Checkout Today module loaded');
