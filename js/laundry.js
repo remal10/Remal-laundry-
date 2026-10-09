@@ -1444,3 +1444,82 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 console.log('✅ [laundry.js] Loaded — Agency V9 + Quota V4 + Checkout Today');
+// ═══════════════════════════════════════════════════════════════════
+// ☁️ LOAD PMS FROM SUPABASE — Recharge pmsDatabase depuis la table pms_guests
+// Utilisé au démarrage + auto-refresh si pmsDatabase est vide
+// ═══════════════════════════════════════════════════════════════════
+async function loadPmsFromSupabase() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        console.warn('[PMS Load] Supabase not available');
+        return false;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('pms_guests')
+            .select('*')
+            .order('room', { ascending: true });
+
+        if (error) {
+            console.warn('[PMS Load] Supabase error:', error.message);
+            return false;
+        }
+
+        if (!data || data.length === 0) {
+            console.log('[PMS Load] No data in pms_guests');
+            return false;
+        }
+
+        // Remplir pmsDatabase
+        pmsDatabase = {};
+        data.forEach(g => {
+            pmsDatabase[String(g.room)] = {
+                guestName: g.guest_name || g.guestName || 'Unknown Guest',
+                roomTyp: g.room_typ || g.roomTyp || 'DLXR',
+                arrival: g.arrival || '',
+                departure: g.departure || '',
+                agency: g.agency || 'Direct',
+                quotaText: g.quota_text || g.quotaText || 'Chargeable',
+                isChargeable: g.is_chargeable !== undefined ? g.is_chargeable : true,
+                isAedPerPc: (g.quota_text || '').toLowerCase().includes('aed') && (g.quota_text || '').toLowerCase().includes('per pcs'),
+                aedPerPc: 0
+            };
+        });
+
+        sauvegarderPmsLocalStorage();
+        console.log(`☁️ [PMS Load] ${data.length} rooms loaded from Supabase`);
+
+        // Refresh badge + table si présents
+        if (typeof updateCheckoutTodayBadge === 'function') {
+            updateCheckoutTodayBadge();
+        }
+        if (typeof renderMassPreviewTable === 'function') {
+            renderMassPreviewTable();
+        }
+
+        return true;
+    } catch (e) {
+        console.warn('[PMS Load] Exception:', e);
+        return false;
+    }
+}
+
+window.loadPmsFromSupabase = loadPmsFromSupabase;
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔄 REFRESH CHECKOUT BADGE — Recharge pmsDatabase si vide puis update badge
+// ═══════════════════════════════════════════════════════════════════
+async function refreshCheckoutBadgeWithCloud() {
+    // Si pmsDatabase est vide → charger depuis Supabase
+    if (!pmsDatabase || Object.keys(pmsDatabase).length === 0) {
+        console.log('🔄 [Checkout] pmsDatabase empty → loading from Supabase...');
+        await loadPmsFromSupabase();
+    }
+
+    // Update le badge
+    if (typeof updateCheckoutTodayBadge === 'function') {
+        updateCheckoutTodayBadge();
+    }
+}
+
+window.refreshCheckoutBadgeWithCloud = refreshCheckoutBadgeWithCloud;
