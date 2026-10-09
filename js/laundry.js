@@ -1450,14 +1450,25 @@ setInterval(() => {
     if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
 }, 60000);
 
+setInterval(() => {
+    if (typeof updateCheckoutTodayBadge === 'function') updateCheckoutTodayBadge();
+}, 60000);
+
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(async () => {
+        // 1. Charger les décisions du jour
         await loadCheckoutDecisionsToday();
+        
+        // 2. Charger pmsDatabase depuis Supabase si vide
+        await loadPmsFromSupabase();
+        
+        // 3. Update le badge
         updateCheckoutTodayBadge();
+        
+        // 4. Toast si checkouts
         showCheckoutToast();
     }, 2500);
 });
-
 console.log('✅ [laundry.js] Loaded — Agency V9 + Quota V4 + Checkout Today');
 // ═══════════════════════════════════════════════════════════════════
 // ☁️ LOAD PMS FROM SUPABASE — Recharge pmsDatabase depuis la table pms_guests
