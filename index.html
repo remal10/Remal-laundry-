@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Remal Hotel & Villas - Laundry & Lost & Found OS</title>
 
-<!-- FAVICON & ICONS -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#DCA773">
 <meta name="mobile-web-app-capable" content="yes">
@@ -62,10 +61,10 @@
 <div id="pwaInstallBanner" class="hidden fixed bottom-4 left-4 right-4 z-[9999] bg-gradient-to-r from-[#DCA773] to-[#F8E9C0] text-stone-950 rounded-2xl shadow-2xl p-4 flex items-center gap-3 no-print">
     <div class="text-2xl">📱</div>
     <div class="flex-1">
-        <p class="font-bold text-sm">Installer Laundry OS</p>
-        <p class="text-[11px] opacity-80">Accès rapide depuis l'écran d'accueil</p>
+        <p class="font-bold text-sm">Install Laundry OS</p>
+        <p class="text-[11px] opacity-80">Quick access from home screen</p>
     </div>
-    <button onclick="installPWA()" class="bg-stone-950 text-[#DCA773] font-bold px-4 py-2 rounded-xl text-xs">Installer</button>
+    <button onclick="installPWA()" class="bg-stone-950 text-[#DCA773] font-bold px-4 py-2 rounded-xl text-xs">Install</button>
     <button onclick="document.getElementById('pwaInstallBanner').classList.add('hidden')" class="text-stone-700 text-xl">✕</button>
 </div>
 
@@ -128,25 +127,27 @@
 <div id="staffMobileMenu" class="staff-mobile-menu">
     <button class="staff-mobile-menu-item" onclick="toggleTheme(); closeStaffMobileMenu();">
         <i class="fas fa-moon" id="menuThemeIcon"></i>
-        <span>Thème</span>
+        <span>Theme</span>
     </button>
     <button class="staff-mobile-menu-item" onclick="cycleLanguage(); closeStaffMobileMenu();">
         <i class="fas fa-globe"></i>
-        <span>Langue</span>
+        <span>Language</span>
         <span class="menu-lang-badge" id="menuLangBadge">EN</span>
     </button>
     <button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
         <i class="fas fa-sign-out-alt"></i>
-        <span>Déconnexion</span>
+        <span>Logout</span>
     </button>
 </div>
-<!-- ═══ PMS LAST SYNC BANNER (Mass Entry V2) ═══ -->
+
+<!-- ═══ PMS LAST SYNC BANNER ═══ -->
 <div class="flex justify-center mt-3 mb-2 no-print">
     <div class="inline-flex items-center gap-2 text-[11px] text-amber-400/90 font-medium bg-[#181614] px-4 py-1.5 rounded-full border border-[#2f2820]">
         <span>🕒 PMS Last Sync:</span>
         <span id="lastUpdateHeaderDisplay" class="font-bold text-emerald-400">Never</span>
     </div>
 </div>
+
 <!-- ═══ NAV ═══ -->
 <nav id="mainNavContainer" class="laundry-nav no-print">
     <div class="laundry-nav-inner">
@@ -160,8 +161,8 @@
             <i class="fas fa-suitcase-rolling"></i><span>Check-Out</span>
         </button>
         <button onclick="switchMainSection('stock')" id="navBtnStock" data-admin-only="true" class="nav-tab-premium">
-    <i class="fas fa-boxes-stacked"></i><span>Stock</span>
-</button>
+            <i class="fas fa-boxes-stacked"></i><span>Stock</span>
+        </button>
         <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" data-admin-only="true" class="nav-tab-premium">
             <i class="fas fa-box-open"></i><span>Lost & Found</span>
         </button>
@@ -339,7 +340,7 @@
                         <span>📷</span> Take Proof Photo (Camera)
                     </button>
                     <input type="file" id="photoInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)">
-                    <img id="imagePreview" class="hidden w-full max-h-48 object-cover rounded-2xl mt-2 border border-[#2f2820]" alt="Preuve">
+                    <img id="imagePreview" class="hidden w-full max-h-48 object-cover rounded-2xl mt-2 border border-[#2f2820]" alt="Proof">
 
                     <button onclick="sauvegarderBordereauDepuisFormulaire()" id="btnSaveRecord" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-4 rounded-2xl text-sm shadow-lg transition tracking-wider uppercase">💾 Save Record</button>
                 </div>
@@ -371,12 +372,12 @@
                 <textarea id="pmsPasteArea" placeholder="Or paste raw copied text from report here..." class="w-full h-32 bg-[#0f0e0c] text-stone-200 p-4 rounded-xl font-mono text-xs outline-none border border-[#2f2820] resize-vertical"></textarea>
                 <button onclick="processTextData(document.getElementById('pmsPasteArea').value)" class="mt-3 w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow">Analyze & Save Database</button>
             </div>
-<div class="flex flex-wrap items-center justify-between gap-2">
-    <div id="massRecordCounter" class="text-xs font-bold text-emerald-400"></div>
-    <div id="pmsLastSync" class="text-[10px] bg-[#181614] text-amber-300 border border-[#2f2820] px-3 py-1 rounded-full font-semibold">
-        📅 Last sync: Never
-    </div>
-</div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div id="massRecordCounter" class="text-xs font-bold text-emerald-400"></div>
+                <div id="pmsLastSync" class="text-[10px] bg-[#181614] text-amber-300 border border-[#2f2820] px-3 py-1 rounded-full font-semibold">
+                    📅 Last sync: Never
+                </div>
+            </div>
         </div>
 
         <div id="massResultsCard" class="hidden remal-card p-6 rounded-3xl space-y-4 max-w-5xl mx-auto">
@@ -384,20 +385,20 @@
             <div class="max-h-[500px] overflow-y-auto border border-[#2f2820] rounded-2xl">
                 <table class="w-full text-xs text-left border-collapse bg-[#0f0e0c]">
                    <thead class="bg-[#181614] text-stone-300 sticky top-0 z-10 border-b border-[#2f2820]">
-    <tr>
-        <th class="p-3.5">Room</th>
-        <th class="p-3.5">Guest Name</th>
-        <th class="p-3.5">Typ</th>
-        <th class="p-3.5 text-amber-500">Company / Agency</th>
-        <th class="p-3.5">Arrival</th>
-        <th class="p-3.5">Departure</th>
-        <th class="p-3.5">Quota</th>
-        <th class="p-3.5">Laundry Status</th>
-    </tr>
-</thead>
-                  <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]">
-    <tr><td colspan="8" class="p-4 text-stone-500 text-center">No data loaded.</td></tr>
-</tbody>
+                        <tr>
+                            <th class="p-3.5">Room</th>
+                            <th class="p-3.5">Guest Name</th>
+                            <th class="p-3.5">Typ</th>
+                            <th class="p-3.5 text-amber-500">Company / Agency</th>
+                            <th class="p-3.5">Arrival</th>
+                            <th class="p-3.5">Departure</th>
+                            <th class="p-3.5">Quota</th>
+                            <th class="p-3.5">Laundry Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="massPreviewContainer" class="divide-y divide-[#2f2820]">
+                        <tr><td colspan="8" class="p-4 text-stone-500 text-center">No data loaded.</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -416,11 +417,10 @@
                     <i class="fas fa-list-ol text-[#DCA773]"></i>
                     <span>📋 Active Rooms List</span>
                 </button>
-                <!-- 🚨 CHECKOUT TODAY ALERT BADGE (admin only) -->
-                <button onclick="ouvrirCheckoutTodayModal()" id="checkoutTodayBanner" class="hidden w-full bg-gradient-to-r from-rose-950/80 to-rose-900/40 hover:from-rose-900/90 hover:to-rose-800/60 text-rose-100 border-2 border-rose-700 font-bold px-4 py-3 rounded-2xl text-xs flex items-center gap-3 shadow-lg transition mb-3">
-                    <i class="fas fa-exclamation-triangle text-rose-400 text-lg animate-pulse"></i>
-                    <span class="checkout-banner-text flex-1 text-left">🚨 Loading...</span>
-                    <span class="text-[10px] bg-rose-950 border border-rose-700 px-2.5 py-1 rounded-full">Voir la liste →</span>
+                <!-- 🚨 CHECKOUT TODAY — COMPACT BADGE -->
+                <button onclick="ouvrirCheckoutTodayModal()" id="checkoutTodayBanner" style="display: none;" class="bg-rose-950/70 hover:bg-rose-900/90 text-rose-100 border-2 border-rose-700 font-bold px-3 py-2 rounded-xl text-[11px] items-center gap-1.5 shadow-lg transition animate-pulse">
+                    <i class="fas fa-exclamation-triangle text-rose-400 text-sm"></i>
+                    <span class="checkout-banner-text">🚨 0</span>
                 </button>
                 <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                     <i class="fas fa-print text-sm"></i>
@@ -501,81 +501,74 @@
             <p class="checkout-empty">Loading check-outs...</p>
         </div>
     </div>
-    <!-- ═══════════════════════════════════════════════════════════
-     📦 SECTION STOCK MANAGEMENT
-     ═══════════════════════════════════════════════════════════ -->
-<div id="sectionStock" class="hidden space-y-6 no-print">
 
-    <!-- HEADER -->
-    <div class="stock-header">
-        <div class="stock-header-left">
-            <h2 class="stock-title">📦 Stock Management</h2>
-            <p class="stock-subtitle">Track laundry supplies, chemicals, and consumables</p>
-        </div>
- <div class="stock-header-right">
-    <button onclick="exportStockPDF()" class="stock-new-btn stock-export-btn">
-        <i class="fas fa-file-pdf"></i>
-        <span>📄 Export PDF</span>
-    </button>
-    <button onclick="openStockItemForm()" class="stock-new-btn">
-        <i class="fas fa-plus-circle"></i>
-        <span>New Item</span>
-    </button>
-</div>
-    </div>
-
-    <!-- STATS BAR -->
-    <div class="stock-stats-bar">
-        <div class="stock-stat">
-            <div class="stock-stat-icon">📊</div>
-            <div>
-                <div class="stock-stat-value" id="stockStatTotal">0</div>
-                <div class="stock-stat-label">Total Items</div>
+    <!-- SECTION: STOCK -->
+    <div id="sectionStock" class="hidden space-y-6 no-print">
+        <div class="stock-header">
+            <div class="stock-header-left">
+                <h2 class="stock-title">📦 Stock Management</h2>
+                <p class="stock-subtitle">Track laundry supplies, chemicals, and consumables</p>
+            </div>
+            <div class="stock-header-right">
+                <button onclick="exportStockPDF()" class="stock-new-btn stock-export-btn">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>📄 Export PDF</span>
+                </button>
+                <button onclick="openStockItemForm()" class="stock-new-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>New Item</span>
+                </button>
             </div>
         </div>
-        <div class="stock-stat">
-            <div class="stock-stat-icon">🟡</div>
-            <div>
-                <div class="stock-stat-value" id="stockStatLow">0</div>
-                <div class="stock-stat-label">Low Stock</div>
+
+        <div class="stock-stats-bar">
+            <div class="stock-stat">
+                <div class="stock-stat-icon">📊</div>
+                <div>
+                    <div class="stock-stat-value" id="stockStatTotal">0</div>
+                    <div class="stock-stat-label">Total Items</div>
+                </div>
+            </div>
+            <div class="stock-stat">
+                <div class="stock-stat-icon">🟡</div>
+                <div>
+                    <div class="stock-stat-value" id="stockStatLow">0</div>
+                    <div class="stock-stat-label">Low Stock</div>
+                </div>
+            </div>
+            <div class="stock-stat">
+                <div class="stock-stat-icon">🔴</div>
+                <div>
+                    <div class="stock-stat-value" id="stockStatCritical">0</div>
+                    <div class="stock-stat-label">Critical</div>
+                </div>
+            </div>
+            <div class="stock-stat">
+                <div class="stock-stat-icon">💰</div>
+                <div>
+                    <div class="stock-stat-value" id="stockStatValue">0</div>
+                    <div class="stock-stat-label">Total Value (AED)</div>
+                </div>
             </div>
         </div>
-        <div class="stock-stat">
-            <div class="stock-stat-icon">🔴</div>
-            <div>
-                <div class="stock-stat-value" id="stockStatCritical">0</div>
-                <div class="stock-stat-label">Critical</div>
-            </div>
+
+        <div class="stock-filters">
+            <button onclick="switchStockFilter('all')" id="stockFilterAll" class="stock-filter-btn active">All</button>
+            <button onclick="switchStockFilter('ok')" id="stockFilterOk" class="stock-filter-btn">🟢 OK</button>
+            <button onclick="switchStockFilter('low')" id="stockFilterLow" class="stock-filter-btn">🟡 Low</button>
+            <button onclick="switchStockFilter('critical')" id="stockFilterCritical" class="stock-filter-btn">🔴 Critical</button>
         </div>
-        <div class="stock-stat">
-            <div class="stock-stat-icon">💰</div>
-            <div>
-                <div class="stock-stat-value" id="stockStatValue">0</div>
-                <div class="stock-stat-label">Total Value (AED)</div>
-            </div>
+
+        <div class="stock-search-wrap">
+            <i class="fas fa-search stock-search-icon"></i>
+            <input type="text" id="stockSearchInput" oninput="renderStockList()" placeholder="Search by product name, category, or supplier..." class="stock-search-input" autocomplete="off">
+        </div>
+
+        <div id="stockList" class="stock-list">
+            <p class="stock-empty">Loading stock items...</p>
         </div>
     </div>
 
-    <!-- FILTERS -->
-    <div class="stock-filters">
-        <button onclick="switchStockFilter('all')" id="stockFilterAll" class="stock-filter-btn active">All</button>
-        <button onclick="switchStockFilter('ok')" id="stockFilterOk" class="stock-filter-btn">🟢 OK</button>
-        <button onclick="switchStockFilter('low')" id="stockFilterLow" class="stock-filter-btn">🟡 Low</button>
-        <button onclick="switchStockFilter('critical')" id="stockFilterCritical" class="stock-filter-btn">🔴 Critical</button>
-    </div>
-
-    <!-- SEARCH -->
-    <div class="stock-search-wrap">
-        <i class="fas fa-search stock-search-icon"></i>
-        <input type="text" id="stockSearchInput" oninput="renderStockList()" placeholder="Search by product name, category, or supplier..." class="stock-search-input" autocomplete="off">
-    </div>
-
-    <!-- LIST -->
-    <div id="stockList" class="stock-list">
-        <p class="stock-empty">Loading stock items...</p>
-    </div>
-
-</div>
     <!-- SECTION: SPA -->
     <section id="spa-laundry-section" class="hidden p-6 sm:p-10 rounded-3xl space-y-6 relative max-w-4xl mx-auto printable-page bg-white text-stone-900 shadow-2xl border border-stone-200">
         <input type="hidden" id="editingSpaId" value="">
@@ -793,8 +786,8 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                <button onclick="exportAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">⚡ Export Auto (1 Clic)</button>
-                <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">🔄 Import Auto (1 Clic)</button>
+                <button onclick="exportAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">⚡ Export Auto (1 Click)</button>
+                <button onclick="importAutoDirect()" class="bg-[#181614] hover:bg-[#211e1a] text-emerald-400 border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">🔄 Import Auto (1 Click)</button>
                 <button onclick="selectBackupFolder()" class="col-span-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#2f2820] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow">📁 Choose phone folder (File System)</button>
             </div>
 
@@ -949,11 +942,11 @@
 
             <div class="dashboard-agents-section">
                 <div class="dashboard-chart-title">
-                    👥 Performance par Agent
+                    👥 Agent Performance
                     <span id="agentsCountBadge" class="dashboard-agents-badge">0 agents</span>
                 </div>
                 <div id="agentsPerformanceList" class="dashboard-agents-list">
-                    <p class="text-xs text-stone-500 text-center py-4">Chargement...</p>
+                    <p class="text-xs text-stone-500 text-center py-4">Loading...</p>
                 </div>
             </div>
 
@@ -961,7 +954,7 @@
     </div>
 
 </div>
-<!-- ═══ FIN laundry-section ═══ -->
+<!-- ═══ END laundry-section ═══ -->
 
 
 <!-- ═══════════════════════════════════════════════════════════════════
@@ -978,7 +971,6 @@
         </div>
 
         <div class="checkout-modal-body">
-            <!-- SECTION 1 : GUEST INFO -->
             <div class="checkout-form-section">
                 <h4 class="checkout-section-title"><i class="fas fa-user"></i> Guest Information</h4>
                 <div class="checkout-form-grid-2">
@@ -1003,7 +995,6 @@
                 </div>
             </div>
 
-            <!-- SECTION 2 : DEPOSIT DETAILS -->
             <div class="checkout-form-section">
                 <h4 class="checkout-section-title"><i class="fas fa-clipboard-list"></i> Deposit Details</h4>
                 <div class="checkout-form-grid-2">
@@ -1043,7 +1034,6 @@
                 </div>
             </div>
 
-            <!-- SECTION 3 : RECEIPT PHOTO -->
             <div class="checkout-form-section">
                 <h4 class="checkout-section-title"><i class="fas fa-camera"></i> Receipt Photo</h4>
                 <button onclick="document.getElementById('checkoutPhotoInput').click()" class="checkout-photo-btn" id="checkoutPhotoBtn">
@@ -1104,7 +1094,6 @@
         </div>
 
         <div class="stock-modal-body">
-            <!-- SECTION 1 : PRODUCT INFO -->
             <div class="stock-form-section">
                 <h4 class="stock-section-title"><i class="fas fa-tag"></i> Product Info</h4>
                 <div class="stock-form-grid-2">
@@ -1147,7 +1136,6 @@
                 </div>
             </div>
 
-            <!-- SECTION 2 : STOCK LEVELS -->
             <div class="stock-form-section">
                 <h4 class="stock-section-title"><i class="fas fa-cubes"></i> Stock Levels</h4>
 
@@ -1174,11 +1162,10 @@
                 </div>
 
                 <div class="stock-hint">
-                    💡 Si tu laisses les seuils vides, ils seront calculés automatiquement à partir de la quantité (20% et 5%).
+                    💡 If you leave thresholds empty, they will be auto-calculated from the quantity (20% and 5%).
                 </div>
             </div>
 
-            <!-- SECTION 3 : NOTES -->
             <div class="stock-form-section">
                 <h4 class="stock-section-title"><i class="fas fa-sticky-note"></i> Notes</h4>
                 <div class="stock-field">
@@ -1279,6 +1266,7 @@
         </div>
     </div>
 </div>
+
 <!-- ═══════════════════════════════════════════════════════════════════
      MODAL — ACTIVE ROOMS LIST
      ═══════════════════════════════════════════════════════════════════ -->
@@ -1527,20 +1515,21 @@
         <p class="text-[10px] text-stone-500 text-center">Tip: <strong>Enter</strong> to confirm · <strong>Escape</strong> to close</p>
     </div>
 </div>
+
 <!-- ═══════════════════════════════════════════════════════════════════
-     🚨 MODAL — CHECKOUT TODAY ALERT
+     🚨 MODAL — CHECK-OUT TODAY
      ═══════════════════════════════════════════════════════════════════ -->
-<div id="checkoutTodayModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 no-print">
-    <div class="bg-[#181614] w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4 max-h-[90vh] flex flex-col border-2 border-rose-800/50">
+<div id="checkoutTodayModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] items-center justify-center p-4 no-print">
+    <div class="bg-[#181614] w-full max-w-2xl rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col border-2 border-rose-800/50">
 
         <div class="flex justify-between items-center border-b border-rose-900/50 pb-3">
             <div>
-                <h3 class="text-base font-serif-luxury font-bold text-rose-300 flex items-center gap-2">
+                <h3 class="text-sm font-serif-luxury font-bold text-rose-300 flex items-center gap-2">
                     <i class="fas fa-exclamation-triangle text-rose-500"></i>
                     Check-Out Today
                 </h3>
-                <p class="text-xs text-stone-400 mt-0.5">
-                    Coordinate with reception before washing — guests may leave before 17h
+                <p class="text-[11px] text-stone-400 mt-0.5">
+                    Coordinate with reception before washing — guests may leave before 5 PM
                 </p>
             </div>
             <button onclick="fermerCheckoutTodayModal()" class="text-stone-400 text-2xl font-bold hover:text-stone-200">✕</button>
@@ -1559,39 +1548,15 @@
 
         <div class="grid grid-cols-2 gap-3">
             <button onclick="imprimerCheckoutToday()" class="py-3 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2">
-                <i class="fas fa-print"></i> 🖨️ Imprimer
+                <i class="fas fa-print"></i> 🖨️ Print
             </button>
             <button onclick="fermerCheckoutTodayModal()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-                Fermer
+                Close
             </button>
         </div>
     </div>
 </div>
 
-        <div class="flex items-center gap-3">
-            <span class="text-xs bg-rose-950 text-rose-200 font-bold px-3 py-1 rounded-full border border-rose-800">
-                <span id="checkoutTodayCount">0</span> room(s)
-            </span>
-            <span class="text-[10px] text-stone-500">
-                Timezone: Abu Dhabi (GMT+4) · Auto-refresh 60s
-            </span>
-        </div>
-
-        <div id="checkoutTodayModalBody" class="flex-1 overflow-y-auto bg-[#0f0e0c] rounded-2xl border border-rose-900/30 p-3 space-y-2">
-            <p class="text-xs text-stone-500 text-center py-6">Loading...</p>
-        </div>
-
-<div class="grid grid-cols-2 gap-3">
-    <button onclick="exportCheckoutTodayToPDF()" class="py-3 bg-gradient-to-r from-[#DCA773] to-[#F8E9C0] hover:from-[#c99563] hover:to-[#DCA773] text-stone-950 font-bold rounded-xl text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
-        <i class="fas fa-file-pdf"></i> 📄 Export PDF
-    </button>
-    <button onclick="fermerCheckoutTodayModal()" class="py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs uppercase tracking-wider transition">
-        Close
-    </button>
-</div>
-    </div>
-</div>
-    
 <!-- ═══ LIBRARIES ═══ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1619,14 +1584,14 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then((registration) => {
-                console.log('✅ [PWA] Service Worker enregistré:', registration.scope);
+                console.log('✅ [PWA] Service Worker registered:', registration.scope);
                 setInterval(() => registration.update(), 60 * 60 * 1000);
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('🔄 [PWA] Nouvelle version disponible');
+                                console.log('🔄 [PWA] New version available');
                                 newWorker.postMessage({ type: 'SKIP_WAITING' });
                                 window.location.reload();
                             }
