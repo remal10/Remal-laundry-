@@ -1,38 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════
 // REMAL LAUNDRY OS — ADMIN CHAT (Guest ↔ Admin)
-// Admin only. Uses existing isAdmin() / requireAdmin() from ui-modules.js
-// ✅ ROBUST BOOT — waits for supabaseClient (window OR global)
+// Aligned with index.html (sectionAdminChat / adminChat* ids)
 // ═══════════════════════════════════════════════════════════════════
 
-window.ChatAdmin = (function () {
+window.AdminChat = (function () {
     let conversations = [];
     let activeConversationId = null;
     let realtimeChannel = null;
     let pollTimer = null;
 
     // ───────────────────────────────────────────────────────────────
-    // INIT — called after dependencies are ready
+    // SUPABASE ACCESSOR
     // ───────────────────────────────────────────────────────────────
-    function init() {
-        if (!window.isAdmin()) {
-            console.log('💬 [ChatAdmin] Skipped — user is not admin');
-            return;
-        }
-        const sb = getSupabaseClient();
-        if (!sb) {
-            console.warn('💬 [ChatAdmin] No Supabase client');
-            return;
-        }
-        console.log('💬 [ChatAdmin] Initializing for admin...');
-        refreshAll();
-        subscribeRealtime();
-        pollTimer = setInterval(refreshAll, 60000);
-    }
-
-    // ───────────────────────────────────────────────────────────────
-    // SAFE SUPABASE ACCESSOR — tries window.supabaseClient then global
-    // ───────────────────────────────────────────────────────────────
-    function getSupabaseClient() {
+    function getSB() {
         if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
             return window.supabaseClient;
         }
@@ -41,23 +21,38 @@ window.ChatAdmin = (function () {
                 window.supabaseClient = supabaseClient;
                 return supabaseClient;
             }
-        } catch (e) { /* not defined */ }
+        } catch (e) {}
         return null;
     }
 
     // ───────────────────────────────────────────────────────────────
-    // REFRESH ALL
+    // INIT
     // ───────────────────────────────────────────────────────────────
-    async function refreshAll() {
-        await loadConversations();
-        updateNavBadge();
+    function init() {
+        const sb = getSB();
+        if (!sb) {
+            console.warn('💬 [AdminChat] No Supabase client');
+            return;
+        }
+        if (typeof isAdmin === 'function' && !isAdmin()) {
+            console.log('💬 [AdminChat] Skipped — user is not admin');
+            return;
+        }
+        console.log('💬 [AdminChat] Initializing...');
+        refreshAll();
+        subscribeRealtime();
+        pollTimer = setInterval(refreshAll, 60000);
     }
 
     // ───────────────────────────────────────────────────────────────
-    // LOAD CONVERSATIONS
+    // REFRESH
     // ───────────────────────────────────────────────────────────────
+    async function refreshAll() {
+        await loadConversations();
+    }
+
     async function loadConversations() {
-        const sb = getSupabaseClient();
+        const sb = getSB();
         if (!sb) return;
 
         const { data, error } = await sb
@@ -66,13 +61,13 @@ window.ChatAdmin = (function () {
             .order('last_message_at', { ascending: false });
 
         if (error) {
-            console.error('[ChatAdmin] Load conversations error:', error.message);
+            console.error('[AdminChat] Load error:', error.message);
             return;
         }
 
         conversations = data || [];
 
-        // Fetch last message + unread count for each
+        // Fetch last message + unread for each
         for (const c of conversations) {
             const { data: msgs } = await sb
                 .from('chat_messages')
@@ -86,58 +81,61 @@ window.ChatAdmin = (function () {
             c._unreadCount = list.filter(m => m.sender_type === 'guest' && !m.is_read_by_admin).length;
         }
 
-        renderConversations();
-        updateStatsBadge();
+        renderInbox();
+        updateConvCount();
+        updateNavBadge();
     }
 
     // ───────────────────────────────────────────────────────────────
-    // RENDER CONVERSATIONS LIST
+    // RENDER INBOX (left column)
     // ───────────────────────────────────────────────────────────────
-    function renderConversations() {
-        const container = document.getElementById('chatConversationsList');
+    function renderInbox() {
+        const container = document.getElementById('adminChatInboxList');
         if (!container) return;
 
-        const searchEl = document.getElementById('chatSearchInput');
+        const searchEl = document.getElementById('adminChatSearch');
         const q = searchEl ? searchEl.value.toLowerCase().trim() : '';
 
         let filtered = conversations;
         if (q) {
             filtered = conversations.filter(c =>
                 String(c.room).toLowerCase().includes(q) ||
-                String(c.guest_name).toLowerCase().includes(q)
+                String(c.guest_name || '').toLowerCase().includes(q)
             );
         }
 
         if (filtered.length === 0) {
-            container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">${q ? 'No matches' : 'No conversations yet'}</p>`;
+            container.innerHTML = `
+                <div class="admin-chat-empty">
+                    <i class="fas fa-inbox"></i>
+                    <p>${q ? 'No matches' : 'No conversations yet'}</p>
+                </div>`;
             return;
         }
 
         container.innerHTML = filtered.map(c => {
             const last = c._lastMessage;
-            const lastText = last ? escapeHtml(last.content).substring(0, 60) : '—';
+            const lastText = last ? escapeHtml(last.content).substring(0, 55) : '—';
             const lastTime = last ? formatTime(last.created_at) : '';
             const unread = c._unreadCount > 0;
-            const isArchived = c.status === 'archived';
             const isActive = c.id === activeConversationId;
-
             const preview = last && last.sender_type === 'admin'
                 ? `<span class="text-[#DCA773]">You: </span>${lastText}`
                 : lastText;
 
             return `
-                <div onclick="ChatAdmin.openConversation('${c.id}')"
-                     class="chat-conv-item ${isActive ? 'active' : ''} ${unread ? 'unread' : ''} ${isArchived ? 'archived' : ''}">
-                    <div class="chat-conv-avatar">${escapeHtml(String(c.guest_name || '?').charAt(0).toUpperCase())}</div>
-                    <div class="chat-conv-body">
-                        <div class="chat-conv-header">
-                            <span class="chat-conv-name">${escapeHtml(c.guest_name || 'Guest')}</span>
-                            <span class="chat-conv-time">${lastTime}</span>
+                <div onclick="AdminChat.openConversation('${c.id}')"
+                     class="admin-chat-conv-item ${isActive ? 'active' : ''} ${unread ? 'unread' : ''}">
+                    <div class="admin-chat-conv-avatar">${escapeHtml(String(c.guest_name || '?').charAt(0).toUpperCase())}</div>
+                    <div class="admin-chat-conv-body">
+                        <div class="admin-chat-conv-header">
+                            <span class="admin-chat-conv-name">${escapeHtml(c.guest_name || 'Guest')}</span>
+                            <span class="admin-chat-conv-time">${lastTime}</span>
                         </div>
-                        <div class="chat-conv-room">🚪 Room ${escapeHtml(String(c.room))} ${isArchived ? '· <span class="text-stone-500">archived</span>' : ''}</div>
-                        <div class="chat-conv-preview">${preview}</div>
+                        <div class="admin-chat-conv-room">🚪 Room ${escapeHtml(String(c.room))}</div>
+                        <div class="admin-chat-conv-preview">${preview}</div>
                     </div>
-                    ${unread ? `<div class="chat-conv-badge">${c._unreadCount > 9 ? '9+' : c._unreadCount}</div>` : ''}
+                    ${unread ? `<div class="admin-chat-conv-badge">${c._unreadCount > 9 ? '9+' : c._unreadCount}</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -147,25 +145,28 @@ window.ChatAdmin = (function () {
     // OPEN CONVERSATION
     // ───────────────────────────────────────────────────────────────
     async function openConversation(convId) {
-        const sb = getSupabaseClient();
+        const sb = getSB();
         if (!sb) return;
 
         activeConversationId = convId;
         const conv = conversations.find(c => c.id === convId);
         if (!conv) return;
 
-        document.getElementById('chatEmptyState').classList.add('hidden');
-        document.getElementById('chatActiveHeader').classList.remove('hidden');
-        document.getElementById('chatActiveMessages').classList.remove('hidden');
-        document.getElementById('chatActiveInputWrap').classList.remove('hidden');
+        // Toggle panes
+        const emptyPane = document.getElementById('adminChatEmptyPane');
+        const convPane = document.getElementById('adminChatConversationPane');
+        if (emptyPane) emptyPane.classList.add('hidden');
+        if (convPane) convPane.classList.remove('hidden');
 
-        document.getElementById('chatActiveGuestName').textContent = conv.guest_name || 'Guest';
-        document.getElementById('chatActiveRoom').textContent = 'Room ' + conv.room;
+        const titleEl = document.getElementById('adminChatConvTitle');
+        const subEl = document.getElementById('adminChatConvSub');
+        if (titleEl) titleEl.textContent = 'Room ' + conv.room;
+        if (subEl) subEl.textContent = conv.guest_name || 'Guest';
 
         await loadMessages(convId);
         await markAsRead(convId);
-        renderConversations();
-        updateStatsBadge();
+        renderInbox();
+        updateConvCount();
         updateNavBadge();
     }
 
@@ -173,7 +174,7 @@ window.ChatAdmin = (function () {
     // LOAD MESSAGES
     // ───────────────────────────────────────────────────────────────
     async function loadMessages(convId) {
-        const sb = getSupabaseClient();
+        const sb = getSB();
         if (!sb) return;
 
         const { data, error } = await sb
@@ -183,18 +184,15 @@ window.ChatAdmin = (function () {
             .order('created_at', { ascending: true });
 
         if (error) {
-            console.error('[ChatAdmin] Load messages error:', error.message);
+            console.error('[AdminChat] Messages error:', error.message);
             return;
         }
 
         renderMessages(data || []);
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // RENDER MESSAGES
-    // ───────────────────────────────────────────────────────────────
     function renderMessages(messages) {
-        const container = document.getElementById('chatActiveMessages');
+        const container = document.getElementById('adminChatMessages');
         if (!container) return;
 
         if (!messages || messages.length === 0) {
@@ -203,15 +201,15 @@ window.ChatAdmin = (function () {
         }
 
         container.innerHTML = messages.map(m => {
-            const isAdminMsg = m.sender_type === 'admin';
+            const isAdmin = m.sender_type === 'admin';
             const time = new Date(m.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-            const align = isAdminMsg ? 'chat-msg--admin' : 'chat-msg--guest';
-            const label = isAdminMsg ? (m.sender_name || 'You') : (m.sender_name || 'Guest');
+            const align = isAdmin ? 'admin-chat-msg--admin' : 'admin-chat-msg--guest';
+            const label = isAdmin ? (m.sender_name || 'You') : (m.sender_name || 'Guest');
 
             return `
-                <div class="chat-msg ${align}">
-                    <div class="chat-msg-label">${escapeHtml(label)} · ${time}</div>
-                    <div class="chat-msg-bubble">${escapeHtml(m.content)}</div>
+                <div class="admin-chat-msg ${align}">
+                    <div class="admin-chat-msg-label">${escapeHtml(label)} · ${time}</div>
+                    <div class="admin-chat-msg-bubble">${escapeHtml(m.content)}</div>
                 </div>
             `;
         }).join('');
@@ -222,17 +220,12 @@ window.ChatAdmin = (function () {
     // ───────────────────────────────────────────────────────────────
     // SEND MESSAGE
     // ───────────────────────────────────────────────────────────────
-    async function sendCurrent() {
-        const sb = getSupabaseClient();
-        if (!sb) return;
-        if (!activeConversationId) return;
+    async function sendMessage(text) {
+        const sb = getSB();
+        if (!sb || !activeConversationId) return false;
 
-        const input = document.getElementById('chatAdminInput');
-        if (!input) return;
-
-        const text = input.value.trim();
-        if (!text) return;
-        input.value = '';
+        const clean = String(text || '').trim();
+        if (!clean) return false;
 
         const adminName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name)
             ? currentStaffUser.name
@@ -244,26 +237,25 @@ window.ChatAdmin = (function () {
                 conversation_id: activeConversationId,
                 sender_type: 'admin',
                 sender_name: adminName,
-                content: text,
+                content: clean,
                 is_read_by_admin: true,
                 is_read_by_guest: false
             }]);
 
         if (error) {
-            console.error('[ChatAdmin] Send error:', error.message);
-            input.value = text;
-            alert('⚠️ Could not send message. Retry.');
-            return;
+            console.error('[AdminChat] Send error:', error.message);
+            return false;
         }
 
         await loadMessages(activeConversationId);
+        return true;
     }
 
     // ───────────────────────────────────────────────────────────────
     // MARK AS READ
     // ───────────────────────────────────────────────────────────────
     async function markAsRead(convId) {
-        const sb = getSupabaseClient();
+        const sb = getSB();
         if (!sb) return;
 
         await sb
@@ -278,41 +270,13 @@ window.ChatAdmin = (function () {
     }
 
     // ───────────────────────────────────────────────────────────────
-    // ARCHIVE
-    // ───────────────────────────────────────────────────────────────
-    async function archiveCurrent() {
-        const sb = getSupabaseClient();
-        if (!sb) return;
-        if (!activeConversationId) return;
-        if (!confirm('Archive this conversation?')) return;
-
-        await sb
-            .from('chat_conversations')
-            .update({ status: 'archived' })
-            .eq('id', activeConversationId);
-
-        await refreshAll();
-    }
-
-    // ───────────────────────────────────────────────────────────────
     // BADGES
     // ───────────────────────────────────────────────────────────────
-    function updateStatsBadge() {
-        const statEl = document.getElementById('chatStatsBadge');
-        const unreadEl = document.getElementById('chatUnreadBadge');
-
-        if (statEl) {
+    function updateConvCount() {
+        const el = document.getElementById('adminChatConvCount');
+        if (el) {
             const openCount = conversations.filter(c => c.status === 'open').length;
-            statEl.textContent = `${conversations.length} conversation${conversations.length > 1 ? 's' : ''} (${openCount} open)`;
-        }
-        if (unreadEl) {
-            const totalUnread = conversations.reduce((sum, c) => sum + (c._unreadCount || 0), 0);
-            if (totalUnread > 0) {
-                unreadEl.textContent = `${totalUnread} unread`;
-                unreadEl.classList.remove('hidden');
-            } else {
-                unreadEl.classList.add('hidden');
-            }
+            el.textContent = `${conversations.length} conversation${conversations.length > 1 ? 's' : ''} (${openCount} open)`;
         }
     }
 
@@ -337,9 +301,8 @@ window.ChatAdmin = (function () {
     // REALTIME
     // ───────────────────────────────────────────────────────────────
     function subscribeRealtime() {
-        const sb = getSupabaseClient();
-        if (!sb) return;
-        if (realtimeChannel) return;
+        const sb = getSB();
+        if (!sb || realtimeChannel) return;
 
         realtimeChannel = sb
             .channel('admin-chat')
@@ -349,7 +312,7 @@ window.ChatAdmin = (function () {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_conversations' },
                 () => { refreshAll(); }
             )
-            .subscribe((status) => console.log('💬 [ChatAdmin] Realtime:', status));
+            .subscribe((status) => console.log('💬 [AdminChat] Realtime:', status));
     }
 
     // ───────────────────────────────────────────────────────────────
@@ -368,8 +331,7 @@ window.ChatAdmin = (function () {
         if (!iso) return '';
         const d = new Date(iso);
         const now = new Date();
-        const diffMs = now - d;
-        const diffMin = Math.floor(diffMs / 60000);
+        const diffMin = Math.floor((now - d) / 60000);
         if (diffMin < 1) return 'now';
         if (diffMin < 60) return `${diffMin}m`;
         const diffH = Math.floor(diffMin / 60);
@@ -383,57 +345,39 @@ window.ChatAdmin = (function () {
     return {
         init,
         refreshAll,
-        renderConversations,
+        renderInbox,
         openConversation,
-        sendCurrent,
-        archiveCurrent,
+        sendMessage,
         _getConversations: () => conversations,
         _getActiveId: () => activeConversationId
     };
 })();
 
-// ───────────────────────────────────────────────────────────────
-// BOOT — robust wait for dependencies (window.supabaseClient OR supabaseClient)
-// ───────────────────────────────────────────────────────────────
-(function bootChatAdmin() {
+// Boot
+(function bootAdminChat() {
     let attempts = 0;
-    const MAX_ATTEMPTS = 40; // 40 × 250ms = 10 sec max
-
-    function getSupabaseClient() {
-        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
-            return window.supabaseClient;
-        }
-        try {
-            if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-                window.supabaseClient = supabaseClient;
-                return supabaseClient;
-            }
-        } catch (e) { /* not defined */ }
-        return null;
-    }
+    const MAX = 40;
 
     function tryInit() {
         attempts++;
+        const sb = (window.supabaseClient) ||
+                   (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        const hasAdmin = (typeof isAdmin === 'function');
 
-        const sb = getSupabaseClient();
-        const hasIsAdmin = typeof window.isAdmin === 'function';
-
-        if (sb && hasIsAdmin) {
-            console.log(`💬 [ChatAdmin] Dependencies ready (attempt ${attempts})`);
-            if (window.isAdmin()) {
-                window.ChatAdmin.init();
+        if (sb && hasAdmin) {
+            console.log(`💬 [AdminChat] Dependencies ready (attempt ${attempts})`);
+            if (isAdmin()) {
+                window.AdminChat.init();
             } else {
-                console.log('💬 [ChatAdmin] Not admin — chat disabled');
+                console.log('💬 [AdminChat] Not admin — disabled');
             }
             return;
         }
 
-        if (attempts >= MAX_ATTEMPTS) {
-            console.warn(`💬 [ChatAdmin] Gave up after ${attempts} attempts — missing:`,
-                { supabase: !!sb, isAdmin: hasIsAdmin });
+        if (attempts >= MAX) {
+            console.warn('[AdminChat] Gave up waiting');
             return;
         }
-
         setTimeout(tryInit, 250);
     }
 
@@ -444,4 +388,4 @@ window.ChatAdmin = (function () {
     }
 })();
 
-console.log('✅ [ChatAdmin] Loaded');
+console.log('✅ [AdminChat] Loaded');
