@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 // REMAL LAUNDRY OS — ADMIN CHAT (Guest ↔ Admin)
 // Admin only. Uses existing isAdmin() / requireAdmin() from ui-modules.js
+// ✅ ROBUST BOOT — waits for supabaseClient (window OR global)
 // ═══════════════════════════════════════════════════════════════════
 
 window.ChatAdmin = (function () {
@@ -10,26 +11,42 @@ window.ChatAdmin = (function () {
     let pollTimer = null;
 
     // ───────────────────────────────────────────────────────────────
-    // INIT — called on DOMContentLoaded (admin only)
+    // INIT — called after dependencies are ready
     // ───────────────────────────────────────────────────────────────
     function init() {
-        if (!isAdmin()) {
+        if (!window.isAdmin()) {
             console.log('💬 [ChatAdmin] Skipped — user is not admin');
             return;
         }
-        if (!window.supabaseClient) {
+        const sb = getSupabaseClient();
+        if (!sb) {
             console.warn('💬 [ChatAdmin] No Supabase client');
             return;
         }
         console.log('💬 [ChatAdmin] Initializing for admin...');
         refreshAll();
         subscribeRealtime();
-        // Auto-refresh every 60s as fallback
         pollTimer = setInterval(refreshAll, 60000);
     }
 
     // ───────────────────────────────────────────────────────────────
-    // REFRESH ALL — reload conversations + update badges
+    // SAFE SUPABASE ACCESSOR — tries window.supabaseClient then global
+    // ───────────────────────────────────────────────────────────────
+    function getSupabaseClient() {
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+            return window.supabaseClient;
+        }
+        try {
+            if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                window.supabaseClient = supabaseClient;
+                return supabaseClient;
+            }
+        } catch (e) { /* not defined */ }
+        return null;
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // REFRESH ALL
     // ───────────────────────────────────────────────────────────────
     async function refreshAll() {
         await loadConversations();
@@ -40,7 +57,10 @@ window.ChatAdmin = (function () {
     // LOAD CONVERSATIONS
     // ───────────────────────────────────────────────────────────────
     async function loadConversations() {
-        const { data, error } = await window.supabaseClient
+        const sb = getSupabaseClient();
+        if (!sb) return;
+
+        const { data, error } = await sb
             .from('chat_conversations')
             .select('*')
             .order('last_message_at', { ascending: false });
@@ -54,7 +74,7 @@ window.ChatAdmin = (function () {
 
         // Fetch last message + unread count for each
         for (const c of conversations) {
-            const { data: msgs } = await window.supabaseClient
+            const { data: msgs } = await sb
                 .from('chat_messages')
                 .select('content, sender_type, created_at, is_read_by_admin')
                 .eq('conversation_id', c.id)
@@ -127,6 +147,9 @@ window.ChatAdmin = (function () {
     // OPEN CONVERSATION
     // ───────────────────────────────────────────────────────────────
     async function openConversation(convId) {
+        const sb = getSupabaseClient();
+        if (!sb) return;
+
         activeConversationId = convId;
         const conv = conversations.find(c => c.id === convId);
         if (!conv) return;
@@ -150,7 +173,10 @@ window.ChatAdmin = (function () {
     // LOAD MESSAGES
     // ───────────────────────────────────────────────────────────────
     async function loadMessages(convId) {
-        const { data, error } = await window.supabaseClient
+        const sb = getSupabaseClient();
+        if (!sb) return;
+
+        const { data, error } = await sb
             .from('chat_messages')
             .select('*')
             .eq('conversation_id', convId)
@@ -197,7 +223,10 @@ window.ChatAdmin = (function () {
     // SEND MESSAGE
     // ───────────────────────────────────────────────────────────────
     async function sendCurrent() {
+        const sb = getSupabaseClient();
+        if (!sb) return;
         if (!activeConversationId) return;
+
         const input = document.getElementById('chatAdminInput');
         if (!input) return;
 
@@ -209,7 +238,7 @@ window.ChatAdmin = (function () {
             ? currentStaffUser.name
             : 'Admin';
 
-        const { error } = await window.supabaseClient
+        const { error } = await sb
             .from('chat_messages')
             .insert([{
                 conversation_id: activeConversationId,
@@ -227,22 +256,23 @@ window.ChatAdmin = (function () {
             return;
         }
 
-        // Optimistic render (realtime will also add it, but dedup on next refresh)
         await loadMessages(activeConversationId);
     }
 
     // ───────────────────────────────────────────────────────────────
-    // MARK AS READ (guest messages)
+    // MARK AS READ
     // ───────────────────────────────────────────────────────────────
     async function markAsRead(convId) {
-        await window.supabaseClient
+        const sb = getSupabaseClient();
+        if (!sb) return;
+
+        await sb
             .from('chat_messages')
             .update({ is_read_by_admin: true })
             .eq('conversation_id', convId)
             .eq('sender_type', 'guest')
             .eq('is_read_by_admin', false);
 
-        // Update local cache
         const conv = conversations.find(c => c.id === convId);
         if (conv) conv._unreadCount = 0;
     }
@@ -251,10 +281,12 @@ window.ChatAdmin = (function () {
     // ARCHIVE
     // ───────────────────────────────────────────────────────────────
     async function archiveCurrent() {
+        const sb = getSupabaseClient();
+        if (!sb) return;
         if (!activeConversationId) return;
         if (!confirm('Archive this conversation?')) return;
 
-        await window.supabaseClient
+        await sb
             .from('chat_conversations')
             .update({ status: 'archived' })
             .eq('id', activeConversationId);
@@ -296,7 +328,6 @@ window.ChatAdmin = (function () {
             navBadge.classList.add('hidden');
         }
 
-        // Notify notification module
         if (window.ChatNotifications && typeof window.ChatNotifications.updateFromConversations === 'function') {
             window.ChatNotifications.updateFromConversations(conversations, totalUnread);
         }
@@ -306,9 +337,11 @@ window.ChatAdmin = (function () {
     // REALTIME
     // ───────────────────────────────────────────────────────────────
     function subscribeRealtime() {
+        const sb = getSupabaseClient();
+        if (!sb) return;
         if (realtimeChannel) return;
 
-        realtimeChannel = window.supabaseClient
+        realtimeChannel = sb
             .channel('admin-chat')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' },
                 () => { refreshAll(); if (activeConversationId) loadMessages(activeConversationId); }
@@ -359,13 +392,56 @@ window.ChatAdmin = (function () {
     };
 })();
 
-// Boot
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (typeof isAdmin === 'function' && isAdmin()) {
-            window.ChatAdmin.init();
+// ───────────────────────────────────────────────────────────────
+// BOOT — robust wait for dependencies (window.supabaseClient OR supabaseClient)
+// ───────────────────────────────────────────────────────────────
+(function bootChatAdmin() {
+    let attempts = 0;
+    const MAX_ATTEMPTS = 40; // 40 × 250ms = 10 sec max
+
+    function getSupabaseClient() {
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+            return window.supabaseClient;
         }
-    }, 2000);
-});
+        try {
+            if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                window.supabaseClient = supabaseClient;
+                return supabaseClient;
+            }
+        } catch (e) { /* not defined */ }
+        return null;
+    }
+
+    function tryInit() {
+        attempts++;
+
+        const sb = getSupabaseClient();
+        const hasIsAdmin = typeof window.isAdmin === 'function';
+
+        if (sb && hasIsAdmin) {
+            console.log(`💬 [ChatAdmin] Dependencies ready (attempt ${attempts})`);
+            if (window.isAdmin()) {
+                window.ChatAdmin.init();
+            } else {
+                console.log('💬 [ChatAdmin] Not admin — chat disabled');
+            }
+            return;
+        }
+
+        if (attempts >= MAX_ATTEMPTS) {
+            console.warn(`💬 [ChatAdmin] Gave up after ${attempts} attempts — missing:`,
+                { supabase: !!sb, isAdmin: hasIsAdmin });
+            return;
+        }
+
+        setTimeout(tryInit, 250);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(tryInit, 500));
+    } else {
+        setTimeout(tryInit, 500);
+    }
+})();
 
 console.log('✅ [ChatAdmin] Loaded');
