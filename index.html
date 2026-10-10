@@ -1697,6 +1697,36 @@ if ('serviceWorker' in navigator) {
             .catch((err) => console.warn('⚠️ [PWA] Service Worker:', err));
     });
 }
+    <!-- 💬 ADMIN CHAT INIT -->
+<script>
+window.__adminChatSend = async function () {
+    const input = document.getElementById('adminChatInput');
+    if (!input || !window.AdminChat) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    const ok = await window.AdminChat.sendMessage(text);
+    if (!ok) {
+        input.value = text;
+        alert('Could not send message. Please retry.');
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Only init for admin role
+    const isAdmin = document.body.classList.contains('role-admin');
+    if (!isAdmin) {
+        console.log('💬 [AdminChat] Skipped — not admin role');
+        return;
+    }
+    // Delay to ensure supabaseClient + staff session ready
+    setTimeout(() => {
+        if (window.AdminChat) {
+            window.AdminChat.init();
+        }
+    }, 3500);
+});
 </script>
 </body>
 </html>
