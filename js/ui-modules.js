@@ -74,7 +74,7 @@ function applyRoleVisibility() {
     console.log('[Role] Staff mode — restricted UI (strict removal)');
 
     // 1. Sections réservées admin : on les SUPPRIME du DOM
-    const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard', 'sectionCheckout'];
+   const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard', 'sectionCheckout', 'sectionChat'];
     ADMIN_SECTIONS.forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentNode) {
