@@ -67,7 +67,6 @@ window.AdminChat = (function () {
 
         conversations = data || [];
 
-        // Fetch last message + unread for each
         for (const c of conversations) {
             const { data: msgs } = await sb
                 .from('chat_messages')
@@ -87,7 +86,7 @@ window.AdminChat = (function () {
     }
 
     // ───────────────────────────────────────────────────────────────
-    // RENDER INBOX (left column)
+    // RENDER INBOX
     // ───────────────────────────────────────────────────────────────
     function renderInbox() {
         const container = document.getElementById('adminChatInboxList');
@@ -152,7 +151,6 @@ window.AdminChat = (function () {
         const conv = conversations.find(c => c.id === convId);
         if (!conv) return;
 
-        // Toggle panes
         const emptyPane = document.getElementById('adminChatEmptyPane');
         const convPane = document.getElementById('adminChatConversationPane');
         if (emptyPane) emptyPane.classList.add('hidden');
@@ -353,7 +351,9 @@ window.AdminChat = (function () {
     };
 })();
 
-// Boot
+// ───────────────────────────────────────────────────────────────
+// BOOT
+// ───────────────────────────────────────────────────────────────
 (function bootAdminChat() {
     let attempts = 0;
     const MAX = 40;
