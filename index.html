@@ -183,9 +183,9 @@
             <i class="fas fa-chart-line"></i><span>Chart</span>
         </button>
         <button onclick="switchMainSection('adminChat')" id="navBtnAdminChat" data-admin-only="true" class="nav-tab-premium relative">
-    <i class="fas fa-comments"></i><span>Chat</span>
-    <span id="navChatBadge" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg min-w-[18px] text-center">0</span>
-</button>
+            <i class="fas fa-comments"></i><span>Chat</span>
+            <span id="navChatBadge" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg min-w-[18px] text-center">0</span>
+        </button>
     </div>
 </nav>
 
@@ -428,11 +428,10 @@
                     <i class="fas fa-list-ol text-[#DCA773]"></i>
                     <span>📋 Active Rooms List</span>
                 </button>
-                <!-- 🚨 CHECKOUT TODAY — COMPACT BADGE -->
-             <button onclick="ouvrirCheckoutTodayModal()" id="checkoutTodayBanner" class="bg-stone-800/60 hover:bg-stone-700/80 text-stone-300 border border-stone-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow transition">
-    <i class="fas fa-check-circle text-emerald-400 text-sm" id="checkoutBannerIcon"></i>
-    <span class="checkout-banner-text">✓ 0 checkout</span>
-</button>
+                <button onclick="ouvrirCheckoutTodayModal()" id="checkoutTodayBanner" class="bg-stone-800/60 hover:bg-stone-700/80 text-stone-300 border border-stone-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow transition">
+                    <i class="fas fa-check-circle text-emerald-400 text-sm" id="checkoutBannerIcon"></i>
+                    <span class="checkout-banner-text">✓ 0 checkout</span>
+                </button>
                 <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition">
                     <i class="fas fa-print text-sm"></i>
                     <span id="lblBatchPrintText">🖨️ Batch Print (0)</span>
@@ -964,89 +963,90 @@
         </div>
     </div>
 
-</div>
-    <!-- SECTION: ADMIN CHAT -->
-<div id="sectionAdminChat" class="hidden space-y-4 no-print">
-    <div class="remal-card p-4 sm:p-6 rounded-3xl max-w-6xl mx-auto">
+    <!-- SECTION: ADMIN CHAT (inside laundry-section) -->
+    <div id="sectionAdminChat" class="hidden space-y-4 no-print">
+        <div class="remal-card p-4 sm:p-6 rounded-3xl max-w-6xl mx-auto">
 
-        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3 mb-4">
-            <div>
-                <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] flex items-center gap-2">
-                    <i class="fas fa-comments"></i> Guest Chat Inbox
-                </h2>
-                <p class="text-xs text-stone-400 mt-0.5">Direct conversations with guests — admin only</p>
-            </div>
-            <span id="adminChatConvCount" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4" style="min-height: 65vh;">
-
-            <!-- LEFT: Inbox list -->
-            <div class="lg:col-span-4 bg-[#0f0e0c] border border-[#2f2820] rounded-2xl overflow-hidden flex flex-col">
-                <div class="p-3 border-b border-[#2f2820] bg-[#181614]">
-                    <input
-                        type="text"
-                        id="adminChatSearch"
-                        placeholder="Search room or guest…"
-                        class="w-full remal-input rounded-xl px-3 py-2 text-xs"
-                        oninput="AdminChat.renderInbox()"
-                    >
+            <div class="flex justify-between items-center border-b border-[#2f2820] pb-3 mb-4">
+                <div>
+                    <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] flex items-center gap-2">
+                        <i class="fas fa-comments"></i> Guest Chat Inbox
+                    </h2>
+                    <p class="text-xs text-stone-400 mt-0.5">Direct conversations with guests — admin only</p>
                 </div>
-                <div id="adminChatInboxList" class="flex-1 overflow-y-auto">
-                    <div class="admin-chat-empty">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading…</p>
-                    </div>
-                </div>
+                <span id="adminChatConvCount" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
             </div>
 
-            <!-- RIGHT: Conversation -->
-            <div class="lg:col-span-8 bg-[#0f0e0c] border border-[#2f2820] rounded-2xl overflow-hidden flex flex-col">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4" style="min-height: 65vh;">
 
-                <div id="adminChatEmptyPane" class="flex-1 flex flex-col items-center justify-center text-center p-8">
-                    <i class="fas fa-comment-dots text-5xl text-[#DCA773] opacity-40 mb-4"></i>
-                    <p class="text-sm font-bold text-stone-300">Select a conversation</p>
-                    <p class="text-xs text-stone-500 mt-1">Choose a room from the list to start replying</p>
-                </div>
-
-                <div id="adminChatConversationPane" class="hidden flex-1 flex flex-col">
-                    <div class="p-3 border-b border-[#2f2820] bg-[#181614] flex items-center justify-between">
-                        <div>
-                            <div id="adminChatConvTitle" class="text-sm font-bold text-[#DCA773]">Room ---</div>
-                            <div id="adminChatConvSub" class="text-[10px] text-stone-400">---</div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] bg-emerald-950 text-emerald-300 font-bold px-2 py-1 rounded-full border border-emerald-800 uppercase tracking-wider">
-                                <span class="inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1 align-middle"></span> Live
-                            </span>
+                <!-- LEFT: Inbox list -->
+                <div class="lg:col-span-4 bg-[#0f0e0c] border border-[#2f2820] rounded-2xl overflow-hidden flex flex-col">
+                    <div class="p-3 border-b border-[#2f2820] bg-[#181614]">
+                        <input
+                            type="text"
+                            id="adminChatSearch"
+                            placeholder="Search room or guest…"
+                            class="w-full remal-input rounded-xl px-3 py-2 text-xs"
+                            oninput="AdminChat.renderInbox()"
+                        >
+                    </div>
+                    <div id="adminChatInboxList" class="flex-1 overflow-y-auto">
+                        <div class="admin-chat-empty">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading…</p>
                         </div>
                     </div>
+                </div>
 
-                    <div id="adminChatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0f0e0c]"></div>
+                <!-- RIGHT: Conversation -->
+                <div class="lg:col-span-8 bg-[#0f0e0c] border border-[#2f2820] rounded-2xl overflow-hidden flex flex-col">
 
-                    <div class="border-t border-[#2f2820] p-3 bg-[#181614]">
-                        <div class="flex gap-2">
-                            <input
-                                type="text"
-                                id="adminChatInput"
-                                placeholder="Type your reply…"
-                                autocomplete="off"
-                                class="flex-1 remal-input rounded-xl px-3 py-2.5 text-xs"
-                                onkeydown="if(event.key==='Enter'){event.preventDefault();window.__adminChatSend();}"
-                            >
-                            <button
-                                onclick="window.__adminChatSend()"
-                                class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-5 rounded-xl text-xs shadow transition flex items-center gap-2"
-                            >
-                                <i class="fas fa-paper-plane"></i>
-                                <span class="hidden sm:inline">Send</span>
-                            </button>
+                    <div id="adminChatEmptyPane" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                        <i class="fas fa-comment-dots text-5xl text-[#DCA773] opacity-40 mb-4"></i>
+                        <p class="text-sm font-bold text-stone-300">Select a conversation</p>
+                        <p class="text-xs text-stone-500 mt-1">Choose a room from the list to start replying</p>
+                    </div>
+
+                    <div id="adminChatConversationPane" class="hidden flex-1 flex flex-col">
+                        <div class="p-3 border-b border-[#2f2820] bg-[#181614] flex items-center justify-between">
+                            <div>
+                                <div id="adminChatConvTitle" class="text-sm font-bold text-[#DCA773]">Room ---</div>
+                                <div id="adminChatConvSub" class="text-[10px] text-stone-400">---</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] bg-emerald-950 text-emerald-300 font-bold px-2 py-1 rounded-full border border-emerald-800 uppercase tracking-wider">
+                                    <span class="inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1 align-middle"></span> Live
+                                </span>
+                            </div>
+                        </div>
+
+                        <div id="adminChatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0f0e0c]"></div>
+
+                        <div class="border-t border-[#2f2820] p-3 bg-[#181614]">
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="adminChatInput"
+                                    placeholder="Type your reply…"
+                                    autocomplete="off"
+                                    class="flex-1 remal-input rounded-xl px-3 py-2.5 text-xs"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();window.__adminChatSend();}"
+                                >
+                                <button
+                                    onclick="window.__adminChatSend()"
+                                    class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-5 rounded-xl text-xs shadow transition flex items-center gap-2"
+                                >
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span class="hidden sm:inline">Send</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 <!-- ═══ END laundry-section ═══ -->
 
@@ -1611,7 +1611,7 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
-     🚨 MODAL — CHECK-OUT TODAY (same style as Active Rooms List)
+     🚨 MODAL — CHECK-OUT TODAY
      ═══════════════════════════════════════════════════════════════════ -->
 <div id="checkoutTodayModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] items-center justify-center p-4 no-print">
     <div class="bg-[#181614] w-full max-w-3xl rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col border border-[#2f2820]">
@@ -1672,7 +1672,7 @@
 <script src="security-guard.js"></script>
 <script src="js/guesthub-integration.js"></script>
 <script src="js/chat-admin.js"></script>
-    
+
 <!-- ═══ PWA SERVICE WORKER ═══ -->
 <script>
 if ('serviceWorker' in navigator) {
@@ -1697,7 +1697,9 @@ if ('serviceWorker' in navigator) {
             .catch((err) => console.warn('⚠️ [PWA] Service Worker:', err));
     });
 }
-    <!-- 💬 ADMIN CHAT INIT -->
+</script>
+
+<!-- 💬 ADMIN CHAT — Send helper (init handled by chat-admin.js) -->
 <script>
 window.__adminChatSend = async function () {
     const input = document.getElementById('adminChatInput');
@@ -1712,21 +1714,6 @@ window.__adminChatSend = async function () {
         alert('Could not send message. Please retry.');
     }
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Only init for admin role
-    const isAdmin = document.body.classList.contains('role-admin');
-    if (!isAdmin) {
-        console.log('💬 [AdminChat] Skipped — not admin role');
-        return;
-    }
-    // Delay to ensure supabaseClient + staff session ready
-    setTimeout(() => {
-        if (window.AdminChat) {
-            window.AdminChat.init();
-        }
-    }, 3500);
-});
 </script>
 </body>
 </html>
