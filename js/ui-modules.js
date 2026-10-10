@@ -83,7 +83,7 @@ function applyRoleVisibility() {
     });
 
     // 2. Boutons de nav admin : on les SUPPRIME du DOM
-    const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard'];
+  const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard', 'navBtnChat'];
     ADMIN_NAV_BUTTONS.forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentNode) {
