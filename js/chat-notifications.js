@@ -6,11 +6,8 @@
 window.ChatNotifications = (function () {
     let lastUnreadTotal = 0;
     let titleFlashInterval = null;
-    let originalTitle = document.title;
+    const originalTitle = document.title;
 
-    // ───────────────────────────────────────────────────────────────
-    // CALLED BY ChatAdmin whenever conversations refresh
-    // ───────────────────────────────────────────────────────────────
     function updateFromConversations(conversations, totalUnread) {
         if (totalUnread > lastUnreadTotal) {
             onNewMessage(totalUnread);
@@ -20,20 +17,10 @@ window.ChatNotifications = (function () {
         lastUnreadTotal = totalUnread;
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // NEW MESSAGE RECEIVED
-    // ───────────────────────────────────────────────────────────────
     function onNewMessage(count) {
-        // 1. Play sound
         playNotificationSound();
-
-        // 2. Flash page title
         startTitleFlash(count);
-
-        // 3. Show browser notification (if allowed)
         showBrowserNotification(count);
-
-        // 4. Vibrate on mobile
         if (navigator.vibrate) {
             navigator.vibrate([100, 50, 100]);
         }
@@ -43,16 +30,11 @@ window.ChatNotifications = (function () {
         if (count === 0) stopTitleFlash();
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // SOUND
-    // ───────────────────────────────────────────────────────────────
     function playNotificationSound() {
-        // Try to use existing sound-alerts.js if available
         if (window.playNotificationSound && typeof window.playNotificationSound === 'function') {
             try { window.playNotificationSound(); return; } catch (e) {}
         }
 
-        // Fallback: Web Audio API beep
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
@@ -71,9 +53,6 @@ window.ChatNotifications = (function () {
         }
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // TITLE FLASH
-    // ───────────────────────────────────────────────────────────────
     function startTitleFlash(count) {
         stopTitleFlash();
         let visible = true;
@@ -93,9 +72,6 @@ window.ChatNotifications = (function () {
         document.title = originalTitle;
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // BROWSER NOTIFICATION (optional, needs permission)
-    // ───────────────────────────────────────────────────────────────
     function showBrowserNotification(count) {
         if (!('Notification' in window)) return;
         if (Notification.permission !== 'granted') return;
@@ -104,17 +80,13 @@ window.ChatNotifications = (function () {
             new Notification('New guest message', {
                 body: `${count} unread message${count > 1 ? 's' : ''} in Chat`,
                 icon: 'assets/icon-staff-192.png',
-                tag: 'remal-chat',
-                requireInteraction: false
+                tag: 'remal-chat'
             });
         } catch (e) {
             console.warn('[ChatNotifications] Browser notif error:', e);
         }
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // REQUEST PERMISSION (call once on user interaction)
-    // ───────────────────────────────────────────────────────────────
     function requestPermission() {
         if (!('Notification' in window)) return;
         if (Notification.permission === 'default') {
@@ -122,18 +94,10 @@ window.ChatNotifications = (function () {
         }
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // CLEANUP ON PAGE HIDE
-    // ───────────────────────────────────────────────────────────────
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            stopTitleFlash();
-        }
+        if (!document.hidden) stopTitleFlash();
     });
 
-    // ───────────────────────────────────────────────────────────────
-    // PUBLIC API
-    // ───────────────────────────────────────────────────────────────
     return {
         updateFromConversations,
         requestPermission,
