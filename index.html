@@ -961,6 +961,89 @@
     </div>
 
 </div>
+    <!-- SECTION: ADMIN CHAT -->
+<div id="sectionAdminChat" class="hidden space-y-4 no-print">
+    <div class="remal-card p-4 sm:p-6 rounded-3xl max-w-6xl mx-auto">
+
+        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3 mb-4">
+            <div>
+                <h2 class="text-base font-serif-luxury font-bold text-[#DCA773] flex items-center gap-2">
+                    <i class="fas fa-comments"></i> Guest Chat Inbox
+                </h2>
+                <p class="text-xs text-stone-400 mt-0.5">Direct conversations with guests — admin only</p>
+            </div>
+            <span id="adminChatConvCount" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4" style="min-height: 65vh;">
+
+            <!-- LEFT: Inbox list -->
+            <div class="lg:col-span-4 bg-[#0f0e0c] border border-[#2f2820] rounded-2xl overflow-hidden flex flex-col">
+                <div class="p-3 border-b border-[#2f2820] bg-[#181614]">
+                    <input
+                        type="text"
+                        id="adminChatSearch"
+                        placeholder="Search room or guest…"
+                        class="w-full remal-input rounded-xl px-3 py-2 text-xs"
+                        oninput="AdminChat.renderInbox()"
+                    >
+                </div>
+                <div id="adminChatInboxList" class="flex-1 overflow-y-auto">
+                    <div class="admin-chat-empty">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading…</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Conversation -->
+            <div class="lg:col-span-8 bg-[#0f0e0c] border border-[#2f2820] rounded-2xl overflow-hidden flex flex-col">
+
+                <div id="adminChatEmptyPane" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                    <i class="fas fa-comment-dots text-5xl text-[#DCA773] opacity-40 mb-4"></i>
+                    <p class="text-sm font-bold text-stone-300">Select a conversation</p>
+                    <p class="text-xs text-stone-500 mt-1">Choose a room from the list to start replying</p>
+                </div>
+
+                <div id="adminChatConversationPane" class="hidden flex-1 flex flex-col">
+                    <div class="p-3 border-b border-[#2f2820] bg-[#181614] flex items-center justify-between">
+                        <div>
+                            <div id="adminChatConvTitle" class="text-sm font-bold text-[#DCA773]">Room ---</div>
+                            <div id="adminChatConvSub" class="text-[10px] text-stone-400">---</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] bg-emerald-950 text-emerald-300 font-bold px-2 py-1 rounded-full border border-emerald-800 uppercase tracking-wider">
+                                <span class="inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1 align-middle"></span> Live
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="adminChatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0f0e0c]"></div>
+
+                    <div class="border-t border-[#2f2820] p-3 bg-[#181614]">
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                id="adminChatInput"
+                                placeholder="Type your reply…"
+                                autocomplete="off"
+                                class="flex-1 remal-input rounded-xl px-3 py-2.5 text-xs"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();window.__adminChatSend();}"
+                            >
+                            <button
+                                onclick="window.__adminChatSend()"
+                                class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-5 rounded-xl text-xs shadow transition flex items-center gap-2"
+                            >
+                                <i class="fas fa-paper-plane"></i>
+                                <span class="hidden sm:inline">Send</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- ═══ END laundry-section ═══ -->
 
 
