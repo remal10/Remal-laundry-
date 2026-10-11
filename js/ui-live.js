@@ -418,177 +418,125 @@ async function imprimerToutesLesChambresDuJourExécution() {
     const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
     slipsToPrint.sort((a, b) => (parseInt(a.room_number || a.room) || 0) - (parseInt(b.room_number || b.room) || 0));
 
-const batchContainer = document.getElementById('batchPrintContainer');
-if (!batchContainer) {
-    alert("⚠️ Batch print container missing. Please contact IT.");
-    console.warn('[BatchPrint] #batchPrintContainer not found');
-    return;
-}
-batchContainer.innerHTML = '';
+    const batchContainer = document.getElementById('batchPrintContainer');
+    if (!batchContainer) {
+        alert("⚠️ Batch print container missing. Please contact IT.");
+        console.warn('[BatchPrint] #batchPrintContainer not found');
+        return;
+    }
+    batchContainer.innerHTML = '';
 
-    slipsToPrint.forEach(entry => {
-        const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
-        entry.receipt_id = receiptId;
-        const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
-        const roomNum = entry.room_number || entry.room || '---';
+    // 📌 Sauvegarde état modale actuelle (au cas où elle est ouverte)
+    const detailModal = document.getElementById('detailModal');
+    const modalWasOpen = detailModal && !detailModal.classList.contains('hidden');
+    const previouslySelectedId = typeof selectedIdForModal !== 'undefined' ? selectedIdForModal : null;
 
-        let badgeText = 'Hotel Count (Free)';
-        if (entry.extra_charged || entry.count_type === 'quota_extra') {
-            badgeText = 'Hotel & Extra';
-        } else if (entry.count_type === 'guest') {
-            badgeText = 'Guest Count (Full)';
+    // 🔄 POUR CHAQUE SLIP : ouvrir la modale → cloner #pdfExportArea
+    for (const entry of slipsToPrint) {
+
+        // 1. Ouvrir la modale pour cet ID (remplit #pdfExportArea avec le NOUVEAU design)
+        if (typeof ouvrirModalDetails === 'function') {
+            await ouvrirModalDetails(String(entry.id));
+            // Laisser le DOM se stabiliser (guests, images, etc.)
+            await new Promise(r => setTimeout(r, 120));
         }
 
+        // 2. Récupérer la zone PDF nouvellement remplie
+        const pdfArea = document.getElementById('pdfExportArea');
+        if (!pdfArea) {
+            console.warn('[BatchPrint] #pdfExportArea not found for entry', entry.id);
+            continue;
+        }
+
+        // 3. Déterminer les copies à imprimer (H/F → 2 copies)
         const serviceStyleText = entry.service_type || entry.options?.service_style || '';
         const isHangerFolding = serviceStyleText.includes('H/F') || serviceStyleText.includes('Hanger');
-        const copiesToPrint = isHangerFolding ? ['LAUNDRY COPY', 'GUEST / HANGER COPY'] : ['ORIGINAL'];
+        const copiesToPrint = isHangerFolding
+            ? ['LAUNDRY COPY', 'GUEST / HANGER COPY']
+            : ['ORIGINAL'];
 
-        let rawItems = entry.items || [];
-        if (typeof rawItems === 'string') {
-            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
-        }
-        const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
-        
-        let tableRowsHtml = '';
+        // 4. Cloner pour chaque copie
+        copiesToPrint.forEach(copyLabel => {
 
-        itemsList.forEach(item => {
-            let name = item.name || item.item_name || 'Article';
-            let qty = parseInt(item.quantity || item.qty, 10) || 0;
-            let price = parseFloat(item.unit_price || item.price) || 0;
-            let freeQty = parseInt(item.free_quantity || item.freeQty, 10) || 0;
+            // Clone profond du pdfExportArea
+            const clone = pdfArea.cloneNode(true);
 
-            if (qty <= 0) return;
+            // Nettoyer : retirer les IDs pour éviter les duplications dans le DOM
+            clone.removeAttribute('id');
+            clone.classList.add('pdf-export-area'); // classe pour le CSS
+            clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
 
-            if (entry.is_spa) {
-                const rowTotal = qty * price;
-                tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${rowTotal.toFixed(2)} AED</td></tr>`;
-            } else {
-                if (!entry.extra_charged && entry.count_type !== 'guest') {
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px; color: #047857;">0.00 AED</td></tr>`;
-                } else if (entry.count_type === 'guest') {
-                    const rowTotal = qty * price;
-                    tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name}</td><td style="text-align: center; font-weight: 700; padding: 8px;">${qty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${rowTotal.toFixed(2)} AED</td></tr>`;
-                } else if (entry.extra_charged || entry.count_type === 'quota_extra') {
-                    let chargeableQty = qty - freeQty;
-                    if (chargeableQty < 0) chargeableQty = 0;
+            // Retirer les éléments no-print
+            clone.querySelectorAll('.no-print').forEach(el => el.remove());
+            clone.querySelectorAll('button').forEach(el => el.remove());
+            clone.querySelectorAll('.receipt-close-btn').forEach(el => el.remove());
 
-                    if (freeQty > 0) {
-                        tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #047857;"><td style="padding: 8px; font-weight: 700;">${name} (Free Quota)</td><td style="text-align: center; font-weight: 700; padding: 8px;">${freeQty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">0.00 AED</td></tr>`;
-                    }
-                    if (chargeableQty > 0) {
-                        const totalLine = chargeableQty * price;
-                        tableRowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb; color: #111827;"><td style="padding: 8px; font-weight: 700;">${name} (Extra)</td><td style="text-align: center; font-weight: 700; padding: 8px;">${chargeableQty}</td><td style="text-align: right; font-weight: 700; padding: 8px;">${totalLine.toFixed(2)} AED</td></tr>`;
-                    }
-                }
-            }
-        });
-
-        const noteText = entry.special_notes || entry.note || '';
-        const noteHtml = (noteText && noteText.trim() !== '') ? `
-            <div style="background-color: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 12px; margin-top: 10px; font-size: 11px;">
-                <p style="font-weight: 700; color: #78350f; text-transform: uppercase; margin: 0 0 4px 0; font-size: 9px;">Garment Notes / Defects:</p>
-                <p style="margin: 0; color: #1f2937; font-weight: 500;">${noteText}</p>
-            </div>
-        ` : '';
-
-        const photoHtml = entry.photo ? `
-            <div style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
-                <p style="font-weight: 700; font-size: 10px; margin-bottom: 4px; color: #374151;">Proof Photo:</p>
-                <img src="${entry.photo}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 12px; border: 1px solid #d1d5db;">
-            </div>
-        ` : '';
-
-        const grandTotalVal = entry.grand_total || entry.total || 0;
-        const totalPiecesVal = entry.total_pieces || entry.total_clothes || 0;
-
-        copiesToPrint.forEach((copyLabel) => {
+            // Wrapper en .printable-card (1 carte = 1 page A4)
             const card = document.createElement('div');
-            card.className = "printable-card";
+            card.className = 'printable-card';
             card.style.cssText = `
-                padding: 8mm 10mm; 
-                background: #ffffff !important; 
-                color: #000000 !important; 
+                padding: 8mm 10mm;
+                background: #ffffff !important;
+                color: #000000 !important;
                 box-sizing: border-box;
-                font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+                page-break-after: always;
+                break-after: page;
             `;
-            
-            const copyBadgeHtml = isHangerFolding ? `
-                <div style="position: absolute; top: 0; right: 0; background-color: #111827; color: #ffffff; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">
-                    ${copyLabel}
-                </div>
-            ` : '';
 
-            card.innerHTML = `
-                <div style="text-align: center; border-bottom: 1px solid #d1d5db; padding-bottom: 10px; margin-bottom: 12px; position: relative;">
-                    ${copyBadgeHtml}
-                    <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #09090b; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.05em;">REMAL HOTEL & VILLAS</h2>
-                    <p style="font-size: 8px; color: #6b7280; text-transform: uppercase; margin: 2px 0;">Al Ruwais City, Abu Dhabi – UAE</p>
-                    <p style="font-size: 11px; font-weight: 700; color: #b45309; margin: 4px 0 0 0; text-transform: uppercase;">${entry.is_spa ? 'V ELEMENT SPA LAUNDRY SHEET' : 'LAUNDRY SERVICE'}</p>
-                    <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 2px 0;">Receipt ID: <strong style="color: #111827;">#${receiptId}</strong></p>
-                </div>
+            // Si H/F, ajouter un badge "copyLabel" en haut à droite
+            if (isHangerFolding) {
+                const badge = document.createElement('div');
+                badge.style.cssText = `
+                    position: absolute;
+                    top: 6mm;
+                    right: 10mm;
+                    background: #111827;
+                    color: #ffffff;
+                    font-size: 9px;
+                    font-weight: 800;
+                    padding: 3px 8px;
+                    border-radius: 6px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    z-index: 10;
+                `;
+                badge.textContent = copyLabel;
 
-                <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px;">
-                    <div style="display: flex; justify-between; align-items: center; margin-bottom: 6px;">
-                        <div>
-                            <span style="color: #6b7280; font-weight: 600;">${entry.is_spa ? 'Sheet Serial:' : 'Room:'}</span>
-                            <span style="font-size: 18px; font-weight: 700; color: #111827; margin-left: 4px;">${entry.is_spa ? '#' + String(entry.spa_serial || '').replace(/SPA\s*#?/gi, '') : roomNum}</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="color: #6b7280; font-weight: 700;">Date: ${dateFormatted}</span><br>
-                            <span style="display: inline-block; margin-top: 3px; background-color: #fef3c7; color: #92400e; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid #fde68a;">${entry.is_spa ? 'SPA Record' : badgeText}</span>
-                        </div>
-                    </div>
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'position: relative;';
+                wrap.appendChild(badge);
+                wrap.appendChild(clone);
+                card.appendChild(wrap);
+            } else {
+                card.appendChild(clone);
+            }
 
-                    <div style="border-top: 1px solid #e5e7eb; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-weight: 700; color: #374151;">
-                        <div><span style="color: #6b7280; font-weight: 500;">Guest Name:</span> <span style="color: #111827;">${entry.guest_name || 'Unknown'}</span></div>
-                        <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Room Typ:</span> <span style="color: #111827;">${entry.room_typ || (entry.is_spa ? 'SPA' : 'DLXR')}</span></div>
-                        <div><span style="color: #6b7280; font-weight: 500;">Agency:</span> <span style="color: #111827;">${entry.agency || (entry.is_spa ? 'V Element SPA' : 'Direct')}</span></div>
-                        <div style="text-align: right;"><span style="color: #6b7280; font-weight: 500;">Laundry Quota:</span> <span style="color: #e11d48;">${entry.pms_quota || entry.quota || badgeText}</span></div>
-                        <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 4px; font-size: 10px; color: #6b7280;"><span style="font-weight: 500;">Agent:</span> <span style="color: #374151;">${formatAgentDisplay(entry.created_by)}</span></div>
-                    </div>
-                </div>
-
-                <div style="background-color: #f9fafb; padding: 8px 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 10px; font-size: 11px; font-weight: 700; display: flex; justify-between;">
-                    <span style="color: #374151;">Packaging:</span>
-                    <span style="color: #b45309;">${serviceStyleText || 'F — Folding'}</span>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
-                    <thead>
-                        <tr style="background-color: #f3f4f6; color: #111827; font-weight: 700; border-bottom: 1px solid #d1d5db;">
-                            <th style="padding: 8px; text-align: left;">Item</th>
-                            <th style="padding: 8px; text-align: center;">Qty</th>
-                            <th style="padding: 8px; text-align: right;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>${tableRowsHtml}</tbody>
-                </table>
-
-                <div style="background-color: #f9fafb; padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 11px;">
-                    <div style="display: flex; justify-between; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
-                        <span>Total Pieces:</span>
-                        <span>${totalPiecesVal} pieces</span>
-                    </div>
-                    <div style="display: flex; justify-between; font-weight: 700; font-size: 14px; color: #111827; padding-top: 6px;">
-                        <span>Grand Total:</span>
-                        <span style="color: #b45309; font-family: 'Playfair Display', Georgia, serif;">${grandTotalVal.toFixed(2)} AED</span>
-                    </div>
-                </div>
-
-                ${noteHtml}
-                ${photoHtml}
-            `;
             batchContainer.appendChild(card);
         });
-    });
+    }
 
+    // 📌 Restaurer état modale
+    if (modalWasOpen && previouslySelectedId) {
+        await ouvrirModalDetails(String(previouslySelectedId));
+    } else if (typeof fermerModal === 'function') {
+        fermerModal();
+    }
+
+    // 🖨️ Lancer l'impression
     batchContainer.classList.remove('hidden');
+    document.body.classList.add('print-mode-batch');
+    document.body.classList.remove('print-mode-modal');
 
     setTimeout(() => {
         window.print();
-        batchContainer.classList.add('hidden');
-        batchContainer.innerHTML = '';
-    }, 300);
+
+        // Cleanup après impression
+        setTimeout(() => {
+            batchContainer.classList.add('hidden');
+            batchContainer.innerHTML = '';
+            document.body.classList.remove('print-mode-batch');
+        }, 500);
+    }, 400);
 }
 
 async function telechargerToutesLesChambresDuJour() {
