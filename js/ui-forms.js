@@ -6,6 +6,7 @@
 // PHASE E.5 : Undo save (7s toast)
 // ✨ SPRINT 1 : setLang() tolérant + navigation premium (classList)
 // ✨ CHECKOUT : admin-only + renderCheckoutList()
+// ✨ ADMIN CHAT : section adminChat intégrée
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -511,10 +512,11 @@ function setLang(lang) {
 // NAVIGATION SECTIONS
 // ✨ SPRINT 1 : utilise classList au lieu d'écraser className
 // ✨ CHECKOUT : admin-only + chargement de la liste
+// ✨ ADMIN CHAT : intégré (section + nav + dispatch)
 // ═══════════════════════════════════════════════════════════════════
 function switchMainSection(section) {
     // 🔒 Blocage strict : sections réservées admin
-   const ADMIN_ONLY_SECTIONS = ['checkout', 'stock', 'lostfound', 'pdfList', 'massEntry', 'dashboard'];
+    const ADMIN_ONLY_SECTIONS = ['checkout', 'stock', 'lostfound', 'pdfList', 'massEntry', 'dashboard', 'adminChat'];
     const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
 
     if (!isAdminUser && ADMIN_ONLY_SECTIONS.includes(section)) {
@@ -527,31 +529,37 @@ function switchMainSection(section) {
         reinitialiserFormulaire();
     }
 
-    ['newRecord', 'massEntry', 'liveRecord', 'spa', 'checkout', 'stock', 'lostfound', 'pdfList', 'dashboard'].forEach(sec => {
+    // Cache TOUTES les sections (y compris adminChat)
+    ['newRecord', 'massEntry', 'liveRecord', 'spa', 'checkout', 'stock', 'lostfound', 'pdfList', 'dashboard', 'adminChat'].forEach(sec => {
         const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) || document.getElementById(`${sec}-laundry-section`);
         if (el) el.classList.add('hidden');
     });
 
+    // Affiche la section demandée
     let targetSection;
     if (section === 'spa') {
         targetSection = document.getElementById('spa-laundry-section');
     } else if (section === 'checkout') {
         targetSection = document.getElementById('sectionCheckout');
+    } else if (section === 'adminChat') {
+        targetSection = document.getElementById('sectionAdminChat');
     } else {
         targetSection = document.getElementById(`section${section.charAt(0).toUpperCase() + section.slice(1)}`);
     }
     if (targetSection) targetSection.classList.remove('hidden');
 
-const navButtons = {
-    'liveRecord': 'navBtnLiveRecord',
-    'spa': 'navBtnSpa',
-    'checkout': 'navBtnCheckout',
-    'stock': 'navBtnStock',
-    'lostfound': 'navBtnLostfound',
-    'pdfList': 'navBtnPdfList',
-    'massEntry': 'navBtnMassEntry',
-    'dashboard': 'navBtnDashboard'
-};
+    // Boutons nav
+    const navButtons = {
+        'liveRecord': 'navBtnLiveRecord',
+        'spa': 'navBtnSpa',
+        'checkout': 'navBtnCheckout',
+        'stock': 'navBtnStock',
+        'lostfound': 'navBtnLostfound',
+        'pdfList': 'navBtnPdfList',
+        'massEntry': 'navBtnMassEntry',
+        'dashboard': 'navBtnDashboard',
+        'adminChat': 'navBtnAdminChat'
+    };
 
     // ✅ SPRINT 1 : utilise classList (préserve les classes premium)
     Object.entries(navButtons).forEach(([key, btnId]) => {
@@ -574,23 +582,28 @@ const navButtons = {
         }
     }
 
+    // Dispatch par section
     if (section === 'pdfList') {
         afficherListeBordereauxLocal();
     } else if (section === 'dashboard') {
         renderManagementDashboard();
     } else if (section === 'lostfound') {
         renderLostFoundItems();
-   } else if (section === 'checkout') {
-    // ✨ Charge la liste des check-outs
-    if (typeof renderCheckoutList === 'function') {
-        renderCheckoutList();
+    } else if (section === 'checkout') {
+        if (typeof renderCheckoutList === 'function') {
+            renderCheckoutList();
+        }
+    } else if (section === 'stock') {
+        if (typeof renderStockList === 'function') {
+            renderStockList();
+        }
+    } else if (section === 'adminChat') {
+        // 💬 Charge la boîte de réception chat
+        if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
+            window.AdminChat.refreshAll();
+        }
     }
-} else if (section === 'stock') {
-    // ✨ Charge la liste des stocks
-    if (typeof renderStockList === 'function') {
-        renderStockList();
-    }
-}
+
     const navBtnId = navButtons[section];
     if (navBtnId) {
         setTimeout(() => {
