@@ -122,7 +122,9 @@
 
         // Deep clone du template (#pdfExportArea)
         const clone = template.cloneNode(true);
-        clone.id = `pdfExportArea-${index}-${hfMode || 'single'}`;
+      clone.removeAttribute('id');  // ⚠️ Retire l'ID pour ne pas dupliquer
+      clone.classList.add('pdf-export-area');  // ✅ Utilise la classe
+      clone.classList.remove('no-print');{hfMode || 'single'}`;
         clone.classList.remove('no-print');
 
         // Injecter les données dans le clone
