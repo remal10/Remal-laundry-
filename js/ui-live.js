@@ -4,6 +4,7 @@
 // ⚠️ Chargé APRÈS ui-forms.js
 // ✅ PLAN B FINAL : 4 boutons directs + Undo toast (10s)
 // Phase 5 : Admin-only controls (Select All / Batch Status / Delete)
+// ✅ BATCH PRINT V2 : Clone #pdfExportArea (même design que la modale)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -171,7 +172,7 @@ function chargerLiveOrders() {
                cb === 'pending' || 
                cb === 'Guest App' || 
                cb === 'guest app' ||
-               cb === 'Guest' ||
+               cb === 'Guest' || 
                cb === 'Staff Laundry OS' ||
                cb === '';
     };
@@ -406,6 +407,9 @@ async function imprimerToutesLesChambresDuJour() {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ✅ BATCH PRINT V2 — Clone #pdfExportArea (design identique à la modale)
+// ═══════════════════════════════════════════════════════════════════
 async function imprimerToutesLesChambresDuJourExécution() {
     chargerDonneesLocalStorage();
     const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
@@ -426,7 +430,7 @@ async function imprimerToutesLesChambresDuJourExécution() {
     }
     batchContainer.innerHTML = '';
 
-    // 📌 Sauvegarde état modale actuelle (au cas où elle est ouverte)
+    // 📌 Sauvegarde état modale actuelle
     const detailModal = document.getElementById('detailModal');
     const modalWasOpen = detailModal && !detailModal.classList.contains('hidden');
     const previouslySelectedId = typeof selectedIdForModal !== 'undefined' ? selectedIdForModal : null;
@@ -434,21 +438,20 @@ async function imprimerToutesLesChambresDuJourExécution() {
     // 🔄 POUR CHAQUE SLIP : ouvrir la modale → cloner #pdfExportArea
     for (const entry of slipsToPrint) {
 
-        // 1. Ouvrir la modale pour cet ID (remplit #pdfExportArea avec le NOUVEAU design)
+        // 1. Ouvrir la modale (remplit #pdfExportArea avec le NOUVEAU design)
         if (typeof ouvrirModalDetails === 'function') {
             await ouvrirModalDetails(String(entry.id));
-            // Laisser le DOM se stabiliser (guests, images, etc.)
-            await new Promise(r => setTimeout(r, 120));
+            await new Promise(r => setTimeout(r, 150));
         }
 
-        // 2. Récupérer la zone PDF nouvellement remplie
+        // 2. Récupérer la zone PDF
         const pdfArea = document.getElementById('pdfExportArea');
         if (!pdfArea) {
             console.warn('[BatchPrint] #pdfExportArea not found for entry', entry.id);
             continue;
         }
 
-        // 3. Déterminer les copies à imprimer (H/F → 2 copies)
+        // 3. Déterminer copies (H/F → 2 copies)
         const serviceStyleText = entry.service_type || entry.options?.service_style || '';
         const isHangerFolding = serviceStyleText.includes('H/F') || serviceStyleText.includes('Hanger');
         const copiesToPrint = isHangerFolding
@@ -458,20 +461,18 @@ async function imprimerToutesLesChambresDuJourExécution() {
         // 4. Cloner pour chaque copie
         copiesToPrint.forEach(copyLabel => {
 
-            // Clone profond du pdfExportArea
+            // Clone profond
             const clone = pdfArea.cloneNode(true);
 
-            // Nettoyer : retirer les IDs pour éviter les duplications dans le DOM
+            // Nettoyer les IDs + classes no-print + boutons
             clone.removeAttribute('id');
-            clone.classList.add('pdf-export-area'); // classe pour le CSS
+            clone.classList.add('pdf-export-area');
             clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-
-            // Retirer les éléments no-print
             clone.querySelectorAll('.no-print').forEach(el => el.remove());
             clone.querySelectorAll('button').forEach(el => el.remove());
             clone.querySelectorAll('.receipt-close-btn').forEach(el => el.remove());
 
-            // Wrapper en .printable-card (1 carte = 1 page A4)
+            // Wrapper .printable-card (1 carte = 1 page A4)
             const card = document.createElement('div');
             card.className = 'printable-card';
             card.style.cssText = `
@@ -481,36 +482,32 @@ async function imprimerToutesLesChambresDuJourExécution() {
                 box-sizing: border-box;
                 page-break-after: always;
                 break-after: page;
+                position: relative;
             `;
 
-            // Si H/F, ajouter un badge "copyLabel" en haut à droite
+            // Badge copyLabel si H/F
             if (isHangerFolding) {
                 const badge = document.createElement('div');
+                badge.className = 'batch-copy-badge';
                 badge.style.cssText = `
                     position: absolute;
-                    top: 6mm;
+                    top: 4mm;
                     right: 10mm;
                     background: #111827;
                     color: #ffffff;
                     font-size: 9px;
                     font-weight: 800;
-                    padding: 3px 8px;
+                    padding: 3px 10px;
                     border-radius: 6px;
                     text-transform: uppercase;
                     letter-spacing: 0.08em;
                     z-index: 10;
                 `;
                 badge.textContent = copyLabel;
-
-                const wrap = document.createElement('div');
-                wrap.style.cssText = 'position: relative;';
-                wrap.appendChild(badge);
-                wrap.appendChild(clone);
-                card.appendChild(wrap);
-            } else {
-                card.appendChild(clone);
+                card.appendChild(badge);
             }
 
+            card.appendChild(clone);
             batchContainer.appendChild(card);
         });
     }
@@ -530,7 +527,6 @@ async function imprimerToutesLesChambresDuJourExécution() {
     setTimeout(() => {
         window.print();
 
-        // Cleanup après impression
         setTimeout(() => {
             batchContainer.classList.add('hidden');
             batchContainer.innerHTML = '';
@@ -1050,7 +1046,6 @@ async function genererPDF(entryId = null) {
     const entry = cachedSlips.find(e => String(e.id) === String(targetId));
     if (!entry) return;
 
-    // ✨ FIX : Scroll en haut avant capture
     const modalContainer = document.querySelector('#detailModal > div');
     if (modalContainer) modalContainer.scrollTop = 0;
     window.scrollTo(0, 0);
@@ -1058,7 +1053,6 @@ async function genererPDF(entryId = null) {
     const roomNum = entry.room_number || entry.room || '---';
 
   if (entry.is_spa) {
-    // ✅ SPA : déléguer à printSpaDetail() qui utilise #spaDetailContent
     if (typeof ouvrirSpaDetailModal === 'function') {
         await ouvrirSpaDetailModal(targetId);
         await new Promise(r => setTimeout(r, 300));
@@ -1085,7 +1079,6 @@ async function genererPDF(entryId = null) {
     const noPrintElements = printArea.querySelectorAll('.no-print');
     noPrintElements.forEach(el => el.style.display = 'none');
 
-    // ✨ FIX : Scroll modal en haut + attente
     const modalContent = modalEl.querySelector('div');
     if (modalContent) modalContent.scrollTop = 0;
     await new Promise(r => setTimeout(r, 200));
@@ -1122,7 +1115,11 @@ async function genererPDF(entryId = null) {
     }
 }
 
-function fermerModal() { document.getElementById('detailModal').classList.add('hidden'); selectedIdForModal = null; }
+function fermerModal() { 
+    document.getElementById('detailModal').classList.add('hidden'); 
+    document.body.classList.remove('print-mode-modal');
+    selectedIdForModal = null; 
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // SUPPRESSION
@@ -1189,13 +1186,12 @@ const item = cachedSlips.find(s => String(s.id).trim() === idStr);
 if (item) {
     const oldStatus = item.status;
     
-    // ✨ Log status change BEFORE modifying
     if (typeof logStatusChange === 'function') {
         await logStatusChange(idStr, oldStatus, nouveauStatut);
     }
     
     item.status = nouveauStatut;
-    item.updated_at = new Date().toISOString();  // ✨ Track last update
+    item.updated_at = new Date().toISOString();
     sauvegarderDonneesLocalStorage();
 }
     if (typeof fermerModal === 'function') fermerModal();
@@ -1237,7 +1233,6 @@ async function appliquerStatutEnLot(nouveauStatut) {
    chargerDonneesLocalStorage();
 const previousStatuses = {};
 
-// ✨ Log each change BEFORE modifying
 for (const id of selectedIds) {
     const entry = cachedSlips.find(s => String(s.id) === String(id));
     if (entry) {
@@ -1462,6 +1457,7 @@ function dismissGuestNotificationBanner() {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // PATCH — ADMIN CHAT SECTION SWITCH
 // Force l'affichage de sectionAdminChat quand switchMainSection est appelé
@@ -1482,24 +1478,20 @@ function dismissGuestNotificationBanner() {
 
             // Special case: adminChat
             if (sectionName === 'adminChat') {
-                // Hide all laundry-section children
                 document.querySelectorAll('.laundry-section > div, .laundry-section > section').forEach(el => {
                     el.classList.add('hidden');
                 });
 
-                // Show adminChat section
                 const chatSection = document.getElementById('sectionAdminChat');
                 if (chatSection) {
                     chatSection.classList.remove('hidden');
                     console.log('✅ [SwitchPatch] sectionAdminChat shown');
                 }
 
-                // Update nav active state
                 document.querySelectorAll('.nav-tab-premium').forEach(btn => btn.classList.remove('active'));
                 const chatBtn = document.getElementById('navBtnAdminChat');
                 if (chatBtn) chatBtn.classList.add('active');
 
-                // Refresh chat data
                 if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
                     window.AdminChat.refreshAll();
                 }
