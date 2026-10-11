@@ -1509,3 +1509,57 @@ function dismissGuestNotificationBanner() {
         card.classList.remove('animate-pulse', 'ring-2', 'ring-amber-500', 'bg-amber-950/30');
     });
 }
+// ═══════════════════════════════════════════════════════════════════
+// PATCH — ADMIN CHAT SECTION SWITCH
+// Force l'affichage de sectionAdminChat quand switchMainSection est appelé
+// ═══════════════════════════════════════════════════════════════════
+(function patchSwitchForAdminChat() {
+    function wrapSwitch() {
+        if (typeof window.switchMainSection !== 'function') {
+            setTimeout(wrapSwitch, 200);
+            return;
+        }
+        if (window._switchMainSectionPatched) return;
+        window._switchMainSectionPatched = true;
+
+        const originalSwitch = window.switchMainSection;
+
+        window.switchMainSection = function(sectionName) {
+            console.log('🔀 [SwitchPatch] Requested section:', sectionName);
+
+            // Special case: adminChat
+            if (sectionName === 'adminChat') {
+                // Hide all laundry-section children
+                document.querySelectorAll('.laundry-section > div, .laundry-section > section').forEach(el => {
+                    el.classList.add('hidden');
+                });
+
+                // Show adminChat section
+                const chatSection = document.getElementById('sectionAdminChat');
+                if (chatSection) {
+                    chatSection.classList.remove('hidden');
+                    console.log('✅ [SwitchPatch] sectionAdminChat shown');
+                }
+
+                // Update nav active state
+                document.querySelectorAll('.nav-tab-premium').forEach(btn => btn.classList.remove('active'));
+                const chatBtn = document.getElementById('navBtnAdminChat');
+                if (chatBtn) chatBtn.classList.add('active');
+
+                // Refresh chat data
+                if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
+                    window.AdminChat.refreshAll();
+                }
+                return;
+            }
+
+            // For other sections, call the original
+            if (typeof originalSwitch === 'function') {
+                originalSwitch.apply(this, arguments);
+            }
+        };
+
+        console.log('✅ [SwitchPatch] switchMainSection patched for adminChat');
+    }
+    wrapSwitch();
+})();
