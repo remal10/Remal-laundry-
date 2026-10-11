@@ -7205,3 +7205,24 @@ body.print-mode-batch .pdf-export-area .receipt-room-number {
     font-size: 42px !important;
     line-height: 1 !important;
 }
+body.print-mode-batch .pdf-export-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    padding: 15px 20px !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-logo-compact {
+    height: 42px !important;
+    max-width: 110px !important;
+    width: auto !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-room-number {
+    font-size: 42px !important;
+    line-height: 1 !important;
+}
