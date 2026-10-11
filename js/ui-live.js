@@ -418,8 +418,13 @@ async function imprimerToutesLesChambresDuJourExécution() {
     const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
     slipsToPrint.sort((a, b) => (parseInt(a.room_number || a.room) || 0) - (parseInt(b.room_number || b.room) || 0));
 
-    const batchContainer = document.getElementById('batchPrintContainer');
-    batchContainer.innerHTML = '';
+const batchContainer = document.getElementById('batchPrintContainer');
+if (!batchContainer) {
+    alert("⚠️ Batch print container missing. Please contact IT.");
+    console.warn('[BatchPrint] #batchPrintContainer not found');
+    return;
+}
+batchContainer.innerHTML = '';
 
     slipsToPrint.forEach(entry => {
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
