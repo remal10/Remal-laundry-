@@ -1650,7 +1650,10 @@
         </div>
     </div>
 </div>
-
+<!-- ═══════════════════════════════════════════════════════════════════
+     🖨️ BATCH PRINT CONTAINER — Hidden container used by window.print()
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="batchPrintContainer" class="hidden"></div>
 <!-- ═══ LIBRARIES ═══ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1714,8 +1717,6 @@ window.__adminChatSend = async function () {
         alert('Could not send message. Please retry.');
     }
 };
-    <!-- ═══ BATCH PRINT CONTAINER (hidden, used by window.print()) ═══ -->
-<div id="batchPrintContainer" class="hidden"></div>
 </script>
 </body>
 </html>
