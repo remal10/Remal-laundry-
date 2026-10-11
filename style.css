@@ -7099,11 +7099,128 @@ body.light-mode .stock-export-btn {
         print-color-adjust: exact !important;
     }
 }
-
 /* ═══════════════════════════════════════════════════════════════
-   MODE 2 — BATCH PRINT
-   Chaque .printable-card = 1 page A4
+   🎯 BATCH PRINT V2 — Clone #pdfExportArea (design modale)
    ═══════════════════════════════════════════════════════════════ */
+
+/* Mode batch : les clones ont la classe .pdf-export-area (sans ID) */
+body.print-mode-batch .pdf-export-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    padding: 15px 20px !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: relative !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-logo-compact {
+    height: 48px !important;
+    max-width: 130px !important;
+    width: auto !important;
+    display: block !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-room-number {
+    font-size: 52px !important;
+    line-height: 1 !important;
+    color: #b47a3e !important;
+    font-weight: 900 !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-header-compact {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+    padding: 6px 4px 12px 4px !important;
+    margin-bottom: 12px !important;
+    border-bottom: 1.5px solid rgba(180, 122, 62, 0.2) !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-header-left {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-header-right {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 0 !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-info-box {
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    padding: 14px 18px !important;
+    margin-bottom: 12px !important;
+}
+
+body.print-mode-batch .pdf-export-area table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 8px !important;
+    border: 1px solid rgba(180, 122, 62, 0.15) !important;
+}
+
+body.print-mode-batch .pdf-export-area table thead tr {
+    background: #1c1917 !important;
+}
+
+body.print-mode-batch .pdf-export-area table thead th {
+    padding: 6px 12px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    color: #DCA773 !important;
+    text-align: left !important;
+    text-transform: uppercase !important;
+}
+
+body.print-mode-batch .pdf-export-area table tbody td {
+    padding: 6px 12px !important;
+    font-size: 10px !important;
+    color: #1c1917 !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-total-box {
+    background: linear-gradient(135deg, rgba(220, 167, 115, 0.1) 0%, rgba(248, 233, 192, 0.15) 100%) !important;
+    border: 1.5px solid rgba(180, 122, 62, 0.4) !important;
+    border-radius: 10px !important;
+    padding: 8px 14px !important;
+}
+
+body.print-mode-batch .pdf-export-area .receipt-footer {
+    margin-top: 8px !important;
+    padding-top: 6px !important;
+    border-top: 1px solid rgba(180, 122, 62, 0.25) !important;
+    text-align: center !important;
+    font-family: 'Cinzel', Georgia, serif !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: #b47a3e !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+}
+
+body.print-mode-batch .pdf-export-area button,
+body.print-mode-batch .pdf-export-area a,
+body.print-mode-batch .pdf-export-area .receipt-close-btn {
+    display: none !important;
+}
+
+body.print-mode-batch .pdf-export-area * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+
+/* @media print — Batch */
 @media print {
     body.print-mode-batch #batchPrintContainer {
         display: block !important;
@@ -7117,7 +7234,6 @@ body.light-mode .stock-export-btn {
         z-index: 9999 !important;
     }
 
-    /* Cacher le reste de la page */
     body.print-mode-batch > *:not(#batchPrintContainer) {
         display: none !important;
     }
@@ -7130,99 +7246,11 @@ body.light-mode .stock-export-btn {
         width: 100% !important;
         background: #ffffff !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 6mm 8mm !important;
     }
 
     body.print-mode-batch .printable-card:last-child {
         page-break-after: auto !important;
         break-after: auto !important;
     }
-
-    /* Appliquer le style du template #pdfExportArea (déjà stylé en CSS) */
-    body.print-mode-batch .printable-card > div[id^="pdfExportArea-"] {
-        width: 100% !important;
-        max-width: 100% !important;
-        background: #ffffff !important;
-        padding: 15px 20px !important;
-        margin: 0 !important;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-    }
-
-    body.print-mode-batch .printable-card * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    /* Masquer les boutons dans le clone */
-    body.print-mode-batch .printable-card button,
-    body.print-mode-batch .printable-card .receipt-close-btn {
-        display: none !important;
-    }
-
-    /* Badge H/F */
-    body.print-mode-batch .hf-badge {
-        display: inline-block !important;
-        padding: 6px 14px !important;
-        border-radius: 9999px !important;
-        font-size: 11px !important;
-        font-weight: 900 !important;
-        letter-spacing: 0.1em !important;
-        margin-top: 8px !important;
-        text-transform: uppercase !important;
-    }
-    body.print-mode-batch .hf-badge--hanger {
-        background: #dbeafe !important;
-        color: #1e40af !important;
-        border: 1.5px solid #3b82f6 !important;
-    }
-    body.print-mode-batch .hf-badge--folding {
-        background: #fef3c7 !important;
-        color: #78350f !important;
-        border: 1.5px solid #f59e0b !important;
-    }
-}
-/* 🎯 FIX — Les clones du batch n'ont plus d'ID, on cible par classe */
-body.print-mode-batch .pdf-export-area {
-    width: 100% !important;
-    max-width: 100% !important;
-    background: #ffffff !important;
-    padding: 15px 20px !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.print-mode-batch .pdf-export-area .receipt-logo-compact {
-    height: 42px !important;
-    max-width: 110px !important;
-    width: auto !important;
-}
-
-body.print-mode-batch .pdf-export-area .receipt-room-number {
-    font-size: 42px !important;
-    line-height: 1 !important;
-}
-body.print-mode-batch .pdf-export-area {
-    width: 100% !important;
-    max-width: 100% !important;
-    background: #ffffff !important;
-    padding: 15px 20px !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.print-mode-batch .pdf-export-area .receipt-logo-compact {
-    height: 42px !important;
-    max-width: 110px !important;
-    width: auto !important;
-}
-
-body.print-mode-batch .pdf-export-area .receipt-room-number {
-    font-size: 42px !important;
-    line-height: 1 !important;
 }
