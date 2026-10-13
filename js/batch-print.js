@@ -5,6 +5,7 @@
 // ✅ FIX : Uses CLASSES instead of IDs for data injection
 // ✅ FIX : No remove() workaround — direct page building
 // ✅ FIX : Detailed console logs for debugging
+// ✅ FIX v2 : Syntax error at line 130 removed
 // ═══════════════════════════════════════════════════════════════════
 
 (function () {
@@ -122,10 +123,9 @@
 
         // Deep clone du template (#pdfExportArea)
         const clone = template.cloneNode(true);
-      clone.removeAttribute('id');  // ⚠️ Retire l'ID pour ne pas dupliquer
-      clone.classList.add('pdf-export-area');  // ✅ Utilise la classe
-      clone.classList.remove('no-print');{hfMode || 'single'}`;
-        clone.classList.remove('no-print');
+        clone.removeAttribute('id');                // ⚠️ Retire l'ID pour ne pas dupliquer
+        clone.classList.add('pdf-export-area');     // ✅ Utilise la classe
+        clone.classList.remove('no-print');         // ✅ Assure la visibilité
 
         // Injecter les données dans le clone
         injectSlipData(clone, slip, packaging, hfMode);
