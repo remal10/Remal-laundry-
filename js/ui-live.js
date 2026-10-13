@@ -1194,11 +1194,12 @@ if (item) {
     item.updated_at = new Date().toISOString();
     sauvegarderDonneesLocalStorage();
 }
-    if (typeof fermerModal === 'function') fermerModal();
-    if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
-    if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
+  // 🎯 Refresh INTELLIGENT — seulement les vues visibles
+if (typeof fermerModal === 'function') fermerModal();
 
-    setTimeout(() => { isLocalUpdating = false; }, 800);
+refreshAllViews();
+
+setTimeout(() => { isLocalUpdating = false; }, 800);
 }
 
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
