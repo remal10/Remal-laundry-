@@ -1149,6 +1149,59 @@ async function supprimerBordereauActuel() {
         setTimeout(() => { isLocalUpdating = false; }, 1000);
     }
 }
+// ═══════════════════════════════════════════════════════════════════
+// 🎯 REFRESH ALL VISIBLE VIEWS
+// Rafraîchit intelligemment toutes les sections actuellement visibles
+// ═══════════════════════════════════════════════════════════════════
+function refreshAllViews() {
+    console.log('🔄 [Refresh] Mise à jour des vues visibles');
+
+    // ─── 1. Active Rooms (Live Orders) — toujours rafraîchi ───
+    if (typeof chargerLiveOrders === 'function') {
+        try { chargerLiveOrders(); } catch (e) { console.warn('[Refresh] chargerLiveOrders:', e); }
+    }
+
+    // ─── 2. Archives (seulement si visible) ───
+    const archivesSection = document.getElementById('sectionPdfList');
+    if (archivesSection && !archivesSection.classList.contains('hidden')) {
+        if (typeof afficherListeBordereauxLocal === 'function') {
+            try { afficherListeBordereauxLocal(); } catch (e) { console.warn('[Refresh] afficherListeBordereauxLocal:', e); }
+        }
+    }
+
+    // ─── 3. Dashboard (seulement si visible) ───
+    const dashboardSection = document.getElementById('sectionDashboard');
+    if (dashboardSection && !dashboardSection.classList.contains('hidden')) {
+        if (typeof renderManagementDashboard === 'function') {
+            try { renderManagementDashboard(); } catch (e) { console.warn('[Refresh] renderManagementDashboard:', e); }
+        }
+    }
+
+    // ─── 4. Checkout Today badge ───
+    if (typeof updateCheckoutTodayBadge === 'function') {
+        try { updateCheckoutTodayBadge(); } catch (e) { console.warn('[Refresh] updateCheckoutTodayBadge:', e); }
+    }
+
+    // ─── 5. Admin Chat (seulement si visible) ───
+    const chatSection = document.getElementById('sectionAdminChat');
+    if (chatSection && !chatSection.classList.contains('hidden')) {
+        if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
+            try { window.AdminChat.refreshAll(); } catch (e) { console.warn('[Refresh] AdminChat:', e); }
+        }
+    }
+
+    // ─── 6. Modale détails (si encore ouverte — resync) ───
+    const detailModal = document.getElementById('detailModal');
+    if (detailModal && !detailModal.classList.contains('hidden') && typeof selectedIdForModal !== 'undefined' && selectedIdForModal) {
+        if (typeof ouvrirModalDetails === 'function') {
+            try { ouvrirModalDetails(String(selectedIdForModal)); } catch (e) { console.warn('[Refresh] ouvrirModalDetails:', e); }
+        }
+    }
+
+    console.log('✅ [Refresh] Terminé');
+}
+
+window.refreshAllViews = refreshAllViews;
 
 // ═══════════════════════════════════════════════════════════════════
 // CHANGEMENT STATUT (individuel)
