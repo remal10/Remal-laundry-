@@ -1250,9 +1250,9 @@ for (const id of selectedIds) {
 
 sauvegarderDonneesLocalStorage();
 
-    chargerLiveOrders();
+   refreshAllViews();
 
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             const uuidBatch = selectedIds.filter(id => id.length === 36);
             if (uuidBatch.length > 0) {
