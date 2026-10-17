@@ -2,7 +2,6 @@
 // REMAL LAUNDRY OS — LINEN CONTROL MODULE
 // ═══════════════════════════════════════════════════════════════════
 
-// Dictionnaire des items (clé HTML -> Nom affiché)
 const linenItemsMap = {
     bedsheets: 'Bedsheets',
     duvet: 'Duvet Cover',
@@ -15,24 +14,25 @@ const linenItemsMap = {
     duster: 'Dusters'
 };
 
-// 1. Ouvrir la modale de saisie
 function openLinenSheetModal(type) {
+    // 🛡️ SÉCURITÉ : Admin uniquement
+    if (typeof isAdmin === 'function' && !isAdmin()) {
+        return alert("🚫 Access denied. Only administrators can create Linen Sheets.");
+    }
+
     document.getElementById('linenType').value = type;
     document.getElementById('linenModalTitle').innerText = type === 'hotel' ? 'New Hotel Linen Sheet' : 'New Villa Linen Sheet';
     
-    // Reset le formulaire
     document.getElementById('linenForm').reset();
     document.getElementById('linenDate').valueAsDate = new Date();
 
     document.getElementById('linenSheetModal').classList.remove('hidden');
 }
 
-// 2. Fermer la modale
 function closeLinenSheetModal() {
     document.getElementById('linenSheetModal').classList.add('hidden');
 }
 
-// 3. Sauvegarder et afficher l'aperçu
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('linenForm');
     if (form) {
@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const date = document.getElementById('linenDate').value;
             
             const items = {};
-            // On récupère les quantités
             Object.keys(linenItemsMap).forEach(key => {
                 const val = parseInt(document.getElementById(`item_${key}`).value) || 0;
                 if (val > 0) items[linenItemsMap[key]] = val;
@@ -57,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
             const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
 
-            // Insertion dans Supabase
             if (window.supabaseClient) {
                 const { error } = await window.supabaseClient
                     .from('linen_control_sheets')
@@ -82,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 4. Afficher l'aperçu imprimable
 function showLinenPrintPreview(type, location, date, items) {
     const dateObj = new Date(date);
     const formattedDate = dateObj.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -106,7 +103,6 @@ function showLinenPrintPreview(type, location, date, items) {
     loadRecentLinenSheets();
 }
 
-// 5. Charger l'historique
 async function loadRecentLinenSheets() {
     const container = document.getElementById('recentLinenSheets');
     if (!container || !window.supabaseClient) return;
@@ -138,7 +134,6 @@ async function loadRecentLinenSheets() {
     }).join('');
 }
 
-// 6. Intercepter le clic sur l'onglet
 const originalSwitch = window.switchMainSection;
 window.switchMainSection = function(sectionName) {
     if (sectionName === 'linenControl') {
