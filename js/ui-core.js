@@ -30,14 +30,6 @@ function detecterTypeAppareil() {
     
     if (hasCoarsePointer) body.classList.add('is-coarse');
     if (hasMouse) body.classList.add('is-fine');
-    
-    console.log('📱 [Device] Détection:', {
-        isTouch: hasTouch,
-        isMouse: hasMouse,
-        isCoarse: hasCoarsePointer,
-        width: screenWidth,
-        classes: Array.from(body.classList)
-    });
 }
 
 detecterTypeAppareil();
@@ -50,11 +42,12 @@ function activerSwipeNavigation() {
     const body = document.getElementById('bodyRoot') || document.body;
     if (!body.classList.contains('is-touch')) return;
     
-    // 🔒 Filtrer les sections selon le rôle
+    // 🎯 FIX : Ajout de toutes les sections (incluant linenControl, checkout, stock...)
     const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
     const sections = isAdminUser
-    ? ['liveRecord', 'spa', 'lostfound', 'pdfList', 'massEntry', 'dashboard']
-    : ['liveRecord', 'spa'];   // Staff : uniquement Laundry + SPA
+    ? ['liveRecord', 'spa', 'checkout', 'stock', 'linenControl', 'lostfound', 'pdfList', 'massEntry', 'dashboard', 'adminChat']
+    : ['liveRecord', 'spa']; // Staff : uniquement Laundry + SPA
+
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -83,13 +76,13 @@ function activerSwipeNavigation() {
         if (deltaTime > SWIPE_MAX_TIME) return;
         if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
         if (Math.abs(deltaY) > VERTICAL_TOLERANCE) return;
-        if (e.target.closest('#detailModal, #staffLoginModal, #activeRoomsListModal, #batchStatusModal, input, textarea, select')) return;
+        if (e.target.closest('#detailModal, #staffLoginModal, #activeRoomsListModal, #batchStatusModal, #linenSheetModal, input, textarea, select')) return;
         
         let currentIndex = -1;
         sections.forEach((sec, idx) => {
-            const el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`) 
-                     || document.getElementById(`section-${sec}`)
-                     || document.getElementById(sec === 'spa' ? 'spa-laundry-section' : '');
+            let el = document.getElementById(`section${sec.charAt(0).toUpperCase() + sec.slice(1)}`);
+            if (sec === 'spa') el = document.getElementById('spa-laundry-section');
+            
             if (el && !el.classList.contains('hidden')) currentIndex = idx;
         });
         
@@ -141,13 +134,11 @@ function restaurerSessionStaff() {
     if (saved) {
         try {
             currentStaffUser = JSON.parse(saved);
-            console.log("🔄 [Session] Staff restauré:", currentStaffUser.name);
             return currentStaffUser;
         } catch(e) {
             console.error("❌ [Session] Erreur parsing:", e);
         }
     }
-    console.warn("⚠️ [Session] Aucun Staff connecté");
     return null;
 }
 
@@ -285,9 +276,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const spaDateEl = document.getElementById('spa-current-date');
     if(spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
-// Serial No — laissé VIDE par défaut (saisie manuelle)
-const serialEl = document.getElementById('spa-serial-no');
-if (serialEl && !serialEl.value) serialEl.value = '';
+
+    // Serial No — laissé VIDE par défaut (saisie manuelle)
+    const serialEl = document.getElementById('spa-serial-no');
+    if (serialEl && !serialEl.value) serialEl.value = '';
+
     const now = new Date();
     const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const timeIso = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -305,16 +298,18 @@ if (serialEl && !serialEl.value) serialEl.value = '';
     programmerTimerReinitialisationMinuit();
 
     checkStaffSession(); 
-    // PHASE E — Raccourcis & Auto-complétion
-    initPhaseE();
 
-    // 🚨 Init badge Checkout Today (admin only)
+    // PHASE E — Raccourcis & Auto-complétion
+    if (typeof initPhaseE === 'function') initPhaseE();
+
+    // 🚨 Init badge Checkout Today
     setTimeout(() => {
         if (typeof updateCheckoutTodayBadge === 'function') {
             updateCheckoutTodayBadge();
         }
     }, 2500);
 });
+
 // ═══════════════════════════════════════════════════════════════════
 // ✨ SPRINT 1.5 — MENU MOBILE STAFF (⋯)
 // ═══════════════════════════════════════════════════════════════════
@@ -343,7 +338,6 @@ function closeStaffMobileMenu() {
 }
 
 function updateStaffMobileMenuState() {
-    // Synchronise l'icône thème
     const menuIcon = document.getElementById('menuThemeIcon');
     if (menuIcon) {
         menuIcon.className = document.body.classList.contains('light-mode') 
@@ -351,7 +345,6 @@ function updateStaffMobileMenuState() {
             : 'fas fa-moon';
     }
 
-    // Synchronise le badge langue
     const langBadge = document.getElementById('menuLangBadge');
     if (langBadge) {
         const lang = (typeof currentLang !== 'undefined' && currentLang) ? currentLang.toUpperCase() : 'EN';
@@ -359,9 +352,6 @@ function updateStaffMobileMenuState() {
     }
 }
 
-/**
- * Cycle entre les langues (EN → AR → HI → EN)
- */
 function cycleLanguage() {
     const langs = ['en', 'ar', 'hi'];
     const current = (typeof currentLang !== 'undefined' && currentLang) ? currentLang : 'en';
@@ -370,21 +360,17 @@ function cycleLanguage() {
     
     if (typeof setLang === 'function') setLang(next);
     
-    // Met à jour le badge
     const langBadge = document.getElementById('menuLangBadge');
     if (langBadge) langBadge.textContent = next.toUpperCase();
     
-    // Vibration
     if (navigator.vibrate) navigator.vibrate(10);
 }
 
-// Exposer globalement
 window.toggleStaffMobileMenu = toggleStaffMobileMenu;
 window.closeStaffMobileMenu = closeStaffMobileMenu;
 window.updateStaffMobileMenuState = updateStaffMobileMenuState;
 window.cycleLanguage = cycleLanguage;
 
-// Fermer le menu si on clique ailleurs
 document.addEventListener('click', (e) => {
     const menu = document.getElementById('staffMobileMenu');
     const trigger = document.querySelector('.menu-trigger-btn');
@@ -394,12 +380,10 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Fermer le menu sur Escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeStaffMobileMenu();
 });
 
-// Sync thème avec toggleTheme existant
 const originalToggleTheme = window.toggleTheme;
 if (typeof originalToggleTheme === 'function') {
     window.toggleTheme = function() {
@@ -407,11 +391,10 @@ if (typeof originalToggleTheme === 'function') {
         setTimeout(updateStaffMobileMenuState, 100);
     };
 }
-/* ═══════════════════════════════════════════════════════════════════
-   ✨ SUPERVISOR — Status Change Logger
-   Logs every status change for processing time analytics
-   ═══════════════════════════════════════════════════════════════════ */
 
+// ═══════════════════════════════════════════════════════════════════
+// SUPERVISOR — Status Change Logger
+// ═══════════════════════════════════════════════════════════════════
 async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
   if (!requestId || !newStatus) return;
   if (oldStatus === newStatus) return;
@@ -442,8 +425,6 @@ async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
 
       if (error) {
         console.warn('[Status History] Insert error:', error.message);
-      } else {
-        console.log(`📝 [History] ${oldStatus} → ${newStatus} · ${payload.room_number}`);
       }
     } catch (e) {
       console.warn('[Status History] Exception:', e);
