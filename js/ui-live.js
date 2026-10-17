@@ -1377,10 +1377,9 @@ function dismissGuestNotificationBanner() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PATCH — ADMIN CHAT SECTION SWITCH
-// Force l'affichage de sectionAdminChat quand switchMainSection est appelé
+// 🎯 PATCH GLOBAL — SWITCH SECTION (Linen Control + Admin Chat)
 // ═══════════════════════════════════════════════════════════════════
-(function patchSwitchForAdminChat() {
+(function patchSwitchMainSection() {
     function wrapSwitch() {
         if (typeof window.switchMainSection !== 'function') {
             setTimeout(wrapSwitch, 200);
@@ -1394,35 +1393,47 @@ function dismissGuestNotificationBanner() {
         window.switchMainSection = function(sectionName) {
             console.log('🔀 [SwitchPatch] Requested section:', sectionName);
 
-            // Special case: adminChat
+            // 1. Cacher TOUTES les sections (y compris linenControl)
+            const sections = ['liveRecord', 'newRecord', 'spa', 'checkout', 'stock', 'lostfound', 'pdfList', 'massEntry', 'dashboard', 'adminChat', 'linenControl'];
+            
+            sections.forEach(sec => {
+                let el = document.getElementById('section' + sec.charAt(0).toUpperCase() + sec.slice(1));
+                if (sec === 'spa') el = document.getElementById('spa-laundry-section');
+                if (el) el.classList.add('hidden');
+            });
+
+            // 2. Afficher la section demandée
+            let targetEl = document.getElementById('section' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1));
+            if (sectionName === 'spa') targetEl = document.getElementById('spa-laundry-section');
+
+            if (targetEl) {
+                targetEl.classList.remove('hidden');
+            }
+
+            // 3. Mettre à jour le bouton actif dans la nav
+            document.querySelectorAll('.nav-tab-premium').forEach(btn => btn.classList.remove('active'));
+            const navBtn = document.getElementById('navBtn' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1));
+            if (navBtn) navBtn.classList.add('active');
+
+            // 4. Actions spécifiques par section
             if (sectionName === 'adminChat') {
-                document.querySelectorAll('.laundry-section > div, .laundry-section > section').forEach(el => {
-                    el.classList.add('hidden');
-                });
-
-                const chatSection = document.getElementById('sectionAdminChat');
-                if (chatSection) {
-                    chatSection.classList.remove('hidden');
-                    console.log('✅ [SwitchPatch] sectionAdminChat shown');
-                }
-
-                document.querySelectorAll('.nav-tab-premium').forEach(btn => btn.classList.remove('active'));
-                const chatBtn = document.getElementById('navBtnAdminChat');
-                if (chatBtn) chatBtn.classList.add('active');
-
                 if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
                     window.AdminChat.refreshAll();
                 }
-                return;
-            }
-
-            // For other sections, call the original
-            if (typeof originalSwitch === 'function') {
-                originalSwitch.apply(this, arguments);
+            } else if (sectionName === 'linenControl') {
+                if (typeof loadRecentLinenSheets === 'function') {
+                    loadRecentLinenSheets();
+                }
+            } else if (sectionName === 'liveRecord') {
+                if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
+            } else if (sectionName === 'dashboard') {
+                if (typeof renderManagementDashboard === 'function') renderManagementDashboard();
+            } else if (sectionName === 'pdfList') {
+                if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
             }
         };
 
-        console.log('✅ [SwitchPatch] switchMainSection patched for adminChat');
+        console.log('✅ [SwitchPatch] switchMainSection patched globally');
     }
     wrapSwitch();
 })();
