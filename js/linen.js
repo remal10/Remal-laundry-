@@ -15,7 +15,6 @@ const linenItemsMap = {
 };
 
 function openLinenSheetModal(type) {
-    // 🛡️ SÉCURITÉ : Admin uniquement
     if (typeof isAdmin === 'function' && !isAdmin()) {
         return alert("🚫 Access denied. Only administrators can create Linen Sheets.");
     }
@@ -56,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
             const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
 
+            // 1. Sauvegarde Supabase
             if (window.supabaseClient) {
                 const { error } = await window.supabaseClient
                     .from('linen_control_sheets')
@@ -69,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (error) {
                     console.error(error);
-                    alert("Error saving sheet: " + error.message);
-                    return;
+                    alert("⚠️ Supabase save failed (RLS issue): " + error.message + "\n\nThe sheet will still be generated, but not saved to the database.");
+                    // 🎯 On ne fait pas de return ici, on continue pour générer l'aperçu !
                 }
             }
 
