@@ -5,7 +5,53 @@
 // ✅ PLAN B FINAL : 4 boutons directs + Undo toast (10s)
 // Phase 5 : Admin-only controls (Select All / Batch Status / Delete)
 // ✅ BATCH PRINT V2 : Clone #pdfExportArea (même design que la modale)
+// ✅ REFRESH FIX : refreshAllViews() synchronise l'UI instantanément
 // ═══════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎯 REFRESH ALL VISIBLE VIEWS
+// Rafraîchit intelligemment toutes les sections actuellement visibles
+// ═══════════════════════════════════════════════════════════════════
+function refreshAllViews() {
+    console.log('🔄 [Refresh] Mise à jour des vues visibles');
+
+    // 1. Active Rooms (Live Orders) — toujours rafraîchi
+    if (typeof chargerLiveOrders === 'function') {
+        try { chargerLiveOrders(); } catch (e) { console.warn('[Refresh] chargerLiveOrders:', e); }
+    }
+
+    // 2. Archives (seulement si visible)
+    const archivesSection = document.getElementById('sectionPdfList');
+    if (archivesSection && !archivesSection.classList.contains('hidden')) {
+        if (typeof afficherListeBordereauxLocal === 'function') {
+            try { afficherListeBordereauxLocal(); } catch (e) { console.warn('[Refresh] afficherListeBordereauxLocal:', e); }
+        }
+    }
+
+    // 3. Dashboard (seulement si visible)
+    const dashboardSection = document.getElementById('sectionDashboard');
+    if (dashboardSection && !dashboardSection.classList.contains('hidden')) {
+        if (typeof renderManagementDashboard === 'function') {
+            try { renderManagementDashboard(); } catch (e) { console.warn('[Refresh] renderManagementDashboard:', e); }
+        }
+    }
+
+    // 4. Checkout Today badge
+    if (typeof updateCheckoutTodayBadge === 'function') {
+        try { updateCheckoutTodayBadge(); } catch (e) { console.warn('[Refresh] updateCheckoutTodayBadge:', e); }
+    }
+
+    // 5. Admin Chat (seulement si visible)
+    const chatSection = document.getElementById('sectionAdminChat');
+    if (chatSection && !chatSection.classList.contains('hidden')) {
+        if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
+            try { window.AdminChat.refreshAll(); } catch (e) { console.warn('[Refresh] AdminChat:', e); }
+        }
+    }
+
+    console.log('✅ [Refresh] Terminé');
+}
+window.refreshAllViews = refreshAllViews;
 
 // ═══════════════════════════════════════════════════════════════════
 // ON NEW GUEST REQUEST RECEIVED
@@ -405,134 +451,6 @@ async function imprimerToutesLesChambresDuJour() {
     demanderConfirmationPinAdmin(() => {
         imprimerToutesLesChambresDuJourExécution();
     });
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ✅ BATCH PRINT V2 — Clone #pdfExportArea (design identique à la modale)
-// ═══════════════════════════════════════════════════════════════════
-async function imprimerToutesLesChambresDuJourExécution() {
-    chargerDonneesLocalStorage();
-    const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(cb => String(cb.dataset.id));
-
-    if (selectedIds.length === 0) {
-        alert("⚠️ No items selected for printing.");
-        return;
-    }
-
-    const slipsToPrint = cachedSlips.filter(s => selectedIds.includes(String(s.id)));
-    slipsToPrint.sort((a, b) => (parseInt(a.room_number || a.room) || 0) - (parseInt(b.room_number || b.room) || 0));
-
-    const batchContainer = document.getElementById('batchPrintContainer');
-    if (!batchContainer) {
-        alert("⚠️ Batch print container missing. Please contact IT.");
-        console.warn('[BatchPrint] #batchPrintContainer not found');
-        return;
-    }
-    batchContainer.innerHTML = '';
-
-    // 📌 Sauvegarde état modale actuelle
-    const detailModal = document.getElementById('detailModal');
-    const modalWasOpen = detailModal && !detailModal.classList.contains('hidden');
-    const previouslySelectedId = typeof selectedIdForModal !== 'undefined' ? selectedIdForModal : null;
-
-    // 🔄 POUR CHAQUE SLIP : ouvrir la modale → cloner #pdfExportArea
-    for (const entry of slipsToPrint) {
-
-        // 1. Ouvrir la modale (remplit #pdfExportArea avec le NOUVEAU design)
-        if (typeof ouvrirModalDetails === 'function') {
-            await ouvrirModalDetails(String(entry.id));
-            await new Promise(r => setTimeout(r, 150));
-        }
-
-        // 2. Récupérer la zone PDF
-        const pdfArea = document.getElementById('pdfExportArea');
-        if (!pdfArea) {
-            console.warn('[BatchPrint] #pdfExportArea not found for entry', entry.id);
-            continue;
-        }
-
-        // 3. Déterminer copies (H/F → 2 copies)
-        const serviceStyleText = entry.service_type || entry.options?.service_style || '';
-        const isHangerFolding = serviceStyleText.includes('H/F') || serviceStyleText.includes('Hanger');
-        const copiesToPrint = isHangerFolding
-            ? ['LAUNDRY COPY', 'GUEST / HANGER COPY']
-            : ['ORIGINAL'];
-
-        // 4. Cloner pour chaque copie
-        copiesToPrint.forEach(copyLabel => {
-
-            // Clone profond
-            const clone = pdfArea.cloneNode(true);
-
-            // Nettoyer les IDs + classes no-print + boutons
-            clone.removeAttribute('id');
-            clone.classList.add('pdf-export-area');
-            clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-            clone.querySelectorAll('.no-print').forEach(el => el.remove());
-            clone.querySelectorAll('button').forEach(el => el.remove());
-            clone.querySelectorAll('.receipt-close-btn').forEach(el => el.remove());
-
-            // Wrapper .printable-card (1 carte = 1 page A4)
-            const card = document.createElement('div');
-            card.className = 'printable-card';
-            card.style.cssText = `
-                padding: 8mm 10mm;
-                background: #ffffff !important;
-                color: #000000 !important;
-                box-sizing: border-box;
-                page-break-after: always;
-                break-after: page;
-                position: relative;
-            `;
-
-            // Badge copyLabel si H/F
-            if (isHangerFolding) {
-                const badge = document.createElement('div');
-                badge.className = 'batch-copy-badge';
-                badge.style.cssText = `
-                    position: absolute;
-                    top: 4mm;
-                    right: 10mm;
-                    background: #111827;
-                    color: #ffffff;
-                    font-size: 9px;
-                    font-weight: 800;
-                    padding: 3px 10px;
-                    border-radius: 6px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.08em;
-                    z-index: 10;
-                `;
-                badge.textContent = copyLabel;
-                card.appendChild(badge);
-            }
-
-            card.appendChild(clone);
-            batchContainer.appendChild(card);
-        });
-    }
-
-    // 📌 Restaurer état modale
-    if (modalWasOpen && previouslySelectedId) {
-        await ouvrirModalDetails(String(previouslySelectedId));
-    } else if (typeof fermerModal === 'function') {
-        fermerModal();
-    }
-
-    // 🖨️ Lancer l'impression
-    batchContainer.classList.remove('hidden');
-    document.body.classList.add('print-mode-batch');
-    document.body.classList.remove('print-mode-modal');
-
-    setTimeout(() => {
-        window.print();
-
-        setTimeout(() => {
-            batchContainer.classList.add('hidden');
-            batchContainer.innerHTML = '';
-            document.body.classList.remove('print-mode-batch');
-        }, 500);
-    }, 400);
 }
 
 async function telechargerToutesLesChambresDuJour() {
@@ -1142,110 +1060,11 @@ async function supprimerBordereauActuel() {
         }
 
         fermerModal();
-        chargerLiveOrders();
-        if(!document.getElementById('sectionPdfList').classList.contains('hidden')) {
-            afficherListeBordereauxLocal();
-        }
+        refreshAllViews();
         setTimeout(() => { isLocalUpdating = false; }, 1000);
     }
 }
-// ═══════════════════════════════════════════════════════════════════
-// 🎯 REFRESH ALL VISIBLE VIEWS
-// Rafraîchit intelligemment toutes les sections actuellement visibles
-// ═══════════════════════════════════════════════════════════════════
-function refreshAllViews() {
-    console.log('🔄 [Refresh] Mise à jour des vues visibles');
 
-    // ─── 1. Active Rooms (Live Orders) — toujours rafraîchi ───
-    if (typeof chargerLiveOrders === 'function') {
-        try { chargerLiveOrders(); } catch (e) { console.warn('[Refresh] chargerLiveOrders:', e); }
-    }
-
-    // ─── 2. Archives (seulement si visible) ───
-    const archivesSection = document.getElementById('sectionPdfList');
-    if (archivesSection && !archivesSection.classList.contains('hidden')) {
-        if (typeof afficherListeBordereauxLocal === 'function') {
-            try { afficherListeBordereauxLocal(); } catch (e) { console.warn('[Refresh] afficherListeBordereauxLocal:', e); }
-        }
-    }
-
-    // ─── 3. Dashboard (seulement si visible) ───
-    const dashboardSection = document.getElementById('sectionDashboard');
-    if (dashboardSection && !dashboardSection.classList.contains('hidden')) {
-        if (typeof renderManagementDashboard === 'function') {
-            try { renderManagementDashboard(); } catch (e) { console.warn('[Refresh] renderManagementDashboard:', e); }
-        }
-    }
-
-    // ─── 4. Checkout Today badge ───
-    if (typeof updateCheckoutTodayBadge === 'function') {
-        try { updateCheckoutTodayBadge(); } catch (e) { console.warn('[Refresh] updateCheckoutTodayBadge:', e); }
-    }
-
-    // ─── 5. Admin Chat (seulement si visible) ───
-    const chatSection = document.getElementById('sectionAdminChat');
-    if (chatSection && !chatSection.classList.contains('hidden')) {
-        if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
-            try { window.AdminChat.refreshAll(); } catch (e) { console.warn('[Refresh] AdminChat:', e); }
-        }
-    }
-
-    // ─── 6. Modale détails (si encore ouverte — resync) ───
-    const detailModal = document.getElementById('detailModal');
-    if (detailModal && !detailModal.classList.contains('hidden') && typeof selectedIdForModal !== 'undefined' && selectedIdForModal) {
-        if (typeof ouvrirModalDetails === 'function') {
-            try { ouvrirModalDetails(String(selectedIdForModal)); } catch (e) { console.warn('[Refresh] ouvrirModalDetails:', e); }
-        }
-    }
-
-    console.log('✅ [Refresh] Terminé');
-}
-
-window.refreshAllViews = refreshAllViews;
-// ═══════════════════════════════════════════════════════════════════
-// 🎯 REFRESH ALL VISIBLE VIEWS
-// Rafraîchit intelligemment toutes les sections actuellement visibles
-// ═══════════════════════════════════════════════════════════════════
-function refreshAllViews() {
-    console.log('🔄 [Refresh] Mise à jour des vues visibles');
-
-    // 1. Active Rooms (Live Orders) — toujours rafraîchi
-    if (typeof chargerLiveOrders === 'function') {
-        try { chargerLiveOrders(); } catch (e) { console.warn('[Refresh] chargerLiveOrders:', e); }
-    }
-
-    // 2. Archives (seulement si visible)
-    const archivesSection = document.getElementById('sectionPdfList');
-    if (archivesSection && !archivesSection.classList.contains('hidden')) {
-        if (typeof afficherListeBordereauxLocal === 'function') {
-            try { afficherListeBordereauxLocal(); } catch (e) { console.warn('[Refresh] afficherListeBordereauxLocal:', e); }
-        }
-    }
-
-    // 3. Dashboard (seulement si visible)
-    const dashboardSection = document.getElementById('sectionDashboard');
-    if (dashboardSection && !dashboardSection.classList.contains('hidden')) {
-        if (typeof renderManagementDashboard === 'function') {
-            try { renderManagementDashboard(); } catch (e) { console.warn('[Refresh] renderManagementDashboard:', e); }
-        }
-    }
-
-    // 4. Checkout Today badge
-    if (typeof updateCheckoutTodayBadge === 'function') {
-        try { updateCheckoutTodayBadge(); } catch (e) { console.warn('[Refresh] updateCheckoutTodayBadge:', e); }
-    }
-
-    // 5. Admin Chat (seulement si visible)
-    const chatSection = document.getElementById('sectionAdminChat');
-    if (chatSection && !chatSection.classList.contains('hidden')) {
-        if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
-            try { window.AdminChat.refreshAll(); } catch (e) { console.warn('[Refresh] AdminChat:', e); }
-        }
-    }
-
-    console.log('✅ [Refresh] Terminé');
-}
-window.refreshAllViews = refreshAllViews;
 // ═══════════════════════════════════════════════════════════════════
 // CHANGEMENT STATUT (individuel)
 // ═══════════════════════════════════════════════════════════════════
@@ -1290,12 +1109,13 @@ if (item) {
     item.updated_at = new Date().toISOString();
     sauvegarderDonneesLocalStorage();
 }
-  // 🎯 Refresh INTELLIGENT — seulement les vues visibles
-if (typeof fermerModal === 'function') fermerModal();
 
-refreshAllViews();
+    // 🎯 Refresh INTELLIGENT — seulement les vues visibles
+    if (typeof fermerModal === 'function') fermerModal();
+    
+    refreshAllViews();
 
-setTimeout(() => { isLocalUpdating = false; }, 800);
+    setTimeout(() => { isLocalUpdating = false; }, 800);
 }
 
 async function mettreAJourStatutCommande(requestId, nouveauStatut) {
@@ -1346,37 +1166,35 @@ for (const id of selectedIds) {
 
 sauvegarderDonneesLocalStorage();
 
-   refreshAllViews();
+    // 🎯 Refresh les vues IMMÉDIATEMENT
+    refreshAllViews();
 
-if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-    try {
-        const uuidBatch = selectedIds.filter(id => id.length === 36);
-        if (uuidBatch.length > 0) {
-            const { error } = await supabaseClient
-                .from('guest_laundry_requests')
-                .update({ status: nouveauStatut })
-                .in('id', uuidBatch);
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const uuidBatch = selectedIds.filter(id => id.length === 36);
+            if (uuidBatch.length > 0) {
+                const { error } = await supabaseClient
+                    .from('guest_laundry_requests')
+                    .update({ status: nouveauStatut })
+                    .in('id', uuidBatch);
 
-            if (error) {
-                console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
-                alert("⚠️ Supabase error: " + error.message);
-            } else {
-                console.log(`✅ [BatchStatus] ${uuidBatch.length} records → "${nouveauStatut}"`);
+                if (error) {
+                    console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
+                    alert("⚠️ Supabase error: " + error.message);
+                } else {
+                    console.log(`✅ [BatchStatus] ${uuidBatch.length} records → "${nouveauStatut}"`);
+                }
             }
+        } catch (err) {
+            console.error("❌ [BatchStatus] Exception:", err);
         }
-    } catch (err) {
-        console.error("❌ [BatchStatus] Exception:", err);
     }
+
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
+
+    showBatchStatusToast(nouveauStatut, selectedIds.length, previousStatuses);
 }
 
-// 🎯 FIX : On force le rafraîchissement de l'écran AVANT d'afficher le toast
-refreshAllViews();
-
-setTimeout(() => { isLocalUpdating = false; }, 1000);
-
-// Et on affiche le toast d'undo par dessus
-showBatchStatusToast(nouveauStatut, selectedIds.length, previousStatuses);
-    
 function showBatchStatusToast(nouveauStatut, count, previousStatuses) {
     const statusEmoji = {
         'Collected': '🧺',
@@ -1469,7 +1287,7 @@ async function executerBatchUndo(previousStatuses, toastElement) {
         }
     }
 
-    chargerLiveOrders();
+    refreshAllViews();
 
     if (toastElement && toastElement.parentNode) {
         toastElement.style.opacity = '0';
@@ -1536,7 +1354,7 @@ async function supprimerBordereauxEnLot() {
             console.error("Error updating local storage:", e);
         }
 
-        chargerLiveOrders();
+        refreshAllViews();
         setTimeout(() => { isLocalUpdating = false; }, 1000);
         alert(`✅ Successfully deleted ${selectedIds.length} record(s).`);
     });
