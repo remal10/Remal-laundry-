@@ -892,37 +892,45 @@
 
 <!-- MODALE — PRINT PREVIEW -->
 <div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white text-stone-900 w-full max-w-2xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
-        <div class="absolute top-4 right-4 flex gap-2 no-print">
+    <div class="bg-white text-stone-900 w-full max-w-4xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
+        <!-- Boutons d'action -->
+        <div class="absolute top-4 right-4 flex gap-2 no-print z-50">
             <button onclick="window.print()" class="bg-[#181614] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-800 transition"><i class="fas fa-print"></i> Print</button>
             <button onclick="document.getElementById('linenPrintModal').classList.add('hidden')" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-300 transition">Close</button>
         </div>
 
-        <div id="linenPrintArea" class="p-10">
-            <div class="text-center border-b-2 border-stone-200 pb-6 mb-6">
-                <h1 class="font-serif text-2xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
+        <!-- Le Sheet -->
+        <div id="linenPrintArea" class="p-10 sm:p-14">
+            <div class="text-center border-b-2 border-stone-200 pb-6 mb-8">
+                <h1 class="font-serif text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
                 <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
-                <h2 class="text-lg font-bold text-amber-700 mt-4 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
+                <h2 class="text-xl font-bold text-amber-700 mt-6 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
             </div>
 
-            <div class="flex justify-between text-sm font-bold mb-6">
+            <div class="flex justify-between text-sm font-bold mb-8">
                 <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
                 <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
             </div>
 
-            <table class="w-full border-collapse text-sm mb-8">
+            <table class="w-full border-collapse text-sm mb-16">
                 <thead>
                     <tr class="bg-stone-100 border-b-2 border-stone-300">
-                        <th class="p-3 text-left">Item Description</th>
-                        <th class="p-3 text-center w-24">Quantity</th>
+                        <th class="p-4 text-left">Item Description</th>
+                        <th class="p-4 text-center w-32">Quantity</th>
                     </tr>
                 </thead>
                 <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
             </table>
 
-            <div class="flex justify-between mt-16 text-xs text-stone-500">
-                <div class="text-center"><p class="mb-8">Laundry Signature</p><div class="w-32 border-b border-stone-400"></div></div>
-                <div class="text-center"><p class="mb-8">Housekeeping Signature</p><div class="w-32 border-b border-stone-400"></div></div>
+            <div class="flex justify-between mt-20 text-xs text-stone-500">
+                <div class="text-center w-48">
+                    <p class="mb-12">Laundry Signature</p>
+                    <div class="w-full border-b border-stone-400"></div>
+                </div>
+                <div class="text-center w-48">
+                    <p class="mb-12">Housekeeping Signature</p>
+                    <div class="w-full border-b border-stone-400"></div>
+                </div>
             </div>
         </div>
     </div>
