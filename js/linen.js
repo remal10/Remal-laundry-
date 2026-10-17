@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("🚀 [Linen] Form submitted");
             
             const type = document.getElementById('linenType').value;
             const location = document.getElementById('linenLocation').value;
@@ -55,26 +56,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
             const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
 
-            // 1. Sauvegarde Supabase
+            // 1. Sauvegarde Supabase (On ne bloque pas si erreur)
             if (window.supabaseClient) {
-                const { error } = await window.supabaseClient
-                    .from('linen_control_sheets')
-                    .insert([{
-                        type: type,
-                        location_number: location,
-                        pickup_date: date,
-                        items: items,
-                        created_by: staffName
-                    }]);
-                
-                if (error) {
-                    console.error(error);
-                    alert("⚠️ Supabase save failed (RLS issue): " + error.message + "\n\nThe sheet will still be generated, but not saved to the database.");
-                    // 🎯 On ne fait pas de return ici, on continue pour générer l'aperçu !
+                try {
+                    const { error } = await window.supabaseClient
+                        .from('linen_control_sheets')
+                        .insert([{
+                            type: type,
+                            location_number: location,
+                            pickup_date: date,
+                            items: items,
+                            created_by: staffName
+                        }]);
+                    
+                    if (error) {
+                        console.warn("⚠️ Supabase save warning (not blocking):", error.message);
+                    } else {
+                        console.log("✅ [Linen] Saved to Supabase");
+                    }
+                } catch (err) {
+                    console.error("❌ Supabase Exception:", err);
                 }
             }
 
+            // 2. FERMER LA MODALE DE SAISIE
             closeLinenSheetModal();
+
+            // 3. OUVRIR L'APERÇU D'IMPRESSION IMMÉDIATEMENT
+            console.log("🖨️ [Linen] Opening Print Preview...");
             showLinenPrintPreview(type, location, date, items);
         });
     }
@@ -99,7 +108,11 @@ function showLinenPrintPreview(type, location, date, items) {
     }
     document.getElementById('printTableBody').innerHTML = rows;
 
-    document.getElementById('linenPrintModal').classList.remove('hidden');
+    // 🎯 FORCER L'AFFICHAGE (comme pour la modale de saisie)
+    const printModal = document.getElementById('linenPrintModal');
+    printModal.classList.remove('hidden');
+    printModal.style.setProperty('display', 'flex', 'important');
+    
     loadRecentLinenSheets();
 }
 
@@ -128,20 +141,8 @@ async function loadRecentLinenSheets() {
                     <span class="font-bold text-[#DCA773] uppercase">${sheet.type} - ${sheet.location_number}</span>
                     <div class="text-[10px] text-stone-500 mt-1">Pickup: ${date}</div>
                 </div>
-                <span class="bg-amber-950 text-amber-200 px-2 py-1 rounded font-bold text-[9px] uppercase">${sheet.status}</span>
+                <span class="bg-amber-950 text-amber-200 px-2 py-1 rounded font-bold text-[9px] uppercase">${sheet.status || 'washing'}</span>
             </div>
         `;
     }).join('');
 }
-
-const originalSwitch = window.switchMainSection;
-window.switchMainSection = function(sectionName) {
-    if (sectionName === 'linenControl') {
-        setTimeout(() => {
-            loadRecentLinenSheets();
-        }, 100);
-    }
-    if (typeof originalSwitch === 'function') {
-        originalSwitch.apply(this, arguments);
-    }
-};
