@@ -889,51 +889,7 @@
     </div>
 </div>
 
-<!-- MODALE — LINEN SHEET (Input) -->
-<div id="linenSheetModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 99999 !important;"> <div class="bg-[#181614] border border-[#2f2820] w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 my-8 relative">
-        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
-            <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773] uppercase tracking-widest flex items-center gap-2">
-                <i class="fas fa-file-invoice"></i> <span id="linenModalTitle">New Linen Sheet</span>
-            </h3>
-            <button onclick="closeLinenSheetModal()" class="text-stone-400 hover:text-stone-200 text-xl font-bold">✕</button>
-        </div>
 
-        <form id="linenForm" class="space-y-4">
-            <input type="hidden" id="linenType" value="">
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
-                    <input type="text" id="linenLocation" required placeholder="e.g., 15" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Pickup Date *</label>
-                    <input type="date" id="linenDate" required class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-                </div>
-            </div>
-
-            <div class="bg-[#0f0e0c] rounded-xl border border-[#2f2820] p-4 space-y-3">
-                <p class="text-[10px] font-bold text-[#DCA773] uppercase tracking-wider mb-2">Items & Quantities</p>
-                
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Bedsheets</span><input type="number" id="item_bedsheets" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Duvet Cover</span><input type="number" id="item_duvet" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Pillow covers</span><input type="number" id="item_pillow" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Bath towels</span><input type="number" id="item_bathtowel" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Hand Towels</span><input type="number" id="item_handtowel" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Face Towels</span><input type="number" id="item_face" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Bath Mats</span><input type="number" id="item_bathmat" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Bath Robes</span><input type="number" id="item_robe" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                    <div class="flex items-center justify-between"><span class="text-stone-300">Dusters</span><input type="number" id="item_duster" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
-                </div>
-            </div>
-
-            <button type="submit" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow transition">
-                💾 Save & Generate Sheet
-            </button>
-        </form>
-    </div>
-</div>
 <!-- MODALE — PRINT PREVIEW -->
 <div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white text-stone-900 w-full max-w-2xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
@@ -1802,7 +1758,51 @@
 <script src="js/guesthub-integration.js"></script>
 <script src="js/chat-admin.js"></script>
 <script src="js/linen.js"></script>
-    
+ <!-- MODALE — LINEN SHEET (Input) -->
+<div id="linenSheetModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 99999 !important;"> <div class="bg-[#181614] border border-[#2f2820] w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 my-8 relative">
+        <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
+            <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773] uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-file-invoice"></i> <span id="linenModalTitle">New Linen Sheet</span>
+            </h3>
+            <button onclick="closeLinenSheetModal()" class="text-stone-400 hover:text-stone-200 text-xl font-bold">✕</button>
+        </div>
+
+        <form id="linenForm" class="space-y-4">
+            <input type="hidden" id="linenType" value="">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
+                    <input type="text" id="linenLocation" required placeholder="e.g., 15" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Pickup Date *</label>
+                    <input type="date" id="linenDate" required class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+                </div>
+            </div>
+
+            <div class="bg-[#0f0e0c] rounded-xl border border-[#2f2820] p-4 space-y-3">
+                <p class="text-[10px] font-bold text-[#DCA773] uppercase tracking-wider mb-2">Items & Quantities</p>
+                
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Bedsheets</span><input type="number" id="item_bedsheets" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Duvet Cover</span><input type="number" id="item_duvet" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Pillow covers</span><input type="number" id="item_pillow" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Bath towels</span><input type="number" id="item_bathtowel" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Hand Towels</span><input type="number" id="item_handtowel" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Face Towels</span><input type="number" id="item_face" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Bath Mats</span><input type="number" id="item_bathmat" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Bath Robes</span><input type="number" id="item_robe" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                    <div class="flex items-center justify-between"><span class="text-stone-300">Dusters</span><input type="number" id="item_duster" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow transition">
+                💾 Save & Generate Sheet
+            </button>
+        </form>
+    </div>
+</div>   
 <!-- ═══ PWA SERVICE WORKER ═══ -->
 <script>
 if ('serviceWorker' in navigator) {
@@ -1844,14 +1844,6 @@ window.__adminChatSend = async function () {
         alert('Could not send message. Please retry.');
     }
 };
-<script>
-    // 🎯 FIX : Déplacer la modale directement dans le body
-    document.addEventListener('DOMContentLoaded', () => {
-        const linenModal = document.getElementById('linenSheetModal');
-        if (linenModal) {
-            document.body.appendChild(linenModal);
-        }
-    });
 </script>
 </body>
 </html>
