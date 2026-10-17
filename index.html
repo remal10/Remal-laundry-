@@ -850,91 +850,89 @@
     </div>
 
     <!-- SECTION: LINEN CONTROL -->
-<div id="sectionLinenControl" class="hidden space-y-6 no-print">
-    <div class="max-w-6xl mx-auto space-y-6">
-        <div class="text-center mb-8">
-            <h2 class="text-2xl font-serif-luxury font-bold text-[#DCA773] tracking-wider flex items-center justify-center gap-3">
-                <i class="fas fa-layer-group"></i> Linen Control Center
-            </h2>
-            <p class="text-xs text-stone-400 mt-2">Manage laundry sheets and tracking for Hotel and Villas</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- CARTE HOTEL -->
-            <div onclick="openLinenSheetModal('hotel')" class="remal-card p-8 rounded-3xl cursor-pointer hover:border-[#DCA773] transition-all group relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
-                <div class="absolute inset-0 bg-gradient-to-br from-[#DCA773]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <i class="fas fa-building text-5xl text-stone-600 group-hover:text-[#DCA773] transition-colors mb-4"></i>
-                <h3 class="text-xl font-bold text-stone-200 group-hover:text-[#DCA773] transition-colors">Hotel Rooms</h3>
-                <p class="text-xs text-stone-500 mt-2">Sheets for Floors & Rooms</p>
-                <button class="mt-6 bg-[#181614] border border-[#2f2820] text-[#DCA773] px-6 py-2 rounded-xl text-xs font-bold group-hover:bg-[#DCA773] group-hover:text-stone-950 transition-all">Create Hotel Sheet</button>
+    <div id="sectionLinenControl" class="hidden space-y-6 no-print p-4 sm:p-6">
+        <div class="max-w-6xl mx-auto space-y-6">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-serif-luxury font-bold text-[#DCA773] tracking-wider flex items-center justify-center gap-3">
+                    <i class="fas fa-layer-group"></i> Linen Control Center
+                </h2>
+                <p class="text-xs text-stone-400 mt-2">Manage laundry sheets and tracking for Hotel and Villas</p>
             </div>
 
-            <!-- CARTE VILLA -->
-            <div onclick="openLinenSheetModal('villa')" class="remal-card p-8 rounded-3xl cursor-pointer hover:border-[#DCA773] transition-all group relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
-                <div class="absolute inset-0 bg-gradient-to-br from-[#DCA773]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <i class="fas fa-house-chimney text-5xl text-stone-600 group-hover:text-[#DCA773] transition-colors mb-4"></i>
-                <h3 class="text-xl font-bold text-stone-200 group-hover:text-[#DCA773] transition-colors">Villas</h3>
-                <p class="text-xs text-stone-500 mt-2">Sheets for private villas</p>
-                <button class="mt-6 bg-[#181614] border border-[#2f2820] text-[#DCA773] px-6 py-2 rounded-xl text-xs font-bold group-hover:bg-[#DCA773] group-hover:text-stone-950 transition-all">Create Villa Sheet</button>
-            </div>
-        </div>
-        
-        <!-- Historique rapide -->
-        <div class="remal-card p-6 rounded-3xl mt-8">
-            <h3 class="text-sm font-bold text-[#DCA773] uppercase tracking-wider mb-4 border-b border-[#2f2820] pb-2">Recent Sheets</h3>
-            <div id="recentLinenSheets" class="space-y-2">
-                <p class="text-xs text-stone-500 text-center py-4">Loading history...</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- MODALE — PRINT PREVIEW -->
-<div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white text-stone-900 w-full max-w-4xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
-        <!-- Boutons d'action -->
-        <div class="absolute top-4 right-4 flex gap-2 no-print z-50">
-            <button onclick="window.print()" class="bg-[#181614] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-800 transition"><i class="fas fa-print"></i> Print</button>
-            <button onclick="document.getElementById('linenPrintModal').classList.add('hidden')" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-300 transition">Close</button>
-        </div>
-
-        <!-- Le Sheet -->
-        <div id="linenPrintArea" class="p-10 sm:p-14">
-            <div class="text-center border-b-2 border-stone-200 pb-6 mb-8">
-                <h1 class="font-serif text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
-                <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
-                <h2 class="text-xl font-bold text-amber-700 mt-6 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
-            </div>
-
-            <div class="flex justify-between text-sm font-bold mb-8">
-                <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
-                <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
-            </div>
-
-            <table class="w-full border-collapse text-sm mb-16">
-                <thead>
-                    <tr class="bg-stone-100 border-b-2 border-stone-300">
-                        <th class="p-4 text-left">Item Description</th>
-                        <th class="p-4 text-center w-32">Quantity</th>
-                    </tr>
-                </thead>
-                <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
-            </table>
-
-            <div class="flex justify-between mt-20 text-xs text-stone-500">
-                <div class="text-center w-48">
-                    <p class="mb-12">Laundry Signature</p>
-                    <div class="w-full border-b border-stone-400"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- CARTE HOTEL -->
+                <div onclick="openLinenSheetModal('hotel')" class="remal-card p-8 rounded-3xl cursor-pointer hover:border-[#DCA773] transition-all group relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#DCA773]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="fas fa-building text-5xl text-stone-600 group-hover:text-[#DCA773] transition-colors mb-4"></i>
+                    <h3 class="text-xl font-bold text-stone-200 group-hover:text-[#DCA773] transition-colors">Hotel Rooms</h3>
+                    <p class="text-xs text-stone-500 mt-2">Sheets for Floors & Rooms</p>
+                    <button class="mt-6 bg-[#181614] border border-[#2f2820] text-[#DCA773] px-6 py-2 rounded-xl text-xs font-bold group-hover:bg-[#DCA773] group-hover:text-stone-950 transition-all">Create Hotel Sheet</button>
                 </div>
-                <div class="text-center w-48">
-                    <p class="mb-12">Housekeeping Signature</p>
-                    <div class="w-full border-b border-stone-400"></div>
+
+                <!-- CARTE VILLA -->
+                <div onclick="openLinenSheetModal('villa')" class="remal-card p-8 rounded-3xl cursor-pointer hover:border-[#DCA773] transition-all group relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#DCA773]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="fas fa-house-chimney text-5xl text-stone-600 group-hover:text-[#DCA773] transition-colors mb-4"></i>
+                    <h3 class="text-xl font-bold text-stone-200 group-hover:text-[#DCA773] transition-colors">Villas</h3>
+                    <p class="text-xs text-stone-500 mt-2">Sheets for private villas</p>
+                    <button class="mt-6 bg-[#181614] border border-[#2f2820] text-[#DCA773] px-6 py-2 rounded-xl text-xs font-bold group-hover:bg-[#DCA773] group-hover:text-stone-950 transition-all">Create Villa Sheet</button>
+                </div>
+            </div>
+            
+            <!-- Historique rapide -->
+            <div class="remal-card p-6 rounded-3xl mt-8">
+                <h3 class="text-sm font-bold text-[#DCA773] uppercase tracking-wider mb-4 border-b border-[#2f2820] pb-2">Recent Sheets</h3>
+                <div id="recentLinenSheets" class="space-y-2">
+                    <p class="text-xs text-stone-500 text-center py-4">Loading history...</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- MODALE — PRINT PREVIEW -->
+    <div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white text-stone-900 w-full max-w-4xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
+            <div class="absolute top-4 right-4 flex gap-2 no-print z-50">
+                <button onclick="window.print()" class="bg-[#181614] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-800 transition"><i class="fas fa-print"></i> Print</button>
+                <button onclick="document.getElementById('linenPrintModal').classList.add('hidden')" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-300 transition">Close</button>
+            </div>
+
+            <div id="linenPrintArea" class="p-10 sm:p-14">
+                <div class="text-center border-b-2 border-stone-200 pb-6 mb-8">
+                    <h1 class="font-serif text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
+                    <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
+                    <h2 class="text-xl font-bold text-amber-700 mt-6 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
+                </div>
+
+                <div class="flex justify-between text-sm font-bold mb-8">
+                    <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
+                    <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
+                </div>
+
+                <table class="w-full border-collapse text-sm mb-16">
+                    <thead>
+                        <tr class="bg-stone-100 border-b-2 border-stone-300">
+                            <th class="p-4 text-left">Item Description</th>
+                            <th class="p-4 text-center w-32">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
+                </table>
+
+                <div class="flex justify-between mt-20 text-xs text-stone-500">
+                    <div class="text-center w-48">
+                        <p class="mb-12">Laundry Signature</p>
+                        <div class="w-full border-b border-stone-400"></div>
+                    </div>
+                    <div class="text-center w-48">
+                        <p class="mb-12">Housekeeping Signature</p>
+                        <div class="w-full border-b border-stone-400"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SECTION: DASHBOARD -->
     <div id="sectionDashboard" class="hidden space-y-6 no-print">
         <div class="remal-card p-6 sm:p-8 rounded-3xl space-y-6 max-w-6xl mx-auto">
@@ -1743,36 +1741,19 @@
      🖨️ BATCH PRINT CONTAINER — Hidden container used by window.print()
      ═══════════════════════════════════════════════════════════════════ -->
 <div id="batchPrintContainer" class="hidden"></div>
-<!-- ═══ LIBRARIES ═══ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- ═══ SCRIPTS ═══ -->
-<script src="js/config.js"></script>
-<script src="js/laundry.js"></script>
-<script src="js/realtime-listener.js"></script>
-<script src="js/ui-core.js"></script>
-<script src="js/ui-forms.js"></script>
-<script src="js/ui-live.js"></script>
-<script src="js/ui-modules.js"></script>
-<script src="js/batch-print.js"></script>
-<script src="js/checkout.js"></script>
-<script src="js/stock.js"></script>
-<script src="js/ui-shortcuts.js"></script>
-<script src="js/sound-alerts.js"></script>
-<script src="security-guard.js"></script>
-<script src="js/guesthub-integration.js"></script>
-<script src="js/chat-admin.js"></script>
-<script src="js/linen.js"></script>
- <!-- MODALE — LINEN SHEET (Input) -->
-<div id="linenSheetModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 99999 !important;"> <div class="bg-[#181614] border border-[#2f2820] w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 my-8 relative">
+<!-- ═══════════════════════════════════════════════════════════════════
+     🧺 MODAL — LINEN SHEET (Input)
+     Placée tout en bas pour garantir le z-index
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="linenSheetModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 999999 !important;">
+    <div class="bg-[#181614] border border-[#2f2820] w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 my-8 relative">
+        
         <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
             <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773] uppercase tracking-widest flex items-center gap-2">
                 <i class="fas fa-file-invoice"></i> <span id="linenModalTitle">New Linen Sheet</span>
             </h3>
-            <button onclick="closeLinenSheetModal()" class="text-stone-400 hover:text-stone-200 text-xl font-bold">✕</button>
+            <button type="button" onclick="closeLinenSheetModal()" class="text-stone-400 hover:text-stone-200 text-xl font-bold">✕</button>
         </div>
 
         <form id="linenForm" class="space-y-4">
@@ -1810,7 +1791,32 @@
             </button>
         </form>
     </div>
-</div>   
+</div>
+
+<!-- ═══ LIBRARIES ═══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="js/config.js"></script>
+<script src="js/laundry.js"></script>
+<script src="js/realtime-listener.js"></script>
+<script src="js/ui-core.js"></script>
+<script src="js/ui-forms.js"></script>
+<script src="js/ui-live.js"></script>
+<script src="js/ui-modules.js"></script>
+<script src="js/batch-print.js"></script>
+<script src="js/checkout.js"></script>
+<script src="js/stock.js"></script>
+<script src="js/ui-shortcuts.js"></script>
+<script src="js/sound-alerts.js"></script>
+<script src="security-guard.js"></script>
+<script src="js/guesthub-integration.js"></script>
+<script src="js/chat-admin.js"></script>
+<script src="js/linen.js"></script>
+
 <!-- ═══ PWA SERVICE WORKER ═══ -->
 <script>
 if ('serviceWorker' in navigator) {
