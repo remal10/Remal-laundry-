@@ -1349,31 +1349,34 @@ sauvegarderDonneesLocalStorage();
    refreshAllViews();
 
 if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            const uuidBatch = selectedIds.filter(id => id.length === 36);
-            if (uuidBatch.length > 0) {
-                const { error } = await supabaseClient
-                    .from('guest_laundry_requests')
-                    .update({ status: nouveauStatut })
-                    .in('id', uuidBatch);
+    try {
+        const uuidBatch = selectedIds.filter(id => id.length === 36);
+        if (uuidBatch.length > 0) {
+            const { error } = await supabaseClient
+                .from('guest_laundry_requests')
+                .update({ status: nouveauStatut })
+                .in('id', uuidBatch);
 
-                if (error) {
-                    console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
-                    alert("⚠️ Supabase error: " + error.message);
-                } else {
-                    console.log(`✅ [BatchStatus] ${uuidBatch.length} records → "${nouveauStatut}"`);
-                }
+            if (error) {
+                console.error("❌ [BatchStatus] Erreur Supabase:", error.message);
+                alert("⚠️ Supabase error: " + error.message);
+            } else {
+                console.log(`✅ [BatchStatus] ${uuidBatch.length} records → "${nouveauStatut}"`);
             }
-        } catch (err) {
-            console.error("❌ [BatchStatus] Exception:", err);
         }
+    } catch (err) {
+        console.error("❌ [BatchStatus] Exception:", err);
     }
-
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
-
-    showBatchStatusToast(nouveauStatut, selectedIds.length, previousStatuses);
 }
 
+// 🎯 FIX : On force le rafraîchissement de l'écran AVANT d'afficher le toast
+refreshAllViews();
+
+setTimeout(() => { isLocalUpdating = false; }, 1000);
+
+// Et on affiche le toast d'undo par dessus
+showBatchStatusToast(nouveauStatut, selectedIds.length, previousStatuses);
+    
 function showBatchStatusToast(nouveauStatut, count, previousStatuses) {
     const statusEmoji = {
         'Collected': '🧺',
