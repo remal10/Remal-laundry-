@@ -155,10 +155,16 @@
         <span>Language</span>
         <span class="menu-lang-badge" id="menuLangBadge">EN</span>
     </button>
-    <button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-    </button>
+<!-- BOUTON ADMIN : Mass PDF -->
+<button class="staff-mobile-menu-item" data-admin-only="true" onclick="switchMainSection('massEntry'); closeStaffMobileMenu();">
+    <i class="fas fa-file-import"></i>
+    <span>Mass PDF Import</span>
+</button>
+
+<button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Logout</span>
+</button>
 </div>
 
 <!-- ═══ PMS LAST SYNC BANNER ═══ -->
