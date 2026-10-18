@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v16 IFrame - PERFECT)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v17 FINAL PRINT)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -88,7 +88,7 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. BOUTON PRINT
+// 3. BOUTON PRINT (Direct)
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
     document.body.classList.add('printing-linen');
@@ -97,97 +97,49 @@ function printLinenSheet() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. BOUTON PDF (Méthode de l'Iframe Invisible)
+// 4. BOUTON PDF (Méthode propre via nouvel onglet)
 // ═══════════════════════════════════════════════════════════════════
-async function downloadLinenSheetPDF() {
-    console.log("📥 Génération du PDF via Iframe invisible...");
+function downloadLinenSheetPDF() {
     const printArea = document.getElementById('linenPrintArea');
-    if (!printArea) return alert('⚠️ Contenu introuvable.');
-    if (typeof html2pdf === 'undefined') return alert('⚠️ html2pdf non chargé.');
+    const modal = document.getElementById('linenPrintModal');
+    if (!printArea || !modal) return alert('⚠️ Contenu introuvable.');
 
-    const type = (document.getElementById('printTitle')?.innerText || 'linen')
-        .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
-    const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
-    const datePart = new Date().toISOString().split('T')[0];
-    const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
-
-    const btn = document.querySelector('button[onclick="downloadLinenSheetPDF()"]');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    // On ouvre un nouvel onglet vide
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        return alert("⚠️ Veuillez autoriser les pop-ups pour générer le PDF.");
     }
 
-    // 1. Création d'un iframe invisible (un mini-navigateur dans la page)
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position: fixed; left: 0; top: 0; width: 800px; height: 1200px; opacity: 0; pointer-events: none; z-index: -9999;';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentWindow.document;
-    
-    // 2. On copie tout le code de ta page (pour avoir Tailwind et les polices)
+    // On récupère tout le code de la page (pour Tailwind et les polices)
     const headHTML = document.head.innerHTML;
 
-    // 3. On écrit la page propre à l'intérieur de l'iframe
-    iframeDoc.open();
-    iframeDoc.write(`
+    // On écrit la feuille seule dans le nouvel onglet
+    printWindow.document.write(`
         <!DOCTYPE html>
         <html>
             <head>
                 ${headHTML}
+                <title>REMAL Linen</title>
                 <style>
-                    /* On force une largeur A4 et on colle tout à gauche */
-                    body, html { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
-                    #pdf-content { 
-                        width: 794px !important; 
-                        padding: 40px !important; 
-                        margin: 0 !important; 
-                        box-sizing: border-box; 
-                    }
+                    body { background: #fff !important; margin: 0; padding: 20px; }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    @page { size: A4 portrait; margin: 10mm; }
                 </style>
             </head>
             <body>
-                <div id="pdf-content">
-                    ${printArea.innerHTML}
-                </div>
+                ${printArea.outerHTML}
             </body>
         </html>
     `);
-    iframeDoc.close();
+    printWindow.document.close();
 
-    // 4. Attente que les images chargent
-    await new Promise(r => setTimeout(r, 800));
-
-    // 5. On cible notre contenu
-    const elementToPrint = iframeDoc.getElementById('pdf-content');
-
-    const opt = {
-        margin: [10, 10, 10, 10],
-        filename: filename,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            windowWidth: 794,
-            scrollX: 0,
-            scrollY: 0
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    // On attend que le logo charge, puis on lance l'impression
+    printWindow.onload = () => {
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+        }, 500);
     };
-
-    try {
-        await html2pdf().set(opt).from(elementToPrint).save();
-    } catch (err) {
-        console.error('❌ Erreur PDF:', err);
-        alert('⚠️ Impossible de générer le PDF.');
-    } finally {
-        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>';
-        }
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
