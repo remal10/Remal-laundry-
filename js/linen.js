@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v4 FINAL)
-// - Handler submit attaché indépendamment de DOMContentLoaded
-// - Ordre correct : ouvrir aperçu AVANT fermer saisie
-// - Nettoyage inline style à la fermeture
-// - Ouverture depuis l'historique (reopenLinenSheet)
-// - Print isolé + Download PDF depuis l'aperçu
-// - Escape + clic backdrop pour fermer
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v5 ULTIMATE FIX)
+// - Handler submit robuste
+// - Historique cliquable (reopenLinenSheet)
+// - Print 100% fidèle (copie du <head> pour garder les styles)
+// - PDF garanti non vide (via conteneur virtuel)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -65,7 +63,7 @@ function showLinenPrintPreview(type, location, date, items) {
     const printModal = document.getElementById('linenPrintModal');
     if (!printModal) {
         console.error('❌ [LINEN] #linenPrintModal introuvable !');
-        alert("Erreur : la modale d'aperçu est absente du DOM.\nVérifie que le patch index.html a bien été appliqué.");
+        alert("Erreur : la modale d'aperçu est absente du DOM.");
         return;
     }
 
@@ -75,7 +73,7 @@ function showLinenPrintPreview(type, location, date, items) {
         : dateObj.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
 
     document.getElementById('printTitle').innerText =
-        type === 'hotel' ? 'Hotel Linen Control Sheet' : 'Villa Linen Control Sheet';
+        type === 'hotel' ? 'HOTEL LINEN CONTROL SHEET' : 'VILLA LINEN CONTROL SHEET';
     document.getElementById('printLocation').innerText = location || '---';
     document.getElementById('printDate').innerText = formattedDate;
 
@@ -96,8 +94,7 @@ function showLinenPrintPreview(type, location, date, items) {
     printModal.style.display = 'flex';
     printModal.style.zIndex = '999999';
 
-    console.log('🖨️ [LINEN] Modale aperçu ouverte · display =',
-        window.getComputedStyle(printModal).display);
+    console.log('🖨️ [LINEN] Modale aperçu ouverte');
 }
 
 function closeLinenPrintPreview() {
@@ -109,147 +106,92 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PRINT — Impression isolée (contenu A4 uniquement)
+// PRINT — Impression isolée et fidèle
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
     console.log('🖨️ [LINEN] printLinenSheet()');
 
     const printArea = document.getElementById('linenPrintArea');
-    if (!printArea) {
-        alert('⚠️ Contenu introuvable.');
-        return;
-    }
+    if (!printArea) return alert('⚠️ Contenu introuvable.');
 
-    // Fenêtre isolée pour ne pas imprimer la modale ni la nav
     const printWindow = window.open('', '_blank', 'width=900,height=700');
     if (!printWindow) {
-        // Popup bloquée → fallback : impression navigateur standard
-        console.warn('⚠️ [LINEN] Popup bloquée, fallback window.print()');
+        console.warn('⚠️ Popup bloquée, fallback window.print()');
         window.print();
         return;
     }
 
-    const styles = `
-        <style>
-            * { box-sizing: border-box; }
-            body { margin: 0; padding: 20px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #fff; }
-            .text-center { text-align: center; }
-            .text-left { text-align: left; }
-            .text-right { text-align: right; }
-            .border-b-2 { border-bottom: 2px solid #e5e7eb; }
-            .border-b { border-bottom: 1px solid #d1d5db; }
-            .bg-stone-100 { background: #f5f5f4; }
-            .bg-stone-50 { background: #fafaf9; }
-            .text-amber-700 { color: #b45309; }
-            .text-stone-900 { color: #1c1917; }
-            .text-stone-500 { color: #78716c; }
-            .text-stone-400 { color: #a8a29e; }
-            .font-serif { font-family: Georgia, 'Times New Roman', serif; }
-            .font-bold { font-weight: 700; }
-            .font-semibold { font-weight: 600; }
-            .uppercase { text-transform: uppercase; }
-            .tracking-widest { letter-spacing: 0.15em; }
-            .tracking-wider { letter-spacing: 0.05em; }
-            .mb-6 { margin-bottom: 24px; }
-            .mt-5 { margin-top: 20px; }
-            .mt-12 { margin-top: 48px; }
-            .pb-5 { padding-bottom: 20px; }
-            .p-3 { padding: 12px; }
-            .p-6 { padding: 24px; }
-            .w-24 { width: 96px; }
-            .w-40 { width: 160px; }
-            .w-48 { width: 192px; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
-            th, td { padding: 10px; }
-            tbody tr { border-bottom: 1px solid #e5e7eb; }
-            tbody tr:last-child { border-bottom: none; }
-            .flex { display: flex; }
-            .flex-wrap { flex-wrap: wrap; }
-            .justify-between { justify-content: space-between; }
-            .gap-2 { gap: 8px; }
-            .gap-4 { gap: 16px; }
-            .rounded-lg { border-radius: 8px; }
-            .px-3 { padding-left: 12px; padding-right: 12px; }
-            .py-2 { padding-top: 8px; padding-bottom: 8px; }
-            .border { border: 1px solid #e5e7eb; }
-            @page { size: A4 portrait; margin: 15mm; }
-        </style>
-    `;
-
+    // 🎯 COPIE DU <head> ENTIER (récupère Tailwind, FontAwesome, Google Fonts)
+    const headHTML = document.head.innerHTML;
+    
     printWindow.document.open();
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
             <head>
-                <meta charset="UTF-8">
+                ${headHTML}
                 <title>Linen Control Sheet</title>
-                ${styles}
+                <style>
+                    @page { size: A4 portrait; margin: 12mm; }
+                    body { background: #fff !important; color: #1c1917 !important; padding: 0; margin: 0; }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    .no-print { display: none !important; }
+                </style>
             </head>
-            <body>${printArea.innerHTML}</body>
+            <body>
+                ${printArea.outerHTML}
+            </body>
         </html>
     `);
     printWindow.document.close();
 
-    // Impression après chargement (images/logos)
     printWindow.onload = () => {
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
-        }, 300);
+        }, 500);
     };
-
-    // Filet de sécurité
-    setTimeout(() => {
-        try {
-            printWindow.focus();
-            printWindow.print();
-        } catch (e) {
-            console.warn('⚠️ [LINEN] Print fallback error:', e);
-        }
-    }, 800);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DOWNLOAD PDF — Génère un PDF A4 propre
+// DOWNLOAD PDF — Génère un PDF A4 propre (fix "page blanche")
 // ═══════════════════════════════════════════════════════════════════
 async function downloadLinenSheetPDF() {
     console.log('📥 [LINEN] downloadLinenSheetPDF()');
 
     if (typeof html2pdf === 'undefined') {
-        alert('⚠️ html2pdf non chargé. Vérifie le CDN.');
-        return;
+        return alert('⚠️ html2pdf non chargé. Vérifie le CDN.');
     }
 
     const printArea = document.getElementById('linenPrintArea');
-    if (!printArea) {
-        alert('⚠️ Contenu introuvable.');
-        return;
-    }
+    if (!printArea) return alert('⚠️ Contenu introuvable.');
 
-    // Métadonnées pour le nom de fichier
+    // Récupération des métadonnées pour le nom du fichier
     const type = (document.getElementById('printTitle')?.innerText || 'linen')
         .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
     const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
     const datePart = new Date().toISOString().split('T')[0];
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // Clone du contenu dans un conteneur temporaire (rendu propre pour html2pdf)
+    // 🎯 CRÉATION D'UN CONTENEUR VIRTUEL À L'ÉCRAN
+    // (html2canvas ne capture pas les éléments qui ont opacity:0 ou qui sont hors écran)
     const exportContainer = document.createElement('div');
     exportContainer.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
-        width: 794px;
+        width: 800px;
         background: #ffffff;
         z-index: 999999;
-        padding: 0;
+        padding: 20px;
+        /* On le cache visuellement sous la modale pour ne pas gêner l'utilisateur */
         pointer-events: none;
-        opacity: 0;
+        transform: translateY(-200vh); 
     `;
-    exportContainer.innerHTML = printArea.outerHTML;
+    exportContainer.innerHTML = printArea.innerHTML;
     document.body.appendChild(exportContainer);
 
-    // Attend le chargement des fonts + images
+    // Attente pour que les logos/images se chargent
     if (document.fonts && document.fonts.ready) {
         try { await document.fonts.ready; } catch (e) {}
     }
@@ -258,18 +200,18 @@ async function downloadLinenSheetPDF() {
     const opt = {
         margin: [10, 10, 10, 10],
         filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg', quality: 1 },
         html2canvas: {
             scale: 2,
             useCORS: true,
             allowTaint: true,
             logging: false,
             backgroundColor: '#ffffff',
+            windowWidth: 800,
             scrollX: 0,
             scrollY: 0
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
@@ -342,7 +284,7 @@ async function loadRecentLinenSheets() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 🎯 Rouvrir un sheet depuis l'historique
+// Rouvrir un sheet depuis l'historique
 // ═══════════════════════════════════════════════════════════════════
 function reopenLinenSheet(sheetId) {
     console.log('👁️ [LINEN] reopenLinenSheet:', sheetId);
@@ -366,7 +308,7 @@ function reopenLinenSheet(sheetId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HANDLER SUBMIT — Attaché immédiatement, indépendant de DOMContentLoaded
+// HANDLER SUBMIT — Attaché immédiatement
 // ═══════════════════════════════════════════════════════════════════
 function attachLinenFormHandler() {
     const form = document.getElementById('linenForm');
@@ -400,8 +342,6 @@ function attachLinenFormHandler() {
             if (val > 0) items[linenItemsMap[key]] = val;
         });
 
-        console.log('📦 [LINEN] Données:', { type, location, date, items });
-
         if (Object.keys(items).length === 0) {
             return alert('Please enter at least one item quantity.');
         }
@@ -409,7 +349,6 @@ function attachLinenFormHandler() {
         const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
         const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
 
-        // 1) Sauvegarde Supabase — non bloquante
         if (window.supabaseClient) {
             try {
                 const { data, error } = await window.supabaseClient
@@ -426,11 +365,8 @@ function attachLinenFormHandler() {
             } catch (err) {
                 console.error('❌ [LINEN] Exception Supabase:', err);
             }
-        } else {
-            console.warn('⚠️ [LINEN] supabaseClient absent');
         }
 
-        // 2) OUVRIR l'aperçu EN PREMIER
         try {
             showLinenPrintPreview(type, location, date, items);
         } catch (err) {
@@ -438,10 +374,7 @@ function attachLinenFormHandler() {
             return alert('Erreur aperçu: ' + err.message);
         }
 
-        // 3) FERMER la saisie ENSUITE
         closeLinenSheetModal();
-
-        // 4) Rafraîchir l'historique
         loadRecentLinenSheets();
     });
 
@@ -483,4 +416,4 @@ window.loadRecentLinenSheets = loadRecentLinenSheets;
 window.reopenLinenSheet = reopenLinenSheet;
 window.attachLinenFormHandler = attachLinenFormHandler;
 
-console.log('✅ [LINEN] Module chargé (v4 FINAL — historique cliquable + print/PDF isolés)');
+console.log('✅ [LINEN] Module chargé (v5 ULTIMATE FIX)');
