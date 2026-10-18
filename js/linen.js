@@ -166,48 +166,66 @@ async function downloadLinenSheetPDF() {
     const printArea = document.getElementById('linenPrintArea');
     if (!printArea) return alert('⚠️ Contenu introuvable.');
 
-    // Récupération des métadonnées pour le nom du fichier
+    // Métadonnées pour le nom du fichier
     const type = (document.getElementById('printTitle')?.innerText || 'linen')
         .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
     const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
     const datePart = new Date().toISOString().split('T')[0];
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // 🎯 CRÉATION D'UN CONTENEUR VIRTUEL À L'ÉCRAN
-    // (html2canvas ne capture pas les éléments qui ont opacity:0 ou qui sont hors écran)
-    const exportContainer = document.createElement('div');
-    exportContainer.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 800px;
-        background: #ffffff;
-        z-index: 999999;
-        padding: 20px;
-        /* On le cache visuellement sous la modale pour ne pas gêner l'utilisateur */
-        pointer-events: none;
-        transform: translateY(-200vh); 
-    `;
-    exportContainer.innerHTML = printArea.innerHTML;
-    document.body.appendChild(exportContainer);
+    // 🎯 CRÉATION D'UN IFRAME INVISIBLE (Méthode infaillible)
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
 
-    // Attente pour que les logos/images se chargent
-    if (document.fonts && document.fonts.ready) {
-        try { await document.fonts.ready; } catch (e) {}
-    }
-    await new Promise(r => setTimeout(r, 600));
+    const iframeDoc = iframe.contentWindow.document;
+    
+    // On copie tout le <head> pour avoir Tailwind, les polices, le CSS...
+    const headHTML = document.head.innerHTML;
+
+    iframeDoc.open();
+    iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                ${headHTML}
+                <style>
+                    /* On force un fond blanc et une largeur A4 pour le rendu PDF */
+                    body { background: #ffffff !important; padding: 0; margin: 0; }
+                    #pdf-wrapper { width: 794px; background: #ffffff; padding: 40px; box-sizing: border-box; }
+                </style>
+            </head>
+            <body>
+                <div id="pdf-wrapper">
+                    ${printArea.outerHTML}
+                </div>
+            </body>
+        </html>
+    `);
+    iframeDoc.close();
+
+    // Attente que l'iframe charge les images (logo) et les styles
+    await new Promise(r => setTimeout(r, 800));
+
+    const elementToPrint = iframeDoc.getElementById('pdf-wrapper');
 
     const opt = {
         margin: [10, 10, 10, 10],
         filename: filename,
-        image: { type: 'jpeg', quality: 1 },
+        image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
             scale: 2,
             useCORS: true,
             allowTaint: true,
             logging: false,
             backgroundColor: '#ffffff',
-            windowWidth: 800,
+            windowWidth: 794, // Largeur A4 en pixels
             scrollX: 0,
             scrollY: 0
         },
@@ -215,18 +233,19 @@ async function downloadLinenSheetPDF() {
     };
 
     try {
-        await html2pdf().set(opt).from(exportContainer).save();
-        console.log('✅ [LINEN] PDF généré:', filename);
+        // On génère le PDF à partir de l'élément DANS l'iframe
+        await html2pdf().set(opt).from(elementToPrint).save();
+        console.log('✅ [LINEN] PDF généré avec succès:', filename);
     } catch (err) {
         console.error('❌ [LINEN] Erreur PDF:', err);
         alert('⚠️ Impossible de générer le PDF.\n' + err.message);
     } finally {
-        if (exportContainer.parentNode) {
-            exportContainer.parentNode.removeChild(exportContainer);
+        // Nettoyage : on supprime l'iframe une fois terminé
+        if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
         }
     }
 }
-
 // ═══════════════════════════════════════════════════════════════════
 // HISTORIQUE — Chargement des 5 dernières fiches
 // ═══════════════════════════════════════════════════════════════════
