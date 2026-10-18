@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v3 FINAL)
-// Fixes :
-//  - Handler submit attaché indépendamment de DOMContentLoaded
-//  - Ordre correct : ouvrir aperçu AVANT fermer saisie
-//  - Nettoyage inline style à la fermeture
-//  - Logs de diagnostic complets
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v4 FINAL)
+// - Handler submit attaché indépendamment de DOMContentLoaded
+// - Ordre correct : ouvrir aperçu AVANT fermer saisie
+// - Nettoyage inline style à la fermeture
+// - Ouverture depuis l'historique (reopenLinenSheet)
+// - Print isolé + Download PDF depuis l'aperçu
+// - Escape + clic backdrop pour fermer
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -106,8 +107,9 @@ function closeLinenPrintPreview() {
     printModal.style.display = '';
     console.log('🖨️ [LINEN] Modale aperçu fermée');
 }
+
 // ═══════════════════════════════════════════════════════════════════
-// PRINT — Lance l'impression native du navigateur sur le contenu A4
+// PRINT — Impression isolée (contenu A4 uniquement)
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
     console.log('🖨️ [LINEN] printLinenSheet()');
@@ -118,10 +120,11 @@ function printLinenSheet() {
         return;
     }
 
-    // Crée un conteneur d'impression isolé pour ne PAS imprimer la modale
+    // Fenêtre isolée pour ne pas imprimer la modale ni la nav
     const printWindow = window.open('', '_blank', 'width=900,height=700');
     if (!printWindow) {
-        // Popup bloquée → fallback : impression de la page entière
+        // Popup bloquée → fallback : impression navigateur standard
+        console.warn('⚠️ [LINEN] Popup bloquée, fallback window.print()');
         window.print();
         return;
     }
@@ -154,6 +157,7 @@ function printLinenSheet() {
             .p-3 { padding: 12px; }
             .p-6 { padding: 24px; }
             .w-24 { width: 96px; }
+            .w-40 { width: 160px; }
             .w-48 { width: 192px; }
             table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
             th, td { padding: 10px; }
@@ -186,29 +190,27 @@ function printLinenSheet() {
     `);
     printWindow.document.close();
 
-    // Attend que les images (logo) soient chargées puis imprime
+    // Impression après chargement (images/logos)
     printWindow.onload = () => {
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
-            // NE PAS fermer automatiquement — laisse l'utilisateur voir le dialogue
-            // printWindow.close();
         }, 300);
     };
 
-    // Filet de sécurité si onload ne se déclenche pas
+    // Filet de sécurité
     setTimeout(() => {
         try {
             printWindow.focus();
             printWindow.print();
         } catch (e) {
-            console.warn('⚠️ Print fallback:', e);
+            console.warn('⚠️ [LINEN] Print fallback error:', e);
         }
     }, 800);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DOWNLOAD PDF — Génère un PDF avec html2pdf
+// DOWNLOAD PDF — Génère un PDF A4 propre
 // ═══════════════════════════════════════════════════════════════════
 async function downloadLinenSheetPDF() {
     console.log('📥 [LINEN] downloadLinenSheetPDF()');
@@ -224,17 +226,14 @@ async function downloadLinenSheetPDF() {
         return;
     }
 
-    // Récupère les métadonnées pour le nom de fichier
+    // Métadonnées pour le nom de fichier
     const type = (document.getElementById('printTitle')?.innerText || 'linen')
         .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
     const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
-    const dateRaw = document.getElementById('printDate')?.innerText || '';
     const datePart = new Date().toISOString().split('T')[0];
-
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // Clone le contenu dans un conteneur temporaire attaché au body
-    // (nécessaire car html2pdf capture mal les éléments dans une modale scrollable)
+    // Clone du contenu dans un conteneur temporaire (rendu propre pour html2pdf)
     const exportContainer = document.createElement('div');
     exportContainer.style.cssText = `
         position: fixed;
@@ -250,8 +249,11 @@ async function downloadLinenSheetPDF() {
     exportContainer.innerHTML = printArea.outerHTML;
     document.body.appendChild(exportContainer);
 
-    // Attend le rendu des images
-    await new Promise(r => setTimeout(r, 400));
+    // Attend le chargement des fonts + images
+    if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch (e) {}
+    }
+    await new Promise(r => setTimeout(r, 600));
 
     const opt = {
         margin: [10, 10, 10, 10],
@@ -282,8 +284,9 @@ async function downloadLinenSheetPDF() {
         }
     }
 }
+
 // ═══════════════════════════════════════════════════════════════════
-// HISTORIQUE
+// HISTORIQUE — Chargement des 5 dernières fiches
 // ═══════════════════════════════════════════════════════════════════
 async function loadRecentLinenSheets() {
     const container = document.getElementById('recentLinenSheets');
@@ -311,15 +314,26 @@ async function loadRecentLinenSheets() {
             return;
         }
 
+        // Cache pour retrouver les données au clic
+        window._linenSheetsCache = {};
+        data.forEach(sheet => {
+            window._linenSheetsCache[sheet.id] = sheet;
+        });
+
         container.innerHTML = data.map(sheet => {
-            const d = sheet.pickup_date ? new Date(sheet.pickup_date).toLocaleDateString('en-GB') : '---';
+            const d = sheet.pickup_date
+                ? new Date(sheet.pickup_date).toLocaleDateString('en-GB')
+                : '---';
             return `
-                <div class="flex justify-between items-center p-3 bg-[#0f0e0c] border border-[#2f2820] rounded-xl text-xs">
+                <div onclick="reopenLinenSheet('${sheet.id}')" class="flex justify-between items-center p-3 bg-[#0f0e0c] border border-[#2f2820] hover:border-[#DCA773] rounded-xl text-xs cursor-pointer transition">
                     <div>
                         <span class="font-bold text-[#DCA773] uppercase">${sheet.type || '---'} - ${sheet.location_number || '---'}</span>
                         <div class="text-[10px] text-stone-500 mt-1">Pickup: ${d}</div>
                     </div>
-                    <span class="bg-amber-950 text-amber-200 px-2 py-1 rounded font-bold text-[9px] uppercase">${sheet.status || 'washing'}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-950 text-amber-200 px-2 py-1 rounded font-bold text-[9px] uppercase">${sheet.status || 'washing'}</span>
+                        <i class="fas fa-eye text-stone-600"></i>
+                    </div>
                 </div>`;
         }).join('');
     } catch (err) {
@@ -328,7 +342,31 @@ async function loadRecentLinenSheets() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HANDLER SUBMIT — attaché IMMÉDIATEMENT (pas d'attente DOMContentLoaded)
+// 🎯 Rouvrir un sheet depuis l'historique
+// ═══════════════════════════════════════════════════════════════════
+function reopenLinenSheet(sheetId) {
+    console.log('👁️ [LINEN] reopenLinenSheet:', sheetId);
+
+    const sheet = window._linenSheetsCache?.[sheetId];
+    if (!sheet) {
+        console.error('❌ [LINEN] Sheet introuvable dans le cache:', sheetId);
+        return;
+    }
+
+    const type = sheet.type;
+    const location = sheet.location_number;
+    const date = sheet.pickup_date;
+
+    let items = sheet.items || {};
+    if (typeof items === 'string') {
+        try { items = JSON.parse(items); } catch(e) { items = {}; }
+    }
+
+    showLinenPrintPreview(type, location, date, items);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HANDLER SUBMIT — Attaché immédiatement, indépendant de DOMContentLoaded
 // ═══════════════════════════════════════════════════════════════════
 function attachLinenFormHandler() {
     const form = document.getElementById('linenForm');
@@ -371,7 +409,7 @@ function attachLinenFormHandler() {
         const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
         const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
 
-        // 1) Sauvegarde Supabase
+        // 1) Sauvegarde Supabase — non bloquante
         if (window.supabaseClient) {
             try {
                 const { data, error } = await window.supabaseClient
@@ -403,7 +441,7 @@ function attachLinenFormHandler() {
         // 3) FERMER la saisie ENSUITE
         closeLinenSheetModal();
 
-        // 4) Historique
+        // 4) Rafraîchir l'historique
         loadRecentLinenSheets();
     });
 
@@ -422,18 +460,6 @@ function attachLinenFormHandler() {
 })();
 
 // ═══════════════════════════════════════════════════════════════════
-// EXPORT GLOBAL
-// ═══════════════════════════════════════════════════════════════════
-window.openLinenSheetModal = openLinenSheetModal;
-window.closeLinenSheetModal = closeLinenSheetModal;
-window.showLinenPrintPreview = showLinenPrintPreview;
-window.closeLinenPrintPreview = closeLinenPrintPreview;
-window.loadRecentLinenSheets = loadRecentLinenSheets;
-window.attachLinenFormHandler = attachLinenFormHandler;
-window.printLinenSheet = printLinenSheet;
-window.downloadLinenSheetPDF = downloadLinenSheetPDF;
-
-// ═══════════════════════════════════════════════════════════════════
 // ESCAPE KEY — Ferme l'aperçu si ouvert
 // ═══════════════════════════════════════════════════════════════════
 document.addEventListener('keydown', (e) => {
@@ -444,4 +470,17 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('✅ [LINEN] Module chargé (v3 FINAL)');
+// ═══════════════════════════════════════════════════════════════════
+// EXPORT GLOBAL
+// ═══════════════════════════════════════════════════════════════════
+window.openLinenSheetModal = openLinenSheetModal;
+window.closeLinenSheetModal = closeLinenSheetModal;
+window.showLinenPrintPreview = showLinenPrintPreview;
+window.closeLinenPrintPreview = closeLinenPrintPreview;
+window.printLinenSheet = printLinenSheet;
+window.downloadLinenSheetPDF = downloadLinenSheetPDF;
+window.loadRecentLinenSheets = loadRecentLinenSheets;
+window.reopenLinenSheet = reopenLinenSheet;
+window.attachLinenFormHandler = attachLinenFormHandler;
+
+console.log('✅ [LINEN] Module chargé (v4 FINAL — historique cliquable + print/PDF isolés)');
