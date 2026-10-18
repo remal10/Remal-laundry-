@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v8 SIMPLE)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v9 FINAL - SANS POPUP)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -59,7 +59,6 @@ function showLinenPrintPreview(type, location, date, items) {
         type === 'hotel' ? 'HOTEL LINEN CONTROL SHEET' : 'VILLA LINEN CONTROL SHEET';
     document.getElementById('printLocation').innerText = location || '---';
     
-    // On affiche la date (on utilise l'ID "printDate" qui existe dans ton HTML)
     const dateEl = document.getElementById('printDate');
     if (dateEl) dateEl.innerText = formattedDate;
 
@@ -89,7 +88,83 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. HISTORIQUE (AVEC SUPPRESSION)
+// 3. BOUTON PRINT & PDF (Méthode directe sans Popup)
+// ═══════════════════════════════════════════════════════════════════
+function printLinenSheet() {
+    // On utilise simplement la fonction d'impression du navigateur
+    // et on ajoute une classe au body pour masquer le reste de la page
+    document.body.classList.add('printing-linen');
+    window.print();
+    
+    // On retire la classe une fois l'impression terminée
+    setTimeout(() => document.body.classList.remove('printing-linen'), 1000);
+}
+
+async function downloadLinenSheetPDF() {
+    console.log("📥 Génération du PDF...");
+    const printArea = document.getElementById('linenPrintArea');
+    if (!printArea) return alert('⚠️ Contenu introuvable.');
+
+    const type = (document.getElementById('printTitle')?.innerText || 'linen')
+        .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
+    const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
+    const datePart = new Date().toISOString().split('T')[0];
+    const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
+
+    // Création du conteneur temporaire invisible
+    const tempDiv = document.createElement('div');
+    tempDiv.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 794px; /* Largeur A4 */
+        background: #ffffff;
+        z-index: -9999;
+        padding: 20px;
+        box-sizing: border-box;
+    `;
+    
+    // On clone le contenu
+    tempDiv.innerHTML = printArea.innerHTML;
+    document.body.appendChild(tempDiv);
+
+    // On cache la modale pour éviter les clignotements
+    const modal = document.getElementById('linenPrintModal');
+    if (modal) modal.style.opacity = '0';
+
+    // Petite attente pour les images
+    await new Promise(r => setTimeout(r, 500));
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            windowWidth: 794,
+            scrollX: 0,
+            scrollY: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+        await html2pdf().set(opt).from(tempDiv).save();
+    } catch (err) {
+        console.error('❌ Erreur PDF:', err);
+        alert('⚠️ Impossible de générer le PDF.');
+    } finally {
+        // Nettoyage
+        if (tempDiv.parentNode) tempDiv.parentNode.removeChild(tempDiv);
+        if (modal) modal.style.opacity = '';
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 4. HISTORIQUE (AVEC SUPPRESSION)
 // ═══════════════════════════════════════════════════════════════════
 async function loadRecentLinenSheets() {
     const container = document.getElementById('recentLinenSheets');
@@ -109,7 +184,6 @@ async function loadRecentLinenSheets() {
             return;
         }
 
-        // On sauvegarde les données pour le clic
         window._linenSheetsCache = {};
         data.forEach(sheet => { window._linenSheetsCache[sheet.id] = sheet; });
 
@@ -123,11 +197,9 @@ async function loadRecentLinenSheets() {
                         <div class="text-[10px] text-stone-500 mt-1">📥 Pickup: ${pickupD}</div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <!-- Bouton Supprimer -->
                         <button onclick="deleteLinenSheet('${sheet.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-950/40 text-rose-400 border border-rose-900/50 hover:bg-rose-900 hover:text-rose-200 transition" title="Delete">
                             <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
-                        <!-- Bouton Voir (Œil) -->
                         <button onclick="openLinenFromCache('${sheet.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#181614] text-stone-400 border border-[#2f2820] hover:text-[#DCA773] transition" title="View">
                             <i class="fas fa-eye text-[11px]"></i>
                         </button>
@@ -140,21 +212,16 @@ async function loadRecentLinenSheets() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. CLIC SUR L'HISTORIQUE
+// 5. CLIC SUR L'HISTORIQUE
 // ═══════════════════════════════════════════════════════════════════
 function openLinenFromCache(sheetId) {
     const sheet = window._linenSheetsCache?.[sheetId];
-    if (!sheet) {
-        console.warn('Sheet introuvable:', sheetId);
-        return;
-    }
+    if (!sheet) return;
 
     let items = sheet.items || {};
     if (typeof items === 'string') {
         try { items = JSON.parse(items); } catch(e) { items = {}; }
     }
-    
-    // Ouvre la modale comme si on venait de créer la fiche
     showLinenPrintPreview(sheet.type, sheet.location_number, sheet.pickup_date, items);
 }
 
@@ -164,46 +231,12 @@ async function deleteLinenSheet(sheetId) {
     if (window.supabaseClient) {
         try {
             await window.supabaseClient.from('linen_control_sheets').delete().eq('id', sheetId);
-            loadRecentLinenSheets(); // Rafraîchit la liste
+            loadRecentLinenSheets();
         } catch (err) {
             console.error('Erreur suppression:', err);
             alert('⚠️ Could not delete sheet.');
         }
     }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// 5. BOUTON PRINT & PDF
-// ═══════════════════════════════════════════════════════════════════
-function printLinenSheet() {
-    const printArea = document.getElementById('linenPrintArea');
-    if (!printArea) return;
-
-    // On utilise la méthode la plus simple qui marche (celle du navigateur)
-    const printWindow = window.open('', '_blank', 'width=900,height=800');
-    const headHTML = document.head.innerHTML;
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                ${headHTML}
-                <title>Linen Sheet</title>
-                <style>body { background:#fff; padding:20px; } @page { size: A4 portrait; margin: 10mm; }</style>
-            </head>
-            <body>${printArea.outerHTML}</body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.onload = () => {
-        setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
-    };
-}
-
-function downloadLinenSheetPDF() {
-    // Astuce : pour le PDF, on ouvre la même fenêtre d'impression et on laisse le navigateur choisir "Enregistrer en PDF"
-    // C'est la méthode utilisée par 99% des sites web, et elle ne foire jamais.
-    alert("💡 Dans la fenêtre qui va s'ouvrir, choisissez 'Enregistrer au format PDF' comme imprimante.");
-    printLinenSheet();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -234,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
         const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
 
-        // Sauvegarde Supabase
         if (window.supabaseClient) {
             try {
                 await window.supabaseClient
@@ -243,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) { console.error(err); }
         }
 
-        // Ferme la saisie et ouvre l'aperçu
         closeLinenSheetModal();
         showLinenPrintPreview(type, location, date, items);
         loadRecentLinenSheets();
