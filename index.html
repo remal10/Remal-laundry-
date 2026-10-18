@@ -878,56 +878,12 @@
                     <button class="mt-6 bg-[#181614] border border-[#2f2820] text-[#DCA773] px-6 py-2 rounded-xl text-xs font-bold group-hover:bg-[#DCA773] group-hover:text-stone-950 transition-all">Create Villa Sheet</button>
                 </div>
             </div>
-            
+
             <!-- Historique rapide -->
             <div class="remal-card p-6 rounded-3xl mt-8">
                 <h3 class="text-sm font-bold text-[#DCA773] uppercase tracking-wider mb-4 border-b border-[#2f2820] pb-2">Recent Sheets</h3>
                 <div id="recentLinenSheets" class="space-y-2">
                     <p class="text-xs text-stone-500 text-center py-4">Loading history...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODALE — PRINT PREVIEW -->
-    <div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white text-stone-900 w-full max-w-4xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
-            <div class="absolute top-4 right-4 flex gap-2 no-print z-50">
-                <button onclick="window.print()" class="bg-[#181614] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-800 transition"><i class="fas fa-print"></i> Print</button>
-                <button onclick="document.getElementById('linenPrintModal').classList.add('hidden'); document.getElementById('linenPrintModal').style.display = 'none';" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-300 transition">Close</button>
-            </div>
-
-            <div id="linenPrintArea" class="p-10 sm:p-14">
-                <div class="text-center border-b-2 border-stone-200 pb-6 mb-8">
-                    <h1 class="font-serif text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
-                    <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
-                    <h2 class="text-xl font-bold text-amber-700 mt-6 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
-                </div>
-
-                <div class="flex justify-between text-sm font-bold mb-8">
-                    <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
-                    <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
-                </div>
-
-                <table class="w-full border-collapse text-sm mb-16">
-                    <thead>
-                        <tr class="bg-stone-100 border-b-2 border-stone-300">
-                            <th class="p-4 text-left">Item Description</th>
-                            <th class="p-4 text-center w-32">Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
-                </table>
-
-                <div class="flex justify-between mt-20 text-xs text-stone-500">
-                    <div class="text-center w-48">
-                        <p class="mb-12">Laundry Signature</p>
-                        <div class="w-full border-b border-stone-400"></div>
-                    </div>
-                    <div class="text-center w-48">
-                        <p class="mb-12">Housekeeping Signature</p>
-                        <div class="w-full border-b border-stone-400"></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1050,7 +1006,7 @@
         </div>
     </div>
 
-    <!-- SECTION: ADMIN CHAT (inside laundry-section) -->
+    <!-- SECTION: ADMIN CHAT -->
     <div id="sectionAdminChat" class="hidden space-y-4 no-print">
         <div class="remal-card p-4 sm:p-6 rounded-3xl max-w-6xl mx-auto">
 
@@ -1744,11 +1700,10 @@
 
 <!-- ═══════════════════════════════════════════════════════════════════
      🧺 MODAL — LINEN SHEET (Input)
-     Placée tout en bas pour garantir le z-index
      ═══════════════════════════════════════════════════════════════════ -->
 <div id="linenSheetModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 999999 !important;">
     <div class="bg-[#181614] border border-[#2f2820] w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 my-8 relative">
-        
+
         <div class="flex justify-between items-center border-b border-[#2f2820] pb-3">
             <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773] uppercase tracking-widest flex items-center gap-2">
                 <i class="fas fa-file-invoice"></i> <span id="linenModalTitle">New Linen Sheet</span>
@@ -1758,7 +1713,7 @@
 
         <form id="linenForm" class="space-y-4">
             <input type="hidden" id="linenType" value="">
-            
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
@@ -1772,7 +1727,7 @@
 
             <div class="bg-[#0f0e0c] rounded-xl border border-[#2f2820] p-4 space-y-3">
                 <p class="text-[10px] font-bold text-[#DCA773] uppercase tracking-wider mb-2">Items & Quantities</p>
-                
+
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div class="flex items-center justify-between"><span class="text-stone-300">Bedsheets</span><input type="number" id="item_bedsheets" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
                     <div class="flex items-center justify-between"><span class="text-stone-300">Duvet Cover</span><input type="number" id="item_duvet" min="0" placeholder="0" class="w-20 bg-[#181614] border border-[#2f2820] rounded-lg p-2 text-center text-[#DCA773] font-bold text-lg outline-none focus:border-[#DCA773]"></div>
@@ -1790,6 +1745,58 @@
                 💾 Save & Generate Sheet
             </button>
         </form>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     🖨️ MODAL — LINEN PRINT PREVIEW (CORRIGÉE)
+     ⚠️ Doit être HORS de .laundry-section pour éviter le stacking context
+     Bouton Close → closeLinenPrintPreview()
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 999998;">
+    <div class="bg-white text-stone-900 w-full max-w-4xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
+        <div class="absolute top-4 right-4 flex gap-2 no-print z-50">
+            <button onclick="window.print()" class="bg-[#181614] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-800 transition">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <button onclick="closeLinenPrintPreview()" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-300 transition">
+                Close
+            </button>
+        </div>
+
+        <div id="linenPrintArea" class="p-10 sm:p-14">
+            <div class="text-center border-b-2 border-stone-200 pb-6 mb-8">
+                <h1 class="font-serif text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
+                <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
+                <h2 class="text-xl font-bold text-amber-700 mt-6 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
+            </div>
+
+            <div class="flex justify-between text-sm font-bold mb-8">
+                <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
+                <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
+            </div>
+
+            <table class="w-full border-collapse text-sm mb-16">
+                <thead>
+                    <tr class="bg-stone-100 border-b-2 border-stone-300">
+                        <th class="p-4 text-left">Item Description</th>
+                        <th class="p-4 text-center w-32">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
+            </table>
+
+            <div class="flex justify-between mt-20 text-xs text-stone-500">
+                <div class="text-center w-48">
+                    <p class="mb-12">Laundry Signature</p>
+                    <div class="w-full border-b border-stone-400"></div>
+                </div>
+                <div class="text-center w-48">
+                    <p class="mb-12">Housekeeping Signature</p>
+                    <div class="w-full border-b border-stone-400"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
