@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v10 FINAL)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v11 PERFECT PDF)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -97,7 +97,7 @@ function printLinenSheet() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. BOUTON PDF (Méthode Directe sur l'élément visible)
+// 4. BOUTON PDF (Méthode Directe avec Forçage A4)
 // ═══════════════════════════════════════════════════════════════════
 async function downloadLinenSheetPDF() {
     console.log("📥 Génération du PDF...");
@@ -111,14 +111,20 @@ async function downloadLinenSheetPDF() {
     const datePart = new Date().toISOString().split('T')[0];
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // Bloquer l'UI pendant la génération
     const btn = document.querySelector('button[onclick="downloadLinenSheetPDF()"]');
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
     }
 
-    // Configuration de html2pdf
+    // 🎯 FIX : Sauvegarde des styles actuels
+    const originalWidth = printArea.style.width;
+    const originalMaxWidth = printArea.style.maxWidth;
+
+    // 🎯 FIX : Forçage de la largeur A4 pour que la capture soit parfaite
+    printArea.style.width = '794px';
+    printArea.style.maxWidth = '794px';
+
     const opt = {
         margin: [10, 10, 10, 10],
         filename: filename,
@@ -130,20 +136,23 @@ async function downloadLinenSheetPDF() {
             backgroundColor: '#ffffff',
             scrollX: 0,
             scrollY: 0,
-            // On force la largeur pour éviter les coupures à gauche
-            windowWidth: 800 
+            windowWidth: 794 // Force la largeur de la fenêtre de rendu
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        // 🎯 La magie opère ici : on dit à html2pdf de lire l'élément DIRECTEMENT
+        // On laisse le temps au navigateur de recalculer la mise en page (évite le décalage)
+        await new Promise(r => setTimeout(r, 300));
         await html2pdf().set(opt).from(printArea).save();
     } catch (err) {
         console.error('❌ Erreur PDF:', err);
         alert('⚠️ Impossible de générer le PDF.\nErreur: ' + err.message);
     } finally {
-        // Restaurer le bouton
+        // Restauration des styles
+        printArea.style.width = originalWidth;
+        printArea.style.maxWidth = originalMaxWidth;
+        
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>';
