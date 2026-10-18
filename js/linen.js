@@ -160,33 +160,24 @@ async function downloadLinenSheetPDF() {
     console.log('📥 [LINEN] downloadLinenSheetPDF()');
 
     if (typeof html2pdf === 'undefined') {
-        return alert('⚠️ html2pdf non chargé. Vérifie le CDN.');
+        return alert('⚠️ html2pdf non chargé.');
     }
 
     const printArea = document.getElementById('linenPrintArea');
     if (!printArea) return alert('⚠️ Contenu introuvable.');
 
-    // Métadonnées pour le nom du fichier
     const type = (document.getElementById('printTitle')?.innerText || 'linen')
         .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
     const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
     const datePart = new Date().toISOString().split('T')[0];
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // 🎯 CRÉATION D'UN IFRAME INVISIBLE (Méthode infaillible)
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    iframe.style.visibility = 'hidden';
+    // On le place visible à l'écran, mais derrière tout le reste (z-index: -1)
+    iframe.style.cssText = 'position: fixed; left: 0; top: 0; width: 820px; height: 1200px; border: none; z-index: -1; opacity: 0;';
     document.body.appendChild(iframe);
 
     const iframeDoc = iframe.contentWindow.document;
-    
-    // On copie tout le <head> pour avoir Tailwind, les polices, le CSS...
     const headHTML = document.head.innerHTML;
 
     iframeDoc.open();
@@ -196,21 +187,31 @@ async function downloadLinenSheetPDF() {
             <head>
                 ${headHTML}
                 <style>
-                    /* On force un fond blanc et une largeur A4 pour le rendu PDF */
-                    body { background: #ffffff !important; padding: 0; margin: 0; }
-                    #pdf-wrapper { width: 794px; background: #ffffff; padding: 40px; box-sizing: border-box; }
+                    /* On annule tout centrage pour être sûr que ça commence à gauche */
+                    body, html { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+                    #pdf-wrapper { 
+                        width: 794px !important; /* Largeur exacte A4 */
+                        background: #ffffff; 
+                        padding: 40px; 
+                        margin: 0 !important; /* Zéro marge gauche */
+                        box-sizing: border-box; 
+                        float: left; /* Force l'alignement à gauche */
+                    }
                 </style>
             </head>
             <body>
                 <div id="pdf-wrapper">
-                    ${printArea.outerHTML}
+                    ${printArea.innerHTML}
                 </div>
             </body>
         </html>
     `);
     iframeDoc.close();
 
-    // Attente que l'iframe charge les images (logo) et les styles
+    // On attend le chargement complet des polices et du logo
+    if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch (e) {}
+    }
     await new Promise(r => setTimeout(r, 800));
 
     const elementToPrint = iframeDoc.getElementById('pdf-wrapper');
@@ -218,32 +219,30 @@ async function downloadLinenSheetPDF() {
     const opt = {
         margin: [10, 10, 10, 10],
         filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg', quality: 1 },
         html2canvas: {
             scale: 2,
             useCORS: true,
             allowTaint: true,
-            logging: false,
             backgroundColor: '#ffffff',
-            windowWidth: 794, // Largeur A4 en pixels
-            scrollX: 0,
-            scrollY: 0
+            windowWidth: 794,   // Force la largeur A4
+            windowHeight: 1123, // Hauteur A4
+            scrollX: 0,         // Annule le décalage horizontal
+            scrollY: 0,
+            x: 0,               // Force le départ à gauche
+            y: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        // On génère le PDF à partir de l'élément DANS l'iframe
         await html2pdf().set(opt).from(elementToPrint).save();
-        console.log('✅ [LINEN] PDF généré avec succès:', filename);
+        console.log('✅ [LINEN] PDF généré:', filename);
     } catch (err) {
         console.error('❌ [LINEN] Erreur PDF:', err);
-        alert('⚠️ Impossible de générer le PDF.\n' + err.message);
+        alert('⚠️ Impossible de générer le PDF.');
     } finally {
-        // Nettoyage : on supprime l'iframe une fois terminé
-        if (iframe.parentNode) {
-            iframe.parentNode.removeChild(iframe);
-        }
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
     }
 }
 // ═══════════════════════════════════════════════════════════════════
