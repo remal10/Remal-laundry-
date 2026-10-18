@@ -1749,57 +1749,89 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
-     🖨️ MODAL — LINEN PRINT PREVIEW (CORRIGÉE)
-     ⚠️ Doit être HORS de .laundry-section pour éviter le stacking context
-     Bouton Close → closeLinenPrintPreview()
+     🖨️ MODAL — LINEN PRINT PREVIEW (ÉLÉGANTE — non plein écran)
+     - Header fixe avec Print / PDF / Close toujours visibles
+     - Body scrollable
+     - Backdrop cliquable pour fermer
+     - Escape pour fermer
      ═══════════════════════════════════════════════════════════════════ -->
-<div id="linenPrintModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" style="z-index: 999998;">
-    <div class="bg-white text-stone-900 w-full max-w-4xl rounded-2xl shadow-2xl my-8 overflow-hidden relative">
-        <div class="absolute top-4 right-4 flex gap-2 no-print z-50">
-            <button onclick="window.print()" class="bg-[#181614] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-800 transition">
-                <i class="fas fa-print"></i> Print
-            </button>
-            <button onclick="closeLinenPrintPreview()" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-stone-300 transition">
-                Close
-            </button>
+<div id="linenPrintModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6" style="z-index: 999998;">
+
+    <!-- Backdrop cliquable pour fermer -->
+    <div class="absolute inset-0" onclick="closeLinenPrintPreview()"></div>
+
+    <!-- Carte modale (non plein écran) -->
+    <div class="relative bg-[#181614] border border-[#2f2820] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+
+        <!-- HEADER FIXE -->
+        <div class="flex-shrink-0 flex items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-[#2f2820] bg-[#0f0e0c]">
+            <div class="flex items-center gap-2 min-w-0">
+                <i class="fas fa-file-invoice text-[#DCA773]"></i>
+                <h3 class="text-sm font-serif-luxury font-bold text-[#DCA773] truncate">
+                    Linen Control Sheet — Preview
+                </h3>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button onclick="printLinenSheet()" title="Print" class="px-3 py-2 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-xl text-xs shadow transition flex items-center gap-1.5">
+                    <i class="fas fa-print"></i>
+                    <span class="hidden sm:inline">Print</span>
+                </button>
+                <button onclick="downloadLinenSheetPDF()" title="Download PDF" class="px-3 py-2 bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold rounded-xl text-xs shadow transition flex items-center gap-1.5">
+                    <i class="fas fa-file-pdf"></i>
+                    <span class="hidden sm:inline">PDF</span>
+                </button>
+                <button onclick="closeLinenPrintPreview()" title="Close" class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl text-xs transition flex items-center gap-1.5">
+                    <i class="fas fa-times"></i>
+                    <span class="hidden sm:inline">Close</span>
+                </button>
+            </div>
         </div>
 
-        <div id="linenPrintArea" class="p-10 sm:p-14">
-            <div class="text-center border-b-2 border-stone-200 pb-6 mb-8">
-                <h1 class="font-serif text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
-                <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
-                <h2 class="text-xl font-bold text-amber-700 mt-6 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
-            </div>
+        <!-- BODY SCROLLABLE — Contenu A4 imprimable -->
+        <div class="flex-1 overflow-y-auto bg-[#0f0e0c] p-2 sm:p-4">
+            <div id="linenPrintArea" class="bg-white text-stone-900 rounded-xl shadow-inner mx-auto max-w-[720px] p-6 sm:p-10">
 
-            <div class="flex justify-between text-sm font-bold mb-8">
-                <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
-                <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
-            </div>
-
-            <table class="w-full border-collapse text-sm mb-16">
-                <thead>
-                    <tr class="bg-stone-100 border-b-2 border-stone-300">
-                        <th class="p-4 text-left">Item Description</th>
-                        <th class="p-4 text-center w-32">Quantity</th>
-                    </tr>
-                </thead>
-                <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
-            </table>
-
-            <div class="flex justify-between mt-20 text-xs text-stone-500">
-                <div class="text-center w-48">
-                    <p class="mb-12">Laundry Signature</p>
-                    <div class="w-full border-b border-stone-400"></div>
+                <div class="text-center border-b-2 border-stone-200 pb-5 mb-6">
+                    <h1 class="font-serif text-2xl sm:text-3xl font-bold tracking-widest text-stone-900">REMAL HOTEL & VILLAS</h1>
+                    <p class="text-[10px] text-stone-500 uppercase tracking-widest mt-1">Al Dhannah City, Abu Dhabi – UAE</p>
+                    <h2 class="text-lg sm:text-xl font-bold text-amber-700 mt-5 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
                 </div>
-                <div class="text-center w-48">
-                    <p class="mb-12">Housekeeping Signature</p>
-                    <div class="w-full border-b border-stone-400"></div>
+
+                <div class="flex flex-wrap justify-between gap-2 text-xs sm:text-sm font-bold mb-6 bg-stone-50 px-3 py-2 rounded-lg border border-stone-200">
+                    <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
+                    <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
+                </div>
+
+                <table class="w-full border-collapse text-xs sm:text-sm mb-10">
+                    <thead>
+                        <tr class="bg-stone-100 border-b-2 border-stone-300">
+                            <th class="p-3 text-left">Item Description</th>
+                            <th class="p-3 text-center w-24">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="printTableBody" class="divide-y divide-stone-200"></tbody>
+                </table>
+
+                <div class="flex justify-between gap-4 mt-12 text-[11px] text-stone-500">
+                    <div class="text-center w-40 sm:w-48">
+                        <p class="mb-10">Laundry Signature</p>
+                        <div class="w-full border-b border-stone-400"></div>
+                    </div>
+                    <div class="text-center w-40 sm:w-48">
+                        <p class="mb-10">Housekeeping Signature</p>
+                        <div class="w-full border-b border-stone-400"></div>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- FOOTER — Actions secondaires -->
+        <div class="flex-shrink-0 px-4 sm:px-5 py-2.5 border-t border-[#2f2820] bg-[#0f0e0c] flex justify-between items-center text-[10px] text-stone-500">
+            <span>💡 Tip: Press <strong>Esc</strong> to close · Click backdrop to dismiss</span>
+            <span class="font-bold text-[#DCA773]">Remal Laundry OS</span>
         </div>
     </div>
 </div>
-
 <!-- ═══ LIBRARIES ═══ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
