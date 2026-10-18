@@ -106,7 +106,182 @@ function closeLinenPrintPreview() {
     printModal.style.display = '';
     console.log('🖨️ [LINEN] Modale aperçu fermée');
 }
+// ═══════════════════════════════════════════════════════════════════
+// PRINT — Lance l'impression native du navigateur sur le contenu A4
+// ═══════════════════════════════════════════════════════════════════
+function printLinenSheet() {
+    console.log('🖨️ [LINEN] printLinenSheet()');
 
+    const printArea = document.getElementById('linenPrintArea');
+    if (!printArea) {
+        alert('⚠️ Contenu introuvable.');
+        return;
+    }
+
+    // Crée un conteneur d'impression isolé pour ne PAS imprimer la modale
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+        // Popup bloquée → fallback : impression de la page entière
+        window.print();
+        return;
+    }
+
+    const styles = `
+        <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 20px; font-family: 'Helvetica', Arial, sans-serif; color: #1c1917; background: #fff; }
+            .text-center { text-align: center; }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .border-b-2 { border-bottom: 2px solid #e5e7eb; }
+            .border-b { border-bottom: 1px solid #d1d5db; }
+            .bg-stone-100 { background: #f5f5f4; }
+            .bg-stone-50 { background: #fafaf9; }
+            .text-amber-700 { color: #b45309; }
+            .text-stone-900 { color: #1c1917; }
+            .text-stone-500 { color: #78716c; }
+            .text-stone-400 { color: #a8a29e; }
+            .font-serif { font-family: Georgia, 'Times New Roman', serif; }
+            .font-bold { font-weight: 700; }
+            .font-semibold { font-weight: 600; }
+            .uppercase { text-transform: uppercase; }
+            .tracking-widest { letter-spacing: 0.15em; }
+            .tracking-wider { letter-spacing: 0.05em; }
+            .mb-6 { margin-bottom: 24px; }
+            .mt-5 { margin-top: 20px; }
+            .mt-12 { margin-top: 48px; }
+            .pb-5 { padding-bottom: 20px; }
+            .p-3 { padding: 12px; }
+            .p-6 { padding: 24px; }
+            .w-24 { width: 96px; }
+            .w-48 { width: 192px; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
+            th, td { padding: 10px; }
+            tbody tr { border-bottom: 1px solid #e5e7eb; }
+            tbody tr:last-child { border-bottom: none; }
+            .flex { display: flex; }
+            .flex-wrap { flex-wrap: wrap; }
+            .justify-between { justify-content: space-between; }
+            .gap-2 { gap: 8px; }
+            .gap-4 { gap: 16px; }
+            .rounded-lg { border-radius: 8px; }
+            .px-3 { padding-left: 12px; padding-right: 12px; }
+            .py-2 { padding-top: 8px; padding-bottom: 8px; }
+            .border { border: 1px solid #e5e7eb; }
+            @page { size: A4 portrait; margin: 15mm; }
+        </style>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Linen Control Sheet</title>
+                ${styles}
+            </head>
+            <body>${printArea.innerHTML}</body>
+        </html>
+    `);
+    printWindow.document.close();
+
+    // Attend que les images (logo) soient chargées puis imprime
+    printWindow.onload = () => {
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            // NE PAS fermer automatiquement — laisse l'utilisateur voir le dialogue
+            // printWindow.close();
+        }, 300);
+    };
+
+    // Filet de sécurité si onload ne se déclenche pas
+    setTimeout(() => {
+        try {
+            printWindow.focus();
+            printWindow.print();
+        } catch (e) {
+            console.warn('⚠️ Print fallback:', e);
+        }
+    }, 800);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DOWNLOAD PDF — Génère un PDF avec html2pdf
+// ═══════════════════════════════════════════════════════════════════
+async function downloadLinenSheetPDF() {
+    console.log('📥 [LINEN] downloadLinenSheetPDF()');
+
+    if (typeof html2pdf === 'undefined') {
+        alert('⚠️ html2pdf non chargé. Vérifie le CDN.');
+        return;
+    }
+
+    const printArea = document.getElementById('linenPrintArea');
+    if (!printArea) {
+        alert('⚠️ Contenu introuvable.');
+        return;
+    }
+
+    // Récupère les métadonnées pour le nom de fichier
+    const type = (document.getElementById('printTitle')?.innerText || 'linen')
+        .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
+    const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
+    const dateRaw = document.getElementById('printDate')?.innerText || '';
+    const datePart = new Date().toISOString().split('T')[0];
+
+    const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
+
+    // Clone le contenu dans un conteneur temporaire attaché au body
+    // (nécessaire car html2pdf capture mal les éléments dans une modale scrollable)
+    const exportContainer = document.createElement('div');
+    exportContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 794px;
+        background: #ffffff;
+        z-index: 999999;
+        padding: 0;
+        pointer-events: none;
+        opacity: 0;
+    `;
+    exportContainer.innerHTML = printArea.outerHTML;
+    document.body.appendChild(exportContainer);
+
+    // Attend le rendu des images
+    await new Promise(r => setTimeout(r, 400));
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            scrollX: 0,
+            scrollY: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(exportContainer).save();
+        console.log('✅ [LINEN] PDF généré:', filename);
+    } catch (err) {
+        console.error('❌ [LINEN] Erreur PDF:', err);
+        alert('⚠️ Impossible de générer le PDF.\n' + err.message);
+    } finally {
+        if (exportContainer.parentNode) {
+            exportContainer.parentNode.removeChild(exportContainer);
+        }
+    }
+}
 // ═══════════════════════════════════════════════════════════════════
 // HISTORIQUE
 // ═══════════════════════════════════════════════════════════════════
@@ -255,5 +430,18 @@ window.showLinenPrintPreview = showLinenPrintPreview;
 window.closeLinenPrintPreview = closeLinenPrintPreview;
 window.loadRecentLinenSheets = loadRecentLinenSheets;
 window.attachLinenFormHandler = attachLinenFormHandler;
+window.printLinenSheet = printLinenSheet;
+window.downloadLinenSheetPDF = downloadLinenSheetPDF;
+
+// ═══════════════════════════════════════════════════════════════════
+// ESCAPE KEY — Ferme l'aperçu si ouvert
+// ═══════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const printModal = document.getElementById('linenPrintModal');
+    if (printModal && !printModal.classList.contains('hidden')) {
+        closeLinenPrintPreview();
+    }
+});
 
 console.log('✅ [LINEN] Module chargé (v3 FINAL)');
