@@ -1420,10 +1420,20 @@ function dismissGuestNotificationBanner() {
                 if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
                     window.AdminChat.refreshAll();
                 }
-            } else if (sectionName === 'linenControl') {
-                if (typeof loadRecentLinenSheets === 'function') {
-                    loadRecentLinenSheets();
-                }
+          } else if (sectionName === 'linenControl') {
+    const linenSection = document.getElementById('sectionLinenControl');
+    if (!linenSection) {
+        console.warn('⚠️ [SwitchPatch] sectionLinenControl introuvable — reload conseillé');
+        return;
+    }
+    // Attache le handler submit si pas déjà fait (au cas où linen.js aurait raté son init)
+    if (typeof attachLinenFormHandler === 'function') {
+        attachLinenFormHandler();
+    }
+    if (typeof loadRecentLinenSheets === 'function') {
+        loadRecentLinenSheets();
+    }
+}
             } else if (sectionName === 'liveRecord') {
                 if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
             } else if (sectionName === 'dashboard') {
