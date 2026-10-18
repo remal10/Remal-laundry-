@@ -53,6 +53,27 @@
         body.role-staff [data-admin-only="true"] {
             display: none !important;
         }
+        /* Cache le menu lors de l'impression du Linen */
+@media print {
+    body.printing-linen > *:not(#linenPrintModal) {
+        display: none !important;
+    }
+    body.printing-linen #linenPrintModal {
+        position: static !important;
+        background: white !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+    body.printing-linen #linenPrintModal .flex-shrink-0 {
+        display: none !important;
+    }
+    body.printing-linen #linenPrintArea {
+        width: 100% !important;
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
     </style>
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
