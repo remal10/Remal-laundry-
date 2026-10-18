@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v11 PERFECT PDF)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v13 ULTIMATE)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -88,7 +88,7 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. BOUTON PRINT (Méthode Native)
+// 3. BOUTON PRINT
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
     document.body.classList.add('printing-linen');
@@ -97,10 +97,10 @@ function printLinenSheet() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. BOUTON PDF (Méthode Directe avec Forçage A4)
+// 4. BOUTON PDF (Méthode de l'Iframe Invisible)
 // ═══════════════════════════════════════════════════════════════════
 async function downloadLinenSheetPDF() {
-    console.log("📥 Génération du PDF...");
+    console.log("📥 Génération du PDF via Iframe...");
     const printArea = document.getElementById('linenPrintArea');
     if (!printArea) return alert('⚠️ Contenu introuvable.');
     if (typeof html2pdf === 'undefined') return alert('⚠️ html2pdf non chargé.');
@@ -117,13 +117,46 @@ async function downloadLinenSheetPDF() {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
     }
 
-    // 🎯 FIX : Sauvegarde des styles actuels
-    const originalWidth = printArea.style.width;
-    const originalMaxWidth = printArea.style.maxWidth;
+    // 1. Création de l'iframe invisible
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position: fixed; left: 0; top: 0; width: 800px; height: 1200px; opacity: 0; pointer-events: none; z-index: -9999;';
+    document.body.appendChild(iframe);
 
-    // 🎯 FIX : Forçage de la largeur A4 pour que la capture soit parfaite
-    printArea.style.width = '794px';
-    printArea.style.maxWidth = '794px';
+    const iframeDoc = iframe.contentWindow.document;
+    const headHTML = document.head.innerHTML;
+
+    // 2. Injection du contenu HTML (sans les marges noires)
+    iframeDoc.open();
+    iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                ${headHTML}
+                <style>
+                    /* Annulation de tout centrage pour être sûr que ça commence à gauche */
+                    body, html { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+                    #pdf-content { 
+                        width: 794px !important; /* Largeur exacte A4 */
+                        padding: 40px !important; 
+                        margin: 0 !important; /* Zéro marge gauche */
+                        box-sizing: border-box; 
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="pdf-content">
+                    ${printArea.innerHTML}
+                </div>
+            </body>
+        </html>
+    `);
+    iframeDoc.close();
+
+    // 3. Attente pour charger le logo
+    await new Promise(r => setTimeout(r, 600));
+
+    // 4. Capture
+    const elementToPrint = iframeDoc.getElementById('pdf-content');
 
     const opt = {
         margin: [10, 10, 10, 10],
@@ -134,25 +167,21 @@ async function downloadLinenSheetPDF() {
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
+            windowWidth: 794,
             scrollX: 0,
-            scrollY: 0,
-            windowWidth: 794 // Force la largeur de la fenêtre de rendu
+            scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        // On laisse le temps au navigateur de recalculer la mise en page (évite le décalage)
-        await new Promise(r => setTimeout(r, 300));
-        await html2pdf().set(opt).from(printArea).save();
+        await html2pdf().set(opt).from(elementToPrint).save();
     } catch (err) {
         console.error('❌ Erreur PDF:', err);
-        alert('⚠️ Impossible de générer le PDF.\nErreur: ' + err.message);
+        alert('⚠️ Impossible de générer le PDF.');
     } finally {
-        // Restauration des styles
-        printArea.style.width = originalWidth;
-        printArea.style.maxWidth = originalMaxWidth;
-        
+        // Nettoyage
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>';
