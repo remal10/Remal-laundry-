@@ -1714,19 +1714,15 @@
         <form id="linenForm" class="space-y-4">
             <input type="hidden" id="linenType" value="">
 
-<div class="grid grid-cols-2 gap-4">
-    <div>
-        <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
-        <input type="text" id="linenLocation" required placeholder="e.g., 15" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-    </div>
-    <div>
-        <label class="block text-xs font-bold text-stone-400 mb-1">Pickup Date *</label>
-        <input type="date" id="linenDate" required class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-    </div>
-</div>
-    <label class="block text-xs font-bold text-stone-400 mb-1">Delivery Date (Optional)</label>
-    <input type="date" id="linenDeliveryDate" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-</div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
+                    <input type="text" id="linenLocation" required placeholder="e.g., 15" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">Pickup Date *</label>
+                    <input type="date" id="linenDate" required class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+                </div>
             </div>
 
             <div class="bg-[#0f0e0c] rounded-xl border border-[#2f2820] p-4 space-y-3">
@@ -1753,11 +1749,7 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
-     🖨️ MODAL — LINEN PRINT PREVIEW (ÉLÉGANTE — non plein écran)
-     - Header fixe avec Print / PDF / Close toujours visibles
-     - Body scrollable
-     - Backdrop cliquable pour fermer
-     - Escape pour fermer
+     🖨️ MODAL — LINEN PRINT PREVIEW
      ═══════════════════════════════════════════════════════════════════ -->
 <div id="linenPrintModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6" style="z-index: 999998;">
 
@@ -1795,22 +1787,21 @@
         <div class="flex-1 overflow-y-auto bg-[#0f0e0c] p-2 sm:p-4">
            <div id="linenPrintArea" class="bg-white text-stone-900 rounded-xl shadow-inner mx-auto max-w-[720px] p-6 sm:p-10">
     
-<!-- LOGO + EN-TÊTE COMPACT (Styles inline pour garantir l'impression) -->
-<div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 24px;">
-    <table style="width: 100%; border: none; border-collapse: collapse;">
-        <tr>
-            <!-- Logo (hauteur fixe de 70px) -->
-            <td style="width: 90px; vertical-align: middle; border: none; padding: 0;">
-                <img src="assets/remal-logo.png" alt="Remal" style="height: 70px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">
-            </td>
-            <!-- Textes -->
-            <td style="vertical-align: middle; text-align: left; padding-left: 20px; border: none;">
-                <h1 style="font-family: Georgia, serif; font-size: 26px; font-weight: bold; color: #1c1917; margin: 0; letter-spacing: 2px;">REMAL HOTEL & VILLAS</h1>
-                <h2 style="font-size: 14px; font-weight: bold; color: #b45309; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 1px;" id="printTitle">Linen Control Sheet</h2>
-            </td>
-        </tr>
-    </table>
-</div>
+                <!-- LOGO + EN-TÊTE COMPACT -->
+                <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 24px;">
+                    <table style="width: 100%; border: none; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 90px; vertical-align: middle; border: none; padding: 0;">
+                                <img src="assets/remal-logo.png" alt="Remal" style="height: 70px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">
+                            </td>
+                            <td style="vertical-align: middle; text-align: left; padding-left: 20px; border: none;">
+                                <h1 style="font-family: Georgia, serif; font-size: 26px; font-weight: bold; color: #1c1917; margin: 0; letter-spacing: 2px;">REMAL HOTEL & VILLAS</h1>
+                                <h2 style="font-size: 14px; font-weight: bold; color: #b45309; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 1px;" id="printTitle">Linen Control Sheet</h2>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
                 <div class="flex flex-wrap justify-between gap-2 text-xs sm:text-sm font-bold mb-6 bg-stone-50 px-3 py-2 rounded-lg border border-stone-200">
                     <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
                     <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
@@ -1839,7 +1830,7 @@
             </div>
         </div>
 
-        <!-- FOOTER — Actions secondaires -->
+        <!-- FOOTER -->
         <div class="flex-shrink-0 px-4 sm:px-5 py-2.5 border-t border-[#2f2820] bg-[#0f0e0c] flex justify-between items-center text-[10px] text-stone-500">
             <span>💡 Tip: Press <strong>Esc</strong> to close · Click backdrop to dismiss</span>
             <span class="font-bold text-[#DCA773]">Remal Laundry OS</span>
