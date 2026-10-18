@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v13 ULTIMATE)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v14 NATIVE PRINT)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -88,7 +88,7 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. BOUTON PRINT
+// 3. BOUTON PRINT (Méthode Native)
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
     document.body.classList.add('printing-linen');
@@ -97,96 +97,14 @@ function printLinenSheet() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. BOUTON PDF (Méthode de l'Iframe Invisible)
+// 4. BOUTON PDF (Méthode Native Windows/Mac)
 // ═══════════════════════════════════════════════════════════════════
-async function downloadLinenSheetPDF() {
-    console.log("📥 Génération du PDF via Iframe...");
-    const printArea = document.getElementById('linenPrintArea');
-    if (!printArea) return alert('⚠️ Contenu introuvable.');
-    if (typeof html2pdf === 'undefined') return alert('⚠️ html2pdf non chargé.');
-
-    const type = (document.getElementById('printTitle')?.innerText || 'linen')
-        .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
-    const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
-    const datePart = new Date().toISOString().split('T')[0];
-    const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
-
-    const btn = document.querySelector('button[onclick="downloadLinenSheetPDF()"]');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-    }
-
-    // 1. Création de l'iframe invisible
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position: fixed; left: 0; top: 0; width: 800px; height: 1200px; opacity: 0; pointer-events: none; z-index: -9999;';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentWindow.document;
-    const headHTML = document.head.innerHTML;
-
-    // 2. Injection du contenu HTML (sans les marges noires)
-    iframeDoc.open();
-    iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-            <head>
-                ${headHTML}
-                <style>
-                    /* Annulation de tout centrage pour être sûr que ça commence à gauche */
-                    body, html { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
-                    #pdf-content { 
-                        width: 794px !important; /* Largeur exacte A4 */
-                        padding: 40px !important; 
-                        margin: 0 !important; /* Zéro marge gauche */
-                        box-sizing: border-box; 
-                    }
-                </style>
-            </head>
-            <body>
-                <div id="pdf-content">
-                    ${printArea.innerHTML}
-                </div>
-            </body>
-        </html>
-    `);
-    iframeDoc.close();
-
-    // 3. Attente pour charger le logo
-    await new Promise(r => setTimeout(r, 600));
-
-    // 4. Capture
-    const elementToPrint = iframeDoc.getElementById('pdf-content');
-
-    const opt = {
-        margin: [10, 10, 10, 10],
-        filename: filename,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            windowWidth: 794,
-            scrollX: 0,
-            scrollY: 0
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    try {
-        await html2pdf().set(opt).from(elementToPrint).save();
-    } catch (err) {
-        console.error('❌ Erreur PDF:', err);
-        alert('⚠️ Impossible de générer le PDF.');
-    } finally {
-        // Nettoyage
-        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>';
-        }
-    }
+function downloadLinenSheetPDF() {
+    // On affiche un message pour guider l'utilisateur
+    alert("💡 Dans la fenêtre d'impression qui va s'ouvrir, choisissez 'Enregistrer au format PDF' (Save as PDF) comme imprimante.");
+    
+    // On lance l'impression native. L'utilisateur choisira "PDF".
+    printLinenSheet();
 }
 
 // ═══════════════════════════════════════════════════════════════════
