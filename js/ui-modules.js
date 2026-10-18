@@ -69,18 +69,16 @@ function applyRoleVisibility() {
         return;
     }
 
-    // ═══ STAFF MODE — Masquage strict ET définitif ═══
+    // ═══ STAFF MODE — Masquage par CSS uniquement (PAS de suppression DOM) ═══
+    // ✅ FIX : on ne retire PLUS rien du DOM. Le CSS `body.role-staff [data-admin-only="true"]`
+    //          fait le travail de masquage. Cela permet à l'admin de se reconnecter
+    //          sans avoir à recharger la page (bug précédent : sectionLinenControl
+    //          était DÉTRUITE après un logout staff).
     body.classList.add('role-staff');
-    console.log('[Role] Staff mode — restricted UI (strict removal)');
+    console.log('[Role] Staff mode — restricted UI (CSS-only hiding, DOM preserved)');
 
-    // 1. Sections réservées admin : on les SUPPRIME du DOM
-  const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard', 'sectionCheckout', 'sectionChat', 'sectionLinenControl'];
-    ADMIN_SECTIONS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && el.parentNode) {
-            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
-        }
-    });
+    // ⚠️ AUCUN removeChild() ici volontairement.
+}
 
     // 2. Boutons de nav admin : on les SUPPRIME du DOM
   const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard', 'navBtnChat', 'navBtnLinenControl'];
