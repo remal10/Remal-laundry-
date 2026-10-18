@@ -6,6 +6,7 @@
 // Phase 5 : Admin-only controls (Select All / Batch Status / Delete)
 // ✅ BATCH PRINT V2 : Clone #pdfExportArea (même design que la modale)
 // ✅ REFRESH FIX : refreshAllViews() synchronise l'UI instantanément
+// ✅ LINEN FIX : garde-fou switchMainSection + attachLinenFormHandler
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -46,6 +47,14 @@ function refreshAllViews() {
     if (chatSection && !chatSection.classList.contains('hidden')) {
         if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
             try { window.AdminChat.refreshAll(); } catch (e) { console.warn('[Refresh] AdminChat:', e); }
+        }
+    }
+
+    // 6. Linen Control (seulement si visible)
+    const linenSection = document.getElementById('sectionLinenControl');
+    if (linenSection && !linenSection.classList.contains('hidden')) {
+        if (typeof loadRecentLinenSheets === 'function') {
+            try { loadRecentLinenSheets(); } catch (e) { console.warn('[Refresh] loadRecentLinenSheets:', e); }
         }
     }
 
@@ -1378,6 +1387,7 @@ function dismissGuestNotificationBanner() {
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎯 PATCH GLOBAL — SWITCH SECTION (Linen Control + Admin Chat)
+// ✅ FIX LINEN : garde-fou sectionLinenControl + attachLinenFormHandler
 // ═══════════════════════════════════════════════════════════════════
 (function patchSwitchMainSection() {
     function wrapSwitch() {
@@ -1393,7 +1403,7 @@ function dismissGuestNotificationBanner() {
         window.switchMainSection = function(sectionName) {
             console.log('🔀 [SwitchPatch] Requested section:', sectionName);
 
-            // 1. Cacher TOUTES les sections (y compris linenControl)
+            // 1. Cacher TOUTES les sections (y compris linenControl et adminChat)
             const sections = ['liveRecord', 'newRecord', 'spa', 'checkout', 'stock', 'lostfound', 'pdfList', 'massEntry', 'dashboard', 'adminChat', 'linenControl'];
             
             sections.forEach(sec => {
@@ -1420,20 +1430,22 @@ function dismissGuestNotificationBanner() {
                 if (window.AdminChat && typeof window.AdminChat.refreshAll === 'function') {
                     window.AdminChat.refreshAll();
                 }
-          } else if (sectionName === 'linenControl') {
-    const linenSection = document.getElementById('sectionLinenControl');
-    if (!linenSection) {
-        console.warn('⚠️ [SwitchPatch] sectionLinenControl introuvable — reload conseillé');
-        return;
-    }
-    // Attache le handler submit si pas déjà fait (au cas où linen.js aurait raté son init)
-    if (typeof attachLinenFormHandler === 'function') {
-        attachLinenFormHandler();
-    }
-    if (typeof loadRecentLinenSheets === 'function') {
-        loadRecentLinenSheets();
-    }
-}
+            } else if (sectionName === 'linenControl') {
+                // 🛡️ FIX : garde-fou si la section a été détruite du DOM
+                const linenSection = document.getElementById('sectionLinenControl');
+                if (!linenSection) {
+                    console.warn('⚠️ [SwitchPatch] sectionLinenControl introuvable — reload conseillé');
+                    alert('⚠️ Linen Control section was removed. Please reload the page (Ctrl+R).');
+                    return;
+                }
+                // Attache le handler submit si pas déjà fait (sécurité supplémentaire)
+                if (typeof attachLinenFormHandler === 'function') {
+                    try { attachLinenFormHandler(); } catch (e) { console.warn('[SwitchPatch] attachLinenFormHandler:', e); }
+                }
+                // Charge l'historique
+                if (typeof loadRecentLinenSheets === 'function') {
+                    try { loadRecentLinenSheets(); } catch (e) { console.warn('[SwitchPatch] loadRecentLinenSheets:', e); }
+                }
             } else if (sectionName === 'liveRecord') {
                 if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
             } else if (sectionName === 'dashboard') {
