@@ -1791,17 +1791,22 @@
         <div class="flex-1 overflow-y-auto bg-[#0f0e0c] p-2 sm:p-4">
            <div id="linenPrintArea" class="bg-white text-stone-900 rounded-xl shadow-inner mx-auto max-w-[720px] p-6 sm:p-10">
     
-  <!-- LOGO + EN-TÊTE COMPACT -->
-<div class="border-b-2 border-stone-200 pb-4 mb-6">
-    <div class="flex items-center gap-4 sm:gap-6">
-        <img src="assets/remal-logo.png" alt="Remal" class="h-16 sm:h-20 w-auto object-contain flex-shrink-0" onerror="this.style.display='none';">
-        <div class="flex flex-col justify-center">
-            <h1 class="font-serif text-2xl sm:text-3xl font-bold tracking-widest text-stone-900 leading-tight">REMAL HOTEL & VILLAS</h1>
-            <h2 class="text-sm sm:text-base font-bold text-amber-700 mt-2 uppercase tracking-wider" id="printTitle">Linen Control Sheet</h2>
-        </div>
-    </div>
+<!-- LOGO + EN-TÊTE COMPACT (Styles inline pour garantir l'impression) -->
+<div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 24px;">
+    <table style="width: 100%; border: none; border-collapse: collapse;">
+        <tr>
+            <!-- Logo (hauteur fixe de 70px) -->
+            <td style="width: 90px; vertical-align: middle; border: none; padding: 0;">
+                <img src="assets/remal-logo.png" alt="Remal" style="height: 70px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">
+            </td>
+            <!-- Textes -->
+            <td style="vertical-align: middle; text-align: left; padding-left: 20px; border: none;">
+                <h1 style="font-family: Georgia, serif; font-size: 26px; font-weight: bold; color: #1c1917; margin: 0; letter-spacing: 2px;">REMAL HOTEL & VILLAS</h1>
+                <h2 style="font-size: 14px; font-weight: bold; color: #b45309; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 1px;" id="printTitle">Linen Control Sheet</h2>
+            </td>
+        </tr>
+    </table>
 </div>
-
                 <div class="flex flex-wrap justify-between gap-2 text-xs sm:text-sm font-bold mb-6 bg-stone-50 px-3 py-2 rounded-lg border border-stone-200">
                     <p>Location: <span id="printLocation" class="text-amber-700">---</span></p>
                     <p>Date: <span id="printDate" class="text-amber-700">---</span></p>
