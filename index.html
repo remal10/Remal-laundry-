@@ -117,6 +117,10 @@
         </div>
 
         <div class="laundry-header-actions">
+            
+            <!-- 👑 ZONE RÉSERVÉE À L'ADMIN (Reste vide pour le staff) -->
+            <div id="headerAdminContainer"></div>
+
             <div id="roleBadgeHeader" class="role-badge">
                 <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
                 <div class="role-badge-info">
@@ -160,8 +164,8 @@
         <span class="menu-lang-badge" id="menuLangBadge">EN</span>
     </button>
     
-    <!-- 👑 LIGNE MAGIQUE : Le bouton Mass PDF (créé seulement si Admin) -->
-    <div id="adminMenuBtnContainer"></div>
+    <!-- 👑 ZONE RÉSERVÉE À L'ADMIN DANS LE MENU MOBILE -->
+    <div id="mobileAdminContainer"></div>
 
     <button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
         <i class="fas fa-sign-out-alt"></i>
@@ -1913,24 +1917,39 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- 🛡️ SÉCURITÉ : Injection sécurisée du bouton Mass PDF dans le menu ⋯ -->
+<!-- 🛡️ SÉCURITÉ STRICTE : Injection des boutons Admin uniquement -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // On vérifie toutes les 500ms si le rôle de l'utilisateur est prêt
     const checkAdminAndInject = setInterval(() => {
         if (typeof isAdmin === 'function' && typeof currentStaffUser !== 'undefined') {
-            clearInterval(checkAdminAndInject);
+            clearInterval(checkAdminAndInject); // On arrête de chercher une fois trouvé
             
             if (isAdmin()) {
-                const container = document.getElementById('adminMenuBtnContainer');
-                if (container && !document.getElementById('menuBtnMassEntry')) {
-                    container.innerHTML = `
-                        <button id="menuBtnMassEntry" class="staff-mobile-menu-item" onclick="switchMainSection('massEntry'); closeStaffMobileMenu();">
+                // 1. Injection dans l'en-tête (Barre du haut)
+                const headerContainer = document.getElementById('headerAdminContainer');
+                if (headerContainer) {
+                    headerContainer.innerHTML = `
+                        <button onclick="switchMainSection('massEntry')" class="header-action-btn" title="Mass PDF Import" style="color: #DCA773; border-color: rgba(220, 167, 115, 0.3); margin-right: 8px;">
+                            <i class="fas fa-file-import"></i>
+                        </button>
+                    `;
+                }
+
+                // 2. Injection dans le menu ⋯ (Mobile)
+                const mobileContainer = document.getElementById('mobileAdminContainer');
+                if (mobileContainer) {
+                    mobileContainer.innerHTML = `
+                        <button class="staff-mobile-menu-item" onclick="switchMainSection('massEntry'); closeStaffMobileMenu();">
                             <i class="fas fa-file-import"></i>
                             <span>Mass PDF Import</span>
                         </button>
                     `;
-                    console.log('✅ [Menu] Bouton Mass PDF ajouté pour l\'Admin.');
                 }
+                
+                console.log('✅ [Sécurité] Boutons Mass PDF injectés (Admin).');
+            } else {
+                console.log('🛡️ [Sécurité] Staff détecté : Boutons Mass PDF non générés.');
             }
         }
     }, 500);
