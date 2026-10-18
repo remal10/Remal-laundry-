@@ -53,27 +53,31 @@
         body.role-staff [data-admin-only="true"] {
             display: none !important;
         }
-     /* Cache le menu lors de l'impression du Linen */
-@media print {
-    body.printing-linen > *:not(#linenPrintModal) {
-        display: none !important;
-    }
-    body.printing-linen #linenPrintModal {
-        position: static !important;
-        background: white !important;
-        padding: 0 !important;
-        display: block !important;
-    }
-    body.printing-linen #linenPrintModal .flex-shrink-0 {
-        display: none !important;
-    }
-    body.printing-linen #linenPrintArea {
-        width: 100% !important;
-        max-width: 100% !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-}
+
+        /* Cache le menu lors de l'impression du Linen */
+        @media print {
+            body.printing-linen > *:not(#linenPrintModal) {
+                display: none !important;
+            }
+            body.printing-linen #linenPrintModal {
+                position: static !important;
+                background: white !important;
+                padding: 0 !important;
+                display: block !important;
+                overflow: visible !important;
+            }
+            body.printing-linen #linenPrintModal .flex-shrink-0 {
+                display: none !important;
+            }
+            body.printing-linen #linenPrintArea {
+                width: 100% !important;
+                max-width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
@@ -155,16 +159,14 @@
         <span>Language</span>
         <span class="menu-lang-badge" id="menuLangBadge">EN</span>
     </button>
-<!-- BOUTON ADMIN : Mass PDF -->
-<button class="staff-mobile-menu-item" data-admin-only="true" onclick="switchMainSection('massEntry'); closeStaffMobileMenu();">
-    <i class="fas fa-file-import"></i>
-    <span>Mass PDF Import</span>
-</button>
+    
+    <!-- 👑 LIGNE MAGIQUE : Le bouton Mass PDF (créé seulement si Admin) -->
+    <div id="adminMenuBtnContainer"></div>
 
-<button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
-    <i class="fas fa-sign-out-alt"></i>
-    <span>Logout</span>
-</button>
+    <button class="staff-mobile-menu-item danger" onclick="closeStaffMobileMenu(); confirmLogout();">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </button>
 </div>
 
 <!-- ═══ PMS LAST SYNC BANNER ═══ -->
@@ -1909,6 +1911,30 @@ if ('serviceWorker' in navigator) {
             .catch((err) => console.warn('⚠️ [PWA] Service Worker:', err));
     });
 }
+</script>
+
+<!-- 🛡️ SÉCURITÉ : Injection sécurisée du bouton Mass PDF dans le menu ⋯ -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const checkAdminAndInject = setInterval(() => {
+        if (typeof isAdmin === 'function' && typeof currentStaffUser !== 'undefined') {
+            clearInterval(checkAdminAndInject);
+            
+            if (isAdmin()) {
+                const container = document.getElementById('adminMenuBtnContainer');
+                if (container && !document.getElementById('menuBtnMassEntry')) {
+                    container.innerHTML = `
+                        <button id="menuBtnMassEntry" class="staff-mobile-menu-item" onclick="switchMainSection('massEntry'); closeStaffMobileMenu();">
+                            <i class="fas fa-file-import"></i>
+                            <span>Mass PDF Import</span>
+                        </button>
+                    `;
+                    console.log('✅ [Menu] Bouton Mass PDF ajouté pour l\'Admin.');
+                }
+            }
+        }
+    }, 500);
+});
 </script>
 
 <!-- 💬 ADMIN CHAT — Send helper (init handled by chat-admin.js) -->
