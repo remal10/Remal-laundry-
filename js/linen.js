@@ -157,14 +157,16 @@ function printLinenSheet() {
 // DOWNLOAD PDF — Génère un PDF A4 propre (fix "page blanche")
 // ═══════════════════════════════════════════════════════════════════
 async function downloadLinenSheetPDF() {
-    console.log('📥 [LINEN] downloadLinenSheetPDF()');
+    console.log('📥 [LINEN] downloadLinenSheetPDF() (Méthode Native)');
 
     if (typeof html2pdf === 'undefined') {
         return alert('⚠️ html2pdf non chargé.');
     }
 
     const printArea = document.getElementById('linenPrintArea');
-    if (!printArea) return alert('⚠️ Contenu introuvable.');
+    const modal = document.getElementById('linenPrintModal');
+    
+    if (!printArea || !modal) return alert('⚠️ Contenu introuvable.');
 
     // Métadonnées pour le nom du fichier
     const type = (document.getElementById('printTitle')?.innerText || 'linen')
@@ -173,28 +175,38 @@ async function downloadLinenSheetPDF() {
     const datePart = new Date().toISOString().split('T')[0];
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // 🎯 CRÉATION DU CONTENEUR CACHÉ (Méthode infaillible)
-    const tempDiv = document.createElement('div');
-    tempDiv.id = 'temp-pdf-container';
-    
-    // On le place tout en bas de la page, visible par le moteur de rendu mais caché sous l'écran
-    tempDiv.style.cssText = `
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 794px; /* Taille exacte A4 en pixels */
-        background: #ffffff;
-        z-index: -9999;
-        padding: 40px;
-        box-sizing: border-box;
-    `;
-    
-    // On copie le contenu HTML (sans l'ID pour éviter les conflits)
-    tempDiv.innerHTML = printArea.innerHTML.replace(/id="[^"]*"/g, '');
-    document.body.appendChild(tempDiv);
+    // 🎯 SAUVEGARDE DE L'ÉTAT ACTUEL DE L'ÉCRAN
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalModalBg = modal.style.background;
+    const originalModalDisplay = modal.style.display;
+    const originalModalPadding = modal.style.padding;
 
-    // Attente cruciale pour que les images (logo) et polices se chargent
-    await new Promise(r => setTimeout(r, 600));
+    // 🎯 ON MASQUE TOUT POUR LA CAPTURE
+    // On cache le fond noir, les boutons Print/Close, etc.
+    document.querySelectorAll('body > *:not(#linenPrintModal)').forEach(el => {
+        el.setAttribute('data-temp-hidden', 'true');
+        el.style.setProperty('display', 'none', 'important');
+    });
+
+    // On force la modale à être juste la feuille blanche
+    modal.style.setProperty('background', '#ffffff', 'important');
+    modal.style.setProperty('display', 'block', 'important');
+    modal.style.setProperty('padding', '0', 'important');
+    modal.style.setProperty('overflow', 'visible', 'important');
+    modal.classList.remove('hidden');
+
+    // On cache le header de la modale (Print, Close, etc.)
+    const modalHeader = modal.querySelector('.flex-shrink-0');
+    if (modalHeader) modalHeader.style.setProperty('display', 'none', 'important');
+
+    // On s'assure que la zone d'impression a la largeur exacte A4
+    printArea.style.setProperty('width', '794px', 'important'); // 794px = A4 à 96 DPI
+    printArea.style.setProperty('margin', '0', 'important');
+    printArea.style.setProperty('border-radius', '0', 'important');
+    printArea.style.setProperty('box-shadow', 'none', 'important');
+
+    // Attente que les images/logos se chargent
+    await new Promise(r => setTimeout(r, 500));
 
     const opt = {
         margin: [10, 10, 10, 10],
@@ -204,7 +216,6 @@ async function downloadLinenSheetPDF() {
             scale: 2,
             useCORS: true,
             allowTaint: true,
-            logging: false,
             backgroundColor: '#ffffff',
             windowWidth: 794,
             scrollX: 0,
@@ -214,17 +225,31 @@ async function downloadLinenSheetPDF() {
     };
 
     try {
-        // On génère le PDF à partir du conteneur caché
-        await html2pdf().set(opt).from(tempDiv).save();
-        console.log('✅ [LINEN] PDF généré avec succès');
+        // On génère le PDF à partir de la vraie zone affichée à l'écran
+        await html2pdf().set(opt).from(printArea).save();
+        console.log('✅ [LINEN] PDF généré');
     } catch (err) {
         console.error('❌ [LINEN] Erreur PDF:', err);
         alert('⚠️ Impossible de générer le PDF.');
     } finally {
-        // On supprime le conteneur temporaire
-        if (tempDiv.parentNode) {
-            tempDiv.parentNode.removeChild(tempDiv);
-        }
+        // 🎯 ON REMET TOUT EN PLACE (RESTAURATION)
+        document.querySelectorAll('[data-temp-hidden="true"]').forEach(el => {
+            el.style.display = '';
+            el.removeAttribute('data-temp-hidden');
+        });
+
+        modal.style.background = originalModalBg;
+        modal.style.display = originalModalDisplay;
+        modal.style.padding = originalModalPadding;
+        
+        // On remet le header de la modale
+        if (modalHeader) modalHeader.style.display = '';
+
+        // On remet la zone d'impression comme avant
+        printArea.style.width = '';
+        printArea.style.margin = '';
+        printArea.style.borderRadius = '';
+        printArea.style.boxShadow = '';
     }
 }
 // ═══════════════════════════════════════════════════════════════════
