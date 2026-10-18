@@ -1714,15 +1714,20 @@
         <form id="linenForm" class="space-y-4">
             <input type="hidden" id="linenType" value="">
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
-                    <input type="text" id="linenLocation" required placeholder="e.g., 15" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-1">Pickup Date *</label>
-                    <input type="date" id="linenDate" required class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
-                </div>
+<div class="grid grid-cols-2 gap-4">
+    <div>
+        <label class="block text-xs font-bold text-stone-400 mb-1">Location # *</label>
+        <input type="text" id="linenLocation" required placeholder="e.g., 15" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+    </div>
+    <div>
+        <label class="block text-xs font-bold text-stone-400 mb-1">Pickup Date *</label>
+        <input type="date" id="linenDate" required class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+    </div>
+</div>
+<div>
+    <label class="block text-xs font-bold text-stone-400 mb-1">Delivery Date (Optional)</label>
+    <input type="date" id="linenDeliveryDate" class="w-full bg-[#0f0e0c] border border-[#2f2820] rounded-xl p-3 text-sm text-stone-200 outline-none focus:border-[#DCA773]">
+</div>
             </div>
 
             <div class="bg-[#0f0e0c] rounded-xl border border-[#2f2820] p-4 space-y-3">
