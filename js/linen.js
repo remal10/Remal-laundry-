@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v9 FINAL - SANS POPUP)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v10 FINAL)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -88,22 +88,22 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. BOUTON PRINT & PDF (Méthode directe sans Popup)
+// 3. BOUTON PRINT (Méthode Native)
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
-    // On utilise simplement la fonction d'impression du navigateur
-    // et on ajoute une classe au body pour masquer le reste de la page
     document.body.classList.add('printing-linen');
     window.print();
-    
-    // On retire la classe une fois l'impression terminée
     setTimeout(() => document.body.classList.remove('printing-linen'), 1000);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// 4. BOUTON PDF (Méthode Directe sur l'élément visible)
+// ═══════════════════════════════════════════════════════════════════
 async function downloadLinenSheetPDF() {
     console.log("📥 Génération du PDF...");
     const printArea = document.getElementById('linenPrintArea');
     if (!printArea) return alert('⚠️ Contenu introuvable.');
+    if (typeof html2pdf === 'undefined') return alert('⚠️ html2pdf non chargé.');
 
     const type = (document.getElementById('printTitle')?.innerText || 'linen')
         .toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
@@ -111,30 +111,14 @@ async function downloadLinenSheetPDF() {
     const datePart = new Date().toISOString().split('T')[0];
     const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
 
-    // Création du conteneur temporaire invisible
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 794px; /* Largeur A4 */
-        background: #ffffff;
-        z-index: -9999;
-        padding: 20px;
-        box-sizing: border-box;
-    `;
-    
-    // On clone le contenu
-    tempDiv.innerHTML = printArea.innerHTML;
-    document.body.appendChild(tempDiv);
+    // Bloquer l'UI pendant la génération
+    const btn = document.querySelector('button[onclick="downloadLinenSheetPDF()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    }
 
-    // On cache la modale pour éviter les clignotements
-    const modal = document.getElementById('linenPrintModal');
-    if (modal) modal.style.opacity = '0';
-
-    // Petite attente pour les images
-    await new Promise(r => setTimeout(r, 500));
-
+    // Configuration de html2pdf
     const opt = {
         margin: [10, 10, 10, 10],
         filename: filename,
@@ -144,27 +128,31 @@ async function downloadLinenSheetPDF() {
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            windowWidth: 794,
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            // On force la largeur pour éviter les coupures à gauche
+            windowWidth: 800 
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        await html2pdf().set(opt).from(tempDiv).save();
+        // 🎯 La magie opère ici : on dit à html2pdf de lire l'élément DIRECTEMENT
+        await html2pdf().set(opt).from(printArea).save();
     } catch (err) {
         console.error('❌ Erreur PDF:', err);
-        alert('⚠️ Impossible de générer le PDF.');
+        alert('⚠️ Impossible de générer le PDF.\nErreur: ' + err.message);
     } finally {
-        // Nettoyage
-        if (tempDiv.parentNode) tempDiv.parentNode.removeChild(tempDiv);
-        if (modal) modal.style.opacity = '';
+        // Restaurer le bouton
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>';
+        }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. HISTORIQUE (AVEC SUPPRESSION)
+// 5. HISTORIQUE
 // ═══════════════════════════════════════════════════════════════════
 async function loadRecentLinenSheets() {
     const container = document.getElementById('recentLinenSheets');
@@ -211,9 +199,6 @@ async function loadRecentLinenSheets() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// 5. CLIC SUR L'HISTORIQUE
-// ═══════════════════════════════════════════════════════════════════
 function openLinenFromCache(sheetId) {
     const sheet = window._linenSheetsCache?.[sheetId];
     if (!sheet) return;
