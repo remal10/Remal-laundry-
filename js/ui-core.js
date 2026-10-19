@@ -234,16 +234,34 @@ function programmerTimerReinitialisationMinuit() {
 // ═══════════════════════════════════════════════════════════════════
 // PIN ADMIN
 // ═══════════════════════════════════════════════════════════════════
-function demanderConfirmationPinAdmin(actionCallback) {
-    const pinSaisi = prompt("🔒 Security Verification:\nPlease enter your 4-digit Staff PIN code:");
-    if (!pinSaisi) return;
+async function demanderConfirmationPinAdmin(actionCallback) {
+    const pinSaisi = prompt("🔒 Security Verification:\nPlease enter your administrator PIN code:");
+    if (pinSaisi === null || !pinSaisi.trim()) return;
 
-    const pinCorrect = (currentStaffUser && currentStaffUser.pin_code) ? currentStaffUser.pin_code : '1234';
+    if (typeof supabaseClient === 'undefined' || !supabaseClient?.functions) {
+        alert("❌ Security verification is unavailable. Action cancelled.");
+        return;
+    }
 
-    if (pinSaisi.trim() === String(pinCorrect).trim() || pinSaisi.trim() === '1234') {
-        actionCallback();
-    } else {
-        alert("❌ Incorrect PIN code. Action cancelled.");
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('staff-pin-login', {
+            body: { pin: pinSaisi.trim() }
+        });
+
+        if (error || !data?.staff) {
+            alert("❌ Invalid PIN or verification failed. Action cancelled.");
+            return;
+        }
+
+        if (String(data.staff.role || '').trim().toLowerCase() !== 'admin') {
+            alert("🚫 Administrator PIN required. Action cancelled.");
+            return;
+        }
+
+        await actionCallback();
+    } catch (error) {
+        console.error('[Admin PIN] Verification failed:', error);
+        alert("❌ Security verification failed. Check your connection and try again.");
     }
 }
 
