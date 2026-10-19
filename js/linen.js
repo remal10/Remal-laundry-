@@ -203,15 +203,23 @@ function openLinenFromCache(sheetId) {
 
 async function deleteLinenSheet(sheetId) {
     if (!confirm('🗑️ Delete this sheet permanently?')) return;
-    
-    if (window.supabaseClient) {
-        try {
-            await window.supabaseClient.from('linen_control_sheets').delete().eq('id', sheetId);
-            loadRecentLinenSheets();
-        } catch (err) {
-            console.error('Erreur suppression:', err);
-            alert('⚠️ Could not delete sheet.');
-        }
+
+    if (!window.supabaseClient) {
+        alert('⚠️ Cannot delete the sheet: database connection is unavailable. Please try again.');
+        return;
+    }
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('linen_control_sheets')
+            .delete()
+            .eq('id', sheetId);
+
+        if (error) throw error;
+        await loadRecentLinenSheets();
+    } catch (err) {
+        console.error('Linen sheet deletion failed:', err);
+        alert('⚠️ Could not delete sheet. Please try again.');
     }
 }
 
