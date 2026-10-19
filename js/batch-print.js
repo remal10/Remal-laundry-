@@ -334,8 +334,23 @@
     // EXPOSE GLOBAL (pour le bouton Batch Print)
     // ───────────────────────────────────────────────────────────────
     window.printSelectedSlips = printSelectedSlips;
-    // Alias : ton ancien bouton appelle imprimerToutesLesChambresDuJour
-    window.imprimerToutesLesChambresDuJour = printSelectedSlips;
 
-    console.log('✅ [Batch Print] Loaded — Ctrl+P intercepted, imprimerToutesLesChambresDuJour → printSelectedSlips');
+    // Keep the legacy button behind the same admin and PIN checks as other
+    // administrator actions. This wrapper must not be replaced by the raw
+    // printSelectedSlips function, or the PIN prompt is silently bypassed.
+    window.imprimerToutesLesChambresDuJour = function () {
+        if (typeof requireAdmin === 'function' && !requireAdmin('Batch Print')) return;
+
+        if (typeof demanderConfirmationPinAdmin !== 'function') {
+            alert('❌ Security verification is unavailable. Please reload the page or contact your administrator.');
+            console.error('[Batch Print] demanderConfirmationPinAdmin is not available');
+            return;
+        }
+
+        demanderConfirmationPinAdmin(() => {
+            printSelectedSlips();
+        });
+    };
+
+    console.log('✅ [Batch Print] Loaded — Batch Print button uses admin and PIN verification');
 })();

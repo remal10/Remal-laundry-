@@ -1609,20 +1609,24 @@ function checkStaffSession() {
     if (savedStaff) {
         try {
             currentStaffUser = JSON.parse(savedStaff);
+            if (currentStaffUser && Object.prototype.hasOwnProperty.call(currentStaffUser, 'pin_code')) {
+                delete currentStaffUser.pin_code;
+                localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
+            }
             console.log("✅ Staff session restored:", currentStaffUser);
             if (loginModal) loginModal.classList.add('hidden');
             updateStaffUIIndicator();
-            applyRoleVisibility();  // Phase 5
+            applyRoleVisibility();
             return;
         } catch (e) {
             console.error("❌ Error parsing saved staff:", e);
+            localStorage.removeItem('remal_current_staff');
         }
     }
 
+    currentStaffUser = null;
     console.warn("⚠️ No staff session found - showing login");
-    if (loginModal) {
-        loginModal.classList.remove('hidden');
-    }
+    if (loginModal) loginModal.classList.remove('hidden');
 }
 
 async function verifyStaffPin() {
@@ -1631,54 +1635,45 @@ async function verifyStaffPin() {
     const pin = pinInput ? pinInput.value.trim() : '';
 
     if (!pin) return;
+    if (errorMsg) errorMsg.classList.add('hidden');
 
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        if (pin === '1234') {
-            currentStaffUser = { name: 'Superviseur (Local)', role: 'Manager', pin_code: '1234' };
-            saveAndUnlockSession();
-            return;
-        } else {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            return;
-        }
+        if (errorMsg) errorMsg.classList.remove('hidden');
+        if (pinInput) pinInput.value = '';
+        console.error("Connexion refusée : client Supabase indisponible.");
+        return;
     }
 
     try {
-        const { data, error } = await supabaseClient
-            .from('laundry_staff')
-            .select('*')
-            .eq('pin_code', pin)
-            .eq('is_active', true)
-            .single();
-
-        if (error || !data) {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            if(pinInput) pinInput.value = '';
+        const { data, error } = await supabaseClient.functions.invoke('staff-pin-login', { body: { pin } });
+        if (error || !data || !data.staff || !data.staff.id) {
+            if (errorMsg) errorMsg.classList.remove('hidden');
+            if (pinInput) pinInput.value = '';
+            console.error("Erreur authentification staff:", error || data?.error || 'Réponse invalide');
             return;
         }
 
-        currentStaffUser = {
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            pin_code: data.pin_code
-        };
-
+        currentStaffUser = { id: data.staff.id, name: data.staff.name, role: data.staff.role };
+        if (pinInput) pinInput.value = '';
         saveAndUnlockSession();
-
     } catch (err) {
         console.error("Erreur authentification staff:", err);
-        if(errorMsg) errorMsg.classList.remove('hidden');
+        if (errorMsg) errorMsg.classList.remove('hidden');
+        if (pinInput) pinInput.value = '';
     }
 }
 
 function saveAndUnlockSession() {
+    if (!currentStaffUser || !currentStaffUser.id) {
+        currentStaffUser = null;
+        return;
+    }
+    if (Object.prototype.hasOwnProperty.call(currentStaffUser, 'pin_code')) delete currentStaffUser.pin_code;
     localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
     const loginModal = document.getElementById('staffLoginModal');
     if (loginModal) loginModal.classList.add('hidden');
-    
     updateStaffUIIndicator();
-    applyRoleVisibility();  // Phase 5
+    applyRoleVisibility();
     console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
