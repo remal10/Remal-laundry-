@@ -1065,29 +1065,67 @@ function fermerModal() {
 // ═══════════════════════════════════════════════════════════════════
 // SUPPRESSION
 // ═══════════════════════════════════════════════════════════════════
-async function supprimerBordereauActuel() {
-    if (typeof requireAdmin === 'function' && !requireAdmin('delete a record')) return;
-    if (!selectedIdForModal) return;
-    if (confirm(`Delete this record?`)) {
-        isLocalUpdating = true;
-        chargerDonneesLocalStorage();
-        cachedSlips = cachedSlips.filter(e => String(e.id) !== String(selectedIdForModal));
-        sauvegarderDonneesLocalStorage();
+async function executerBatchUndo(previousStatuses, toastElement) {
+    console.log("↩️ [BatchUndo] Restauration des statuts précédents");
+    isLocalUpdating = true;
+    
+    let undoSuccess = true;
 
-        if (supabaseClient) {
-            try { 
-                await supabaseClient.from('guest_laundry_requests').delete().eq('id', selectedIdForModal); 
-            } catch(e) {
-                console.error("Erreur suppression Supabase:", e);
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            for (const [id, oldStatus] of Object.entries(previousStatuses)) {
+                if (id.length === 36) {
+                    const { error } = await supabaseClient
+                        .from('guest_laundry_requests')
+                        .update({ status: oldStatus })
+                        .eq('id', id);
+                        
+                    if (error) {
+                        undoSuccess = false;
+                        console.error("❌ Erreur Undo Supabase:", error.message);
+                    }
+                }
             }
+        } catch (err) {
+            undoSuccess = false;
+            console.error("❌ [BatchUndo] Exception:", err);
         }
-
-        fermerModal();
-        refreshAllViews();
-        setTimeout(() => { isLocalUpdating = false; }, 1000);
     }
-}
 
+    // 🎯 FIX D2 : On ne met à jour l'écran que si l'undo a réussi
+    if (undoSuccess) {
+        chargerDonneesLocalStorage();
+        cachedSlips.forEach(s => {
+            const id = String(s.id);
+            if (previousStatuses[id] !== undefined) {
+                s.status = previousStatuses[id];
+            }
+        });
+        sauvegarderDonneesLocalStorage();
+        refreshAllViews();
+
+        // Afficher le toast de succès
+        const confirmToast = document.createElement('div');
+        confirmToast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border border-rose-800 text-rose-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
+        confirmToast.innerHTML = `↩️ <strong>Statuts restaurés</strong> — ${Object.keys(previousStatuses).length} record(s)`;
+        document.body.appendChild(confirmToast);
+
+        setTimeout(() => {
+            confirmToast.style.opacity = '0';
+            setTimeout(() => { if (confirmToast.parentNode) confirmToast.parentNode.removeChild(confirmToast); }, 300);
+        }, 2200);
+    } else {
+        alert("❌ Impossible de restaurer les statuts (Erreur Supabase). Veuillez recharger la page.");
+    }
+
+    if (toastElement && toastElement.parentNode) {
+        toastElement.style.opacity = '0';
+        setTimeout(() => { if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement); }, 300);
+    }
+
+    setTimeout(() => { isLocalUpdating = false; }, 1000);
+    activeBatchUndo = null;
+}
 // ═══════════════════════════════════════════════════════════════════
 // CHANGEMENT STATUT (individuel)
 // ═══════════════════════════════════════════════════════════════════
