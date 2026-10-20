@@ -237,47 +237,64 @@ function processIncomingPayload(rawData) {
 // Fallback polling sync
 // CORRECTION : Ignore les records Staff (pas de chime, pas d'écrasement)
 // ═══════════════════════════════════════════════════════════════════
-let lastProcessedId = null;
+// Keep a timestamp cursor so the fallback can recover every request created
+// since the previous successful poll, not just the single newest row.
+let fallbackCursor = new Date().toISOString();
+const fallbackProcessedIds = new Set();
+
+function markFallbackRequestProcessed(id) {
+    if (id === null || id === undefined) return;
+    fallbackProcessedIds.add(String(id));
+    // Bound memory use during long-running staff sessions.
+    if (fallbackProcessedIds.size > 500) {
+        const oldestId = fallbackProcessedIds.values().next().value;
+        fallbackProcessedIds.delete(oldestId);
+    }
+}
 
 async function syncFallbackGuestRequests() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
     if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) return;
 
     try {
+        const pollStartedAt = new Date().toISOString();
         const { data, error } = await supabaseClient
             .from('guest_laundry_requests')
             .select('*')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .gt('created_at', fallbackCursor)
+            .lte('created_at', pollStartedAt)
+            .order('created_at', { ascending: true })
+            .limit(100);
 
-        if (error || !data || data.length === 0) return;
-
-        const latest = data[0];
-        const latestCreatedBy = String(latest.created_by || '').trim();
-
-        if (lastProcessedId === null) {
-            lastProcessedId = String(latest.id);
+        if (error || !data) {
+            if (error) console.warn("Fallback sync warning:", error);
             return;
         }
 
-        if (String(latest.id) !== lastProcessedId) {
-            lastProcessedId = String(latest.id);
-            
-            // ⛔ NE PAS TRAITER les records Staff
-            if (latestCreatedBy.startsWith('staff (')) {
+        // Advance only after a successful query, so a temporary network error
+        // does not permanently skip requests.
+        fallbackCursor = pollStartedAt;
+
+        for (const request of data) {
+            const requestId = String(request.id || '');
+            if (!requestId || fallbackProcessedIds.has(requestId)) continue;
+            markFallbackRequestProcessed(requestId);
+
+            const createdBy = String(request.created_by || '').trim();
+            if (createdBy.startsWith('staff (')) {
                 console.log("⏭️ [Fallback] Skipping STAFF record (no chime):", {
-                    id: latest.id,
-                    created_by: latestCreatedBy
+                    id: request.id,
+                    created_by: createdBy
                 });
-                return;
+                continue;
             }
 
-            console.log("🔄 [Fallback] New GUEST request detected:", {
-                id: latest.id,
-                created_by: latestCreatedBy,
-                status: latest.status
+            console.log("🔄 [Fallback] New request recovered by polling:", {
+                id: request.id,
+                created_by: createdBy,
+                status: request.status
             });
-            processIncomingPayload(latest);
+            processIncomingPayload(request);
         }
     } catch (err) {
         console.warn("Fallback sync warning:", err);
