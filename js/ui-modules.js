@@ -15,7 +15,24 @@ let currentStatusFilter = 'all';
 
 // Phase 2.3 — Quick date filter ('today' | '7d' | '30d' | '90d' | null = no filter)
 let currentDateFilter = null;
-
+// 🔐 Fonction pour crypter le PIN (SHA-256)
+async function hashPin(pin) {
+    // 1. On transforme le texte (ex: "1234") en données binaires
+    const encoder = new TextEncoder();
+    const data = encoder.encode(String(pin));
+    
+    // 2. On utilise la fonction de cryptage native du navigateur (SHA-256)
+    // C'est la même technologie que celle utilisée par les banques.
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    
+    // 3. Le résultat est un objet binaire incompréhensible.
+    // On le transforme en tableau de nombres (bytes)
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    
+    // 4. On convertit chaque nombre en texte hexadécimal (lettres et chiffres)
+    // et on colle le tout pour former une seule chaîne de 64 caractères.
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 5 — ROLE MANAGEMENT (Admin / Staff)
 // ═══════════════════════════════════════════════════════════════════
