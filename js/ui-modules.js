@@ -1651,7 +1651,7 @@ async function verifyStaffPin() {
 
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         if (pin === '1234') {
-            currentStaffUser = { name: 'Superviseur (Local)', role: 'Manager', pin_code: '1234' };
+            currentStaffUser = { name: 'Superviseur (Local)', role: 'Admin', pin_code: '1234' };
             saveAndUnlockSession();
             return;
         } else {
@@ -1661,12 +1661,16 @@ async function verifyStaffPin() {
     }
 
     try {
+        // 🔐 ON CRYPTE LE PIN TAPÉ
+        const hashedPin = await hashPin(pin);
+
+        // On cherche dans la base le PIN crypté
         const { data, error } = await supabaseClient
             .from('laundry_staff')
             .select('*')
-            .eq('pin_code', pin)
+            .or(`pin_hash.eq.${hashedPin},pin_code.eq.${pin}`) 
             .eq('is_active', true)
-            .single();
+            .maybeSingle();
 
         if (error || !data) {
             if(errorMsg) errorMsg.classList.remove('hidden');
@@ -1688,7 +1692,6 @@ async function verifyStaffPin() {
         if(errorMsg) errorMsg.classList.remove('hidden');
     }
 }
-
 function saveAndUnlockSession() {
     localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
     const loginModal = document.getElementById('staffLoginModal');
