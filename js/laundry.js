@@ -4,7 +4,7 @@
 // ✅ MASS ENTRY V2 — Robust PMS parser
 // ✅ AGENCY V9 — Keyword extraction + strict stop
 // ✅ QUOTA V4 — "X pieces per day for AED Y" → AED (Y/X) per Pcs
-// ✅ PAX FIX — 03PXBB / 3PAX / 03 PAX detection
+// ✅ PAX FIX — Support 1, 2, 3, 4... PAX multiplier
 // ✅ CHECK-OUT TODAY — Simple informative list (no decisions)
 // ✅ OCCUPANCY — % vs 212 rooms
 // ✅ Storage helpers declared first (fix ReferenceError)
@@ -586,11 +586,11 @@ function normalizePmsDate(str) {
     return `${m[3]}-${m[2]}-${m[1]}`;
 }
 
-// 🎯 PAX FIX : Détecte 03PXBB, 3PAX, 03 PAX, etc.
+// 🎯 PAX FIX — Support 1, 2, 3, 4... PAX multiplier
 function parsePaxMultiplier(text) {
     if (!text) return 1;
     
-    // Cherche un chiffre (1-2 digits) suivi de PX ou PAX (avec ou sans espace)
+    // Cherche un chiffre (1-2 digits) suivi de PX ou PAX, avec ou sans espace
     const m = text.match(/(\d{1,2})\s*(?:px|pax)/i);
     
     if (m) {
