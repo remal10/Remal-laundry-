@@ -1299,63 +1299,47 @@ function showBatchStatusToast(nouveauStatut, count, previousStatuses) {
     activeBatchUndo = { timer, element: toast, previousStatuses };
 }
 
-async function executerBatchUndo(previousStatuses, toastElement) {
-    console.log("↩️ [BatchUndo] Restauration des statuts précédents:", previousStatuses);
-    isLocalUpdating = true;
+async function supprimerBordereauActuel() {
+    if (typeof requireAdmin === 'function' && !requireAdmin('delete a record')) return;
+    if (!selectedIdForModal) return;
+    
+    if (confirm(`Delete this record?`)) {
+        isLocalUpdating = true;
+        
+        let supabaseSuccess = true;
 
-    chargerDonneesLocalStorage();
-    cachedSlips.forEach(s => {
-        const id = String(s.id);
-        if (previousStatuses[id] !== undefined) {
-            s.status = previousStatuses[id];
-        }
-    });
-    sauvegarderDonneesLocalStorage();
-
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            for (const [id, oldStatus] of Object.entries(previousStatuses)) {
-                if (id.length === 36) {
-                    await supabaseClient
-                        .from('guest_laundry_requests')
-                        .update({ status: oldStatus })
-                        .eq('id', id);
+        if (supabaseClient) {
+            try { 
+                const { error } = await supabaseClient
+                    .from('guest_laundry_requests')
+                    .delete()
+                    .eq('id', selectedIdForModal); 
+                
+                if (error) {
+                    supabaseSuccess = false;
+                    alert("❌ Supabase a refusé la suppression : " + error.message);
+                    console.error("Erreur suppression Supabase:", error);
                 }
+            } catch(e) {
+                supabaseSuccess = false;
+                alert("❌ Erreur réseau. La commande n'a pas été supprimée.");
+                console.error("Erreur suppression Supabase:", e);
             }
-            console.log(`✅ [BatchUndo] ${Object.keys(previousStatuses).length} records restaurés`);
-        } catch (err) {
-            console.error("❌ [BatchUndo] Erreur Supabase:", err);
         }
+
+        // 🎯 FIX D1 : On ne met à jour l'écran QUE si Supabase a validé
+        if (supabaseSuccess) {
+            chargerDonneesLocalStorage();
+            cachedSlips = cachedSlips.filter(e => String(e.id) !== String(selectedIdForModal));
+            sauvegarderDonneesLocalStorage();
+            
+            fermerModal();
+            refreshAllViews();
+        }
+        
+        setTimeout(() => { isLocalUpdating = false; }, 1000);
     }
-
-    refreshAllViews();
-
-    if (toastElement && toastElement.parentNode) {
-        toastElement.style.opacity = '0';
-        toastElement.style.transform = 'translate(-50%, 20px)';
-        toastElement.style.transition = 'all 0.25s ease';
-        setTimeout(() => {
-            if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement);
-        }, 300);
-    }
-
-    const confirmToast = document.createElement('div');
-    confirmToast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-950 border border-rose-800 text-rose-200 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xl';
-    confirmToast.innerHTML = `↩️ <strong>Statuts restaurés</strong> — ${Object.keys(previousStatuses).length} record(s)`;
-    document.body.appendChild(confirmToast);
-
-    setTimeout(() => {
-        confirmToast.style.opacity = '0';
-        confirmToast.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => {
-            if (confirmToast.parentNode) confirmToast.parentNode.removeChild(confirmToast);
-        }, 300);
-    }, 2200);
-
-    setTimeout(() => { isLocalUpdating = false; }, 1000);
-    activeBatchUndo = null;
 }
-
 // ═══════════════════════════════════════════════════════════════════
 // SUPPRESSION EN LOT
 // ═══════════════════════════════════════════════════════════════════
