@@ -65,45 +65,26 @@ window.refreshAllViews = refreshAllViews;
 // ═══════════════════════════════════════════════════════════════════
 // ON NEW GUEST REQUEST RECEIVED
 // ═══════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════
-// 🛡️ ANTI-DOUBLON : Mémoire des IDs récemment traités
-// ═══════════════════════════════════════════════════════════════════
+window.onNewGuestRequestReceived = async function(newOrder) {
 window._processedOrderIds = window._processedOrderIds || new Map();
-
-window.onNewGuestRequestReceived = async function(newOrder) {
     if (!newOrder) return;
 
     const recordId = String(newOrder.id || Date.now());
+    const incomingCreatedBy = String(newOrder.created_by || '').trim();
+    const incomingStatus = newOrder.status;
     const now = Date.now();
+const checkId = String(newOrder.id || Date.now());
 
-    // 🛑 FIX N2 : Vérifier si l'ID a déjà été traité récemment (ex: par le Realtime)
-    if (window._processedOrderIds.has(recordId)) {
-        const lastTime = window._processedOrderIds.get(recordId);
-        if (now - lastTime < 10000) { // Si traité il y a moins de 10 secondes
-            console.log("🛡️ [Anti-Doublon] Commande déjà traitée, ignorée:", recordId);
-            return;
-        }
+if (window._processedOrderIds && window._processedOrderIds.has(checkId)) {
+    const lastTime = window._processedOrderIds.get(checkId);
+    if (now - lastTime < 10000) {
+        console.log("🛡️ [Anti-Doublon] Commande déjà traitée, ignorée:", checkId);
+        return;
     }
-    
-    window._processedOrderIds.set(recordId, now);
+}
 
-    // Nettoyage automatique
-    if (window._processedOrderIds.size > 100) {
-        for (const [key, timestamp] of window._processedOrderIds.entries()) {
-            if (now - timestamp > 60000) window._processedOrderIds.delete(key);
-        }
-    }
-    
-    // ⬇️ Le reste de ton code actuel continue ici sans modification ⬇️
-    const incomingCreatedBy = String(newOrder.created_by || '').trim();
-    const incomingStatus = newOrder.status;
-    // ...
-window.onNewGuestRequestReceived = async function(newOrder) {
-    if (!newOrder) return;
-
-    const recordId = String(newOrder.id || Date.now());
-    const incomingCreatedBy = String(newOrder.created_by || '').trim();
-    const incomingStatus = newOrder.status;
+if (!window._processedOrderIds) window._processedOrderIds = new Map();
+window._processedOrderIds.set(checkId, now);
 
     console.log("🟢 [onNewGuestRequestReceived] REÇU:", {
         id: recordId,
