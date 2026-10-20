@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v17 FINAL PRINT)
+// REMAL LAUNDRY OS — LINEN CONTROL MODULE (v20 FULL FIXED)
 // ═══════════════════════════════════════════════════════════════════
 
 const linenItemsMap = {
@@ -88,7 +88,7 @@ function closeLinenPrintPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. BOUTON PRINT (Direct)
+// 3. BOUTON PRINT
 // ═══════════════════════════════════════════════════════════════════
 function printLinenSheet() {
     document.body.classList.add('printing-linen');
@@ -97,53 +97,92 @@ function printLinenSheet() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 4. BOUTON PDF (Méthode propre via nouvel onglet)
+// 4. BOUTON PDF
 // ═══════════════════════════════════════════════════════════════════
-function downloadLinenSheetPDF() {
+async function downloadLinenSheetPDF() {
+    if (typeof html2pdf === 'undefined') return alert('⚠️ html2pdf non chargé.');
+
     const printArea = document.getElementById('linenPrintArea');
     const modal = document.getElementById('linenPrintModal');
     if (!printArea || !modal) return alert('⚠️ Contenu introuvable.');
 
-    // On ouvre un nouvel onglet vide
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        return alert("⚠️ Veuillez autoriser les pop-ups pour générer le PDF.");
+    const type = (document.getElementById('printTitle')?.innerText || 'linen').toLowerCase().includes('villa') ? 'Villa' : 'Hotel';
+    const location = (document.getElementById('printLocation')?.innerText || 'NA').trim();
+    const datePart = new Date().toISOString().split('T')[0];
+    const filename = `REMAL_Linen_${type}_${location}_${datePart}.pdf`;
+
+    const btn = document.querySelector('button[onclick="downloadLinenSheetPDF()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
     }
 
-    // On récupère tout le code de la page (pour Tailwind et les polices)
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position: fixed; left: 0; top: 0; width: 800px; height: 1200px; opacity: 0; pointer-events: none; z-index: -9999;';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow.document;
     const headHTML = document.head.innerHTML;
 
-    // On écrit la feuille seule dans le nouvel onglet
-    printWindow.document.write(`
+    iframeDoc.open();
+    iframeDoc.write(`
         <!DOCTYPE html>
         <html>
             <head>
                 ${headHTML}
-                <title>REMAL Linen</title>
                 <style>
-                    body { background: #fff !important; margin: 0; padding: 20px; }
-                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    @page { size: A4 portrait; margin: 10mm; }
+                    body, html { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+                    #pdf-content { width: 794px !important; padding: 40px !important; margin: 0 !important; box-sizing: border-box; }
                 </style>
             </head>
             <body>
-                ${printArea.outerHTML}
+                <div id="pdf-content">
+                    ${printArea.innerHTML}
+                </div>
             </body>
         </html>
     `);
-    printWindow.document.close();
+    iframeDoc.close();
 
-    // On attend que le logo charge, puis on lance l'impression
-    printWindow.onload = () => {
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-        }, 500);
+    if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch (e) {}
+    }
+    await new Promise(r => setTimeout(r, 600));
+
+    const elementToPrint = iframeDoc.getElementById('pdf-content');
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            windowWidth: 794,
+            scrollX: 0,
+            scrollY: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
+
+    try {
+        await html2pdf().set(opt).from(elementToPrint).save();
+    } catch (err) {
+        console.error('❌ Erreur PDF:', err);
+        alert('⚠️ Impossible de générer le PDF.');
+    } finally {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>';
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 5. HISTORIQUE
+// 5. HISTORIQUE (L1 & L3 FIX)
 // ═══════════════════════════════════════════════════════════════════
 async function loadRecentLinenSheets() {
     const container = document.getElementById('recentLinenSheets');
@@ -156,9 +195,14 @@ async function loadRecentLinenSheets() {
             .order('created_at', { ascending: false })
             .limit(5);
 
-        if (error || !data) return;
+        // 🎯 FIX L1 : Afficher une erreur claire en cas de panne
+        if (error) {
+            console.error('❌ [LINEN] loadRecentLinenSheets error:', error);
+            container.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">⚠️ Impossible de charger l'historique (${error.message})</p>`;
+            return;
+        }
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">No sheets created yet.</p>`;
             return;
         }
@@ -167,26 +211,28 @@ async function loadRecentLinenSheets() {
         data.forEach(sheet => { window._linenSheetsCache[sheet.id] = sheet; });
 
         container.innerHTML = data.map(sheet => {
-            const pickupD = sheet.pickup_date ? new Date(sheet.pickup_date).toLocaleDateString('en-GB') : '---';
-            
+            const d = sheet.pickup_date
+                ? new Date(sheet.pickup_date).toLocaleDateString('en-GB')
+                : '---';
             return `
                 <div class="flex justify-between items-center p-3 bg-[#0f0e0c] border border-[#2f2820] hover:border-[#DCA773] rounded-xl text-xs transition group">
-                    <div class="flex-1 cursor-pointer" onclick="openLinenFromCache('${sheet.id}')">
+                    <div class="flex-1 cursor-pointer" onclick="reopenLinenSheet('${sheet.id}')">
                         <span class="font-bold text-[#DCA773] uppercase">${sheet.type || '---'} - ${sheet.location_number || '---'}</span>
-                        <div class="text-[10px] text-stone-500 mt-1">📥 Pickup: ${pickupD}</div>
+                        <div class="text-[10px] text-stone-500 mt-1">📥 Pickup: ${d}</div>
                     </div>
                     <div class="flex items-center gap-3">
                         <button onclick="deleteLinenSheet('${sheet.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-950/40 text-rose-400 border border-rose-900/50 hover:bg-rose-900 hover:text-rose-200 transition" title="Delete">
                             <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
-                        <button onclick="openLinenFromCache('${sheet.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#181614] text-stone-400 border border-[#2f2820] hover:text-[#DCA773] transition" title="View">
+                        <button onclick="reopenLinenSheet('${sheet.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#181614] text-stone-400 border border-[#2f2820] hover:text-[#DCA773] transition" title="View">
                             <i class="fas fa-eye text-[11px]"></i>
                         </button>
                     </div>
                 </div>`;
         }).join('');
     } catch (err) {
-        console.error('❌ [LINEN] Erreur historique:', err);
+        console.error('❌ [LINEN] Exception loadRecentLinenSheets:', err);
+        container.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">⚠️ Erreur inattendue de chargement.</p>`;
     }
 }
 
@@ -206,56 +252,108 @@ async function deleteLinenSheet(sheetId) {
     
     if (window.supabaseClient) {
         try {
-            await window.supabaseClient.from('linen_control_sheets').delete().eq('id', sheetId);
+            // 🎯 FIX L3 : On vérifie que Supabase a bien supprimé avant d'afficher succès
+            const { error } = await window.supabaseClient
+                .from('linen_control_sheets')
+                .delete()
+                .eq('id', sheetId);
+                
+            if (error) {
+                alert('⚠️ Could not delete: ' + error.message);
+                return;
+            }
+            
             loadRecentLinenSheets();
         } catch (err) {
             console.error('Erreur suppression:', err);
-            alert('⚠️ Could not delete sheet.');
+            alert('⚠️ Network error. Could not delete sheet.');
         }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 6. ENREGISTREMENT DU FORMULAIRE
+// 6. ENREGISTREMENT (L2 FIX : Anti-double clic)
 // ═══════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+function attachLinenFormHandler() {
     const form = document.getElementById('linenForm');
-    if (!form) return;
+    if (!form || form.dataset.linenBound === '1') return;
+    form.dataset.linenBound = '1';
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const type = document.getElementById('linenType')?.value || '';
-        const location = (document.getElementById('linenLocation')?.value || '').trim();
-        const date = document.getElementById('linenDate')?.value || '';
+        e.stopPropagation();
 
-        if (!location || !date) return alert('Please fill all required fields.');
-
-        const items = {};
-        Object.keys(linenItemsMap).forEach(key => {
-            const el = document.getElementById(`item_${key}`);
-            const val = el ? (parseInt(el.value) || 0) : 0;
-            if (val > 0) items[linenItemsMap[key]] = val;
-        });
-
-        if (Object.keys(items).length === 0) return alert('Please enter at least one item quantity.');
-
-        const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
-        const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
-
-        if (window.supabaseClient) {
-            try {
-                await window.supabaseClient
-                    .from('linen_control_sheets')
-                    .insert([{ type, location_number: location, pickup_date: date, items, created_by: staffName }]);
-            } catch (err) { console.error(err); }
+        // 🎯 FIX L2 : Anti-double-clic (on désactive le bouton pendant la requête)
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Save';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         }
 
-        closeLinenSheetModal();
-        showLinenPrintPreview(type, location, date, items);
-        loadRecentLinenSheets();
+        try {
+            const type = document.getElementById('linenType')?.value || '';
+            const location = (document.getElementById('linenLocation')?.value || '').trim();
+            const date = document.getElementById('linenDate')?.value || '';
+
+            if (!type || !location || !date) {
+                alert('Please fill Location and Pickup Date.');
+                return;
+            }
+
+            const items = {};
+            Object.keys(linenItemsMap).forEach(key => {
+                const el = document.getElementById(`item_${key}`);
+                const val = el ? (parseInt(el.value) || 0) : 0;
+                if (val > 0) items[linenItemsMap[key]] = val;
+            });
+
+            if (Object.keys(items).length === 0) {
+                alert('Please enter at least one item quantity.');
+                return;
+            }
+
+            const staffSession = JSON.parse(localStorage.getItem('remal_current_staff') || '{}');
+            const staffName = staffSession.name ? `staff ( ${staffSession.name} )` : 'admin';
+
+            if (window.supabaseClient) {
+                const { data, error } = await window.supabaseClient
+                    .from('linen_control_sheets')
+                    .insert([{ type, location_number: location, pickup_date: date, items, created_by: staffName }])
+                    .select();
+
+                if (error) {
+                    alert('⚠️ Database error: ' + error.message);
+                    return;
+                }
+            }
+
+            closeLinenSheetModal();
+            showLinenPrintPreview(type, location, date, items);
+            loadRecentLinenSheets();
+
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred. Please try again.');
+        } finally {
+            // 🎯 On réactive le bouton
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        }
     });
-});
+}
+
+(function initLinenFormHandler() {
+    if (!attachLinenFormHandler()) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachLinenFormHandler, { once: true });
+        } else {
+            setTimeout(attachLinenFormHandler, 100);
+        }
+    }
+})();
 
 // ESC pour fermer
 document.addEventListener('keydown', (e) => {
@@ -274,3 +372,6 @@ window.downloadLinenSheetPDF = downloadLinenSheetPDF;
 window.loadRecentLinenSheets = loadRecentLinenSheets;
 window.openLinenFromCache = openLinenFromCache;
 window.deleteLinenSheet = deleteLinenSheet;
+window.attachLinenFormHandler = attachLinenFormHandler;
+
+console.log('✅ [LINEN] Module chargé (v20 FULL FIXED)');
