@@ -82,11 +82,9 @@ function applyRoleVisibility() {
 
     if (isAdmin()) {
         body.classList.remove('role-staff');
+        console.log('[Role] Admin mode — full UI visible');
         return;
     }
-
-    body.classList.add('role-staff');
-}
 
     // ═══ STAFF MODE — Masquage strict ET définitif ═══
     body.classList.add('role-staff');
