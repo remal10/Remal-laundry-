@@ -5,6 +5,7 @@
 // ✅ AGENCY V9 — Keyword extraction + strict stop
 // ✅ QUOTA V4 — "X pieces per day for AED Y" → AED (Y/X) per Pcs
 // ✅ PAX FIX — Support 1, 2, 3, 4... PAX multiplier
+// ✅ LA FIX — Support "LA", "LAU", "LAN", "LAUNDRY"
 // ✅ CHECK-OUT TODAY — Simple informative list (no decisions)
 // ✅ OCCUPANCY — % vs 212 rooms
 // ✅ Storage helpers declared first (fix ReferenceError)
@@ -606,6 +607,7 @@ function parsePaxMultiplier(text) {
 
 // ═══════════════════════════════════════════════════════════════════
 // ✅ QUOTA V4 — "X pieces per day for AED Y" → AED (Y/X) per Pcs
+// ✅ LA FIX — Support "LA", "LAU", "LAN", "LAUNDRY"
 // ═══════════════════════════════════════════════════════════════════
 function parseQuotaText(text) {
     if (!text) return { pcs: 0, type: 'chargeable', text: 'Chargeable' };
@@ -638,7 +640,8 @@ function parseQuotaText(text) {
 
     let cleaned = text.replace(/AED\s*\d+(\.\d+)?\s*(net|gst|acc|bb)?/gi, ' ');
 
-    m = cleaned.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily)/i);
+    // 🎯 LA FIX : Ajout de |la pour supporter "3 PCS LA DXR"
+    m = cleaned.match(/(?:^|[^\d])([0-9]{1,2})\s*(?:pcs|pieces)\s*[\/@\s]+\s*(?:lau|lan|laundry|daily|la)/i);
     if (m) {
         const pcs = parseInt(m[1], 10);
         if (pcs >= 1 && pcs <= 30) {
