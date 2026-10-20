@@ -156,7 +156,16 @@ async function loadRecentLinenSheets() {
             .order('created_at', { ascending: false })
             .limit(5);
 
-        if (error || !data) return;
+        if (error) {
+            console.error('❌ [LINEN] Failed to load recent sheets:', error);
+            container.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">Unable to load recent sheets. Please refresh and try again.</p>`;
+            return;
+        }
+
+        if (!data) {
+            container.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">Recent sheets could not be loaded. Please refresh and try again.</p>`;
+            return;
+        }
 
         if (data.length === 0) {
             container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">No sheets created yet.</p>`;
