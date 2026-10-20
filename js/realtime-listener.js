@@ -1,6 +1,6 @@
 // ==========================================
 // REALTIME LISTENER & NOTIFICATIONS (REMAL LAUNDRY OS)
-// ✅ Ajout : helpers timestamp PMS Sync
+// ✅ CORRIGÉ : N1, N2, N3 (Anti-doublon & Fallback robuste)
 // ==========================================
 
 // ═══════════════════════════════════════════════════════════════════
@@ -59,7 +59,6 @@ function _playSequence(notes, type = 'sine') {
 
 /**
  * 🛎️ Chime principal — Nouvelle commande Laundry
- * Carillon doré (le son actuel amélioré)
  */
 function playLuxuryHotelChime() {
     _playSequence([
@@ -122,7 +121,6 @@ function playAlert(type = 'new_order') {
 }
 
 // Display VIP notification banner in English
-// ✅ FORMAT HARMONISÉ avec ui.js:onNewGuestRequestReceived
 function showLuxuryNotificationBanner(normalizedData) {
     const banner = document.getElementById('guestBannerContainer') || document.getElementById('guestRequestNotificationBanner');
     const bannerText = document.getElementById('guestBannerText');
@@ -163,11 +161,6 @@ function showLuxuryNotificationBanner(normalizedData) {
 
 // ═══════════════════════════════════════════════════════════════════
 // Process incoming payload
-// ═══════════════════════════════════════════════════════════════════
-// RÈGLES STRICTES :
-//   1. created_by commence par 'staff (' → action STAFF → pas de chime
-//   2. created_by vide/null/'pending'/'Guest App'/'Guest' → GUEST → chime
-//   3. Sinon → silence
 // ═══════════════════════════════════════════════════════════════════
 function processIncomingPayload(rawData) {
     if (!rawData) return;
@@ -234,53 +227,56 @@ function processIncomingPayload(rawData) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Fallback polling sync
-// CORRECTION : Ignore les records Staff (pas de chime, pas d'écrasement)
+// Fallback polling sync (CORRIGÉ : N1, N2, N3)
+// Utilise un curseur temporel pour ne rien rater et ne rien doubler.
 // ═══════════════════════════════════════════════════════════════════
-let lastProcessedId = null;
+let lastSyncTime = new Date().toISOString();
 
 async function syncFallbackGuestRequests() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
     if (typeof isLocalUpdating !== 'undefined' && isLocalUpdating) return;
 
     try {
+        // On récupère TOUTES les commandes depuis la dernière vérification (max 50 par sécurité)
         const { data, error } = await supabaseClient
             .from('guest_laundry_requests')
             .select('*')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .gt('created_at', lastSyncTime) 
+            .order('created_at', { ascending: true })
+            .limit(50);
 
-        if (error || !data || data.length === 0) return;
-
-        const latest = data[0];
-        const latestCreatedBy = String(latest.created_by || '').trim();
-
-        if (lastProcessedId === null) {
-            lastProcessedId = String(latest.id);
+        if (error) {
+            console.warn("⚠️ [Fallback] Erreur de sync:", error.message);
             return;
         }
 
-        if (String(latest.id) !== lastProcessedId) {
-            lastProcessedId = String(latest.id);
+        if (!data || data.length === 0) {
+            // Rien de nouveau, on met juste à jour le curseur en silence
+            lastSyncTime = new Date().toISOString();
+            return;
+        }
+
+        console.log(`🔄 [Fallback] ${data.length} nouvelle(s) commande(s) détectée(s) via polling.`);
+
+        for (const req of data) {
+            const createdBy = String(req.created_by || '').trim();
             
-            // ⛔ NE PAS TRAITER les records Staff
-            if (latestCreatedBy.startsWith('staff (')) {
-                console.log("⏭️ [Fallback] Skipping STAFF record (no chime):", {
-                    id: latest.id,
-                    created_by: latestCreatedBy
-                });
-                return;
+            // On ignore le son pour les actions du Staff
+            if (createdBy.startsWith('staff (')) {
+                continue;
             }
 
-            console.log("🔄 [Fallback] New GUEST request detected:", {
-                id: latest.id,
-                created_by: latestCreatedBy,
-                status: latest.status
-            });
-            processIncomingPayload(latest);
+            // Traitement de la commande Guest
+            processIncomingPayload(req);
         }
+
+        // On avance le curseur temporel avec l'heure de la commande la plus récente
+        const latestDate = new Date(data[data.length - 1].created_at);
+        latestDate.setMilliseconds(latestDate.getMilliseconds() + 1);
+        lastSyncTime = latestDate.toISOString();
+
     } catch (err) {
-        console.warn("Fallback sync warning:", err);
+        console.warn("⚠️ [Fallback] Exception:", err);
     }
 }
 
@@ -308,7 +304,7 @@ function initRealtimeGuestRequests() {
                 
                 const createdBy = String(payload.new.created_by || '').trim();
                 
-                // ⛔ Ignorer les records Staff (double protection)
+                // Double protection : ignorer les records Staff
                 if (createdBy.startsWith('staff (')) {
                     console.log("⏭️ [Realtime] Skipping STAFF record:", createdBy);
                     return;
@@ -326,6 +322,7 @@ function initRealtimeGuestRequests() {
             console.log("📡 Supabase Realtime channel status:", status);
         });
 
+    // Lancement du polling de secours toutes les 8 secondes
     setInterval(syncFallbackGuestRequests, 8000);
 }
 
@@ -398,4 +395,4 @@ window.formatLastSync = formatLastSync;
 window.updateLastSyncDisplay = updateLastSyncDisplay;
 window.markPmsSynced = markPmsSynced;
 
-console.log('✅ [PMS Sync] Timestamp helpers loaded');
+console.log('✅ [PMS Sync] Timestamp helpers loaded (v2)');
