@@ -373,5 +373,6 @@ window.loadRecentLinenSheets = loadRecentLinenSheets;
 window.openLinenFromCache = openLinenFromCache;
 window.deleteLinenSheet = deleteLinenSheet;
 window.attachLinenFormHandler = attachLinenFormHandler;
+window.reopenLinenSheet = openLinenFromCache;
 
 console.log('✅ [LINEN] Module chargé (v20 FULL FIXED)');
