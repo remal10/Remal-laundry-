@@ -331,6 +331,13 @@ function initRealtimeGuestRequests() {
                     return;
                 }
                 
+                const requestId = String(payload.new.id || '');
+                if (requestId && fallbackProcessedIds.has(requestId)) {
+                    console.log("⏭️ [Realtime] Request already processed by fallback:", requestId);
+                    return;
+                }
+                markFallbackRequestProcessed(requestId);
+
                 console.log("🔔 [Realtime] INSERT RECEIVED:", {
                     id: payload.new.id,
                     created_by: createdBy,
