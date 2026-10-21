@@ -5,9 +5,9 @@
 let deferredPrompt;
 let globalDirHandle = null;
 
-// URL et Clé Anon Supabase (Alignées avec Guest Portal)
-const SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
+// URL et Clé Anon Supabase (Nouveau Projet V2)
+const SUPABASE_URL = 'https://eykpakjmrpvsmknxjhlrc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5a3Bha2ptcnB2c21rbnhqbHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1Nzk2NTgsImV4cCI6MjEwODE1NTY1OH0.mkrfRPBGTxjdFv3EJLl7vrX97eDWzd_mbBuJrNfv1aE';
 
 let supabaseClient = null;
 try {
@@ -124,7 +124,7 @@ const i18n = {
         pdfAgency: "एजेंसी:", pdfQuota: "लॉन्ड्री कोटा:", pdfAgent: "कर्मचारी:", pdfPackaging: "पैकेजिंग:",
         pdfItem: "आइटम", pdfQty: "मात्रा", pdfTotal: "कुल", pdfTotalPieces: "कुल पीस:",
         pdfGrandTotalText: "कुल योग:", pdfNotes: "कपड़े के नोट्स / दोष:", pdfProofPhoto: "प्रमाण फोटो:",
-        pdfHotelCount: "होटل काउंट", pdfHotelCountFree: "होटل काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
+        pdfHotelCount: "होटल काउंट", pdfHotelCountFree: "होटल काउंट (मुफ्त)", pdfHotelExtra: "होटल और अतिरिक्त",
         pdfGuestCount: "अतिथि काउंट (पूर्ण)", pdfSpaSheet: "वी एलिमेंट स्पा लॉन्ड्रि शीट",
         pdfGivenBy: "द्वारा दिया गया (स्पा):", pdfCollectedBy: "द्वारा एकत्रित:", pdfDeliveredBy: "द्वारा वितरित:",
         pdfSheetSerial: "शीट सीरियल:", pdfReceiptNo: "रसीद संख्या:", pdfDownloaded: "डाउनलोड किया गया:", pdfSpaRecord: "स्पा रिकॉर्ड",
