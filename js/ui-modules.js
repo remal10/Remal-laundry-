@@ -1,20 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-// REMAL LAUNDRY OS — UI MODULES
-// Archives, Lost & Found, Dashboard, SPA, Cloud, Login
-// ⚠️ Chargé APRÈS ui-live.js
-// ✅ MASS ENTRY V2 — renderMassPreviewTable éditable + sauvegarderChampPMS
+// REMAL LAUNDRY OS — UI MODULES (Version Complète et Finale)
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
-// PHASE 2.2 — STATUS FILTER STATE
-// PHASE 2.3 — DATE FILTER STATE
-// ═══════════════════════════════════════════════════════════════════
-
-let currentStatusFilter = 'all';
-let currentDateFilter = null;
-
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 5 — ROLE MANAGEMENT (Admin / Staff)
+// PHASE 5 — ROLE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════
 function isAdmin() {
     try {
@@ -27,157 +16,44 @@ function isAdmin() {
             return false;
         }
         return String(currentStaffUser.role || '').toLowerCase() === 'admin';
-    } catch (e) {
-        console.warn('[Role] isAdmin() error:', e);
-        return false;
-    }
+    } catch (e) { return false; }
 }
 
 function requireAdmin(actionName = 'this action') {
     if (isAdmin()) return true;
-    alert(`🚫 Access denied.\n\nOnly administrators can perform: ${actionName}.\n\nPlease contact your manager if you need this access.`);
-    console.warn('[Role] Access denied for:', actionName);
+    alert(`🚫 Access denied.\n\nOnly administrators can perform: ${actionName}.`);
     return false;
 }
 
 function applyRoleVisibility() {
     const body = document.body;
     if (!body) return;
-
     if (isAdmin()) {
         body.classList.remove('role-staff');
-        console.log('[Role] Admin mode — full UI visible');
         return;
     }
-
     body.classList.add('role-staff');
-    console.log('[Role] Staff mode — restricted UI (strict removal)');
-
-  const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard', 'sectionCheckout', 'sectionChat', 'sectionLinenControl'];
+    const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard', 'sectionCheckout', 'sectionChat', 'sectionLinenControl'];
     ADMIN_SECTIONS.forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentNode) el.parentNode.removeChild(el);
     });
-
-  const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard', 'navBtnChat', 'navBtnLinenControl'];
+    const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard', 'navBtnChat', 'navBtnLinenControl'];
     ADMIN_NAV_BUTTONS.forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentNode) el.parentNode.removeChild(el);
     });
-
     document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
         if (el.parentNode) el.parentNode.removeChild(el);
     });
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PHASE 2.4 — ROOM AUTOCOMPLETE IN SEARCH
-// ═══════════════════════════════════════════════════════════════════
-let searchRoomDebounceTimer = null;
-
-function getUniqueRoomsFromArchives() {
-    if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
-    const rooms = new Set();
-    cachedSlips.forEach(entry => {
-        const room = String(entry.room_number || entry.room || '').trim();
-        if (room && /^\d+$/.test(room)) rooms.add(room);
-    });
-    return Array.from(rooms).sort((a, b) => parseInt(a) - parseInt(b));
-}
-
-function onSearchRoomInput(event) {
-    if (searchRoomDebounceTimer) clearTimeout(searchRoomDebounceTimer);
-    searchRoomDebounceTimer = setTimeout(() => {
-        renderSearchRoomDropdown(event?.target?.value || '');
-    }, 200);
-}
-
-function renderSearchRoomDropdown(query) {
-    const dropdown = document.getElementById('searchRoomDropdown');
-    if (!dropdown) return;
-
-    const input = document.getElementById('searchRoom');
-    if (!input) return;
-
-    const q = String(query || '').trim().toLowerCase();
-
-    if (q && !/^\d+$/.test(q)) {
-        dropdown.classList.add('hidden');
-        dropdown.innerHTML = '';
-        if (typeof afficherListeBordereauxLocal === 'function') {
-            afficherListeBordereauxLocal();
-        }
-        return;
-    }
-
-    const allRooms = getUniqueRoomsFromArchives();
-    const matches = q ? allRooms.filter(r => r.startsWith(q)) : allRooms;
-    const limited = matches.slice(0, 12);
-
-    if (limited.length === 0) {
-        dropdown.classList.add('hidden');
-        dropdown.innerHTML = '';
-        if (typeof afficherListeBordereauxLocal === 'function') {
-            afficherListeBordereauxLocal();
-        }
-        return;
-    }
-
-    dropdown.innerHTML = limited.map(room => `
-        <button type="button"
-                onclick="selectSearchRoom('${room}')"
-                class="w-full text-left px-4 py-2.5 text-xs font-semibold text-stone-200 hover:bg-[#181614] border-b border-[#2f2820] last:border-b-0 transition flex items-center justify-between">
-            <span>🏠 Room <strong class="text-[#DCA773]">${room}</strong></span>
-            <span class="text-[10px] text-stone-500">→</span>
-        </button>
-    `).join('');
-
-    dropdown.classList.remove('hidden');
-}
-
-function selectSearchRoom(room) {
-    const input = document.getElementById('searchRoom');
-    if (input) input.value = room;
-
-    const dropdown = document.getElementById('searchRoomDropdown');
-    if (dropdown) {
-        dropdown.classList.add('hidden');
-        dropdown.innerHTML = '';
-    }
-
-    if (typeof afficherListeBordereauxLocal === 'function') {
-        afficherListeBordereauxLocal();
-    }
-
-    console.log('[SearchRoom] Selected:', room);
-}
-
-document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('searchRoomDropdown');
-    const input = document.getElementById('searchRoom');
-    if (!dropdown || !input) return;
-    if (!dropdown.contains(e.target) && e.target !== input) {
-        dropdown.classList.add('hidden');
-    }
-});
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const dropdown = document.getElementById('searchRoomDropdown');
-        if (dropdown) dropdown.classList.add('hidden');
-    }
-});
-
-// ═══════════════════════════════════════════════════════════════════
 // CHARGEMENT DONNÉES CLOUD
 // ═══════════════════════════════════════════════════════════════════
 async function chargerDonneesEtAbonnementCloud() {
     chargerDonneesLocalStorage();
-
-    if (!supabaseClient) {
-        console.warn("Supabase client non initialisé. Mode 100% Local actif.");
-        return;
-    }
+    if (!supabaseClient) return;
 
     try {
         const ilYa90Jours = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -190,43 +66,17 @@ async function chargerDonneesEtAbonnementCloud() {
         if (!slipsErr && slips && slips.length > 0) {
             const slipMap = new Map();
             cachedSlips.forEach(s => slipMap.set(String(s.id), s));
-            
             slips.forEach(s => {
                 const roomClean = s.room_number || s.room || '---';
-                
                 let parsedItems = s.items;
-                if (typeof parsedItems === 'string') {
-                    try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; }
-                }
-                if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) {
-                    parsedItems = Object.values(parsedItems);
-                }
+                if (typeof parsedItems === 'string') { try { parsedItems = JSON.parse(parsedItems); } catch(e) { parsedItems = []; } }
+                if (parsedItems && typeof parsedItems === 'object' && !Array.isArray(parsedItems)) parsedItems = Object.values(parsedItems);
                 if (!Array.isArray(parsedItems)) parsedItems = [];
-
-                const existing = slipMap.get(String(s.id));
-                const localCreatedBy = existing?.created_by ? String(existing.created_by) : '';
-                const supaCreatedBy = s.created_by ? String(s.created_by) : '';
-                
-                const shouldPreserveLocal = localCreatedBy.startsWith('staff (') && 
-                                            !supaCreatedBy.startsWith('staff (');
-
-                if (shouldPreserveLocal) {
-                    console.log("🛡️ [ChargerCloud] Préservation local pour ID:", s.id, "→", localCreatedBy);
-                    slipMap.set(String(s.id), { 
-                        ...existing, ...s, id: String(s.id), room: roomClean, room_number: roomClean, items: parsedItems, created_by: localCreatedBy, status: existing.status
-                    });
-                } else {
-                    slipMap.set(String(s.id), { 
-                        ...existing, ...s, id: String(s.id), room: roomClean, room_number: roomClean, items: parsedItems
-                    });
-                }
+                slipMap.set(String(s.id), { ...s, id: String(s.id), room: roomClean, room_number: roomClean, items: parsedItems });
             });
-            
             cachedSlips = Array.from(slipMap.values());
             sauvegarderDonneesLocalStorage();
-            chargerLiveOrders();
-        } else if (slipsErr) {
-            console.warn("Erreur lecture guest_laundry_requests sur Supabase:", slipsErr.message);
+            if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
         }
 
         const { data: guests, error: guestsErr } = await supabaseClient.from('pms_guests').select('*');
@@ -247,24 +97,19 @@ async function chargerDonneesEtAbonnementCloud() {
             renderMassPreviewTable();
             if (typeof updateLastSyncDisplay === 'function') updateLastSyncDisplay();
         }
-
-    } catch (e) {
-        console.error("Exception lors de la synchronisation cloud:", e);
-    }
+    } catch (e) { console.error("Exception sync cloud:", e); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TABLE PMS PREVIEW — ÉDITABLE (MASS ENTRY V2)
+// TABLE PMS PREVIEW (Mass Entry V2)
 // ═══════════════════════════════════════════════════════════════════
 function renderMassPreviewTable() {
     const container = document.getElementById('massPreviewContainer');
     const counterContainer = document.getElementById('massRecordCounter');
     const resultsCard = document.getElementById('massResultsCard');
-
     if (!container) return;
 
     const rooms = Object.keys(pmsDatabase || {}).sort((a, b) => parseInt(a) - parseInt(b));
-
     if (rooms.length === 0) {
         container.innerHTML = `<tr><td colspan="8" class="p-4 text-stone-500 text-center">No data loaded.</td></tr>`;
         if (counterContainer) counterContainer.innerHTML = '';
@@ -273,98 +118,47 @@ function renderMassPreviewTable() {
     }
 
     let html = '';
-
     rooms.forEach(room => {
         const item = pmsDatabase[room];
-        const hasLaundry = !item.isChargeable;
-        let rowClass = hasLaundry ? "laundry-row" : "";
+        let rowClass = !item.isChargeable ? "laundry-row" : "";
+        if (!item.agency || item.agency === "---") rowClass += " bg-yellow-950/30 text-yellow-200 border-yellow-800";
+        const statusHTML = item.isChargeable ? `<span class="badge-chargeable">Chargeable</span>` : `<span class="badge-green">Included (${item.quotaText})</span>`;
+        const editableAttrs = (field) => `contenteditable="true" data-field="${field}" data-room="${room}" onblur="sauvegarderChampPMS(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" class="editable-cell outline-none px-1 py-0.5 rounded"`;
 
-        const isMissingAgency = (!item.agency || item.agency === "---" || item.agency === "Direct" || item.agency === "N/A");
-        if (isMissingAgency) {
-            rowClass += " bg-yellow-950/30 text-yellow-200 border-yellow-800";
-        }
-
-        const statusHTML = item.isChargeable
-            ? `<span class="badge-chargeable">Chargeable</span>`
-            : `<span class="badge-green">Included (${item.quotaText})</span>`;
-
-        const editableAttrs = (field) =>
-            `contenteditable="true" data-field="${field}" data-room="${room}" onblur="sauvegarderChampPMS(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" class="editable-cell outline-none px-1 py-0.5 rounded"`;
-
-        html += `
-            <tr class="${rowClass}">
-                <td class="p-3.5"><strong>${room}</strong></td>
-                <td class="p-3.5"><span ${editableAttrs('guestName')}>${item.guestName || 'Unknown Guest'}</span></td>
-                <td class="p-3.5"><span ${editableAttrs('roomTyp')}>${item.roomTyp || '---'}</span></td>
-                <td class="p-3.5"><span ${editableAttrs('agency')}>${item.agency || '---'}</span></td>
-                <td class="p-3.5"><span ${editableAttrs('arrival')}>${item.arrival || '---'}</span></td>
-                <td class="p-3.5"><span ${editableAttrs('departure')}>${item.departure || '---'}</span></td>
-                <td class="p-3.5"><span ${editableAttrs('quotaText')}>${item.quotaText || 'Chargeable'}</span></td>
-                <td class="p-3.5">${statusHTML}</td>
-            </tr>
-        `;
+        html += `<tr class="${rowClass}"><td class="p-3.5"><strong>${room}</strong></td><td class="p-3.5"><span ${editableAttrs('guestName')}>${item.guestName || 'Unknown Guest'}</span></td><td class="p-3.5"><span ${editableAttrs('roomTyp')}>${item.roomTyp || '---'}</span></td><td class="p-3.5"><span ${editableAttrs('agency')}>${item.agency || '---'}</span></td><td class="p-3.5"><span ${editableAttrs('arrival')}>${item.arrival || '---'}</span></td><td class="p-3.5"><span ${editableAttrs('departure')}>${item.departure || '---'}</span></td><td class="p-3.5"><span ${editableAttrs('quotaText')}>${item.quotaText || 'Chargeable'}</span></td><td class="p-3.5">${statusHTML}</td></tr>`;
     });
 
     container.innerHTML = html;
-    if (counterContainer) counterContainer.innerHTML = `✅ ${rooms.length} PMS record(s) loaded from memory.`;
+    if (counterContainer) counterContainer.innerHTML = `✅ ${rooms.length} PMS record(s) loaded.`;
     if (resultsCard) resultsCard.classList.remove('hidden');
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// SAUVEGARDE D'UN CHAMP ÉDITÉ (blur / Enter sur une cellule)
-// ═══════════════════════════════════════════════════════════════════
 async function sauvegarderChampPMS(cell) {
     if (!cell) return;
-
     const room = cell.dataset.room;
     const field = cell.dataset.field;
     const newValue = cell.innerText.trim();
-
-    if (!room || !field) return;
-
-    const current = pmsDatabase[room];
-    if (!current) return;
-
-    if (String(current[field] || '') === newValue) return;
-
+    if (!room || !field || !pmsDatabase[room]) return;
+    if (String(pmsDatabase[room][field] || '') === newValue) return;
+    
     pmsDatabase[room][field] = newValue;
-
     if (field === 'quotaText') {
         const lower = newValue.toLowerCase();
         pmsDatabase[room].isChargeable = lower.includes('chargeable') || (!lower.includes('laundry') && !lower.includes('pcs'));
     }
-
     sauvegarderPmsLocalStorage();
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        const payload = {};
-        payload[field] = newValue;
-        if (field === 'quotaText') {
-            payload.is_chargeable = pmsDatabase[room].isChargeable;
-        }
-
+        const payload = {}; payload[field] = newValue;
+        if (field === 'quotaText') payload.is_chargeable = pmsDatabase[room].isChargeable;
         try {
-            const { error } = await supabaseClient
-                .from('pms_guests')
-                .update(payload)
-                .eq('room', room);
-
-            if (error) throw error;
-
+            await supabaseClient.from('pms_guests').update(payload).eq('room', room);
             cell.classList.add('bg-emerald-900/50');
             setTimeout(() => cell.classList.remove('bg-emerald-900/50'), 800);
-
-            console.log(`[PMS Edit] Room ${room} · ${field} → "${newValue}"`);
-        } catch (e) {
-            console.error('[PMS Edit] Save error:', e);
-            cell.classList.add('bg-red-900/50');
-            setTimeout(() => cell.classList.remove('bg-red-900/50'), 1500);
-        }
+        } catch (e) { console.error('[PMS Edit] Save error:', e); }
     }
 }
-
 window.sauvegarderChampPMS = sauvegarderChampPMS;
-console.log('✅ [Mass Entry V2] renderMassPreviewTable + sauvegarderChampPMS loaded');
 
 // ═══════════════════════════════════════════════════════════════════
 // ARCHIVES
@@ -374,35 +168,24 @@ function switchArchiveFilter(filter) {
     document.getElementById('archiveFilterAll').className = filter === 'all' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
     document.getElementById('archiveFilterLaundry').className = filter === 'laundry' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
     document.getElementById('archiveFilterSpa').className = filter === 'spa' ? 'flex-1 py-2.5 rounded-xl transition text-center bg-[#DCA773] text-stone-950 shadow font-bold' : 'flex-1 py-2.5 rounded-xl transition text-center hover:text-stone-200';
-    
     afficherListeBordereauxLocal();
 }
 
 function switchStatusFilter(status) {
     currentStatusFilter = status;
-
     ['All', 'Pending', 'Washing', 'Ready', 'Delivered'].forEach(label => {
         const btn = document.getElementById('statusFilter' + label);
-        if (btn) {
-            btn.className = 'status-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition';
-        }
+        if (btn) btn.className = 'status-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition';
     });
-
     const activeLabel = status.charAt(0).toUpperCase() + status.slice(1);
     const activeBtn = document.getElementById('statusFilter' + activeLabel);
-    if (activeBtn) {
-        activeBtn.className = 'status-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#DCA773] bg-[#DCA773] text-stone-950 shadow transition';
-    }
-
+    if (activeBtn) activeBtn.className = 'status-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#DCA773] bg-[#DCA773] text-stone-950 shadow transition';
     afficherListeBordereauxLocal();
-    console.log('[StatusFilter] Applied:', status);
 }
 
 function matchesStatusFilter(record) {
     if (currentStatusFilter === 'all') return true;
-
     const status = String(record.status || '').toLowerCase().trim();
-
     switch (currentStatusFilter) {
         case 'pending':   return status === 'pending' || status === 'collected';
         case 'washing':   return status === 'washing' || status === 'in_progress';
@@ -414,44 +197,29 @@ function matchesStatusFilter(record) {
 
 function switchDateFilter(range) {
     currentDateFilter = (currentDateFilter === range) ? null : range;
-
     ['Today', '7d', '30d', '90d'].forEach(label => {
         const btn = document.getElementById('dateFilter' + label);
-        if (btn) {
-            btn.className = 'date-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition';
-        }
+        if (btn) btn.className = 'date-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#2f2820] text-stone-400 hover:bg-[#181614] transition';
     });
-
     if (currentDateFilter) {
         const activeLabel = currentDateFilter.charAt(0).toUpperCase() + currentDateFilter.slice(1);
         const activeBtn = document.getElementById('dateFilter' + activeLabel);
-        if (activeBtn) {
-            activeBtn.className = 'date-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#DCA773] bg-[#DCA773] text-stone-950 shadow transition';
-        }
+        if (activeBtn) activeBtn.className = 'date-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border border-[#DCA773] bg-[#DCA773] text-stone-950 shadow transition';
     }
-
     afficherListeBordereauxLocal();
-    console.log('[DateFilter] Applied:', currentDateFilter || 'none');
 }
 
 function matchesDateFilter(record) {
     if (!currentDateFilter) return true;
-
     const dateStr = record.created_at || record.date || record.timestamp;
     if (!dateStr) return false;
-
     const recordDate = new Date(dateStr);
     if (isNaN(recordDate.getTime())) return false;
-
     const now = new Date();
     const diffMs = now - recordDate;
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
     switch (currentDateFilter) {
-        case 'today': {
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            return recordDate >= today;
-        }
+        case 'today': { const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); return recordDate >= today; }
         case '7d':  return diffDays <= 7;
         case '30d': return diffDays <= 30;
         case '90d': return diffDays <= 90;
@@ -459,9 +227,6 @@ function matchesDateFilter(record) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// AFFICHAGE LISTE BORDEREAUX
-// ═══════════════════════════════════════════════════════════════════
 function afficherListeBordereauxLocal() {
     chargerDonneesLocalStorage();
     const searchVal = document.getElementById('searchRoom').value.toLowerCase().trim();
@@ -470,12 +235,7 @@ function afficherListeBordereauxLocal() {
     let filtered = cachedSlips.filter(entry => {
         const roomNum = String(entry.room_number || entry.room || '').toLowerCase();
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry).toLowerCase() : '';
-        const matchRoom = !searchVal || 
-            roomNum.includes(searchVal) || 
-            receiptId.includes(searchVal) ||
-            String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
-            String(entry.spa_serial || '').toLowerCase().includes(searchVal) ||
-            (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
+        const matchRoom = !searchVal || roomNum.includes(searchVal) || receiptId.includes(searchVal) || String(entry.guest_name || '').toLowerCase().includes(searchVal) || String(entry.spa_serial || '').toLowerCase().includes(searchVal) || (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
         
         let matchDate = true;
         if (searchDateVal) {
@@ -494,13 +254,11 @@ function afficherListeBordereauxLocal() {
     });
 
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
     const container = document.getElementById('laundryList');
     if (!container) return;
 
     const existingBanner = document.getElementById('archives-info-banner');
     if (existingBanner) existingBanner.remove();
-
     if (cachedSlips.length > 50) {
         const infoBanner = document.createElement('div');
         infoBanner.id = 'archives-info-banner';
@@ -516,91 +274,39 @@ function afficherListeBordereauxLocal() {
 
     const hotelEntries = filtered.filter(e => !e.is_spa);
     const spaEntries = filtered.filter(e => !!e.is_spa);
-
     let html = '';
 
     if ((currentArchiveFilter === 'all' || currentArchiveFilter === 'laundry') && hotelEntries.length > 0) {
-        html += `
-            <div class="space-y-2">
-                <div class="flex justify-between items-center bg-[#181614] p-3 rounded-2xl border border-[#2f2820]">
-                    <span class="text-xs font-bold text-[#DCA773] uppercase tracking-wider flex items-center gap-2">🏨 Hotel Rooms Laundry</span>
-                    <span class="text-[10px] bg-[#0f0e0c] text-stone-300 font-bold px-2.5 py-0.5 rounded-full border border-[#2f2820]">${hotelEntries.length} record(s)</span>
-                </div>
-                <div class="space-y-2">
-        `;
-
+        html += `<div class="space-y-2"><div class="flex justify-between items-center bg-[#181614] p-3 rounded-2xl border border-[#2f2820]"><span class="text-xs font-bold text-[#DCA773] uppercase tracking-wider flex items-center gap-2">🏨 Hotel Rooms Laundry</span><span class="text-[10px] bg-[#0f0e0c] text-stone-300 font-bold px-2.5 py-0.5 rounded-full border border-[#2f2820]">${hotelEntries.length} record(s)</span></div><div class="space-y-2">`;
         hotelEntries.forEach(entry => {
-            let badgeLabel = 'Hotel Count';
-            let badgeClass = 'luxe-badge luxe-badge-collected';
-            if(entry.extra_charged || entry.count_type === 'quota_extra') {
-                badgeLabel = 'Quota + Extra'; badgeClass = 'luxe-badge luxe-badge-ready';
-            } else if(entry.count_type === 'guest') {
-                badgeLabel = 'Chargeable'; badgeClass = 'luxe-badge luxe-badge-chargeable';
-            }
-
+            let badgeLabel = 'Hotel Count'; let badgeClass = 'luxe-badge luxe-badge-collected';
+            if(entry.extra_charged || entry.count_type === 'quota_extra') { badgeLabel = 'Quota + Extra'; badgeClass = 'luxe-badge luxe-badge-ready'; }
+            else if(entry.count_type === 'guest') { badgeLabel = 'Chargeable'; badgeClass = 'luxe-badge luxe-badge-chargeable'; }
             const roomNum = entry.room_number || entry.room || '---';
             const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---';
             const totalPcs = entry.total_pieces || entry.total_clothes || 0;
             const totalAmount = entry.grand_total || entry.total || 0;
             const agentDisplay = formatAgentDisplay(entry.created_by);
-
-            html += `
-                <div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition">
-                    <div>
-                        <span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span>
-                        <span class="ml-2 ${badgeClass}">${badgeLabel}</span>
-                        <div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${agentDisplay}</div>
-                    </div>
-                    <div class="text-right font-bold text-stone-200">
-                        <small class="text-stone-400 font-normal">(${totalPcs} pcs)</small> 
-                        <span class="text-[#DCA773] font-serif-luxury text-base sm:text-lg ml-1.5">${totalAmount.toFixed(2)} AED</span> 
-                        ${entry.photo ? '📸' : ''}
-                    </div>
-                </div>
-            `;
+            html += `<div onclick="ouvrirModalDetails('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-[#DCA773] transition"><div><span class="font-serif-luxury font-bold text-[#DCA773] text-sm sm:text-base">Room ${roomNum} (${entry.guest_name || 'Guest'})</span><span class="ml-2 ${badgeClass}">${badgeLabel}</span><div class="text-[10px] text-stone-400 mt-1">#${receiptId} | 📅 ${dateFormatted} | Agent: ${agentDisplay}</div></div><div class="text-right font-bold text-stone-200"><small class="text-stone-400 font-normal">(${totalPcs} pcs)</small><span class="text-[#DCA773] font-serif-luxury text-base sm:text-lg ml-1.5">${totalAmount.toFixed(2)} AED</span>${entry.photo ? '📸' : ''}</div></div>`;
         });
-
         html += `</div></div>`;
     }
 
     if ((currentArchiveFilter === 'all' || currentArchiveFilter === 'spa') && spaEntries.length > 0) {
-        html += `
-            <div class="space-y-2 mt-4">
-                <div class="flex justify-between items-center bg-[#181614] p-3 rounded-2xl border border-[#2f2820]">
-                    <span class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">🧘 V Element SPA Laundry</span>
-                    <span class="text-[10px] bg-[#0f0e0c] text-purple-200 font-bold px-2.5 py-0.5 rounded-full border border-purple-900">${spaEntries.length} record(s)</span>
-                </div>
-                <div class="space-y-2">
-        `;
-
+        html += `<div class="space-y-2 mt-4"><div class="flex justify-between items-center bg-[#181614] p-3 rounded-2xl border border-[#2f2820]"><span class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">🧘 V Element SPA Laundry</span><span class="text-[10px] bg-[#0f0e0c] text-purple-200 font-bold px-2.5 py-0.5 rounded-full border border-purple-900">${spaEntries.length} record(s)</span></div><div class="space-y-2">`;
         spaEntries.forEach(entry => {
             const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---';
             const totalPcs = entry.total_pieces || entry.total_clothes || 0;
             const totalAmount = entry.grand_total || entry.total || 0;
-
-            html += `
-                <div onclick="ouvrirSpaDetailModal('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition">
-                    <div>
-                        <span class="font-serif-luxury font-bold text-purple-300 text-sm sm:text-base">SPA Sheet #${entry.spa_serial || '---'} — ${entry.guest_name || 'Spa Agent'}</span>
-                        <span class="ml-2 luxe-badge luxe-badge-spa">SPA Daily Sheet</span>
-                        <div class="text-[10px] text-stone-400 mt-1">📅 ${dateFormatted} | Delivered by: ${entry.options?.delivered_by || 'Staff'}</div>
-                    </div>
-                    <div class="text-right font-bold text-stone-200">
-                        <small class="text-stone-400 font-normal">(${totalPcs} pcs)</small> 
-                        <span class="text-purple-300 font-serif-luxury text-base sm:text-lg ml-1.5">${totalAmount.toFixed(2)} AED</span> 
-                    </div>
-                </div>
-            `;
+            html += `<div onclick="ouvrirSpaDetailModal('${entry.id}')" class="p-4 bg-[#0f0e0c] rounded-2xl border border-[#2f2820] text-xs flex justify-between items-center cursor-pointer hover:border-purple-500 transition"><div><span class="font-serif-luxury font-bold text-purple-300 text-sm sm:text-base">SPA Sheet #${entry.spa_serial || '---'} — ${entry.guest_name || 'Spa Agent'}</span><span class="ml-2 luxe-badge luxe-badge-spa">SPA Daily Sheet</span><div class="text-[10px] text-stone-400 mt-1">📅 ${dateFormatted} | Delivered by: ${entry.options?.delivered_by || 'Staff'}</div></div><div class="text-right font-bold text-stone-200"><small class="text-stone-400 font-normal">(${totalPcs} pcs)</small><span class="text-purple-300 font-serif-luxury text-base sm:text-lg ml-1.5">${totalAmount.toFixed(2)} AED</span></div></div>`;
         });
-
         html += `</div></div>`;
     }
 
     const counterId = 'archives-results-counter';
     const existingCounter = document.getElementById(counterId);
     if (existingCounter) existingCounter.remove();
-
     if (filtered.length > 0) {
         const counter = document.createElement('div');
         counter.id = counterId;
@@ -608,16 +314,11 @@ function afficherListeBordereauxLocal() {
         counter.innerText = `📊 ${filtered.length} result${filtered.length > 1 ? 's' : ''} found`;
         container.parentNode.insertBefore(counter, container);
     }
-    
     container.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 3 — EXPORT FILTERED ARCHIVES (PDF + CSV)
-// ═══════════════════════════════════════════════════════════════════
 function getCurrentFilteredArchives() {
     if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
-
     const searchRoomEl = document.getElementById('searchRoom');
     const searchDateEl = document.getElementById('searchDate');
     const searchVal = searchRoomEl ? searchRoomEl.value.toLowerCase().trim() : '';
@@ -722,7 +423,7 @@ async function exportFilteredArchivesToPDF() {
     const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.pdf`;
     const opt = { margin: [8, 8, 8, 8], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }, pagebreak: { mode: ['css', 'legacy'] } };
 
-    try { await html2pdf().set(opt).from(container).save(); console.log('[Export PDF] Success:', filename, `(${filtered.length} records)`); } catch (e) { console.error('[Export PDF] Error:', e); alert('⚠️ Error generating PDF. Check the console.'); } finally { container.innerHTML = ''; }
+    try { await html2pdf().set(opt).from(container).save(); console.log('[Export PDF] Success:', filename); } catch (e) { console.error('[Export PDF] Error:', e); alert('⚠️ Error generating PDF.'); } finally { container.innerHTML = ''; }
 }
 
 function exportFilteredArchivesToCSV() {
@@ -753,7 +454,6 @@ function exportFilteredArchivesToCSV() {
     const link = document.createElement('a');
     const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.csv`;
     link.href = url; link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
-    console.log('[Export CSV] Success:', filename, `(${filtered.length} records)`);
 }
 
 function csvEscape(value) {
@@ -762,12 +462,9 @@ function csvEscape(value) {
     return str;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PHASE 4.5 — VIEW ARCHIVES (read-only modal)
-// ═══════════════════════════════════════════════════════════════════
 function ouvrirModaleArchives() {
     const modal = document.getElementById('archivesModal');
-    if (!modal) { console.warn('[Archives] Modal not found'); return; }
+    if (!modal) return;
     modal.classList.remove('hidden');
     chargerArchives();
 }
@@ -786,7 +483,7 @@ async function chargerArchives() {
     badge.innerText = 'Loading...';
     try {
         const { data, error } = await supabaseClient.from('archives').select('*').order('created_at', { ascending: false }).limit(500);
-        if (error) { console.error('[Archives] Fetch error:', error); list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`; badge.innerText = 'Error'; return; }
+        if (error) { list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`; badge.innerText = 'Error'; return; }
         if (!data || data.length === 0) { list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">📭 No archived records yet.</p>`; badge.innerText = '0 records'; return; }
         badge.innerText = `${data.length} record${data.length > 1 ? 's' : ''} loaded`;
         list.innerHTML = data.map(entry => {
@@ -801,16 +498,8 @@ async function chargerArchives() {
             const type = entry.service_type || 'laundry';
             return `<div class="p-3 bg-[#181614] rounded-2xl border border-[#2f2820] text-xs"><div class="flex justify-between items-start"><div class="flex-1"><div class="font-bold text-[#DCA773]">🏠 Room ${room} — ${guest}</div><div class="text-[10px] text-stone-500 mt-1">#${receiptId} · ${type} · Status: <span class="text-stone-300 font-semibold">${status}</span></div><div class="text-[10px] text-stone-500 mt-0.5">📅 Created: ${dateFormatted} · 📦 Archived: ${archivedAt}</div></div><div class="text-right ml-3"><div class="font-bold text-stone-200 text-sm">${amount} AED</div><div class="text-[10px] text-stone-500">${pcs} pcs</div></div></div></div>`;
         }).join('');
-        console.log('[Archives] Loaded', data.length, 'records');
-    } catch (e) {
-        console.error('[Archives] Exception:', e);
-        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`; badge.innerText = 'Error';
-    }
+    } catch (e) { list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`; badge.innerText = 'Error'; }
 }
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { const modal = document.getElementById('archivesModal'); if (modal && !modal.classList.contains('hidden')) modal.classList.add('hidden'); }
-});
 
 // ═══════════════════════════════════════════════════════════════════
 // LOST & FOUND
@@ -845,7 +534,7 @@ async function saveLostFoundItem() {
     const items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
     const newItem = { id: Date.now(), is_lost_found: true, name: name, loc: loc, note: note, photo: currentLFPhotoData || null, date: new Date().toLocaleString(), status: 'Unclaimed' };
     items.unshift(newItem); localStorage.setItem('remal_lost_found', JSON.stringify(items));
-    await writeRecordToFile(newItem);
+    if (typeof writeRecordToFile === 'function') await writeRecordToFile(newItem);
     document.getElementById('lfItemName').value = ''; document.getElementById('lfItemLoc').value = ''; document.getElementById('lfItemNote').value = ''; document.getElementById('lfItemPhoto').value = ''; document.getElementById('lfImagePreview').classList.add('hidden'); currentLFPhotoData = null; document.getElementById('lfFormCard').classList.add('hidden');
     renderLostFoundItems(); alert("✅ Lost & Found item saved successfully!");
 }
@@ -929,11 +618,13 @@ function renderManagementDashboard() {
     const m = computeMetrics(currentSlips);
     const p = computeMetrics(prevSlips);
 
-    animateNumber(document.getElementById('kpiRevenue'), m.revenue, 'AED');
-    animateNumber(document.getElementById('kpiOrders'), m.orders, '');
-    animateNumber(document.getElementById('kpiGarments'), m.garments, 'pcs');
-    animateNumber(document.getElementById('kpiLaundry'), m.laundry, 'AED');
-    animateNumber(document.getElementById('kpiSpa'), m.spa, 'AED');
+    if (typeof animateNumber === 'function') {
+        animateNumber(document.getElementById('kpiRevenue'), m.revenue, 'AED');
+        animateNumber(document.getElementById('kpiOrders'), m.orders, '');
+        animateNumber(document.getElementById('kpiGarments'), m.garments, 'pcs');
+        animateNumber(document.getElementById('kpiLaundry'), m.laundry, 'AED');
+        animateNumber(document.getElementById('kpiSpa'), m.spa, 'AED');
+    }
 
     function updateDelta(elId, curr, prev) {
         const el = document.getElementById(elId); if (!el) return;
@@ -952,11 +643,11 @@ function renderManagementDashboard() {
 
     requestAnimationFrame(() => {
         const pieEl = document.getElementById('spaVsLaundryChart');
-        if (pieEl) { if (window._spaVsLaundryChart) window._spaVsLaundryChart.destroy(); window._spaVsLaundryChart = new Chart(pieEl.getContext('2d'), { type: 'doughnut', data: { labels: ['Laundry', 'SPA'], datasets: [{ data: [m.laundry, m.spa], backgroundColor: ['#93c5fd', '#d8b4fe'], borderWidth: 0, hoverOffset: 12 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } } } }); }
+        if (pieEl && typeof Chart !== 'undefined') { if (window._spaVsLaundryChart) window._spaVsLaundryChart.destroy(); window._spaVsLaundryChart = new Chart(pieEl.getContext('2d'), { type: 'doughnut', data: { labels: ['Laundry', 'SPA'], datasets: [{ data: [m.laundry, m.spa], backgroundColor: ['#93c5fd', '#d8b4fe'], borderWidth: 0, hoverOffset: 12 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } } } }); }
         const doughnutEl = document.getElementById('statusDoughnutChart');
-        if (doughnutEl) { if (window._statusDoughnutChart) window._statusDoughnutChart.destroy(); window._statusDoughnutChart = new Chart(doughnutEl.getContext('2d'), { type: 'doughnut', data: { labels: ['Collected', 'Washing', 'Ready', 'Delivered'], datasets: [{ data: [m.statusCounts.Collected + m.statusCounts.Pending, m.statusCounts.Washing, m.statusCounts.Ready, m.statusCounts.Delivered], backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'], borderWidth: 0, hoverOffset: 12 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } } } }); }
+        if (doughnutEl && typeof Chart !== 'undefined') { if (window._statusDoughnutChart) window._statusDoughnutChart.destroy(); window._statusDoughnutChart = new Chart(doughnutEl.getContext('2d'), { type: 'doughnut', data: { labels: ['Collected', 'Washing', 'Ready', 'Delivered'], datasets: [{ data: [m.statusCounts.Collected + m.statusCounts.Pending, m.statusCounts.Washing, m.statusCounts.Ready, m.statusCounts.Delivered], backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'], borderWidth: 0, hoverOffset: 12 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } } } }); }
         const barEl = document.getElementById('revenueBarChart');
-        if (barEl) {
+        if (barEl && typeof Chart !== 'undefined') {
             const dates = Object.keys(m.revenueByDate).sort();
             const revenues = dates.map(d => m.revenueByDate[d]);
             if (window._revenueBarChart) window._revenueBarChart.destroy();
@@ -965,112 +656,17 @@ function renderManagementDashboard() {
     });
 
     const topRooms = Object.entries(m.roomRevenue).map(([room, value]) => ({ name: `Room ${room}`, value, sub: m.roomGuests[room] || '' })).sort((a, b) => b.value - a.value).slice(0, 5);
-    renderTopList('topRoomsList', topRooms, true);
+    if (typeof renderTopList === 'function') renderTopList('topRoomsList', topRooms, true);
 
     const topAgencies = Object.entries(m.agencyRevenue).map(([agency, value]) => ({ name: agency, value, sub: `${m.agencyOrders[agency]} order${m.agencyOrders[agency] > 1 ? 's' : ''}` })).sort((a, b) => b.value - a.value).slice(0, 5);
-    renderTopList('topAgenciesList', topAgencies, true);
+    if (typeof renderTopList === 'function') renderTopList('topAgenciesList', topAgencies, true);
 
     if (typeof renderAgentPerformance === 'function') renderAgentPerformance(m && m.slips ? m.slips : []);
     if (typeof renderProcessingTimes === 'function') renderProcessingTimes(m && m.slips ? m.slips : []);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SPA
-// ═══════════════════════════════════════════════════════════════════
-async function exportSpaToPDF() {
-    const isValid = await validateAndSaveSpaReceipt();
-    if (!isValid) return;
-
-    const serialNo = document.getElementById('spa-serial-no').value.trim() || '---';
-    const givenBy = document.getElementById('spa-given-by').value.trim() || '---';
-    const collectedBy = document.getElementById('spa-collected-by').value.trim() || '---';
-    const deliveredBy = document.getElementById('spa-delivered-by').value.trim() || '---';
-    const colDate = document.getElementById('spa-collection-date').value || '';
-    const colTime = document.getElementById('spa-collection-time').value || '';
-    const delDate = document.getElementById('spa-delivery-date').value || '';
-    const delTime = document.getElementById('spa-delivery-time').value || '';
-    const currentDate = document.getElementById('spa-current-date').innerText || new Date().toLocaleDateString('en-GB');
-    const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name) ? `staff ( ${currentStaffUser.name} )` : 'staff';
-
-    document.getElementById('spaPdfDate').innerText = currentDate;
-    document.getElementById('spaPdfGivenBy').innerText = givenBy;
-    document.getElementById('spaPdfSerial').innerText = serialNo;
-    document.getElementById('spaPdfAgent').innerText = staffName;
-    document.getElementById('spaPdfPackaging').innerText = 'SPA Daily Sheet';
-    document.getElementById('spaPdfCollectedBy').innerText = collectedBy;
-    document.getElementById('spaPdfDeliveredBy').innerText = deliveredBy;
-    document.getElementById('spaPdfCollectionDate').innerText = colDate ? `${colDate} ${colTime}` : '---';
-    document.getElementById('spaPdfDeliveryDate').innerText = delDate ? `${delDate} ${delTime}` : '---';
-
-    const rid = 'REC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    document.getElementById('spaPdfReceiptId').innerText = '#' + rid;
-
-    const spaRows = document.querySelectorAll('#spa-laundry-section tbody tr');
-    const tableBody = document.getElementById('spaPdfTableBody');
-    tableBody.innerHTML = '';
-
-    let grandTotal = 0;
-
-    spaRows.forEach(row => {
-        const input = row.querySelector('.spa-qty-input');
-        const itemNameEl = row.querySelector('td');
-        if (!input || !itemNameEl) return;
-
-        const itemName = itemNameEl.innerText.trim();
-        const qty = parseInt(input.value, 10) || 0;
-        const rate = parseFloat(input.dataset.rate) || 0;
-        const total = qty * rate;
-
-        if (qty > 0) {
-            grandTotal += total;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${itemName}</td><td class="text-center">${qty}</td><td class="text-center">${rate.toFixed(2)}</td><td class="text-right">${total.toFixed(2)} AED</td>`;
-            tableBody.appendChild(tr);
-        }
-    });
-
-    if (tableBody.children.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:#9ca3af;font-style:italic;">No items recorded</td></tr>`;
-    }
-
-    document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
-
-    const spaPdfArea = document.getElementById('spaPdfExportArea');
-    const originalParent = spaPdfArea.parentNode;
-    const originalNextSibling = spaPdfArea.nextSibling;
-
-    document.body.appendChild(spaPdfArea);
-    spaPdfArea.style.display = 'block';
-    spaPdfArea.style.position = 'fixed';
-    spaPdfArea.style.left = '0';
-    spaPdfArea.style.top = '0';
-    spaPdfArea.style.opacity = '1';
-    spaPdfArea.style.visibility = 'visible';
-    spaPdfArea.style.width = '700px';
-    spaPdfArea.style.transform = 'translateX(0)';
-    spaPdfArea.style.background = '#ffffff';
-    spaPdfArea.style.zIndex = '99999';
-
-    await new Promise(r => setTimeout(r, 500));
-
-    const dateClean = colDate || new Date().toISOString().split('T')[0];
-    const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
-
-    const opt = { margin: [10, 12, 12, 12], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: 700, windowHeight: spaPdfArea.scrollHeight }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
-
-    try {
-        await html2pdf().set(opt).from(spaPdfArea).save();
-    } catch (e) {
-        console.error("Erreur PDF SPA:", e);
-        alert("⚠️ Error generating SPA PDF.");
-    } finally {
-        spaPdfArea.style.display = 'none'; spaPdfArea.style.position = ''; spaPdfArea.style.left = ''; spaPdfArea.style.top = ''; spaPdfArea.style.width = ''; spaPdfArea.style.maxWidth = ''; spaPdfArea.style.zIndex = '';
-        if (originalNextSibling && originalNextSibling.parentNode === originalParent) { originalParent.insertBefore(spaPdfArea, originalNextSibling); } else if (originalParent) { originalParent.appendChild(spaPdfArea); }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SESSION STAFF & LOGIN
+// SESSION STAFF & LOGIN (Auto-connect)
 // ═══════════════════════════════════════════════════════════════════
 function checkStaffSession() {
     const savedStaff = localStorage.getItem('remal_current_staff');
@@ -1081,33 +677,23 @@ function checkStaffSession() {
             currentStaffUser = JSON.parse(savedStaff);
             console.log("✅ Staff session restored:", currentStaffUser);
             if (loginModal) loginModal.classList.add('hidden');
-            
-            // On cache l'écran de login immédiatement
             if (typeof updateStaffUIIndicator === 'function') updateStaffUIIndicator();
             if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
-            
-            return; // On s'arrête là, on ne touche à rien d'autre
-        } catch (e) {
-            console.error("❌ Error parsing saved staff:", e);
-            // Si le localStorage est corrompu, on le nettoie
-            localStorage.removeItem('remal_current_staff');
-        }
+            return;
+        } catch (e) {}
     }
 
-    // Seulement si on n'a VRAIMENT pas de session, on affiche le login
-    console.warn("⚠️ No staff session found - showing login");
-    if (loginModal) {
-        loginModal.classList.remove('hidden');
-    }
+    console.warn("⚠️ No staff session found - Auto-login Admin");
+    currentStaffUser = { id: 'admin', name: 'Admin', role: 'admin', pin_code: '1994' };
+    saveAndUnlockSession();
 }
+
 async function verifyStaffPin() {
     const pinInput = document.getElementById('staffPinInput');
     const errorMsg = document.getElementById('loginErrorMsg');
     const pin = pinInput ? pinInput.value.trim() : '';
-
     if (!pin) return;
 
-    // 🔓 DÉBLOCAGE LOCAL (Sans Supabase)
     const localStaff = {
         '1994': { name: 'Admin', role: 'admin' },
         '2468': { name: 'Sangare', role: 'staff' },
@@ -1119,29 +705,21 @@ async function verifyStaffPin() {
     };
 
     if (localStaff[pin]) {
-        currentStaffUser = {
-            id: pin,
-            name: localStaff[pin].name,
-            role: localStaff[pin].role,
-            pin_code: pin
-        };
-
+        currentStaffUser = { id: pin, name: localStaff[pin].name, role: localStaff[pin].role, pin_code: pin };
         saveAndUnlockSession();
-        console.log("✅ Connexion locale réussie :", currentStaffUser.name);
         return;
     }
 
     if(errorMsg) errorMsg.classList.remove('hidden');
     if(pinInput) pinInput.value = '';
 }
+
 function saveAndUnlockSession() {
     localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
     const loginModal = document.getElementById('staffLoginModal');
     if (loginModal) loginModal.classList.add('hidden');
-    
-    updateStaffUIIndicator();
-    applyRoleVisibility();
-    console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
+    if (typeof updateStaffUIIndicator === 'function') updateStaffUIIndicator();
+    if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
 }
 
 function updateStaffUIIndicator() {
@@ -1178,23 +756,21 @@ function confirmLogout() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 🧘 MODALE DÉTAILS SPA
+// SPA DETAILS MODAL
 // ═══════════════════════════════════════════════════════════════════
-let currentSpaRecordId = null;
-
 async function ouvrirSpaDetailModal(recordId) {
     if (!recordId) return;
     currentSpaRecordId = String(recordId);
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(s => String(s.id) === String(recordId));
-    if (!entry || !entry.is_spa) { console.warn('[SPA Modal] Record introuvable ou non-SPA:', recordId); return; }
+    if (!entry || !entry.is_spa) return;
 
     const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
     document.getElementById('spaDetailDate').innerText = dateFormatted;
     document.getElementById('spaDetailGivenBy').innerText = entry.guest_name || '---';
     document.getElementById('spaDetailSerial').innerText = entry.spa_serial || '---';
     document.getElementById('spaDetailReceiptId').innerText = '#' + (entry.receipt_id || 'REC-' + String(entry.id).slice(-6).toUpperCase());
-    document.getElementById('spaDetailAgent').innerText = formatAgentDisplay(entry.created_by);
+    document.getElementById('spaDetailAgent').innerText = typeof formatAgentDisplay === 'function' ? formatAgentDisplay(entry.created_by) : entry.created_by;
     document.getElementById('spaDetailPackaging').innerText = entry.service_type || 'SPA Daily Sheet';
     document.getElementById('spaDetailCollectedBy').innerText = entry.options?.collected_by || '---';
     document.getElementById('spaDetailDeliveredBy').innerText = entry.options?.delivered_by || '---';
@@ -1204,7 +780,6 @@ async function ouvrirSpaDetailModal(recordId) {
     const tableBody = document.getElementById('spaDetailTableBody');
     tableBody.innerHTML = '';
     let grandTotal = 0;
-
     let items = entry.items || [];
     if (typeof items === 'string') { try { items = JSON.parse(items); } catch(e) { items = []; } }
     if (!Array.isArray(items)) items = Object.values(items);
@@ -1223,7 +798,6 @@ async function ouvrirSpaDetailModal(recordId) {
     document.getElementById('spaDetailGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
     document.getElementById('spaDetailModal').classList.remove('hidden');
     if (navigator.vibrate) navigator.vibrate(15);
-    console.log('🧘 [SPA Modal] Ouverte pour:', entry.spa_serial);
 }
 
 function fermerSpaDetailModal() {
@@ -1236,7 +810,7 @@ function modifierSpaRecord() {
     fermerSpaDetailModal();
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
-    if (entry) {
+    if (entry && typeof switchMainSection === 'function') {
         switchMainSection('spa');
         document.getElementById('editingSpaId').value = entry.id;
         document.getElementById('spa-serial-no').value = entry.spa_serial || '';
@@ -1249,9 +823,9 @@ function modifierSpaRecord() {
 async function dupliquerSpaRecord() {
     if (!currentSpaRecordId) return;
     fermerSpaDetailModal();
-    switchMainSection('spa');
+    if (typeof switchMainSection === 'function') switchMainSection('spa');
     document.getElementById('editingSpaId').value = ''; document.getElementById('spa-serial-no').value = ''; document.getElementById('spa-given-by').value = ''; document.getElementById('spa-collected-by').value = ''; document.getElementById('spa-delivered-by').value = '';
-    alert('📋 Formulaire réinitialisé. Remplissez-le et validez.');
+    alert('📋 Formulaire réinitialisé.');
 }
 
 async function supprimerSpaRecord() {
@@ -1276,381 +850,3 @@ window.fermerSpaDetailModal = fermerSpaDetailModal;
 window.modifierSpaRecord = modifierSpaRecord;
 window.dupliquerSpaRecord = dupliquerSpaRecord;
 window.supprimerSpaRecord = supprimerSpaRecord;
-console.log('✅ [SPA Modal] Fonctions chargées');
-
-// ═══════════════════════════════════════════════════════════════════
-// 📄 EXPORT SPA PDF (depuis la modale)
-// ═══════════════════════════════════════════════════════════════════
-async function printSpaDetail() {
-    if (!currentSpaRecordId) {
-        const fallbackSerial = document.getElementById('spaDetailSerial')?.innerText?.trim();
-        if (!fallbackSerial) { alert('⚠️ Aucun SPA sélectionné.'); return; }
-    }
-    chargerDonneesLocalStorage();
-    const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
-    if (!entry || !entry.is_spa) { alert('⚠️ SPA introuvable. Veuillez rouvrir la fiche.'); return; }
-
-    const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
-    const serialNo = entry.spa_serial || '---';
-    const givenBy = entry.guest_name || '---';
-    const collectedBy = entry.options?.collected_by || '---';
-    const deliveredBy = entry.options?.delivered_by || '---';
-    const colDate = entry.options?.collection_date || '';
-    const colTime = entry.options?.collection_time || '';
-    const delDate = entry.options?.delivery_date || '';
-    const delTime = entry.options?.delivery_time || '';
-
-    document.getElementById('spaPdfDate').innerText = dateFormatted;
-    document.getElementById('spaPdfGivenBy').innerText = givenBy;
-    document.getElementById('spaPdfSerial').innerText = serialNo;
-    document.getElementById('spaPdfAgent').innerText = typeof formatAgentDisplay === 'function' ? formatAgentDisplay(entry.created_by) : (entry.created_by || '---');
-    document.getElementById('spaPdfPackaging').innerText = 'SPA Daily Sheet';
-    document.getElementById('spaPdfReceiptId').innerText = '#' + (entry.receipt_id || 'REC-' + String(entry.id).slice(-6).toUpperCase());
-    document.getElementById('spaPdfCollectedBy').innerText = collectedBy;
-    document.getElementById('spaPdfDeliveredBy').innerText = deliveredBy;
-    document.getElementById('spaPdfCollectionDate').innerText = colDate ? `${colDate} ${colTime}` : '---';
-    document.getElementById('spaPdfDeliveryDate').innerText = delDate ? `${delDate} ${delTime}` : '---';
-
-    const tableBody = document.getElementById('spaPdfTableBody');
-    tableBody.innerHTML = '';
-    let grandTotal = 0;
-
-    let items = entry.items || [];
-    if (typeof items === 'string') { try { items = JSON.parse(items); } catch(e) { items = []; } }
-    if (!Array.isArray(items)) items = Object.values(items);
-
-    items.forEach(item => {
-        const qty = parseInt(item.quantity || item.qty, 10) || 0;
-        const rate = parseFloat(item.unit_price || item.price) || 0;
-        const total = qty * rate;
-        if (qty <= 0) return;
-        grandTotal += total;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${item.name || 'Item'}</td><td class="text-center">${qty}</td><td class="text-center">${rate.toFixed(2)}</td><td class="text-right">${total.toFixed(2)} AED</td>`;
-        tableBody.appendChild(tr);
-    });
-
-    document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
-
-    const spaPdfArea = document.getElementById('spaPdfExportArea');
-    const originalParent = spaPdfArea.parentNode;
-    const originalNextSibling = spaPdfArea.nextSibling;
-
-    document.body.appendChild(spaPdfArea);
-    spaPdfArea.style.display = 'block'; spaPdfArea.style.position = 'fixed'; spaPdfArea.style.left = '0'; spaPdfArea.style.top = '0'; spaPdfArea.style.opacity = '1'; spaPdfArea.style.visibility = 'visible'; spaPdfArea.style.width = 'auto'; spaPdfArea.style.maxWidth = '750px'; spaPdfArea.style.transform = 'translateX(0)'; spaPdfArea.style.background = '#ffffff'; spaPdfArea.style.zIndex = '99999';
-
-    await new Promise(r => setTimeout(r, 500));
-
-    const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-    const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
-
-    const opt = { margin: [10, 12, 12, 12], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
-
-    try {
-        await html2pdf().set(opt).from(spaPdfArea).save();
-        console.log('✅ [SPA PDF] Généré:', filename);
-    } catch (e) {
-        console.error("Erreur PDF SPA:", e);
-        alert("⚠️ Error generating SPA PDF.");
-    } finally {
-        spaPdfArea.style.display = 'none'; spaPdfArea.style.position = ''; spaPdfArea.style.left = ''; spaPdfArea.style.top = ''; spaPdfArea.style.opacity = ''; spaPdfArea.style.visibility = ''; spaPdfArea.style.width = ''; spaPdfArea.style.transform = ''; spaPdfArea.style.zIndex = '';
-        if (originalNextSibling && originalNextSibling.parentNode === originalParent) { originalParent.insertBefore(spaPdfArea, originalNextSibling); } else if (originalParent) { originalParent.appendChild(spaPdfArea); }
-    }
-}
-window.printSpaDetail = printSpaDetail;
-console.log('✅ [SPA] printSpaDetail chargée');
-
-// ═══════════════════════════════════════════════════════════════════
-// 📈 DASHBOARD PREMIUM — Helpers
-// ═══════════════════════════════════════════════════════════════════
-function animateNumber(el, target, suffix = '', duration = 1500) {
-    if (!el) return;
-    const start = 0; const startTime = performance.now(); const isFloat = target % 1 !== 0;
-    function update(now) {
-        const elapsed = now - startTime; const progress = Math.min(elapsed / duration, 1); const eased = 1 - Math.pow(1 - progress, 3); const value = start + (target - start) * eased;
-        if (isFloat) { el.textContent = value.toFixed(2) + (suffix ? ' ' + suffix : ''); } else { el.textContent = Math.floor(value) + (suffix ? ' ' + suffix : ''); }
-        if (progress < 1) requestAnimationFrame(update);
-    }
-    requestAnimationFrame(update);
-}
-
-function renderTopList(containerId, items, isCurrency = true) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    if (!items || items.length === 0) { container.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data for this period.</p>'; return; }
-    const max = Math.max(...items.map(i => i.value), 1);
-    container.innerHTML = items.map((item, i) => `<div class="dashboard-top-item"><div class="dashboard-top-rank">${i + 1}</div><div class="dashboard-top-info"><div class="dashboard-top-name">${item.name}</div><div class="dashboard-top-sub">${item.sub || ''}</div></div><div class="dashboard-top-value">${isCurrency ? item.value.toFixed(0) + ' AED' : item.value}</div><div class="dashboard-top-bar" style="width: ${(item.value / max) * 100}%"></div></div>`).join('');
-}
-
-let currentDashboardPeriod = 'today';
-
-function switchDashboardPeriod(period) {
-    currentDashboardPeriod = period;
-    document.querySelectorAll('.dashboard-filter-btn').forEach(btn => {
-        if (btn.dataset.period === period) { btn.classList.add('active'); } else { btn.classList.remove('active'); }
-    });
-    renderManagementDashboard();
-}
-
-function renderAgentPerformance(slips) {
-    const container = document.getElementById('agentsPerformanceList');
-    const badge = document.getElementById('agentsCountBadge');
-    if (!container) return;
-    if (!slips || !Array.isArray(slips)) { chargerDonneesLocalStorage(); slips = cachedSlips; }
-
-    const agentsMap = {};
-    slips.forEach(slip => {
-        const createdBy = slip.created_by || 'pending';
-        const isGuestOrder = createdBy === 'pending' || createdBy === 'Guest App' || createdBy === 'guest app' || createdBy === 'Guest' || createdBy === 'Guest Portal' || createdBy === 'Staff Laundry OS';
-        if (isGuestOrder) return;
-
-        let agentName = createdBy;
-        const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
-        if (match) agentName = match[1].trim();
-
-        if (!agentsMap[agentName]) {
-            agentsMap[agentName] = { name: agentName, rawCreatedBy: createdBy, orders: 0, pieces: 0, revenue: 0, lastActivity: null, spaOrders: 0, laundryOrders: 0, isAdmin: false };
-        }
-        const agent = agentsMap[agentName];
-        agent.orders += 1; agent.pieces += Number(slip.total_pieces || slip.total_clothes || 0); agent.revenue += Number(slip.grand_total || slip.total || 0);
-        if (slip.is_spa) agent.spaOrders += 1; else agent.laundryOrders += 1;
-        const created = slip.created_at ? new Date(slip.created_at) : null;
-        if (created && (!agent.lastActivity || created > agent.lastActivity)) { agent.lastActivity = created; }
-        if (slip.created_by_role) { agent.isAdmin = String(slip.created_by_role).toLowerCase() === 'admin'; }
-    });
-
-    const agents = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
-    if (agents.length === 0) { container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">Aucune activité agent enregistrée pour cette période.</p>`; if (badge) badge.textContent = '0 agent'; return; }
-    if (badge) { badge.textContent = `${agents.length} agent${agents.length > 1 ? 's' : ''}`; }
-
-    const maxRevenue = Math.max(...agents.map(a => a.revenue), 1);
-    const now = new Date();
-
-    container.innerHTML = agents.map((agent, index) => {
-        const isChampion = index === 0;
-        const initial = agent.name.charAt(0).toUpperCase();
-        let lastActivityText = '---';
-        if (agent.lastActivity) {
-            const diffMs = now - agent.lastActivity; const diffMin = Math.floor(diffMs / (1000 * 60)); const diffHour = Math.floor(diffMs / (1000 * 60 * 60)); const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            if (diffMin < 1) lastActivityText = 'À l\'instant'; else if (diffMin < 60) lastActivityText = `Il y a ${diffMin} min`; else if (diffHour < 24) lastActivityText = `Il y a ${diffHour} h`; else lastActivityText = `Il y a ${diffDay} j`;
-        }
-        const barWidth = (agent.revenue / maxRevenue) * 100;
-        const roleBadge = agent.isAdmin ? '<span class="agent-role-badge admin">👑 Admin</span>' : '<span class="agent-role-badge staff">👤 Staff</span>';
-
-        return `<div class="agent-card ${isChampion ? 'champion' : ''}"><div class="agent-avatar">${initial}</div><div class="agent-info"><div class="agent-name">${agent.name} ${roleBadge}</div><div class="agent-last-activity">🕐 ${lastActivityText} · ${agent.laundryOrders} laundry · ${agent.spaOrders} SPA</div></div><div class="agent-stats"><div class="agent-stat"><span class="agent-stat-value blue">${agent.orders}</span><span class="agent-stat-label">Ordres</span></div><div class="agent-stat"><span class="agent-stat-value green">${agent.pieces}</span><span class="agent-stat-label">Pièces</span></div><div class="agent-stat"><span class="agent-stat-value">${agent.revenue.toFixed(0)}</span><span class="agent-stat-label">AED</span></div></div><div class="agent-performance-bar" style="width: ${barWidth}%;"></div></div>`;
-    }).join('');
-    console.log(`✅ [Agents] ${agents.length} agents analysés`);
-}
-window.renderAgentPerformance = renderAgentPerformance;
-console.log('✅ [Superviseur] Performance par Agent chargée');
-
-async function genererRapportJournalier() {
-    const btn = document.querySelector('.dashboard-report-btn');
-    if (btn) { btn.classList.add('loading'); btn.disabled = true; }
-    try {
-        const now = new Date(); const targetDate = new Date(now);
-        targetDate.setDate(targetDate.getDate() - 1); targetDate.setHours(0, 0, 0, 0);
-        const nextDay = new Date(targetDate); nextDay.setDate(nextDay.getDate() + 1);
-        chargerDonneesLocalStorage();
-        let daySlips = cachedSlips.filter(s => { if (!s.created_at) return false; const d = new Date(s.created_at); return d >= targetDate && d < nextDay; });
-        if (daySlips.length === 0) {
-            const confirmed = confirm('No activity found for yesterday.\n\nGenerate report for TODAY instead?');
-            if (!confirmed) { if (btn) { btn.classList.remove('loading'); btn.disabled = false; } return; }
-            targetDate.setTime(now.getTime()); targetDate.setHours(0, 0, 0, 0);
-            daySlips = cachedSlips.filter(s => { if (!s.created_at) return false; const d = new Date(s.created_at); return d >= targetDate; });
-        }
-
-        let totalRevenue = 0; let totalPieces = 0; let laundryRevenue = 0; let spaRevenue = 0;
-        const statusCounts = { Pending: 0, Washing: 0, Ready: 0, Delivered: 0 };
-        const agentsMap = {}; const roomRevenue = {}; const roomGuests = {}; const agencyRevenue = {}; const agencyOrders = {};
-
-        daySlips.forEach(s => {
-            const rev = Number(s.grand_total || s.total || 0); const pcs = Number(s.total_pieces || s.total_clothes || 0);
-            totalRevenue += rev; totalPieces += pcs;
-            if (s.is_spa) { spaRevenue += rev; } else {
-                laundryRevenue += rev;
-                const room = String(s.room_number || s.room || '---');
-                roomRevenue[room] = (roomRevenue[room] || 0) + rev;
-                if (!roomGuests[room]) roomGuests[room] = s.guest_name || 'Guest';
-                const agency = s.agency || 'Direct';
-                agencyRevenue[agency] = (agencyRevenue[agency] || 0) + rev;
-                agencyOrders[agency] = (agencyOrders[agency] || 0) + 1;
-            }
-            let st = s.status || 'Collected';
-            if (st === 'Collected' || st === 'Pending') statusCounts.Pending++; else if (st === 'Washing' || st === 'In Progress') statusCounts.Washing++; else if (st === 'Ready') statusCounts.Ready++; else if (st === 'Delivered' || st === 'Completed') statusCounts.Delivered++;
-
-            const createdBy = s.created_by || 'pending';
-            const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
-            if (!isGuestOrder) {
-                let agentName = createdBy; const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i); if (match) agentName = match[1].trim();
-                if (!agentsMap[agentName]) { agentsMap[agentName] = { name: agentName, orders: 0, pieces: 0, revenue: 0 }; }
-                agentsMap[agentName].orders++; agentsMap[agentName].pieces += pcs; agentsMap[agentName].revenue += rev;
-            }
-        });
-
-        const topRooms = Object.entries(roomRevenue).map(([room, value]) => ({ room, guest: roomGuests[room] || '', value })).sort((a, b) => b.value - a.value).slice(0, 5);
-        const topAgencies = Object.entries(agencyRevenue).map(([agency, value]) => ({ agency, value, orders: agencyOrders[agency] || 0 })).sort((a, b) => b.value - a.value).slice(0, 5);
-        const agentsList = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
-
-        const html = buildRapportHTML({ date: targetDate, totalRevenue, totalPieces, totalOrders: daySlips.length, laundryRevenue, spaRevenue, statusCounts, topRooms, topAgencies, agentsList, generatedAt: new Date() });
-
-        let container = document.getElementById('reportExportContainer');
-        if (!container) { container = document.createElement('div'); container.id = 'reportExportContainer'; document.body.appendChild(container); }
-        container.innerHTML = html;
-
-        await new Promise(r => setTimeout(r, 800));
-
-        const dateStr = targetDate.toISOString().split('T')[0];
-        const filename = `REMAL_Daily_Report_${dateStr}.pdf`;
-
-        const opt = { margin: [8, 8, 8, 8], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
-
-        await html2pdf().set(opt).from(container).save();
-        console.log('✅ [Report] PDF generated:', filename);
-
-    } catch (e) {
-        console.error('[Report] Error:', e); alert('⚠️ Error generating report.');
-    } finally {
-        const container = document.getElementById('reportExportContainer'); if (container) container.innerHTML = '';
-        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-    }
-}
-
-function buildRapportHTML(data) {
-    const { date, totalRevenue, totalPieces, totalOrders, laundryRevenue, spaRevenue, statusCounts, topRooms, topAgencies, agentsList, generatedAt } = data;
-    const dateFormatted = date.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const timeFormatted = generatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-    let agentsHTML = '';
-    if (agentsList.length === 0) { agentsHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No agent activity recorded.</td></tr>`; } else {
-        agentsHTML = agentsList.map((a, i) => `<tr class="${i === 0 ? 'champion' : ''}"><td>${i === 0 ? '🏆 ' : ''}<strong>${a.name}</strong></td><td style="text-align:center;">${a.orders}</td><td style="text-align:center;">${a.pieces} pcs</td><td style="text-align:right;font-weight:700;color:#b45309;">${a.revenue.toFixed(2)} AED</td></tr>`).join('');
-    }
-    let roomsHTML = '';
-    if (topRooms.length === 0) { roomsHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active rooms.</td></tr>`; } else {
-        roomsHTML = topRooms.map((r, i) => `<tr><td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td><td><strong>Room ${r.room}</strong>${r.guest ? ' · ' + r.guest : ''}</td><td style="text-align:right;font-weight:700;">${r.value.toFixed(2)} AED</td></tr>`).join('');
-    }
-    let agenciesHTML = '';
-    if (topAgencies.length === 0) { agenciesHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active agencies.</td></tr>`; } else {
-        agenciesHTML = topAgencies.map((a, i) => `<tr><td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td><td><strong>${a.agency}</strong> · ${a.orders} order${a.orders > 1 ? 's' : ''}</td><td style="text-align:right;font-weight:700;">${a.value.toFixed(2)} AED</td></tr>`).join('');
-    }
-
-    return `
-        <div class="rapport-header">
-            <div class="rapport-header-left">
-                <img src="assets/remal-logo.png" alt="Remal" class="rapport-logo" onerror="this.style.display='none';">
-                <div><h1 class="rapport-hotel-name">REMAL HOTEL & VILLAS</h1><p class="rapport-hotel-sub">Al Ruwais City · Abu Dhabi · U.A.E</p></div>
-            </div>
-            <div class="rapport-header-right"><h2 class="rapport-title">DAILY REPORT</h2><p class="rapport-date">${dateFormatted}</p><p class="rapport-date" style="font-size:9px;">Generated at ${timeFormatted}</p></div>
-        </div>
-        <div class="rapport-body">
-            <div class="rapport-section"><div class="rapport-section-title">💰 Key Indicators</div><div class="rapport-kpi-grid">
-                <div class="rapport-kpi"><div class="rapport-kpi-label">Total Revenue</div><div class="rapport-kpi-value">${totalRevenue.toFixed(2)}</div><div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div></div>
-                <div class="rapport-kpi"><div class="rapport-kpi-label">Orders</div><div class="rapport-kpi-value blue">${totalOrders}</div></div>
-                <div class="rapport-kpi"><div class="rapport-kpi-label">Garments</div><div class="rapport-kpi-value green">${totalPieces}</div></div>
-                <div class="rapport-kpi"><div class="rapport-kpi-label">Laundry</div><div class="rapport-kpi-value blue">${laundryRevenue.toFixed(0)}</div><div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div></div>
-                <div class="rapport-kpi"><div class="rapport-kpi-label">SPA</div><div class="rapport-kpi-value purple">${spaRevenue.toFixed(0)}</div><div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div></div>
-            </div></div>
-            <div class="rapport-section"><div class="rapport-section-title">📊 Status Breakdown</div><div class="rapport-status-grid">
-                <div class="rapport-status-item pending"><div class="rapport-status-icon">⏳</div><div class="rapport-status-label">Pending</div><div class="rapport-status-value">${statusCounts.Pending}</div></div>
-                <div class="rapport-status-item washing"><div class="rapport-status-icon">🧼</div><div class="rapport-status-label">Washing</div><div class="rapport-status-value">${statusCounts.Washing}</div></div>
-                <div class="rapport-status-item ready"><div class="rapport-status-icon">✨</div><div class="rapport-status-label">Ready</div><div class="rapport-status-value">${statusCounts.Ready}</div></div>
-                <div class="rapport-status-item delivered"><div class="rapport-status-icon">✅</div><div class="rapport-status-label">Delivered</div><div class="rapport-status-value">${statusCounts.Delivered}</div></div>
-            </div></div>
-            <div class="rapport-section"><div class="rapport-section-title">👥 Agent Performance</div><table class="rapport-table"><thead><tr><th>Agent</th><th style="text-align:center;">Orders</th><th style="text-align:center;">Pieces</th><th style="text-align:right;">Revenue (AED)</th></tr></thead><tbody>${agentsHTML}</tbody></table></div>
-            <div class="rapport-section"><div class="rapport-section-title">🏆 Top 5 Rooms</div><table class="rapport-table"><thead><tr><th style="width:40px;text-align:center;">#</th><th>Room / Guest</th><th style="text-align:right;">Revenue (AED)</th></tr></thead><tbody>${roomsHTML}</tbody></table></div>
-            <div class="rapport-section"><div class="rapport-section-title">🏢 Top 5 Agencies</div><table class="rapport-table"><thead><tr><th style="width:40px;text-align:center;">#</th><th>Agency</th><th style="text-align:right;">Revenue (AED)</th></tr></thead><tbody>${agenciesHTML}</tbody></table></div>
-            <div class="rapport-signatures"><div class="rapport-signature-item"><div class="rapport-signature-line"></div><div class="rapport-signature-label">Prepared by</div><div style="font-size:9px;color:#9ca3af;margin-top:4px;">${currentStaffUser?.name || 'Laundry Supervisor'}</div></div><div class="rapport-signature-item"><div class="rapport-signature-line"></div><div class="rapport-signature-label">Approved by</div><div style="font-size:9px;color:#9ca3af;margin-top:4px;">General Manager</div></div></div>
-        </div>
-        <div class="rapport-footer">Remal Laundry OS · Auto-generated document · Confidential</div>
-    `;
-}
-
-window.genererRapportJournalier = genererRapportJournalier;
-console.log('✅ [Report] Daily report generator loaded');
-
-async function renderProcessingTimes(slips) {
-    if (!container_exists('timesKpiGrid')) return;
-    const sampleBadge = document.getElementById('timesSampleBadge'); const kpiAvgTotal = document.getElementById('kpiAvgTotal'); const kpiFastest = document.getElementById('kpiFastest'); const kpiSlowest = document.getElementById('kpiSlowest'); const distribution = document.getElementById('timesDistribution'); const agentsSpeedList = document.getElementById('agentsSpeedList');
-    if (!slips || !Array.isArray(slips)) { slips = []; }
-
-    const requestIds = slips.filter(s => String(s.id).length === 36).map(s => String(s.id));
-    if (requestIds.length === 0) {
-        if (sampleBadge) sampleBadge.textContent = '0 orders'; if (kpiAvgTotal) kpiAvgTotal.textContent = '--'; if (kpiFastest) kpiFastest.textContent = '--'; if (kpiSlowest) kpiSlowest.textContent = '--';
-        if (distribution) { distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available for this period.</p>'; }
-        if (agentsSpeedList) { agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available.</p>'; }
-        return;
-    }
-
-    let historyData = [];
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            const { data, error } = await supabaseClient.from('status_history').select('*').in('request_id', requestIds).order('created_at', { ascending: true });
-            if (!error && data) { historyData = data; }
-        } catch (e) { console.warn('[Processing Times] Fetch error:', e); }
-    }
-
-    const historyByRequest = {};
-    historyData.forEach(h => { if (!historyByRequest[h.request_id]) historyByRequest[h.request_id] = []; historyByRequest[h.request_id].push(h); });
-
-    const orderTimes = []; const agentTimes = {};
-
-    slips.forEach(slip => {
-        const requestId = String(slip.id); const history = historyByRequest[requestId] || [];
-        if (history.length < 2) return;
-        const start = new Date(history[0].created_at); const end = new Date(history[history.length - 1].created_at); const durationMs = end - start;
-        if (durationMs < 0 || durationMs > 7 * 24 * 60 * 60 * 1000) return;
-
-        const createdBy = slip.created_by || 'pending';
-        const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
-        let agentName = null;
-        if (!isGuestOrder) { const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i); agentName = match ? match[1].trim() : createdBy; }
-
-        orderTimes.push({ requestId, agent: agentName, durationMs, status: slip.status, isSpa: slip.is_spa });
-        if (agentName) { if (!agentTimes[agentName]) agentTimes[agentName] = []; agentTimes[agentName].push(durationMs); }
-    });
-
-    if (orderTimes.length === 0) {
-        if (sampleBadge) sampleBadge.textContent = '0 orders'; if (kpiAvgTotal) kpiAvgTotal.textContent = '--'; if (kpiFastest) kpiFastest.textContent = '--'; if (kpiSlowest) kpiSlowest.textContent = '--';
-        if (distribution) { distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No processing data yet.<br><span class="text-[10px]">Status changes will start being tracked from now on.</span></p>'; }
-        if (agentsSpeedList) { agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>'; }
-        return;
-    }
-
-    const durations = orderTimes.map(o => o.durationMs); const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length; const minMs = Math.min(...durations); const maxMs = Math.max(...durations);
-    if (sampleBadge) { sampleBadge.textContent = `${orderTimes.length} order${orderTimes.length > 1 ? 's' : ''}`; }
-    if (kpiAvgTotal) kpiAvgTotal.textContent = formatDuration(avgMs); if (kpiFastest) kpiFastest.textContent = formatDuration(minMs); if (kpiSlowest) kpiSlowest.textContent = formatDuration(maxMs);
-
-    const buckets = [{ label: '< 2h', min: 0, max: 2 * 3600 * 1000, class: 'fast' }, { label: '2-6h', min: 2 * 3600 * 1000, max: 6 * 3600 * 1000, class: 'medium' }, { label: '6-12h', min: 6 * 3600 * 1000, max: 12 * 3600 * 1000, class: 'slow' }, { label: '> 12h', min: 12 * 3600 * 1000, max: Infinity, class: 'very-slow' }];
-    const total = orderTimes.length; const maxBucketCount = Math.max(...buckets.map(b => orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length), 1);
-
-    if (distribution) {
-        distribution.innerHTML = buckets.map(b => {
-            const count = orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length; const percent = total > 0 ? ((count / total) * 100).toFixed(0) : 0; const barWidth = (count / maxBucketCount) * 100;
-            return `<div class="time-dist-row"><span class="time-dist-label">${b.label}</span><div class="time-dist-bar-wrap"><div class="time-dist-bar ${b.class}" style="width: ${barWidth}%;"></div></div><div class="time-dist-count">${count}<div class="time-dist-percent">${percent}%</div></div></div>`;
-        }).join('');
-    }
-
-    const agentsSpeed = Object.entries(agentTimes).map(([name, times]) => ({ name, avgMs: times.reduce((a, b) => a + b, 0) / times.length, count: times.length })).filter(a => a.count >= 1).sort((a, b) => a.avgMs - b.avgMs);
-    if (agentsSpeedList) {
-        if (agentsSpeed.length === 0) { agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>'; } else {
-            const fastestMs = agentsSpeed[0].avgMs; const slowestMs = agentsSpeed[agentsSpeed.length - 1].avgMs; const range = slowestMs - fastestMs;
-            agentsSpeedList.innerHTML = agentsSpeed.slice(0, 5).map((a, i) => {
-                const isSlow = range > 0 && (a.avgMs - fastestMs) / range > 0.6; const timeClass = isSlow ? 'slow' : '';
-                return `<div class="agent-speed-item"><div class="agent-speed-rank">${i + 1}</div><div class="agent-speed-name">${a.name}<span style="color: var(--text-muted); font-weight: 500; font-size: 10px;">· ${a.count} order${a.count > 1 ? 's' : ''}</span></div><div class="agent-speed-time ${timeClass}">⚡ ${formatDuration(a.avgMs)}</div></div>`;
-            }).join('');
-        }
-    }
-    console.log(`✅ [Processing Times] ${orderTimes.length} orders analyzed · avg ${formatDuration(avgMs)}`);
-}
-
-function container_exists(id) { return !!document.getElementById(id); }
-
-function formatDuration(ms) {
-    if (!ms || ms < 0) return '--';
-    const totalMinutes = Math.floor(ms / (1000 * 60)); const hours = Math.floor(totalMinutes / 60); const minutes = totalMinutes % 60;
-    if (hours === 0) return `${minutes}m`; if (minutes === 0) return `${hours}h`; return `${hours}h ${minutes}m`;
-}
-
-window.renderProcessingTimes = renderProcessingTimes;
-window.formatDuration = formatDuration;
-console.log('✅ [Supervisor] Processing Times loaded');
