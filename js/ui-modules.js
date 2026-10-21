@@ -10,41 +10,15 @@
 // PHASE 2.3 — DATE FILTER STATE
 // ═══════════════════════════════════════════════════════════════════
 
-// Phase 2.2 — Status filter ('all' | 'pending' | 'washing' | 'ready' | 'delivered')
 let currentStatusFilter = 'all';
-
-// Phase 2.3 — Quick date filter ('today' | '7d' | '30d' | '90d' | null = no filter)
 let currentDateFilter = null;
-// 🔐 Fonction pour crypter le PIN (SHA-256)
-async function hashPin(pin) {
-    // 1. On transforme le texte (ex: "1234") en données binaires
-    const encoder = new TextEncoder();
-    const data = encoder.encode(String(pin));
-    
-    // 2. On utilise la fonction de cryptage native du navigateur (SHA-256)
-    // C'est la même technologie que celle utilisée par les banques.
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    
-    // 3. Le résultat est un objet binaire incompréhensible.
-    // On le transforme en tableau de nombres (bytes)
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    
-    // 4. On convertit chaque nombre en texte hexadécimal (lettres et chiffres)
-    // et on colle le tout pour former une seule chaîne de 64 caractères.
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 5 — ROLE MANAGEMENT (Admin / Staff)
 // ═══════════════════════════════════════════════════════════════════
-
-/**
- * Check if current user has admin role
- * @returns {boolean}
- */
 function isAdmin() {
     try {
         if (typeof currentStaffUser === 'undefined' || !currentStaffUser) {
-            // Fallback: try reading from localStorage (page might be loading)
             const session = localStorage.getItem('remal_current_staff');
             if (session) {
                 const parsed = JSON.parse(session);
@@ -59,11 +33,6 @@ function isAdmin() {
     }
 }
 
-/**
- * Require admin role for an action. Shows an alert and returns false if not admin.
- * @param {string} actionName - Human-readable action name for the error message
- * @returns {boolean} true if admin, false otherwise
- */
 function requireAdmin(actionName = 'this action') {
     if (isAdmin()) return true;
     alert(`🚫 Access denied.\n\nOnly administrators can perform: ${actionName}.\n\nPlease contact your manager if you need this access.`);
@@ -71,11 +40,6 @@ function requireAdmin(actionName = 'this action') {
     return false;
 }
 
-/**
- * Apply role-based visibility to the UI.
- * Adds 'role-staff' class to body if user is NOT admin.
- * CSS rule hides all [data-admin-only="true"] elements when body has role-staff.
- */
 function applyRoleVisibility() {
     const body = document.body;
     if (!body) return;
@@ -86,45 +50,31 @@ function applyRoleVisibility() {
         return;
     }
 
-    // ═══ STAFF MODE — Masquage strict ET définitif ═══
     body.classList.add('role-staff');
     console.log('[Role] Staff mode — restricted UI (strict removal)');
 
-    // 1. Sections réservées admin : on les SUPPRIME du DOM
   const ADMIN_SECTIONS = ['sectionLostfound', 'sectionPdfList', 'sectionMassEntry', 'sectionDashboard', 'sectionCheckout', 'sectionChat', 'sectionLinenControl'];
     ADMIN_SECTIONS.forEach(id => {
         const el = document.getElementById(id);
-        if (el && el.parentNode) {
-            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
-        }
+        if (el && el.parentNode) el.parentNode.removeChild(el);
     });
 
-    // 2. Boutons de nav admin : on les SUPPRIME du DOM
   const ADMIN_NAV_BUTTONS = ['navBtnLostfound', 'navBtnPdfList', 'navBtnMassEntry', 'navBtnDashboard', 'navBtnChat', 'navBtnLinenControl'];
     ADMIN_NAV_BUTTONS.forEach(id => {
         const el = document.getElementById(id);
-        if (el && el.parentNode) {
-            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
-        }
+        if (el && el.parentNode) el.parentNode.removeChild(el);
     });
 
-    // 3. Tous les autres éléments marqués data-admin-only : on les SUPPRIME du DOM
     document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
-        if (el.parentNode) {
-            el.parentNode.removeChild(el);   // 🗑️ Supprimé pour de bon
-        }
+        if (el.parentNode) el.parentNode.removeChild(el);
     });
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 2.4 — ROOM AUTOCOMPLETE IN SEARCH
 // ═══════════════════════════════════════════════════════════════════
-
 let searchRoomDebounceTimer = null;
 
-/**
- * Extract unique room numbers from cachedSlips, sorted ascending
- * @returns {string[]}
- */
 function getUniqueRoomsFromArchives() {
     if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
     const rooms = new Set();
@@ -135,10 +85,6 @@ function getUniqueRoomsFromArchives() {
     return Array.from(rooms).sort((a, b) => parseInt(a) - parseInt(b));
 }
 
-/**
- * Handle input/focus on #searchRoom — debounced autocomplete
- * @param {Event} event
- */
 function onSearchRoomInput(event) {
     if (searchRoomDebounceTimer) clearTimeout(searchRoomDebounceTimer);
     searchRoomDebounceTimer = setTimeout(() => {
@@ -146,10 +92,6 @@ function onSearchRoomInput(event) {
     }, 200);
 }
 
-/**
- * Render autocomplete dropdown for #searchRoom
- * @param {string} query
- */
 function renderSearchRoomDropdown(query) {
     const dropdown = document.getElementById('searchRoomDropdown');
     if (!dropdown) return;
@@ -159,11 +101,9 @@ function renderSearchRoomDropdown(query) {
 
     const q = String(query || '').trim().toLowerCase();
 
-    // If query looks like a guest name or SPA serial (contains letters or #), don't show room suggestions
     if (q && !/^\d+$/.test(q)) {
         dropdown.classList.add('hidden');
         dropdown.innerHTML = '';
-        // Still trigger the standard filter
         if (typeof afficherListeBordereauxLocal === 'function') {
             afficherListeBordereauxLocal();
         }
@@ -171,11 +111,7 @@ function renderSearchRoomDropdown(query) {
     }
 
     const allRooms = getUniqueRoomsFromArchives();
-    const matches = q
-        ? allRooms.filter(r => r.startsWith(q))
-        : allRooms;
-
-    // Limit to 12 results for cleanliness
+    const matches = q ? allRooms.filter(r => r.startsWith(q)) : allRooms;
     const limited = matches.slice(0, 12);
 
     if (limited.length === 0) {
@@ -199,10 +135,6 @@ function renderSearchRoomDropdown(query) {
     dropdown.classList.remove('hidden');
 }
 
-/**
- * Apply a room suggestion: fill input + hide dropdown + re-run filter
- * @param {string} room
- */
 function selectSearchRoom(room) {
     const input = document.getElementById('searchRoom');
     if (input) input.value = room;
@@ -220,9 +152,6 @@ function selectSearchRoom(room) {
     console.log('[SearchRoom] Selected:', room);
 }
 
-/**
- * Close dropdown when clicking outside
- */
 document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('searchRoomDropdown');
     const input = document.getElementById('searchRoom');
@@ -232,9 +161,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-/**
- * Close dropdown on Escape key
- */
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const dropdown = document.getElementById('searchRoomDropdown');
@@ -287,23 +213,11 @@ async function chargerDonneesEtAbonnementCloud() {
                 if (shouldPreserveLocal) {
                     console.log("🛡️ [ChargerCloud] Préservation local pour ID:", s.id, "→", localCreatedBy);
                     slipMap.set(String(s.id), { 
-                        ...existing,
-                        ...s, 
-                        id: String(s.id),
-                        room: roomClean, 
-                        room_number: roomClean,
-                        items: parsedItems,
-                        created_by: localCreatedBy,
-                        status: existing.status
+                        ...existing, ...s, id: String(s.id), room: roomClean, room_number: roomClean, items: parsedItems, created_by: localCreatedBy, status: existing.status
                     });
                 } else {
                     slipMap.set(String(s.id), { 
-                        ...existing,
-                        ...s, 
-                        id: String(s.id),
-                        room: roomClean, 
-                        room_number: roomClean,
-                        items: parsedItems
+                        ...existing, ...s, id: String(s.id), room: roomClean, room_number: roomClean, items: parsedItems
                     });
                 }
             });
@@ -374,12 +288,8 @@ function renderMassPreviewTable() {
             ? `<span class="badge-chargeable">Chargeable</span>`
             : `<span class="badge-green">Included (${item.quotaText})</span>`;
 
-        // Cellules éditables : data-field + data-room
         const editableAttrs = (field) =>
-            `contenteditable="true" data-field="${field}" data-room="${room}" ` +
-            `onblur="sauvegarderChampPMS(this)" ` +
-            `onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" ` +
-            `class="editable-cell outline-none px-1 py-0.5 rounded"`;
+            `contenteditable="true" data-field="${field}" data-room="${room}" onblur="sauvegarderChampPMS(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" class="editable-cell outline-none px-1 py-0.5 rounded"`;
 
         html += `
             <tr class="${rowClass}">
@@ -412,19 +322,13 @@ async function sauvegarderChampPMS(cell) {
 
     if (!room || !field) return;
 
-    // Valeur actuelle en mémoire
     const current = pmsDatabase[room];
     if (!current) return;
 
-    if (String(current[field] || '') === newValue) {
-        // Rien à sauvegarder
-        return;
-    }
+    if (String(current[field] || '') === newValue) return;
 
-    // Mise à jour locale
     pmsDatabase[room][field] = newValue;
 
-    // Cas spécial : si on édite quotaText → recalculer isChargeable
     if (field === 'quotaText') {
         const lower = newValue.toLowerCase();
         pmsDatabase[room].isChargeable = lower.includes('chargeable') || (!lower.includes('laundry') && !lower.includes('pcs'));
@@ -432,7 +336,6 @@ async function sauvegarderChampPMS(cell) {
 
     sauvegarderPmsLocalStorage();
 
-    // Sync Supabase
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         const payload = {};
         payload[field] = newValue;
@@ -448,7 +351,6 @@ async function sauvegarderChampPMS(cell) {
 
             if (error) throw error;
 
-            // Feedback visuel
             cell.classList.add('bg-emerald-900/50');
             setTimeout(() => cell.classList.remove('bg-emerald-900/50'), 800);
 
@@ -463,32 +365,7 @@ async function sauvegarderChampPMS(cell) {
 
 window.sauvegarderChampPMS = sauvegarderChampPMS;
 console.log('✅ [Mass Entry V2] renderMassPreviewTable + sauvegarderChampPMS loaded');
-// 🎯 FONCTION DE SECOURS ABSOLUE (Version 2)
-window.forceAdminLogin = async function() {
-    const pinInput = document.getElementById('staffPinInput');
-    const pin = pinInput ? pinInput.value.trim() : '';
-    if (!pin) return;
-    
-    try {
-        const { data, error } = await supabaseClient.from('laundry_staff').select('*').eq('pin_code', pin).eq('is_active', true);
-        
-        if (error || !data || data.length === 0) {
-            alert("PIN incorrect.");
-            return;
-        }
-        
-        currentStaffUser = {
-            id: data[0].id,
-            name: data[0].name,
-            role: data[0].role,
-            pin_code: data[0].pin_code
-        };
-        saveAndUnlockSession();
-        console.log("✅ Connexion forcée réussie pour :", currentStaffUser.name);
-    } catch(e) {
-        alert("Erreur réseau.");
-    }
-};
+
 // ═══════════════════════════════════════════════════════════════════
 // ARCHIVES
 // ═══════════════════════════════════════════════════════════════════
@@ -628,11 +505,7 @@ function afficherListeBordereauxLocal() {
         const infoBanner = document.createElement('div');
         infoBanner.id = 'archives-info-banner';
         infoBanner.className = 'bg-amber-950/40 border border-amber-800 rounded-2xl p-3 text-xs text-amber-200 font-semibold mb-3';
-        infoBanner.innerHTML = `
-            📚 <strong>Archives limited to 90 days</strong> — 
-            <span class="text-stone-300">${cachedSlips.length} records loaded.</span> 
-            Older data is automatically archived.
-        `;
+        infoBanner.innerHTML = `📚 <strong>Archives limited to 90 days</strong> — <span class="text-stone-300">${cachedSlips.length} records loaded.</span> Older data is automatically archived.`;
         container.parentNode.insertBefore(infoBanner, container);
     }
 
@@ -650,12 +523,8 @@ function afficherListeBordereauxLocal() {
         html += `
             <div class="space-y-2">
                 <div class="flex justify-between items-center bg-[#181614] p-3 rounded-2xl border border-[#2f2820]">
-                    <span class="text-xs font-bold text-[#DCA773] uppercase tracking-wider flex items-center gap-2">
-                        🏨 Hotel Rooms Laundry
-                    </span>
-                    <span class="text-[10px] bg-[#0f0e0c] text-stone-300 font-bold px-2.5 py-0.5 rounded-full border border-[#2f2820]">
-                        ${hotelEntries.length} record(s)
-                    </span>
+                    <span class="text-xs font-bold text-[#DCA773] uppercase tracking-wider flex items-center gap-2">🏨 Hotel Rooms Laundry</span>
+                    <span class="text-[10px] bg-[#0f0e0c] text-stone-300 font-bold px-2.5 py-0.5 rounded-full border border-[#2f2820]">${hotelEntries.length} record(s)</span>
                 </div>
                 <div class="space-y-2">
         `;
@@ -664,19 +533,14 @@ function afficherListeBordereauxLocal() {
             let badgeLabel = 'Hotel Count';
             let badgeClass = 'luxe-badge luxe-badge-collected';
             if(entry.extra_charged || entry.count_type === 'quota_extra') {
-                badgeLabel = 'Quota + Extra';
-                badgeClass = 'luxe-badge luxe-badge-ready';
+                badgeLabel = 'Quota + Extra'; badgeClass = 'luxe-badge luxe-badge-ready';
             } else if(entry.count_type === 'guest') {
-                badgeLabel = 'Chargeable';
-                badgeClass = 'luxe-badge luxe-badge-chargeable';
+                badgeLabel = 'Chargeable'; badgeClass = 'luxe-badge luxe-badge-chargeable';
             }
 
             const roomNum = entry.room_number || entry.room || '---';
             const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
-                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            }) : '---';
-
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---';
             const totalPcs = entry.total_pieces || entry.total_clothes || 0;
             const totalAmount = entry.grand_total || entry.total || 0;
             const agentDisplay = formatAgentDisplay(entry.created_by);
@@ -704,21 +568,14 @@ function afficherListeBordereauxLocal() {
         html += `
             <div class="space-y-2 mt-4">
                 <div class="flex justify-between items-center bg-[#181614] p-3 rounded-2xl border border-[#2f2820]">
-                    <span class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
-                        🧘 V Element SPA Laundry
-                    </span>
-                    <span class="text-[10px] bg-[#0f0e0c] text-purple-200 font-bold px-2.5 py-0.5 rounded-full border border-purple-900">
-                        ${spaEntries.length} record(s)
-                    </span>
+                    <span class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">🧘 V Element SPA Laundry</span>
+                    <span class="text-[10px] bg-[#0f0e0c] text-purple-200 font-bold px-2.5 py-0.5 rounded-full border border-purple-900">${spaEntries.length} record(s)</span>
                 </div>
                 <div class="space-y-2">
         `;
 
         spaEntries.forEach(entry => {
-            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
-                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            }) : '---';
-
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---';
             const totalPcs = entry.total_pieces || entry.total_clothes || 0;
             const totalAmount = entry.grand_total || entry.total || 0;
 
@@ -758,7 +615,6 @@ function afficherListeBordereauxLocal() {
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 3 — EXPORT FILTERED ARCHIVES (PDF + CSV)
 // ═══════════════════════════════════════════════════════════════════
-
 function getCurrentFilteredArchives() {
     if (typeof cachedSlips === 'undefined' || !Array.isArray(cachedSlips)) return [];
 
@@ -770,12 +626,7 @@ function getCurrentFilteredArchives() {
     let filtered = cachedSlips.filter(entry => {
         const roomNum = String(entry.room_number || entry.room || '').toLowerCase();
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry).toLowerCase() : '';
-        const matchRoom = !searchVal ||
-            roomNum.includes(searchVal) ||
-            receiptId.includes(searchVal) ||
-            String(entry.guest_name || '').toLowerCase().includes(searchVal) ||
-            String(entry.spa_serial || '').toLowerCase().includes(searchVal) ||
-            (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
+        const matchRoom = !searchVal || roomNum.includes(searchVal) || receiptId.includes(searchVal) || String(entry.guest_name || '').toLowerCase().includes(searchVal) || String(entry.spa_serial || '').toLowerCase().includes(searchVal) || (entry.is_spa && `#${entry.spa_serial}`.toLowerCase().includes(searchVal));
 
         let matchDate = true;
         if (searchDateVal) {
@@ -799,24 +650,16 @@ function getCurrentFilteredArchives() {
 
 function buildFiltersSummary() {
     const parts = [];
-    if (currentArchiveFilter && currentArchiveFilter !== 'all') {
-        parts.push(`Category=${currentArchiveFilter === 'laundry' ? 'Hotel Laundry' : 'SPA Laundry'}`);
-    }
-    if (currentStatusFilter && currentStatusFilter !== 'all') {
-        parts.push(`Status=${currentStatusFilter.charAt(0).toUpperCase() + currentStatusFilter.slice(1)}`);
-    }
+    if (currentArchiveFilter && currentArchiveFilter !== 'all') parts.push(`Category=${currentArchiveFilter === 'laundry' ? 'Hotel Laundry' : 'SPA Laundry'}`);
+    if (currentStatusFilter && currentStatusFilter !== 'all') parts.push(`Status=${currentStatusFilter.charAt(0).toUpperCase() + currentStatusFilter.slice(1)}`);
     if (currentDateFilter) {
         const labels = { today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', '90d': 'Last 90 days' };
         parts.push(`Date=${labels[currentDateFilter] || currentDateFilter}`);
     }
     const searchRoomEl = document.getElementById('searchRoom');
-    if (searchRoomEl && searchRoomEl.value.trim()) {
-        parts.push(`Search="${searchRoomEl.value.trim()}"`);
-    }
+    if (searchRoomEl && searchRoomEl.value.trim()) parts.push(`Search="${searchRoomEl.value.trim()}"`);
     const searchDateEl = document.getElementById('searchDate');
-    if (searchDateEl && searchDateEl.value) {
-        parts.push(`Date=${searchDateEl.value}`);
-    }
+    if (searchDateEl && searchDateEl.value) parts.push(`Date=${searchDateEl.value}`);
     return parts.length > 0 ? parts.join(' · ') : 'No filters';
 }
 
@@ -830,17 +673,9 @@ function buildFilenameSuffix() {
 
 async function exportFilteredArchivesToPDF() {
     const filtered = getCurrentFilteredArchives();
-
-    if (filtered.length === 0) {
-        alert('⚠️ No records to export. Adjust your filters first.');
-        return;
-    }
-
+    if (filtered.length === 0) { alert('⚠️ No records to export. Adjust your filters first.'); return; }
     const container = document.getElementById('archivesExportContainer');
-    if (!container) {
-        alert('⚠️ Export container missing.');
-        return;
-    }
+    if (!container) { alert('⚠️ Export container missing.'); return; }
 
     const today = new Date().toISOString().split('T')[0];
     const filtersSummary = buildFiltersSummary();
@@ -851,27 +686,13 @@ async function exportFilteredArchivesToPDF() {
         const room = entry.room_number || entry.room || '---';
         const guest = entry.guest_name || (entry.is_spa ? 'Spa Agent' : 'Guest');
         const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
-        const date = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', {
-            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        }) : '---';
+        const date = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---';
         const status = (entry.status || 'Collected');
         const pcs = entry.total_pieces || entry.total_clothes || 0;
         const amount = Number(entry.grand_total || entry.total || 0).toFixed(2);
         const type = entry.is_spa ? 'SPA' : 'Hotel';
 
-        rowsHtml += `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 6px 8px; font-size: 10px; text-align: center;">${idx + 1}</td>
-                <td style="padding: 6px 8px; font-size: 10px; font-weight: bold;">${room}</td>
-                <td style="padding: 6px 8px; font-size: 10px;">${guest}</td>
-                <td style="padding: 6px 8px; font-size: 9px; font-family: monospace; color: #6b7280;">${receiptId}</td>
-                <td style="padding: 6px 8px; font-size: 9px;">${date}</td>
-                <td style="padding: 6px 8px; font-size: 10px; text-align: center;">${type}</td>
-                <td style="padding: 6px 8px; font-size: 10px; text-align: center;">${status}</td>
-                <td style="padding: 6px 8px; font-size: 10px; text-align: right;">${pcs}</td>
-                <td style="padding: 6px 8px; font-size: 10px; text-align: right; font-weight: bold;">${amount} AED</td>
-            </tr>
-        `;
+        rowsHtml += `<tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 6px 8px; font-size: 10px; text-align: center;">${idx + 1}</td><td style="padding: 6px 8px; font-size: 10px; font-weight: bold;">${room}</td><td style="padding: 6px 8px; font-size: 10px;">${guest}</td><td style="padding: 6px 8px; font-size: 9px; font-family: monospace; color: #6b7280;">${receiptId}</td><td style="padding: 6px 8px; font-size: 9px;">${date}</td><td style="padding: 6px 8px; font-size: 10px; text-align: center;">${type}</td><td style="padding: 6px 8px; font-size: 10px; text-align: center;">${status}</td><td style="padding: 6px 8px; font-size: 10px; text-align: right;">${pcs}</td><td style="padding: 6px 8px; font-size: 10px; text-align: right; font-weight: bold;">${amount} AED</td></tr>`;
     });
 
     const totalPieces = filtered.reduce((sum, e) => sum + Number(e.total_pieces || e.total_clothes || 0), 0);
@@ -879,88 +700,36 @@ async function exportFilteredArchivesToPDF() {
 
     container.innerHTML = `
         <div style="font-family: 'Helvetica', Arial, sans-serif; padding: 20px; background: #fff; color: #1c1917;">
-            
             <div style="text-align: center; border-bottom: 2px solid #DCA773; padding-bottom: 12px; margin-bottom: 16px;">
                 <h1 style="font-size: 20px; margin: 0; color: #1c1917; letter-spacing: 2px;">REMAL HOTEL & VILLAS</h1>
                 <p style="font-size: 10px; color: #6b7280; margin: 4px 0 0 0; letter-spacing: 2px; text-transform: uppercase;">Al Ruwais City, Abu Dhabi – UAE</p>
                 <p style="font-size: 14px; color: #DCA773; font-weight: bold; margin: 8px 0 0 0; letter-spacing: 1px;">LAUNDRY ARCHIVES EXPORT</p>
             </div>
-
             <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 10px;">
                 <div style="font-weight: bold; color: #78350f; margin-bottom: 4px;">📋 Active Filters:</div>
                 <div style="color: #57534e;">${filtersSummary}</div>
                 <div style="color: #57534e; margin-top: 6px;">Total exported: <strong>${filtered.length} record(s)</strong> · Exported on: ${now}</div>
             </div>
-
             <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                <thead>
-                    <tr style="background: #1c1917; color: #fff;">
-                        <th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">#</th>
-                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">ROOM</th>
-                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">GUEST</th>
-                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">RECEIPT ID</th>
-                        <th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">DATE</th>
-                        <th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">TYPE</th>
-                        <th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">STATUS</th>
-                        <th style="padding: 8px; text-align: right; font-size: 9px; letter-spacing: 1px;">PCS</th>
-                        <th style="padding: 8px; text-align: right; font-size: 9px; letter-spacing: 1px;">AMOUNT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHtml}
-                </tbody>
-                <tfoot>
-                    <tr style="background: #f5f5f4; font-weight: bold;">
-                        <td colspan="7" style="padding: 10px 8px; text-align: right; font-size: 11px;">TOTALS:</td>
-                        <td style="padding: 10px 8px; text-align: right; font-size: 11px;">${totalPieces}</td>
-                        <td style="padding: 10px 8px; text-align: right; font-size: 11px; color: #b45309;">${totalAmount} AED</td>
-                    </tr>
-                </tfoot>
+                <thead><tr style="background: #1c1917; color: #fff;"><th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">#</th><th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">ROOM</th><th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">GUEST</th><th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">RECEIPT ID</th><th style="padding: 8px; text-align: left; font-size: 9px; letter-spacing: 1px;">DATE</th><th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">TYPE</th><th style="padding: 8px; text-align: center; font-size: 9px; letter-spacing: 1px;">STATUS</th><th style="padding: 8px; text-align: right; font-size: 9px; letter-spacing: 1px;">PCS</th><th style="padding: 8px; text-align: right; font-size: 9px; letter-spacing: 1px;">AMOUNT</th></tr></thead>
+                <tbody>${rowsHtml}</tbody>
+                <tfoot><tr style="background: #f5f5f4; font-weight: bold;"><td colspan="7" style="padding: 10px 8px; text-align: right; font-size: 11px;">TOTALS:</td><td style="padding: 10px 8px; text-align: right; font-size: 11px;">${totalPieces}</td><td style="padding: 10px 8px; text-align: right; font-size: 11px; color: #b45309;">${totalAmount} AED</td></tr></tfoot>
             </table>
-
-            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 9px; color: #9ca3af;">
-                Remal Laundry OS — Generated automatically. This document is a system export.
-            </div>
+            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 9px; color: #9ca3af;">Remal Laundry OS — Generated automatically. This document is a system export.</div>
         </div>
     `;
 
     const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.pdf`;
+    const opt = { margin: [8, 8, 8, 8], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }, pagebreak: { mode: ['css', 'legacy'] } };
 
-    const opt = {
-        margin: [8, 8, 8, 8],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['css', 'legacy'] }
-    };
-
-    try {
-        await html2pdf().set(opt).from(container).save();
-        console.log('[Export PDF] Success:', filename, `(${filtered.length} records)`);
-    } catch (e) {
-        console.error('[Export PDF] Error:', e);
-        alert('⚠️ Error generating PDF. Check the console.');
-    } finally {
-        container.innerHTML = '';
-    }
+    try { await html2pdf().set(opt).from(container).save(); console.log('[Export PDF] Success:', filename, `(${filtered.length} records)`); } catch (e) { console.error('[Export PDF] Error:', e); alert('⚠️ Error generating PDF. Check the console.'); } finally { container.innerHTML = ''; }
 }
 
 function exportFilteredArchivesToCSV() {
     const filtered = getCurrentFilteredArchives();
-
-    if (filtered.length === 0) {
-        alert('⚠️ No records to export. Adjust your filters first.');
-        return;
-    }
-
+    if (filtered.length === 0) { alert('⚠️ No records to export. Adjust your filters first.'); return; }
     const today = new Date().toISOString().split('T')[0];
-
-    const headers = [
-        'Index', 'Room', 'Guest', 'Receipt ID', 'Date', 'Type', 'Status',
-        'Pieces', 'Amount (AED)', 'Created By', 'Packaging'
-    ];
-
+    const headers = ['Index', 'Room', 'Guest', 'Receipt ID', 'Date', 'Type', 'Status', 'Pieces', 'Amount (AED)', 'Created By', 'Packaging'];
     const rows = filtered.map((entry, idx) => {
         const room = entry.room_number || entry.room || '';
         const guest = entry.guest_name || (entry.is_spa ? 'Spa Agent' : 'Guest');
@@ -972,61 +741,33 @@ function exportFilteredArchivesToCSV() {
         const amount = Number(entry.grand_total || entry.total || 0).toFixed(2);
         const agent = entry.created_by || '';
         const packaging = entry.packaging || entry.folding || '';
-
-        return [
-            idx + 1,
-            csvEscape(room),
-            csvEscape(guest),
-            csvEscape(receiptId),
-            csvEscape(date),
-            csvEscape(type),
-            csvEscape(status),
-            pcs,
-            amount,
-            csvEscape(agent),
-            csvEscape(packaging)
-        ].join(',');
+        return [idx + 1, csvEscape(room), csvEscape(guest), csvEscape(receiptId), csvEscape(date), csvEscape(type), csvEscape(status), pcs, amount, csvEscape(agent), csvEscape(packaging)].join(',');
     });
 
     const totalPieces = filtered.reduce((s, e) => s + Number(e.total_pieces || e.total_clothes || 0), 0);
     const totalAmount = filtered.reduce((s, e) => s + Number(e.grand_total || e.total || 0), 0).toFixed(2);
     const totalRow = `TOTALS,,,,,,,,${totalPieces},${totalAmount},,`;
-
     const csv = [headers.join(','), ...rows, totalRow].join('\n');
-
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const filename = `REMAL_Archives_${today}${buildFilenameSuffix()}.csv`;
-
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
     console.log('[Export CSV] Success:', filename, `(${filtered.length} records)`);
 }
 
 function csvEscape(value) {
     const str = String(value == null ? '' : value);
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return '"' + str.replace(/"/g, '""') + '"';
-    }
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) { return '"' + str.replace(/"/g, '""') + '"'; }
     return str;
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 4.5 — VIEW ARCHIVES (read-only modal)
 // ═══════════════════════════════════════════════════════════════════
-
 function ouvrirModaleArchives() {
     const modal = document.getElementById('archivesModal');
-    if (!modal) {
-        console.warn('[Archives] Modal not found');
-        return;
-    }
+    if (!modal) { console.warn('[Archives] Modal not found'); return; }
     modal.classList.remove('hidden');
     chargerArchives();
 }
@@ -1039,100 +780,36 @@ function fermerModaleArchives() {
 async function chargerArchives() {
     const list = document.getElementById('archivesList');
     const badge = document.getElementById('archivesCountBadge');
-
     if (!list || !badge) return;
-
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Supabase not available.</p>`;
-        badge.innerText = 'Error';
-        return;
-    }
-
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) { list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Supabase not available.</p>`; badge.innerText = 'Error'; return; }
     list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">Loading archived records...</p>`;
     badge.innerText = 'Loading...';
-
     try {
-        const { data, error } = await supabaseClient
-            .from('archives')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(500);
-
-        if (error) {
-            console.error('[Archives] Fetch error:', error);
-            list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`;
-            badge.innerText = 'Error';
-            return;
-        }
-
-        if (!data || data.length === 0) {
-            list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">📭 No archived records yet.</p>`;
-            badge.innerText = '0 records';
-            return;
-        }
-
+        const { data, error } = await supabaseClient.from('archives').select('*').order('created_at', { ascending: false }).limit(500);
+        if (error) { console.error('[Archives] Fetch error:', error); list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Error: ${error.message}</p>`; badge.innerText = 'Error'; return; }
+        if (!data || data.length === 0) { list.innerHTML = `<p class="text-xs text-stone-500 text-center py-6">📭 No archived records yet.</p>`; badge.innerText = '0 records'; return; }
         badge.innerText = `${data.length} record${data.length > 1 ? 's' : ''} loaded`;
-
         list.innerHTML = data.map(entry => {
             const room = entry.room_number || entry.room || '---';
             const guest = entry.guest_name || 'Guest';
-            const receiptId = typeof obtenirReceiptId === 'function' 
-                ? obtenirReceiptId(entry) 
-                : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
-            const dateFormatted = entry.created_at 
-                ? new Date(entry.created_at).toLocaleDateString('en-GB', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                }) 
-                : '---';
-            const archivedAt = entry.archived_at 
-                ? new Date(entry.archived_at).toLocaleDateString('en-GB', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                }) 
-                : '---';
+            const receiptId = typeof obtenirReceiptId === 'function' ? obtenirReceiptId(entry) : `REC-${String(entry.id).slice(-6).toUpperCase()}`;
+            const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '---';
+            const archivedAt = entry.archived_at ? new Date(entry.archived_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '---';
             const status = entry.status || 'Collected';
             const pcs = entry.total_pieces || 0;
             const amount = Number(entry.grand_total || 0).toFixed(2);
             const type = entry.service_type || 'laundry';
-
-            return `
-                <div class="p-3 bg-[#181614] rounded-2xl border border-[#2f2820] text-xs">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="font-bold text-[#DCA773]">
-                                🏠 Room ${room} — ${guest}
-                            </div>
-                            <div class="text-[10px] text-stone-500 mt-1">
-                                #${receiptId} · ${type} · Status: <span class="text-stone-300 font-semibold">${status}</span>
-                            </div>
-                            <div class="text-[10px] text-stone-500 mt-0.5">
-                                📅 Created: ${dateFormatted} · 📦 Archived: ${archivedAt}
-                            </div>
-                        </div>
-                        <div class="text-right ml-3">
-                            <div class="font-bold text-stone-200 text-sm">${amount} AED</div>
-                            <div class="text-[10px] text-stone-500">${pcs} pcs</div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            return `<div class="p-3 bg-[#181614] rounded-2xl border border-[#2f2820] text-xs"><div class="flex justify-between items-start"><div class="flex-1"><div class="font-bold text-[#DCA773]">🏠 Room ${room} — ${guest}</div><div class="text-[10px] text-stone-500 mt-1">#${receiptId} · ${type} · Status: <span class="text-stone-300 font-semibold">${status}</span></div><div class="text-[10px] text-stone-500 mt-0.5">📅 Created: ${dateFormatted} · 📦 Archived: ${archivedAt}</div></div><div class="text-right ml-3"><div class="font-bold text-stone-200 text-sm">${amount} AED</div><div class="text-[10px] text-stone-500">${pcs} pcs</div></div></div></div>`;
         }).join('');
-
         console.log('[Archives] Loaded', data.length, 'records');
-
     } catch (e) {
         console.error('[Archives] Exception:', e);
-        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`;
-        badge.innerText = 'Error';
+        list.innerHTML = `<p class="text-xs text-rose-400 text-center py-6">⚠️ Unexpected error.</p>`; badge.innerText = 'Error';
     }
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const modal = document.getElementById('archivesModal');
-        if (modal && !modal.classList.contains('hidden')) {
-            modal.classList.add('hidden');
-        }
-    }
+    if (e.key === 'Escape') { const modal = document.getElementById('archivesModal'); if (modal && !modal.classList.contains('hidden')) modal.classList.add('hidden'); }
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1146,23 +823,14 @@ function previewLFImage(event) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 600;
-            const MAX_HEIGHT = 600;
-            let width = img.width;
-            let height = img.height;
-            if (width > height) {
-                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-            } else {
-                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-            }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
+            const MAX_WIDTH = 600; const MAX_HEIGHT = 600;
+            let width = img.width; let height = img.height;
+            if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
             currentLFPhotoData = canvas.toDataURL('image/jpeg', 0.7);
             const previewEl = document.getElementById('lfImagePreview');
-            previewEl.src = currentLFPhotoData;
-            previewEl.classList.remove('hidden');
+            previewEl.src = currentLFPhotoData; previewEl.classList.remove('hidden');
         }
         img.src = e.target.result;
     }
@@ -1173,93 +841,40 @@ async function saveLostFoundItem() {
     const name = document.getElementById('lfItemName').value.trim();
     const loc = document.getElementById('lfItemLoc').value.trim();
     const note = document.getElementById('lfItemNote').value.trim();
-
-    if (!name || !loc) {
-        alert("Please enter the item name and location.");
-        return;
-    }
-
+    if (!name || !loc) { alert("Please enter the item name and location."); return; }
     const items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
-    const newItem = {
-        id: Date.now(),
-        is_lost_found: true,
-        name: name,
-        loc: loc,
-        note: note,
-        photo: currentLFPhotoData || null,
-        date: new Date().toLocaleString(),
-        status: 'Unclaimed'
-    };
-
-    items.unshift(newItem);
-    localStorage.setItem('remal_lost_found', JSON.stringify(items));
-
+    const newItem = { id: Date.now(), is_lost_found: true, name: name, loc: loc, note: note, photo: currentLFPhotoData || null, date: new Date().toLocaleString(), status: 'Unclaimed' };
+    items.unshift(newItem); localStorage.setItem('remal_lost_found', JSON.stringify(items));
     await writeRecordToFile(newItem);
-
-    document.getElementById('lfItemName').value = '';
-    document.getElementById('lfItemLoc').value = '';
-    document.getElementById('lfItemNote').value = '';
-    document.getElementById('lfItemPhoto').value = '';
-    document.getElementById('lfImagePreview').classList.add('hidden');
-    currentLFPhotoData = null;
-    document.getElementById('lfFormCard').classList.add('hidden');
-
-    renderLostFoundItems();
-    alert("✅ Lost & Found item saved successfully!");
+    document.getElementById('lfItemName').value = ''; document.getElementById('lfItemLoc').value = ''; document.getElementById('lfItemNote').value = ''; document.getElementById('lfItemPhoto').value = ''; document.getElementById('lfImagePreview').classList.add('hidden'); currentLFPhotoData = null; document.getElementById('lfFormCard').classList.add('hidden');
+    renderLostFoundItems(); alert("✅ Lost & Found item saved successfully!");
 }
 
 function renderLostFoundItems() {
     const container = document.getElementById('lfItemsGrid');
     if (!container) return;
     const items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
-
-    if (items.length === 0) {
-        container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No lost and found items registered.</p>`;
-        return;
-    }
-
+    if (items.length === 0) { container.innerHTML = `<p class="text-xs text-stone-500 text-center py-6 col-span-full">No lost and found items registered.</p>`; return; }
     container.innerHTML = '';
     items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'remal-card p-4 rounded-2xl space-y-3 relative';
-        div.innerHTML = `
-            ${item.photo ? `<img src="${item.photo}" class="w-full h-36 object-cover rounded-xl border border-[#2f2820]">` : ''}
-            <div>
-                <div class="flex justify-between items-start">
-                    <h4 class="font-serif-luxury font-bold text-[#DCA773] text-base">${item.name}</h4>
-                    <span class="text-[9px] ${item.status === 'Claimed' ? 'bg-emerald-950 text-emerald-200 border-emerald-800' : 'bg-amber-950 text-amber-200 border-amber-800'} border font-bold px-2 py-0.5 rounded-md">${item.status}</span>
-                </div>
-                <p class="text-xs text-stone-300 mt-1">📍 <strong>Location:</strong> ${item.loc}</p>
-                ${item.note ? `<p class="text-xs text-stone-400 italic mt-1">"${item.note}"</p>` : ''}
-                <p class="text-[10px] text-stone-500 mt-2">📅 Found: ${item.date}</p>
-            </div>
-            <div class="flex gap-2 pt-2 border-t border-[#2f2820]">
-                <button onclick="toggleLFStatus(${item.id})" class="flex-1 py-2 bg-[#181614] hover:bg-[#211e1a] text-stone-300 font-bold rounded-xl text-[10px] border border-[#2f2820]">Toggle Status</button>
-                <button onclick="deleteLFItem(${item.id})" class="py-2 px-3 bg-rose-950 hover:bg-rose-900 text-rose-200 font-bold rounded-xl text-[10px] border border-rose-800">🗑️</button>
-            </div>
-        `;
+        div.innerHTML = `${item.photo ? `<img src="${item.photo}" class="w-full h-36 object-cover rounded-xl border border-[#2f2820]">` : ''}<div><div class="flex justify-between items-start"><h4 class="font-serif-luxury font-bold text-[#DCA773] text-base">${item.name}</h4><span class="text-[9px] ${item.status === 'Claimed' ? 'bg-emerald-950 text-emerald-200 border-emerald-800' : 'bg-amber-950 text-amber-200 border-amber-800'} border font-bold px-2 py-0.5 rounded-md">${item.status}</span></div><p class="text-xs text-stone-300 mt-1">📍 <strong>Location:</strong> ${item.loc}</p>${item.note ? `<p class="text-xs text-stone-400 italic mt-1">"${item.note}"</p>` : ''}<p class="text-[10px] text-stone-500 mt-2">📅 Found: ${item.date}</p></div><div class="flex gap-2 pt-2 border-t border-[#2f2820]"><button onclick="toggleLFStatus(${item.id})" class="flex-1 py-2 bg-[#181614] hover:bg-[#211e1a] text-stone-300 font-bold rounded-xl text-[10px] border border-[#2f2820]">Toggle Status</button><button onclick="deleteLFItem(${item.id})" class="py-2 px-3 bg-rose-950 hover:bg-rose-900 text-rose-200 font-bold rounded-xl text-[10px] border border-rose-800">🗑️</button></div>`;
         container.appendChild(div);
     });
 }
 
 function toggleLFStatus(id) {
     let items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
-    items = items.map(i => {
-        if (i.id === id) {
-            i.status = i.status === 'Unclaimed' ? 'Claimed' : 'Unclaimed';
-        }
-        return i;
-    });
-    localStorage.setItem('remal_lost_found', JSON.stringify(items));
-    renderLostFoundItems();
+    items = items.map(i => { if (i.id === id) { i.status = i.status === 'Unclaimed' ? 'Claimed' : 'Unclaimed'; } return i; });
+    localStorage.setItem('remal_lost_found', JSON.stringify(items)); renderLostFoundItems();
 }
 
 function deleteLFItem(id) {
     if (confirm("Delete this lost item record?")) {
         let items = JSON.parse(localStorage.getItem('remal_lost_found') || '[]');
         items = items.filter(i => i.id !== id);
-        localStorage.setItem('remal_lost_found', JSON.stringify(items));
-        renderLostFoundItems();
+        localStorage.setItem('remal_lost_found', JSON.stringify(items)); renderLostFoundItems();
     }
 }
 
@@ -1268,110 +883,61 @@ function deleteLFItem(id) {
 // ═══════════════════════════════════════════════════════════════════
 function renderManagementDashboard() {
     chargerDonneesLocalStorage();
-
-    // ═══ 1. Filtrer selon la période ═══
     const now = new Date();
     let startDate = new Date();
 
     switch (currentDashboardPeriod) {
-        case 'today':
-            startDate.setHours(0, 0, 0, 0);
-            break;
-        case '7d':
-            startDate.setDate(now.getDate() - 7);
-            break;
-        case '30d':
-            startDate.setDate(now.getDate() - 30);
-            break;
-        case '90d':
-            startDate.setDate(now.getDate() - 90);
-            break;
+        case 'today': startDate.setHours(0, 0, 0, 0); break;
+        case '7d': startDate.setDate(now.getDate() - 7); break;
+        case '30d': startDate.setDate(now.getDate() - 30); break;
+        case '90d': startDate.setDate(now.getDate() - 90); break;
     }
 
-    // Période précédente (pour les deltas)
     const periodLength = now - startDate;
     const prevStart = new Date(startDate.getTime() - periodLength);
     const prevEnd = startDate;
 
-    // ═══ 2. Filtrer les slips ═══
-    const currentSlips = cachedSlips.filter(s => {
-        if (!s.created_at) return false;
-        const d = new Date(s.created_at);
-        return d >= startDate && d <= now;
-    });
+    const currentSlips = cachedSlips.filter(s => { if (!s.created_at) return false; const d = new Date(s.created_at); return d >= startDate && d <= now; });
+    const prevSlips = cachedSlips.filter(s => { if (!s.created_at) return false; const d = new Date(s.created_at); return d >= prevStart && d < prevEnd; });
 
-    const prevSlips = cachedSlips.filter(s => {
-        if (!s.created_at) return false;
-        const d = new Date(s.created_at);
-        return d >= prevStart && d < prevEnd;
-    });
-
-    // ═══ 3. Calculer les métriques ═══
     function computeMetrics(slips) {
         let revenue = 0, orders = slips.length, garments = 0;
         let laundry = 0, spa = 0;
         let statusCounts = { Collected: 0, Washing: 0, Ready: 0, Delivered: 0, Pending: 0 };
-        let revenueByDate = {};
-        let roomRevenue = {};
-        let agencyRevenue = {};
-        let roomGuests = {};
-        let agencyOrders = {};
+        let revenueByDate = {}, roomRevenue = {}, agencyRevenue = {}, roomGuests = {}, agencyOrders = {};
 
         slips.forEach(s => {
             const rev = Number(s.grand_total || s.total || 0);
             const pcs = Number(s.total_pieces || s.total_clothes || 0);
-
-            revenue += rev;
-            garments += pcs;
-
-            if (s.is_spa) {
-                spa += rev;
-            } else {
+            revenue += rev; garments += pcs;
+            if (s.is_spa) { spa += rev; } else {
                 laundry += rev;
-
                 const room = String(s.room_number || s.room || '---');
                 roomRevenue[room] = (roomRevenue[room] || 0) + rev;
                 if (!roomGuests[room]) roomGuests[room] = s.guest_name || 'Guest';
-
                 const agency = s.agency || 'Direct';
                 agencyRevenue[agency] = (agencyRevenue[agency] || 0) + rev;
                 agencyOrders[agency] = (agencyOrders[agency] || 0) + 1;
             }
-
             let st = s.status || 'Collected';
-            if (statusCounts[st] !== undefined) statusCounts[st]++;
-            else statusCounts.Collected++;
-
-            if (s.created_at) {
-                const dStr = s.created_at.split('T')[0];
-                revenueByDate[dStr] = (revenueByDate[dStr] || 0) + rev;
-            }
+            if (statusCounts[st] !== undefined) statusCounts[st]++; else statusCounts.Collected++;
+            if (s.created_at) { const dStr = s.created_at.split('T')[0]; revenueByDate[dStr] = (revenueByDate[dStr] || 0) + rev; }
         });
 
-            return { 
-        revenue, orders, garments, laundry, spa, 
-        statusCounts, revenueByDate, roomRevenue, agencyRevenue, 
-        roomGuests, agencyOrders,
-        slips: slips
-    };
-}
+        return { revenue, orders, garments, laundry, spa, statusCounts, revenueByDate, roomRevenue, agencyRevenue, roomGuests, agencyOrders, slips: slips };
+    }
     const m = computeMetrics(currentSlips);
     const p = computeMetrics(prevSlips);
 
-    // ═══ 4. Animer les KPI ═══
     animateNumber(document.getElementById('kpiRevenue'), m.revenue, 'AED');
     animateNumber(document.getElementById('kpiOrders'), m.orders, '');
     animateNumber(document.getElementById('kpiGarments'), m.garments, 'pcs');
     animateNumber(document.getElementById('kpiLaundry'), m.laundry, 'AED');
     animateNumber(document.getElementById('kpiSpa'), m.spa, 'AED');
 
-    // ═══ 5. Deltas ═══
     function updateDelta(elId, curr, prev) {
-        const el = document.getElementById(elId);
-        if (!el) return;
-        if (prev === 0 && curr === 0) { el.style.display = 'none'; return; }
+        const el = document.getElementById(elId); if (!el) return;
         if (prev === 0) { el.style.display = 'none'; return; }
-
         const delta = ((curr - prev) / prev) * 100;
         el.style.display = 'inline-flex';
         el.className = 'dashboard-kpi-delta ' + (delta >= 0 ? 'up' : 'down');
@@ -1384,124 +950,30 @@ function renderManagementDashboard() {
     updateDelta('kpiLaundryDelta', m.laundry, p.laundry);
     updateDelta('kpiSpaDelta', m.spa, p.spa);
 
-    // ═══ 6. Charts ═══
     requestAnimationFrame(() => {
-        // Pie : Laundry vs SPA
         const pieEl = document.getElementById('spaVsLaundryChart');
-        if (pieEl) {
-            if (window._spaVsLaundryChart) window._spaVsLaundryChart.destroy();
-            window._spaVsLaundryChart = new Chart(pieEl.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Laundry', 'SPA'],
-                    datasets: [{
-                        data: [m.laundry, m.spa],
-                        backgroundColor: ['#93c5fd', '#d8b4fe'],
-                        borderWidth: 0,
-                        hoverOffset: 12
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 1500, easing: 'easeOutQuart' },
-                    plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } }
-                }
-            });
-        }
-
-        // Doughnut : statuts
+        if (pieEl) { if (window._spaVsLaundryChart) window._spaVsLaundryChart.destroy(); window._spaVsLaundryChart = new Chart(pieEl.getContext('2d'), { type: 'doughnut', data: { labels: ['Laundry', 'SPA'], datasets: [{ data: [m.laundry, m.spa], backgroundColor: ['#93c5fd', '#d8b4fe'], borderWidth: 0, hoverOffset: 12 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } } } }); }
         const doughnutEl = document.getElementById('statusDoughnutChart');
-        if (doughnutEl) {
-            if (window._statusDoughnutChart) window._statusDoughnutChart.destroy();
-            window._statusDoughnutChart = new Chart(doughnutEl.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Collected', 'Washing', 'Ready', 'Delivered'],
-                    datasets: [{
-                        data: [
-                            m.statusCounts.Collected + m.statusCounts.Pending,
-                            m.statusCounts.Washing,
-                            m.statusCounts.Ready,
-                            m.statusCounts.Delivered
-                        ],
-                        backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'],
-                        borderWidth: 0,
-                        hoverOffset: 12
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 1500, easing: 'easeOutQuart' },
-                    plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } }
-                }
-            });
-        }
-
-        // Bar : revenue par date
+        if (doughnutEl) { if (window._statusDoughnutChart) window._statusDoughnutChart.destroy(); window._statusDoughnutChart = new Chart(doughnutEl.getContext('2d'), { type: 'doughnut', data: { labels: ['Collected', 'Washing', 'Ready', 'Delivered'], datasets: [{ data: [m.statusCounts.Collected + m.statusCounts.Pending, m.statusCounts.Washing, m.statusCounts.Ready, m.statusCounts.Delivered], backgroundColor: ['#57534e', '#3b82f6', '#a855f7', '#10b981'], borderWidth: 0, hoverOffset: 12 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#d6d3d1', font: { size: 11, weight: 600 }, padding: 16 } } } } }); }
         const barEl = document.getElementById('revenueBarChart');
         if (barEl) {
             const dates = Object.keys(m.revenueByDate).sort();
             const revenues = dates.map(d => m.revenueByDate[d]);
-
             if (window._revenueBarChart) window._revenueBarChart.destroy();
-            window._revenueBarChart = new Chart(barEl.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: dates.length > 0 ? dates : ['No Data'],
-                    datasets: [{
-                        label: 'Revenue (AED)',
-                        data: revenues.length > 0 ? revenues : [0],
-                        backgroundColor: (ctx) => {
-                            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
-                            g.addColorStop(0, '#F8E9C0');
-                            g.addColorStop(1, '#B88351');
-                            return g;
-                        },
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 1800, easing: 'easeOutQuart' },
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { ticks: { color: '#a8a29e', font: { size: 11 } }, grid: { color: 'rgba(47,40,32,0.4)' } },
-                        x: { ticks: { color: '#a8a29e', font: { size: 11 } }, grid: { display: false } }
-                    }
-                }
-            });
+            window._revenueBarChart = new Chart(barEl.getContext('2d'), { type: 'bar', data: { labels: dates.length > 0 ? dates : ['No Data'], datasets: [{ label: 'Revenue (AED)', data: revenues.length > 0 ? revenues : [0], backgroundColor: (ctx) => { const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300); g.addColorStop(0, '#F8E9C0'); g.addColorStop(1, '#B88351'); return g; }, borderRadius: 8, borderSkipped: false }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800, easing: 'easeOutQuart' }, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a8a29e', font: { size: 11 } }, grid: { color: 'rgba(47,40,32,0.4)' } }, x: { ticks: { color: '#a8a29e', font: { size: 11 } }, grid: { display: false } } } } });
         }
     });
 
-    // ═══ 7. Top 5 Rooms ═══
-    const topRooms = Object.entries(m.roomRevenue)
-        .map(([room, value]) => ({ name: `Room ${room}`, value, sub: m.roomGuests[room] || '' }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 5);
-
+    const topRooms = Object.entries(m.roomRevenue).map(([room, value]) => ({ name: `Room ${room}`, value, sub: m.roomGuests[room] || '' })).sort((a, b) => b.value - a.value).slice(0, 5);
     renderTopList('topRoomsList', topRooms, true);
 
-    // ═══ 8. Top 5 Agencies ═══
-    const topAgencies = Object.entries(m.agencyRevenue)
-        .map(([agency, value]) => ({ name: agency, value, sub: `${m.agencyOrders[agency]} order${m.agencyOrders[agency] > 1 ? 's' : ''}` }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 5);
-
+    const topAgencies = Object.entries(m.agencyRevenue).map(([agency, value]) => ({ name: agency, value, sub: `${m.agencyOrders[agency]} order${m.agencyOrders[agency] > 1 ? 's' : ''}` })).sort((a, b) => b.value - a.value).slice(0, 5);
     renderTopList('topAgenciesList', topAgencies, true);
-    // ═══ 9. Performance par Agent ═══
-    if (typeof renderAgentPerformance === 'function') {
-        renderAgentPerformance(m && m.slips ? m.slips : []);
-    }
 
-    // ═══ 10. Processing Times ═══
-    if (typeof renderProcessingTimes === 'function') {
-        renderProcessingTimes(m && m.slips ? m.slips : []);
-    }
+    if (typeof renderAgentPerformance === 'function') renderAgentPerformance(m && m.slips ? m.slips : []);
+    if (typeof renderProcessingTimes === 'function') renderProcessingTimes(m && m.slips ? m.slips : []);
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // SPA
 // ═══════════════════════════════════════════════════════════════════
@@ -1509,7 +981,6 @@ async function exportSpaToPDF() {
     const isValid = await validateAndSaveSpaReceipt();
     if (!isValid) return;
 
-    // ═══ 1. Récupérer les valeurs du formulaire SPA ═══
     const serialNo = document.getElementById('spa-serial-no').value.trim() || '---';
     const givenBy = document.getElementById('spa-given-by').value.trim() || '---';
     const collectedBy = document.getElementById('spa-collected-by').value.trim() || '---';
@@ -1519,11 +990,8 @@ async function exportSpaToPDF() {
     const delDate = document.getElementById('spa-delivery-date').value || '';
     const delTime = document.getElementById('spa-delivery-time').value || '';
     const currentDate = document.getElementById('spa-current-date').innerText || new Date().toLocaleDateString('en-GB');
-    const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name)
-        ? `staff ( ${currentStaffUser.name} )`
-        : 'staff';
+    const staffName = (typeof currentStaffUser !== 'undefined' && currentStaffUser?.name) ? `staff ( ${currentStaffUser.name} )` : 'staff';
 
-    // ═══ 2. Remplir la zone PDF SPA dédiée ═══
     document.getElementById('spaPdfDate').innerText = currentDate;
     document.getElementById('spaPdfGivenBy').innerText = givenBy;
     document.getElementById('spaPdfSerial').innerText = serialNo;
@@ -1534,11 +1002,9 @@ async function exportSpaToPDF() {
     document.getElementById('spaPdfCollectionDate').innerText = colDate ? `${colDate} ${colTime}` : '---';
     document.getElementById('spaPdfDeliveryDate').innerText = delDate ? `${delDate} ${delTime}` : '---';
 
-    // Receipt ID (généré)
     const rid = 'REC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     document.getElementById('spaPdfReceiptId').innerText = '#' + rid;
 
-    // ═══ 3. Construire le tableau des items ═══
     const spaRows = document.querySelectorAll('#spa-laundry-section tbody tr');
     const tableBody = document.getElementById('spaPdfTableBody');
     tableBody.innerHTML = '';
@@ -1558,12 +1024,7 @@ async function exportSpaToPDF() {
         if (qty > 0) {
             grandTotal += total;
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${itemName}</td>
-                <td class="text-center">${qty}</td>
-                <td class="text-center">${rate.toFixed(2)}</td>
-                <td class="text-right">${total.toFixed(2)} AED</td>
-            `;
+            tr.innerHTML = `<td>${itemName}</td><td class="text-center">${qty}</td><td class="text-center">${rate.toFixed(2)}</td><td class="text-right">${total.toFixed(2)} AED</td>`;
             tableBody.appendChild(tr);
         }
     });
@@ -1574,75 +1035,42 @@ async function exportSpaToPDF() {
 
     document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 
-  // ═══ 4. Afficher la zone hors écran pour la capture ═══
-const spaPdfArea = document.getElementById('spaPdfExportArea');
+    const spaPdfArea = document.getElementById('spaPdfExportArea');
+    const originalParent = spaPdfArea.parentNode;
+    const originalNextSibling = spaPdfArea.nextSibling;
 
-// 🎯 FIX : Déplacer la zone directement dans <body>
-// (évite le problème des parents cachés)
-const originalParent = spaPdfArea.parentNode;
-const originalNextSibling = spaPdfArea.nextSibling;
+    document.body.appendChild(spaPdfArea);
+    spaPdfArea.style.display = 'block';
+    spaPdfArea.style.position = 'fixed';
+    spaPdfArea.style.left = '0';
+    spaPdfArea.style.top = '0';
+    spaPdfArea.style.opacity = '1';
+    spaPdfArea.style.visibility = 'visible';
+    spaPdfArea.style.width = '700px';
+    spaPdfArea.style.transform = 'translateX(0)';
+    spaPdfArea.style.background = '#ffffff';
+    spaPdfArea.style.zIndex = '99999';
 
-document.body.appendChild(spaPdfArea);
+    await new Promise(r => setTimeout(r, 500));
 
-spaPdfArea.style.display = 'block';
-spaPdfArea.style.position = 'fixed';
-spaPdfArea.style.left = '0';
-spaPdfArea.style.top = '0';
-spaPdfArea.style.opacity = '1';
-spaPdfArea.style.visibility = 'visible';
-spaPdfArea.style.width = '700px';
-spaPdfArea.style.transform = 'translateX(0)';
-spaPdfArea.style.background = '#ffffff';
-spaPdfArea.style.zIndex = '99999';
-
-await new Promise(r => setTimeout(r, 500));
-    // ═══ 5. Générer le PDF ═══
     const dateClean = colDate || new Date().toISOString().split('T')[0];
     const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
 
-    const opt = {
-        margin:       [10, 12, 12, 12],
-        filename:     filename,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-            scale: 2, 
-            useCORS: true,
-            allowTaint: true,
-            logging: false, 
-            backgroundColor: '#ffffff',
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: 700,
-            windowHeight: spaPdfArea.scrollHeight
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+    const opt = { margin: [10, 12, 12, 12], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: 700, windowHeight: spaPdfArea.scrollHeight }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
 
     try {
         await html2pdf().set(opt).from(spaPdfArea).save();
     } catch (e) {
         console.error("Erreur PDF SPA:", e);
         alert("⚠️ Error generating SPA PDF.");
-} finally {
-    // 🎯 FIX : Restaurer la zone à sa place originale
-    spaPdfArea.style.display = 'none';
-    spaPdfArea.style.position = '';
-    spaPdfArea.style.left = '';
-    spaPdfArea.style.top = '';
-    spaPdfArea.style.width = '';
-    spaPdfArea.style.maxWidth = '';
-    spaPdfArea.style.zIndex = '';
-    
-    if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
-        originalParent.insertBefore(spaPdfArea, originalNextSibling);
-    } else if (originalParent) {
-        originalParent.appendChild(spaPdfArea);
+    } finally {
+        spaPdfArea.style.display = 'none'; spaPdfArea.style.position = ''; spaPdfArea.style.left = ''; spaPdfArea.style.top = ''; spaPdfArea.style.width = ''; spaPdfArea.style.maxWidth = ''; spaPdfArea.style.zIndex = '';
+        if (originalNextSibling && originalNextSibling.parentNode === originalParent) { originalParent.insertBefore(spaPdfArea, originalNextSibling); } else if (originalParent) { originalParent.appendChild(spaPdfArea); }
     }
 }
-}
+
 // ═══════════════════════════════════════════════════════════════════
-// SESSION STAFF
+// SESSION STAFF & LOGIN
 // ═══════════════════════════════════════════════════════════════════
 function checkStaffSession() {
     const savedStaff = localStorage.getItem('remal_current_staff');
@@ -1654,7 +1082,7 @@ function checkStaffSession() {
             console.log("✅ Staff session restored:", currentStaffUser);
             if (loginModal) loginModal.classList.add('hidden');
             updateStaffUIIndicator();
-            applyRoleVisibility();  // Phase 5
+            applyRoleVisibility();
             return;
         } catch (e) {
             console.error("❌ Error parsing saved staff:", e);
@@ -1662,9 +1090,7 @@ function checkStaffSession() {
     }
 
     console.warn("⚠️ No staff session found - showing login");
-    if (loginModal) {
-        loginModal.classList.remove('hidden');
-    }
+    if (loginModal) loginModal.classList.remove('hidden');
 }
 
 async function verifyStaffPin() {
@@ -1680,6 +1106,7 @@ async function verifyStaffPin() {
     }
 
     try {
+        // 🎯 Requête propre et simple pour le nouveau projet Supabase
         const { data, error } = await supabaseClient
             .from('laundry_staff')
             .select('*')
@@ -1708,13 +1135,14 @@ async function verifyStaffPin() {
         if(errorMsg) errorMsg.classList.remove('hidden');
     }
 }
+
 function saveAndUnlockSession() {
     localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
     const loginModal = document.getElementById('staffLoginModal');
     if (loginModal) loginModal.classList.add('hidden');
     
     updateStaffUIIndicator();
-    applyRoleVisibility();  // Phase 5
+    applyRoleVisibility();
     console.log(`✅ Session unlocked by: ${currentStaffUser.name} (${currentStaffUser.role})`);
 }
 
@@ -1722,8 +1150,6 @@ function updateStaffUIIndicator() {
     const indicator = document.getElementById('currentLoggedStaff');
     const headerIndicator = document.getElementById('staffIndicatorHeader');
     const headerName = document.getElementById('staffNameHeader');
-
-    // ✨ SPRINT 1 : badge rôle premium (nouveau header)
     const roleName = document.getElementById('roleBadgeName');
     const roleIcon = document.getElementById('roleBadgeIcon');
     const roleRole = document.getElementById('roleBadgeRole');
@@ -1732,10 +1158,7 @@ function updateStaffUIIndicator() {
         if (indicator) indicator.innerText = `👤 ${currentStaffUser.name}`;
         if (headerIndicator) headerIndicator.classList.remove('hidden');
         if (headerName) headerName.innerText = currentStaffUser.name;
-
-        // ✨ Mise à jour du badge rôle premium
         if (roleName) roleName.textContent = currentStaffUser.name || 'Staff';
-        
         const isAdminUser = String(currentStaffUser.role || '').toLowerCase() === 'admin';
         if (roleIcon) roleIcon.textContent = isAdminUser ? '👑' : '👤';
         if (roleRole) roleRole.textContent = isAdminUser ? 'Manager' : 'Staff';
@@ -1747,45 +1170,28 @@ function updateStaffUIIndicator() {
 function logoutStaff() {
     localStorage.removeItem('remal_current_staff');
     currentStaffUser = null;
-    location.reload();
+    window.location.reload(true);
 }
 
 function confirmLogout() {
     if (!currentStaffUser) return;
-    
-    const confirmed = confirm(
-        `🚪 Log out?\n\n` +
-        `Current agent: ${currentStaffUser.name}\n` +
-        `Role: ${currentStaffUser.role}\n\n` +
-        `You will need to enter your PIN again to continue.`
-    );
-    
-    if (confirmed) {
-        logoutStaff();
-    }
+    const confirmed = confirm(`🚪 Log out?\n\nCurrent agent: ${currentStaffUser.name}\nRole: ${currentStaffUser.role}\n\nYou will need to enter your PIN again to continue.`);
+    if (confirmed) { logoutStaff(); }
 }
-// ═══════════════════════════════════════════════════════════════════
-// 🧘 MODALE DÉTAILS SPA — fonctions dédiées
-// ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════
+// 🧘 MODALE DÉTAILS SPA
+// ═══════════════════════════════════════════════════════════════════
 let currentSpaRecordId = null;
 
 async function ouvrirSpaDetailModal(recordId) {
     if (!recordId) return;
     currentSpaRecordId = String(recordId);
-
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(s => String(s.id) === String(recordId));
-    if (!entry || !entry.is_spa) {
-        console.warn('[SPA Modal] Record introuvable ou non-SPA:', recordId);
-        return;
-    }
+    if (!entry || !entry.is_spa) { console.warn('[SPA Modal] Record introuvable ou non-SPA:', recordId); return; }
 
-    // ═══ Remplir les infos ═══
-    const dateFormatted = entry.created_at 
-        ? new Date(entry.created_at).toLocaleDateString('en-GB') 
-        : '---';
-
+    const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : '---';
     document.getElementById('spaDetailDate').innerText = dateFormatted;
     document.getElementById('spaDetailGivenBy').innerText = entry.guest_name || '---';
     document.getElementById('spaDetailSerial').innerText = entry.spa_serial || '---';
@@ -1794,12 +1200,9 @@ async function ouvrirSpaDetailModal(recordId) {
     document.getElementById('spaDetailPackaging').innerText = entry.service_type || 'SPA Daily Sheet';
     document.getElementById('spaDetailCollectedBy').innerText = entry.options?.collected_by || '---';
     document.getElementById('spaDetailDeliveredBy').innerText = entry.options?.delivered_by || '---';
-    document.getElementById('spaDetailCollectionDate').innerText = 
-        (entry.options?.collection_date || '---') + ' ' + (entry.options?.collection_time || '');
-    document.getElementById('spaDetailDeliveryDate').innerText = 
-        (entry.options?.delivery_date || '---') + ' ' + (entry.options?.delivery_time || '');
+    document.getElementById('spaDetailCollectionDate').innerText = (entry.options?.collection_date || '---') + ' ' + (entry.options?.collection_time || '');
+    document.getElementById('spaDetailDeliveryDate').innerText = (entry.options?.delivery_date || '---') + ' ' + (entry.options?.delivery_time || '');
 
-    // ═══ Tableau des items ═══
     const tableBody = document.getElementById('spaDetailTableBody');
     tableBody.innerHTML = '';
     let grandTotal = 0;
@@ -1815,21 +1218,13 @@ async function ouvrirSpaDetailModal(recordId) {
         if (qty <= 0) return;
         grandTotal += total;
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${item.name || 'Item'}</td>
-            <td class="text-center">${qty}</td>
-            <td class="text-center">${rate.toFixed(2)}</td>
-            <td class="text-right">${total.toFixed(2)} AED</td>
-        `;
+        tr.innerHTML = `<td>${item.name || 'Item'}</td><td class="text-center">${qty}</td><td class="text-center">${rate.toFixed(2)}</td><td class="text-right">${total.toFixed(2)} AED</td>`;
         tableBody.appendChild(tr);
     });
 
     document.getElementById('spaDetailGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
-
-    // ═══ Ouvrir la modale ═══
     document.getElementById('spaDetailModal').classList.remove('hidden');
     if (navigator.vibrate) navigator.vibrate(15);
-
     console.log('🧘 [SPA Modal] Ouverte pour:', entry.spa_serial);
 }
 
@@ -1838,11 +1233,9 @@ function fermerSpaDetailModal() {
     currentSpaRecordId = null;
 }
 
-
 function modifierSpaRecord() {
     if (!currentSpaRecordId) return;
     fermerSpaDetailModal();
-    // Charger dans le formulaire SPA
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
     if (entry) {
@@ -1859,74 +1252,47 @@ async function dupliquerSpaRecord() {
     if (!currentSpaRecordId) return;
     fermerSpaDetailModal();
     switchMainSection('spa');
-    // Reset
-    document.getElementById('editingSpaId').value = '';
-    document.getElementById('spa-serial-no').value = '';
-    document.getElementById('spa-given-by').value = '';
-    document.getElementById('spa-collected-by').value = '';
-    document.getElementById('spa-delivered-by').value = '';
+    document.getElementById('editingSpaId').value = ''; document.getElementById('spa-serial-no').value = ''; document.getElementById('spa-given-by').value = ''; document.getElementById('spa-collected-by').value = ''; document.getElementById('spa-delivered-by').value = '';
     alert('📋 Formulaire réinitialisé. Remplissez-le et validez.');
 }
 
 async function supprimerSpaRecord() {
     if (!currentSpaRecordId) return;
     if (!confirm('🗑️ Supprimer ce SPA Sheet ?')) return;
-
     const id = currentSpaRecordId;
     isLocalUpdating = true;
-
     if (typeof supabaseClient !== 'undefined' && supabaseClient && id.length === 36) {
-        try {
-            await supabaseClient.from('guest_laundry_requests').delete().eq('id', id);
-        } catch (e) { console.warn(e); }
+        try { await supabaseClient.from('guest_laundry_requests').delete().eq('id', id); } catch (e) { console.warn(e); }
     }
-
     chargerDonneesLocalStorage();
     cachedSlips = cachedSlips.filter(s => String(s.id) !== String(id));
     sauvegarderDonneesLocalStorage();
-
     fermerSpaDetailModal();
     if (typeof chargerLiveOrders === 'function') chargerLiveOrders();
     if (typeof afficherListeBordereauxLocal === 'function') afficherListeBordereauxLocal();
-
     setTimeout(() => { isLocalUpdating = false; }, 800);
 }
 
-// Exposer
 window.ouvrirSpaDetailModal = ouvrirSpaDetailModal;
 window.fermerSpaDetailModal = fermerSpaDetailModal;
 window.modifierSpaRecord = modifierSpaRecord;
 window.dupliquerSpaRecord = dupliquerSpaRecord;
 window.supprimerSpaRecord = supprimerSpaRecord;
-
 console.log('✅ [SPA Modal] Fonctions chargées');
+
 // ═══════════════════════════════════════════════════════════════════
-// 📄 EXPORT SPA PDF — Simple et direct
+// 📄 EXPORT SPA PDF (depuis la modale)
 // ═══════════════════════════════════════════════════════════════════
 async function printSpaDetail() {
-    // ✅ Reprend la méthode d'exportSpaToPDF (validée visuellement)
-
     if (!currentSpaRecordId) {
-        // Fallback : essayer de récupérer le serial depuis la modale
         const fallbackSerial = document.getElementById('spaDetailSerial')?.innerText?.trim();
-        if (!fallbackSerial) {
-            alert('⚠️ Aucun SPA sélectionné.');
-            return;
-        }
+        if (!fallbackSerial) { alert('⚠️ Aucun SPA sélectionné.'); return; }
     }
-
     chargerDonneesLocalStorage();
     const entry = cachedSlips.find(s => String(s.id) === String(currentSpaRecordId));
-    if (!entry || !entry.is_spa) {
-        alert('⚠️ SPA introuvable. Veuillez rouvrir la fiche.');
-        return;
-    }
+    if (!entry || !entry.is_spa) { alert('⚠️ SPA introuvable. Veuillez rouvrir la fiche.'); return; }
 
-    // ═══ 1. Remplir la zone PDF SPA dédiée ═══
-    const dateFormatted = entry.created_at
-        ? new Date(entry.created_at).toLocaleDateString('en-GB')
-        : new Date().toLocaleDateString('en-GB');
-
+    const dateFormatted = entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
     const serialNo = entry.spa_serial || '---';
     const givenBy = entry.guest_name || '---';
     const collectedBy = entry.options?.collected_by || '---';
@@ -1939,9 +1305,7 @@ async function printSpaDetail() {
     document.getElementById('spaPdfDate').innerText = dateFormatted;
     document.getElementById('spaPdfGivenBy').innerText = givenBy;
     document.getElementById('spaPdfSerial').innerText = serialNo;
-    document.getElementById('spaPdfAgent').innerText = typeof formatAgentDisplay === 'function'
-        ? formatAgentDisplay(entry.created_by)
-        : (entry.created_by || '---');
+    document.getElementById('spaPdfAgent').innerText = typeof formatAgentDisplay === 'function' ? formatAgentDisplay(entry.created_by) : (entry.created_by || '---');
     document.getElementById('spaPdfPackaging').innerText = 'SPA Daily Sheet';
     document.getElementById('spaPdfReceiptId').innerText = '#' + (entry.receipt_id || 'REC-' + String(entry.id).slice(-6).toUpperCase());
     document.getElementById('spaPdfCollectedBy').innerText = collectedBy;
@@ -1949,7 +1313,6 @@ async function printSpaDetail() {
     document.getElementById('spaPdfCollectionDate').innerText = colDate ? `${colDate} ${colTime}` : '---';
     document.getElementById('spaPdfDeliveryDate').innerText = delDate ? `${delDate} ${delTime}` : '---';
 
-    // ═══ 2. Tableau items ═══
     const tableBody = document.getElementById('spaPdfTableBody');
     tableBody.innerHTML = '';
     let grandTotal = 0;
@@ -1964,64 +1327,26 @@ async function printSpaDetail() {
         const total = qty * rate;
         if (qty <= 0) return;
         grandTotal += total;
-
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${item.name || 'Item'}</td>
-            <td class="text-center">${qty}</td>
-            <td class="text-center">${rate.toFixed(2)}</td>
-            <td class="text-right">${total.toFixed(2)} AED</td>
-        `;
+        tr.innerHTML = `<td>${item.name || 'Item'}</td><td class="text-center">${qty}</td><td class="text-center">${rate.toFixed(2)}</td><td class="text-right">${total.toFixed(2)} AED</td>`;
         tableBody.appendChild(tr);
     });
 
     document.getElementById('spaPdfGrandTotal').innerText = `${grandTotal.toFixed(2)} AED`;
 
-// ═══ 3. Afficher la zone (même technique que exportSpaToPDF) ═══
-const spaPdfArea = document.getElementById('spaPdfExportArea');
-const originalParent = spaPdfArea.parentNode;
-const originalNextSibling = spaPdfArea.nextSibling;
+    const spaPdfArea = document.getElementById('spaPdfExportArea');
+    const originalParent = spaPdfArea.parentNode;
+    const originalNextSibling = spaPdfArea.nextSibling;
 
-document.body.appendChild(spaPdfArea);
+    document.body.appendChild(spaPdfArea);
+    spaPdfArea.style.display = 'block'; spaPdfArea.style.position = 'fixed'; spaPdfArea.style.left = '0'; spaPdfArea.style.top = '0'; spaPdfArea.style.opacity = '1'; spaPdfArea.style.visibility = 'visible'; spaPdfArea.style.width = 'auto'; spaPdfArea.style.maxWidth = '750px'; spaPdfArea.style.transform = 'translateX(0)'; spaPdfArea.style.background = '#ffffff'; spaPdfArea.style.zIndex = '99999';
 
-// ⚠️ NE PAS forcer de width fixe — html2canvas doit mesurer lui-même
-//    Sinon la capture est tronquée/décalée
-spaPdfArea.style.display = 'block';
-spaPdfArea.style.position = 'fixed';
-spaPdfArea.style.left = '0';
-spaPdfArea.style.top = '0';
-spaPdfArea.style.opacity = '1';
-spaPdfArea.style.visibility = 'visible';
-spaPdfArea.style.width = 'auto';       // ✅ largeur naturelle
-spaPdfArea.style.maxWidth = '750px';   // ✅ plafond raisonnable
-spaPdfArea.style.transform = 'translateX(0)';
-spaPdfArea.style.background = '#ffffff';
-spaPdfArea.style.zIndex = '99999';
+    await new Promise(r => setTimeout(r, 500));
 
-// ⏱️ Attente critique pour que le layout + images se chargent
-await new Promise(r => setTimeout(r, 500));
+    const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+    const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
 
-// ═══ 4. Générer le PDF ═══
-const dateClean = entry.created_at ? entry.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-const filename = `REMAL_${dateClean}_SPA-${serialNo}.pdf`;
-
-const opt = {
-    margin:       [10, 12, 12, 12],
-    filename:     filename,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0
-        // ✅ windowWidth / windowHeight SUPPRIMÉS → html2canvas mesure seul
-    },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-};
+    const opt = { margin: [10, 12, 12, 12], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
 
     try {
         await html2pdf().set(opt).from(spaPdfArea).save();
@@ -2030,400 +1355,149 @@ const opt = {
         console.error("Erreur PDF SPA:", e);
         alert("⚠️ Error generating SPA PDF.");
     } finally {
-        // ═══ 5. Restaurer la zone ═══
-        spaPdfArea.style.display = 'none';
-        spaPdfArea.style.position = '';
-        spaPdfArea.style.left = '';
-        spaPdfArea.style.top = '';
-        spaPdfArea.style.opacity = '';
-        spaPdfArea.style.visibility = '';
-        spaPdfArea.style.width = '';
-        spaPdfArea.style.transform = '';
-        spaPdfArea.style.zIndex = '';
-
-        if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
-            originalParent.insertBefore(spaPdfArea, originalNextSibling);
-        } else if (originalParent) {
-            originalParent.appendChild(spaPdfArea);
-        }
+        spaPdfArea.style.display = 'none'; spaPdfArea.style.position = ''; spaPdfArea.style.left = ''; spaPdfArea.style.top = ''; spaPdfArea.style.opacity = ''; spaPdfArea.style.visibility = ''; spaPdfArea.style.width = ''; spaPdfArea.style.transform = ''; spaPdfArea.style.zIndex = '';
+        if (originalNextSibling && originalNextSibling.parentNode === originalParent) { originalParent.insertBefore(spaPdfArea, originalNextSibling); } else if (originalParent) { originalParent.appendChild(spaPdfArea); }
     }
 }
 window.printSpaDetail = printSpaDetail;
 console.log('✅ [SPA] printSpaDetail chargée');
+
 // ═══════════════════════════════════════════════════════════════════
 // 📈 DASHBOARD PREMIUM — Helpers
 // ═══════════════════════════════════════════════════════════════════
-
-/**
- * Animate a number from 0 to target with easing
- */
 function animateNumber(el, target, suffix = '', duration = 1500) {
     if (!el) return;
-    const start = 0;
-    const startTime = performance.now();
-    const isFloat = target % 1 !== 0;
-
+    const start = 0; const startTime = performance.now(); const isFloat = target % 1 !== 0;
     function update(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const value = start + (target - start) * eased;
-
-        if (isFloat) {
-            el.textContent = value.toFixed(2) + (suffix ? ' ' + suffix : '');
-        } else {
-            el.textContent = Math.floor(value) + (suffix ? ' ' + suffix : '');
-        }
-
+        const elapsed = now - startTime; const progress = Math.min(elapsed / duration, 1); const eased = 1 - Math.pow(1 - progress, 3); const value = start + (target - start) * eased;
+        if (isFloat) { el.textContent = value.toFixed(2) + (suffix ? ' ' + suffix : ''); } else { el.textContent = Math.floor(value) + (suffix ? ' ' + suffix : ''); }
         if (progress < 1) requestAnimationFrame(update);
     }
     requestAnimationFrame(update);
 }
 
-/**
- * Render a Top 5 list with animated bars
- */
 function renderTopList(containerId, items, isCurrency = true) {
     const container = document.getElementById(containerId);
     if (!container) return;
-
-    if (!items || items.length === 0) {
-        container.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data for this period.</p>';
-        return;
-    }
-
+    if (!items || items.length === 0) { container.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data for this period.</p>'; return; }
     const max = Math.max(...items.map(i => i.value), 1);
-
-    container.innerHTML = items.map((item, i) => `
-        <div class="dashboard-top-item">
-            <div class="dashboard-top-rank">${i + 1}</div>
-            <div class="dashboard-top-info">
-                <div class="dashboard-top-name">${item.name}</div>
-                <div class="dashboard-top-sub">${item.sub || ''}</div>
-            </div>
-            <div class="dashboard-top-value">${isCurrency ? item.value.toFixed(0) + ' AED' : item.value}</div>
-            <div class="dashboard-top-bar" style="width: ${(item.value / max) * 100}%"></div>
-        </div>
-    `).join('');
+    container.innerHTML = items.map((item, i) => `<div class="dashboard-top-item"><div class="dashboard-top-rank">${i + 1}</div><div class="dashboard-top-info"><div class="dashboard-top-name">${item.name}</div><div class="dashboard-top-sub">${item.sub || ''}</div></div><div class="dashboard-top-value">${isCurrency ? item.value.toFixed(0) + ' AED' : item.value}</div><div class="dashboard-top-bar" style="width: ${(item.value / max) * 100}%"></div></div>`).join('');
 }
 
-// État global pour la période du dashboard
 let currentDashboardPeriod = 'today';
 
-/**
- * Switch dashboard period and re-render
- */
 function switchDashboardPeriod(period) {
     currentDashboardPeriod = period;
-
     document.querySelectorAll('.dashboard-filter-btn').forEach(btn => {
-        if (btn.dataset.period === period) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        if (btn.dataset.period === period) { btn.classList.add('active'); } else { btn.classList.remove('active'); }
     });
-
     renderManagementDashboard();
 }
-/* ═══════════════════════════════════════════════════════════════════
-   👥 SUPERVISEUR — Performance par Agent
-   Analyse les commandes par created_by et calcule les stats
-   ═══════════════════════════════════════════════════════════════════ */
 
 function renderAgentPerformance(slips) {
     const container = document.getElementById('agentsPerformanceList');
     const badge = document.getElementById('agentsCountBadge');
-
     if (!container) return;
+    if (!slips || !Array.isArray(slips)) { chargerDonneesLocalStorage(); slips = cachedSlips; }
 
-    // Si slips non fourni, on prend tous les cachedSlips
-    if (!slips || !Array.isArray(slips)) {
-        chargerDonneesLocalStorage();
-        slips = cachedSlips;
-    }
-
-    // ═══ 1. Grouper les commandes par agent ═══
     const agentsMap = {};
-
     slips.forEach(slip => {
         const createdBy = slip.created_by || 'pending';
-
-        // Ignorer les commandes "pending" ou "guest app"
-        const isGuestOrder = createdBy === 'pending' 
-            || createdBy === 'Guest App' 
-            || createdBy === 'guest app'
-            || createdBy === 'Guest'
-            || createdBy === 'Guest Portal'
-            || createdBy === 'Staff Laundry OS';
-
+        const isGuestOrder = createdBy === 'pending' || createdBy === 'Guest App' || createdBy === 'guest app' || createdBy === 'Guest' || createdBy === 'Guest Portal' || createdBy === 'Staff Laundry OS';
         if (isGuestOrder) return;
 
-        // Extraire le nom propre (enlever "staff ( ... )")
         let agentName = createdBy;
         const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
         if (match) agentName = match[1].trim();
 
         if (!agentsMap[agentName]) {
-            agentsMap[agentName] = {
-                name: agentName,
-                rawCreatedBy: createdBy,
-                orders: 0,
-                pieces: 0,
-                revenue: 0,
-                lastActivity: null,
-                spaOrders: 0,
-                laundryOrders: 0,
-                isAdmin: false
-            };
+            agentsMap[agentName] = { name: agentName, rawCreatedBy: createdBy, orders: 0, pieces: 0, revenue: 0, lastActivity: null, spaOrders: 0, laundryOrders: 0, isAdmin: false };
         }
-
         const agent = agentsMap[agentName];
-        agent.orders += 1;
-        agent.pieces += Number(slip.total_pieces || slip.total_clothes || 0);
-        agent.revenue += Number(slip.grand_total || slip.total || 0);
-
-        if (slip.is_spa) agent.spaOrders += 1;
-        else agent.laundryOrders += 1;
-
-        // Dernière activité
+        agent.orders += 1; agent.pieces += Number(slip.total_pieces || slip.total_clothes || 0); agent.revenue += Number(slip.grand_total || slip.total || 0);
+        if (slip.is_spa) agent.spaOrders += 1; else agent.laundryOrders += 1;
         const created = slip.created_at ? new Date(slip.created_at) : null;
-        if (created && (!agent.lastActivity || created > agent.lastActivity)) {
-            agent.lastActivity = created;
-        }
-
-        // Détecter si admin (via le rôle stocké sur le slip ou par défaut)
-        if (slip.created_by_role) {
-            agent.isAdmin = String(slip.created_by_role).toLowerCase() === 'admin';
-        }
+        if (created && (!agent.lastActivity || created > agent.lastActivity)) { agent.lastActivity = created; }
+        if (slip.created_by_role) { agent.isAdmin = String(slip.created_by_role).toLowerCase() === 'admin'; }
     });
 
-    // ═══ 2. Convertir en tableau + trier par CA desc ═══
     const agents = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
+    if (agents.length === 0) { container.innerHTML = `<p class="text-xs text-stone-500 text-center py-4">Aucune activité agent enregistrée pour cette période.</p>`; if (badge) badge.textContent = '0 agent'; return; }
+    if (badge) { badge.textContent = `${agents.length} agent${agents.length > 1 ? 's' : ''}`; }
 
-    if (agents.length === 0) {
-        container.innerHTML = `
-            <p class="text-xs text-stone-500 text-center py-4">
-                Aucune activité agent enregistrée pour cette période.
-            </p>`;
-        if (badge) badge.textContent = '0 agent';
-        return;
-    }
-
-    if (badge) {
-        badge.textContent = `${agents.length} agent${agents.length > 1 ? 's' : ''}`;
-    }
-
-    // ═══ 3. Calculer le max pour les barres ═══
     const maxRevenue = Math.max(...agents.map(a => a.revenue), 1);
-
-    // ═══ 4. Générer le HTML ═══
     const now = new Date();
 
     container.innerHTML = agents.map((agent, index) => {
         const isChampion = index === 0;
         const initial = agent.name.charAt(0).toUpperCase();
-
-        // Format dernière activité
         let lastActivityText = '---';
         if (agent.lastActivity) {
-            const diffMs = now - agent.lastActivity;
-            const diffMin = Math.floor(diffMs / (1000 * 60));
-            const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-            if (diffMin < 1) lastActivityText = 'À l\'instant';
-            else if (diffMin < 60) lastActivityText = `Il y a ${diffMin} min`;
-            else if (diffHour < 24) lastActivityText = `Il y a ${diffHour} h`;
-            else lastActivityText = `Il y a ${diffDay} j`;
+            const diffMs = now - agent.lastActivity; const diffMin = Math.floor(diffMs / (1000 * 60)); const diffHour = Math.floor(diffMs / (1000 * 60 * 60)); const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffMin < 1) lastActivityText = 'À l\'instant'; else if (diffMin < 60) lastActivityText = `Il y a ${diffMin} min`; else if (diffHour < 24) lastActivityText = `Il y a ${diffHour} h`; else lastActivityText = `Il y a ${diffDay} j`;
         }
-
-        // Barre de performance
         const barWidth = (agent.revenue / maxRevenue) * 100;
+        const roleBadge = agent.isAdmin ? '<span class="agent-role-badge admin">👑 Admin</span>' : '<span class="agent-role-badge staff">👤 Staff</span>';
 
-        // Badge de rôle
-        const roleBadge = agent.isAdmin 
-            ? '<span class="agent-role-badge admin">👑 Admin</span>'
-            : '<span class="agent-role-badge staff">👤 Staff</span>';
-
-        return `
-            <div class="agent-card ${isChampion ? 'champion' : ''}">
-                <div class="agent-avatar">${initial}</div>
-
-                <div class="agent-info">
-                    <div class="agent-name">
-                        ${agent.name}
-                        ${roleBadge}
-                    </div>
-                    <div class="agent-last-activity">
-                        🕐 ${lastActivityText} · 
-                        ${agent.laundryOrders} laundry · ${agent.spaOrders} SPA
-                    </div>
-                </div>
-
-                <div class="agent-stats">
-                    <div class="agent-stat">
-                        <span class="agent-stat-value blue">${agent.orders}</span>
-                        <span class="agent-stat-label">Ordres</span>
-                    </div>
-                    <div class="agent-stat">
-                        <span class="agent-stat-value green">${agent.pieces}</span>
-                        <span class="agent-stat-label">Pièces</span>
-                    </div>
-                    <div class="agent-stat">
-                        <span class="agent-stat-value">${agent.revenue.toFixed(0)}</span>
-                        <span class="agent-stat-label">AED</span>
-                    </div>
-                </div>
-
-                <div class="agent-performance-bar" style="width: ${barWidth}%;"></div>
-            </div>
-        `;
+        return `<div class="agent-card ${isChampion ? 'champion' : ''}"><div class="agent-avatar">${initial}</div><div class="agent-info"><div class="agent-name">${agent.name} ${roleBadge}</div><div class="agent-last-activity">🕐 ${lastActivityText} · ${agent.laundryOrders} laundry · ${agent.spaOrders} SPA</div></div><div class="agent-stats"><div class="agent-stat"><span class="agent-stat-value blue">${agent.orders}</span><span class="agent-stat-label">Ordres</span></div><div class="agent-stat"><span class="agent-stat-value green">${agent.pieces}</span><span class="agent-stat-label">Pièces</span></div><div class="agent-stat"><span class="agent-stat-value">${agent.revenue.toFixed(0)}</span><span class="agent-stat-label">AED</span></div></div><div class="agent-performance-bar" style="width: ${barWidth}%;"></div></div>`;
     }).join('');
-
     console.log(`✅ [Agents] ${agents.length} agents analysés`);
 }
-
 window.renderAgentPerformance = renderAgentPerformance;
 console.log('✅ [Superviseur] Performance par Agent chargée');
-/* ═══════════════════════════════════════════════════════════════════
-   📄 SUPERVISOR — Daily Report PDF (English)
-   Generates a premium PDF report for the GM
-   ═══════════════════════════════════════════════════════════════════ */
 
 async function genererRapportJournalier() {
     const btn = document.querySelector('.dashboard-report-btn');
-    if (btn) {
-        btn.classList.add('loading');
-        btn.disabled = true;
-    }
-
+    if (btn) { btn.classList.add('loading'); btn.disabled = true; }
     try {
-        // ═══ 1. Target date = yesterday ═══
-        const now = new Date();
-        const targetDate = new Date(now);
-        targetDate.setDate(targetDate.getDate() - 1);
-        targetDate.setHours(0, 0, 0, 0);
-
-        const nextDay = new Date(targetDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-
-        // ═══ 2. Filter slips of the day ═══
+        const now = new Date(); const targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() - 1); targetDate.setHours(0, 0, 0, 0);
+        const nextDay = new Date(targetDate); nextDay.setDate(nextDay.getDate() + 1);
         chargerDonneesLocalStorage();
-
-        let daySlips = cachedSlips.filter(s => {
-            if (!s.created_at) return false;
-            const d = new Date(s.created_at);
-            return d >= targetDate && d < nextDay;
-        });
-
+        let daySlips = cachedSlips.filter(s => { if (!s.created_at) return false; const d = new Date(s.created_at); return d >= targetDate && d < nextDay; });
         if (daySlips.length === 0) {
             const confirmed = confirm('No activity found for yesterday.\n\nGenerate report for TODAY instead?');
-            if (!confirmed) {
-                if (btn) {
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                }
-                return;
-            }
-            targetDate.setTime(now.getTime());
-            targetDate.setHours(0, 0, 0, 0);
-            daySlips = cachedSlips.filter(s => {
-                if (!s.created_at) return false;
-                const d = new Date(s.created_at);
-                return d >= targetDate;
-            });
+            if (!confirmed) { if (btn) { btn.classList.remove('loading'); btn.disabled = false; } return; }
+            targetDate.setTime(now.getTime()); targetDate.setHours(0, 0, 0, 0);
+            daySlips = cachedSlips.filter(s => { if (!s.created_at) return false; const d = new Date(s.created_at); return d >= targetDate; });
         }
 
-        // ═══ 3. Compute metrics ═══
-        let totalRevenue = 0;
-        let totalPieces = 0;
-        let laundryRevenue = 0;
-        let spaRevenue = 0;
+        let totalRevenue = 0; let totalPieces = 0; let laundryRevenue = 0; let spaRevenue = 0;
         const statusCounts = { Pending: 0, Washing: 0, Ready: 0, Delivered: 0 };
-        const agentsMap = {};
-        const roomRevenue = {};
-        const roomGuests = {};
-        const agencyRevenue = {};
-        const agencyOrders = {};
+        const agentsMap = {}; const roomRevenue = {}; const roomGuests = {}; const agencyRevenue = {}; const agencyOrders = {};
 
         daySlips.forEach(s => {
-            const rev = Number(s.grand_total || s.total || 0);
-            const pcs = Number(s.total_pieces || s.total_clothes || 0);
-
-            totalRevenue += rev;
-            totalPieces += pcs;
-
-            if (s.is_spa) {
-                spaRevenue += rev;
-            } else {
+            const rev = Number(s.grand_total || s.total || 0); const pcs = Number(s.total_pieces || s.total_clothes || 0);
+            totalRevenue += rev; totalPieces += pcs;
+            if (s.is_spa) { spaRevenue += rev; } else {
                 laundryRevenue += rev;
-
                 const room = String(s.room_number || s.room || '---');
                 roomRevenue[room] = (roomRevenue[room] || 0) + rev;
                 if (!roomGuests[room]) roomGuests[room] = s.guest_name || 'Guest';
-
                 const agency = s.agency || 'Direct';
                 agencyRevenue[agency] = (agencyRevenue[agency] || 0) + rev;
                 agencyOrders[agency] = (agencyOrders[agency] || 0) + 1;
             }
-
             let st = s.status || 'Collected';
-            if (st === 'Collected' || st === 'Pending') statusCounts.Pending++;
-            else if (st === 'Washing' || st === 'In Progress') statusCounts.Washing++;
-            else if (st === 'Ready') statusCounts.Ready++;
-            else if (st === 'Delivered' || st === 'Completed') statusCounts.Delivered++;
+            if (st === 'Collected' || st === 'Pending') statusCounts.Pending++; else if (st === 'Washing' || st === 'In Progress') statusCounts.Washing++; else if (st === 'Ready') statusCounts.Ready++; else if (st === 'Delivered' || st === 'Completed') statusCounts.Delivered++;
 
             const createdBy = s.created_by || 'pending';
             const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
             if (!isGuestOrder) {
-                let agentName = createdBy;
-                const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
-                if (match) agentName = match[1].trim();
-
-                if (!agentsMap[agentName]) {
-                    agentsMap[agentName] = { name: agentName, orders: 0, pieces: 0, revenue: 0 };
-                }
-                agentsMap[agentName].orders++;
-                agentsMap[agentName].pieces += pcs;
-                agentsMap[agentName].revenue += rev;
+                let agentName = createdBy; const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i); if (match) agentName = match[1].trim();
+                if (!agentsMap[agentName]) { agentsMap[agentName] = { name: agentName, orders: 0, pieces: 0, revenue: 0 }; }
+                agentsMap[agentName].orders++; agentsMap[agentName].pieces += pcs; agentsMap[agentName].revenue += rev;
             }
         });
 
-        const topRooms = Object.entries(roomRevenue)
-            .map(([room, value]) => ({ room, guest: roomGuests[room] || '', value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-
-        const topAgencies = Object.entries(agencyRevenue)
-            .map(([agency, value]) => ({ agency, value, orders: agencyOrders[agency] || 0 }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-
+        const topRooms = Object.entries(roomRevenue).map(([room, value]) => ({ room, guest: roomGuests[room] || '', value })).sort((a, b) => b.value - a.value).slice(0, 5);
+        const topAgencies = Object.entries(agencyRevenue).map(([agency, value]) => ({ agency, value, orders: agencyOrders[agency] || 0 })).sort((a, b) => b.value - a.value).slice(0, 5);
         const agentsList = Object.values(agentsMap).sort((a, b) => b.revenue - a.revenue);
 
-        // ═══ 4. Build HTML ═══
-        const html = buildRapportHTML({
-            date: targetDate,
-            totalRevenue,
-            totalPieces,
-            totalOrders: daySlips.length,
-            laundryRevenue,
-            spaRevenue,
-            statusCounts,
-            topRooms,
-            topAgencies,
-            agentsList,
-            generatedAt: new Date()
-        });
+        const html = buildRapportHTML({ date: targetDate, totalRevenue, totalPieces, totalOrders: daySlips.length, laundryRevenue, spaRevenue, statusCounts, topRooms, topAgencies, agentsList, generatedAt: new Date() });
 
-        // ═══ 5. Create container + generate PDF ═══
         let container = document.getElementById('reportExportContainer');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'reportExportContainer';
-            document.body.appendChild(container);
-        }
+        if (!container) { container = document.createElement('div'); container.id = 'reportExportContainer'; document.body.appendChild(container); }
         container.innerHTML = html;
 
         await new Promise(r => setTimeout(r, 800));
@@ -2431,475 +1505,152 @@ async function genererRapportJournalier() {
         const dateStr = targetDate.toISOString().split('T')[0];
         const filename = `REMAL_Daily_Report_${dateStr}.pdf`;
 
-        const opt = {
-            margin: [8, 8, 8, 8],
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
+        const opt = { margin: [8, 8, 8, 8], filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
 
         await html2pdf().set(opt).from(container).save();
-
         console.log('✅ [Report] PDF generated:', filename);
 
     } catch (e) {
-        console.error('[Report] Error:', e);
-        alert('⚠️ Error generating report.');
+        console.error('[Report] Error:', e); alert('⚠️ Error generating report.');
     } finally {
-        const container = document.getElementById('reportExportContainer');
-        if (container) container.innerHTML = '';
-
-        if (btn) {
-            btn.classList.remove('loading');
-            btn.disabled = false;
-        }
+        const container = document.getElementById('reportExportContainer'); if (container) container.innerHTML = '';
+        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
     }
 }
 
 function buildRapportHTML(data) {
-    const {
-        date, totalRevenue, totalPieces, totalOrders,
-        laundryRevenue, spaRevenue, statusCounts,
-        topRooms, topAgencies, agentsList, generatedAt
-    } = data;
-
-    const dateFormatted = date.toLocaleDateString('en-GB', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-
-    const timeFormatted = generatedAt.toLocaleTimeString('en-GB', {
-        hour: '2-digit', minute: '2-digit'
-    });
+    const { date, totalRevenue, totalPieces, totalOrders, laundryRevenue, spaRevenue, statusCounts, topRooms, topAgencies, agentsList, generatedAt } = data;
+    const dateFormatted = date.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeFormatted = generatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     let agentsHTML = '';
-    if (agentsList.length === 0) {
-        agentsHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No agent activity recorded.</td></tr>`;
-    } else {
-        agentsHTML = agentsList.map((a, i) => `
-            <tr class="${i === 0 ? 'champion' : ''}">
-                <td>${i === 0 ? '🏆 ' : ''}<strong>${a.name}</strong></td>
-                <td style="text-align:center;">${a.orders}</td>
-                <td style="text-align:center;">${a.pieces} pcs</td>
-                <td style="text-align:right;font-weight:700;color:#b45309;">${a.revenue.toFixed(2)} AED</td>
-            </tr>
-        `).join('');
+    if (agentsList.length === 0) { agentsHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No agent activity recorded.</td></tr>`; } else {
+        agentsHTML = agentsList.map((a, i) => `<tr class="${i === 0 ? 'champion' : ''}"><td>${i === 0 ? '🏆 ' : ''}<strong>${a.name}</strong></td><td style="text-align:center;">${a.orders}</td><td style="text-align:center;">${a.pieces} pcs</td><td style="text-align:right;font-weight:700;color:#b45309;">${a.revenue.toFixed(2)} AED</td></tr>`).join('');
     }
-
     let roomsHTML = '';
-    if (topRooms.length === 0) {
-        roomsHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active rooms.</td></tr>`;
-    } else {
-        roomsHTML = topRooms.map((r, i) => `
-            <tr>
-                <td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td>
-                <td><strong>Room ${r.room}</strong>${r.guest ? ' · ' + r.guest : ''}</td>
-                <td style="text-align:right;font-weight:700;">${r.value.toFixed(2)} AED</td>
-            </tr>
-        `).join('');
+    if (topRooms.length === 0) { roomsHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active rooms.</td></tr>`; } else {
+        roomsHTML = topRooms.map((r, i) => `<tr><td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td><td><strong>Room ${r.room}</strong>${r.guest ? ' · ' + r.guest : ''}</td><td style="text-align:right;font-weight:700;">${r.value.toFixed(2)} AED</td></tr>`).join('');
     }
-
     let agenciesHTML = '';
-    if (topAgencies.length === 0) {
-        agenciesHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active agencies.</td></tr>`;
-    } else {
-        agenciesHTML = topAgencies.map((a, i) => `
-            <tr>
-                <td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td>
-                <td><strong>${a.agency}</strong> · ${a.orders} order${a.orders > 1 ? 's' : ''}</td>
-                <td style="text-align:right;font-weight:700;">${a.value.toFixed(2)} AED</td>
-            </tr>
-        `).join('');
+    if (topAgencies.length === 0) { agenciesHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:15px;">No active agencies.</td></tr>`; } else {
+        agenciesHTML = topAgencies.map((a, i) => `<tr><td style="text-align:center;font-weight:900;color:#b45309;">${i + 1}</td><td><strong>${a.agency}</strong> · ${a.orders} order${a.orders > 1 ? 's' : ''}</td><td style="text-align:right;font-weight:700;">${a.value.toFixed(2)} AED</td></tr>`).join('');
     }
 
     return `
         <div class="rapport-header">
             <div class="rapport-header-left">
                 <img src="assets/remal-logo.png" alt="Remal" class="rapport-logo" onerror="this.style.display='none';">
-                <div>
-                    <h1 class="rapport-hotel-name">REMAL HOTEL & VILLAS</h1>
-                    <p class="rapport-hotel-sub">Al Ruwais City · Abu Dhabi · U.A.E</p>
-                </div>
+                <div><h1 class="rapport-hotel-name">REMAL HOTEL & VILLAS</h1><p class="rapport-hotel-sub">Al Ruwais City · Abu Dhabi · U.A.E</p></div>
             </div>
-            <div class="rapport-header-right">
-                <h2 class="rapport-title">DAILY REPORT</h2>
-                <p class="rapport-date">${dateFormatted}</p>
-                <p class="rapport-date" style="font-size:9px;">Generated at ${timeFormatted}</p>
-            </div>
+            <div class="rapport-header-right"><h2 class="rapport-title">DAILY REPORT</h2><p class="rapport-date">${dateFormatted}</p><p class="rapport-date" style="font-size:9px;">Generated at ${timeFormatted}</p></div>
         </div>
-
         <div class="rapport-body">
-
-            <!-- KPI -->
-            <div class="rapport-section">
-                <div class="rapport-section-title">💰 Key Indicators</div>
-                <div class="rapport-kpi-grid">
-                    <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Total Revenue</div>
-                        <div class="rapport-kpi-value">${totalRevenue.toFixed(2)}</div>
-                        <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
-                    </div>
-                    <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Orders</div>
-                        <div class="rapport-kpi-value blue">${totalOrders}</div>
-                    </div>
-                    <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Garments</div>
-                        <div class="rapport-kpi-value green">${totalPieces}</div>
-                    </div>
-                    <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">Laundry</div>
-                        <div class="rapport-kpi-value blue">${laundryRevenue.toFixed(0)}</div>
-                        <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
-                    </div>
-                    <div class="rapport-kpi">
-                        <div class="rapport-kpi-label">SPA</div>
-                        <div class="rapport-kpi-value purple">${spaRevenue.toFixed(0)}</div>
-                        <div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Status -->
-            <div class="rapport-section">
-                <div class="rapport-section-title">📊 Status Breakdown</div>
-                <div class="rapport-status-grid">
-                    <div class="rapport-status-item pending">
-                        <div class="rapport-status-icon">⏳</div>
-                        <div class="rapport-status-label">Pending</div>
-                        <div class="rapport-status-value">${statusCounts.Pending}</div>
-                    </div>
-                    <div class="rapport-status-item washing">
-                        <div class="rapport-status-icon">🧼</div>
-                        <div class="rapport-status-label">Washing</div>
-                        <div class="rapport-status-value">${statusCounts.Washing}</div>
-                    </div>
-                    <div class="rapport-status-item ready">
-                        <div class="rapport-status-icon">✨</div>
-                        <div class="rapport-status-label">Ready</div>
-                        <div class="rapport-status-value">${statusCounts.Ready}</div>
-                    </div>
-                    <div class="rapport-status-item delivered">
-                        <div class="rapport-status-icon">✅</div>
-                        <div class="rapport-status-label">Delivered</div>
-                        <div class="rapport-status-value">${statusCounts.Delivered}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Agents -->
-            <div class="rapport-section">
-                <div class="rapport-section-title">👥 Agent Performance</div>
-                <table class="rapport-table">
-                    <thead>
-                        <tr>
-                            <th>Agent</th>
-                            <th style="text-align:center;">Orders</th>
-                            <th style="text-align:center;">Pieces</th>
-                            <th style="text-align:right;">Revenue (AED)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${agentsHTML}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Top Rooms -->
-            <div class="rapport-section">
-                <div class="rapport-section-title">🏆 Top 5 Rooms</div>
-                <table class="rapport-table">
-                    <thead>
-                        <tr>
-                            <th style="width:40px;text-align:center;">#</th>
-                            <th>Room / Guest</th>
-                            <th style="text-align:right;">Revenue (AED)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${roomsHTML}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Top Agencies -->
-            <div class="rapport-section">
-                <div class="rapport-section-title">🏢 Top 5 Agencies</div>
-                <table class="rapport-table">
-                    <thead>
-                        <tr>
-                            <th style="width:40px;text-align:center;">#</th>
-                            <th>Agency</th>
-                            <th style="text-align:right;">Revenue (AED)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${agenciesHTML}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Signatures -->
-            <div class="rapport-signatures">
-                <div class="rapport-signature-item">
-                    <div class="rapport-signature-line"></div>
-                    <div class="rapport-signature-label">Prepared by</div>
-                    <div style="font-size:9px;color:#9ca3af;margin-top:4px;">
-                        ${currentStaffUser?.name || 'Laundry Supervisor'}
-                    </div>
-                </div>
-                <div class="rapport-signature-item">
-                    <div class="rapport-signature-line"></div>
-                    <div class="rapport-signature-label">Approved by</div>
-                    <div style="font-size:9px;color:#9ca3af;margin-top:4px;">General Manager</div>
-                </div>
-            </div>
-
+            <div class="rapport-section"><div class="rapport-section-title">💰 Key Indicators</div><div class="rapport-kpi-grid">
+                <div class="rapport-kpi"><div class="rapport-kpi-label">Total Revenue</div><div class="rapport-kpi-value">${totalRevenue.toFixed(2)}</div><div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div></div>
+                <div class="rapport-kpi"><div class="rapport-kpi-label">Orders</div><div class="rapport-kpi-value blue">${totalOrders}</div></div>
+                <div class="rapport-kpi"><div class="rapport-kpi-label">Garments</div><div class="rapport-kpi-value green">${totalPieces}</div></div>
+                <div class="rapport-kpi"><div class="rapport-kpi-label">Laundry</div><div class="rapport-kpi-value blue">${laundryRevenue.toFixed(0)}</div><div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div></div>
+                <div class="rapport-kpi"><div class="rapport-kpi-label">SPA</div><div class="rapport-kpi-value purple">${spaRevenue.toFixed(0)}</div><div style="font-size:8px;color:#6b7280;margin-top:2px;">AED</div></div>
+            </div></div>
+            <div class="rapport-section"><div class="rapport-section-title">📊 Status Breakdown</div><div class="rapport-status-grid">
+                <div class="rapport-status-item pending"><div class="rapport-status-icon">⏳</div><div class="rapport-status-label">Pending</div><div class="rapport-status-value">${statusCounts.Pending}</div></div>
+                <div class="rapport-status-item washing"><div class="rapport-status-icon">🧼</div><div class="rapport-status-label">Washing</div><div class="rapport-status-value">${statusCounts.Washing}</div></div>
+                <div class="rapport-status-item ready"><div class="rapport-status-icon">✨</div><div class="rapport-status-label">Ready</div><div class="rapport-status-value">${statusCounts.Ready}</div></div>
+                <div class="rapport-status-item delivered"><div class="rapport-status-icon">✅</div><div class="rapport-status-label">Delivered</div><div class="rapport-status-value">${statusCounts.Delivered}</div></div>
+            </div></div>
+            <div class="rapport-section"><div class="rapport-section-title">👥 Agent Performance</div><table class="rapport-table"><thead><tr><th>Agent</th><th style="text-align:center;">Orders</th><th style="text-align:center;">Pieces</th><th style="text-align:right;">Revenue (AED)</th></tr></thead><tbody>${agentsHTML}</tbody></table></div>
+            <div class="rapport-section"><div class="rapport-section-title">🏆 Top 5 Rooms</div><table class="rapport-table"><thead><tr><th style="width:40px;text-align:center;">#</th><th>Room / Guest</th><th style="text-align:right;">Revenue (AED)</th></tr></thead><tbody>${roomsHTML}</tbody></table></div>
+            <div class="rapport-section"><div class="rapport-section-title">🏢 Top 5 Agencies</div><table class="rapport-table"><thead><tr><th style="width:40px;text-align:center;">#</th><th>Agency</th><th style="text-align:right;">Revenue (AED)</th></tr></thead><tbody>${agenciesHTML}</tbody></table></div>
+            <div class="rapport-signatures"><div class="rapport-signature-item"><div class="rapport-signature-line"></div><div class="rapport-signature-label">Prepared by</div><div style="font-size:9px;color:#9ca3af;margin-top:4px;">${currentStaffUser?.name || 'Laundry Supervisor'}</div></div><div class="rapport-signature-item"><div class="rapport-signature-line"></div><div class="rapport-signature-label">Approved by</div><div style="font-size:9px;color:#9ca3af;margin-top:4px;">General Manager</div></div></div>
         </div>
-
-        <div class="rapport-footer">
-            Remal Laundry OS · Auto-generated document · Confidential
-        </div>
+        <div class="rapport-footer">Remal Laundry OS · Auto-generated document · Confidential</div>
     `;
 }
 
 window.genererRapportJournalier = genererRapportJournalier;
 console.log('✅ [Report] Daily report generator loaded');
-/* ═══════════════════════════════════════════════════════════════════
-   ⏱️ SUPERVISOR — Processing Times Analytics
-   Computes average processing time per order and per agent
-   ═══════════════════════════════════════════════════════════════════ */
 
 async function renderProcessingTimes(slips) {
     if (!container_exists('timesKpiGrid')) return;
+    const sampleBadge = document.getElementById('timesSampleBadge'); const kpiAvgTotal = document.getElementById('kpiAvgTotal'); const kpiFastest = document.getElementById('kpiFastest'); const kpiSlowest = document.getElementById('kpiSlowest'); const distribution = document.getElementById('timesDistribution'); const agentsSpeedList = document.getElementById('agentsSpeedList');
+    if (!slips || !Array.isArray(slips)) { slips = []; }
 
-    const sampleBadge = document.getElementById('timesSampleBadge');
-    const kpiAvgTotal = document.getElementById('kpiAvgTotal');
-    const kpiFastest = document.getElementById('kpiFastest');
-    const kpiSlowest = document.getElementById('kpiSlowest');
-    const distribution = document.getElementById('timesDistribution');
-    const agentsSpeedList = document.getElementById('agentsSpeedList');
-
-    if (!slips || !Array.isArray(slips)) {
-        slips = [];
-    }
-
-    // ═══ 1. Fetch status_history for these requests ═══
-    const requestIds = slips
-        .filter(s => String(s.id).length === 36)  // valid UUIDs
-        .map(s => String(s.id));
-
+    const requestIds = slips.filter(s => String(s.id).length === 36).map(s => String(s.id));
     if (requestIds.length === 0) {
-        if (sampleBadge) sampleBadge.textContent = '0 orders';
-        if (kpiAvgTotal) kpiAvgTotal.textContent = '--';
-        if (kpiFastest) kpiFastest.textContent = '--';
-        if (kpiSlowest) kpiSlowest.textContent = '--';
-        if (distribution) {
-            distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available for this period.</p>';
-        }
-        if (agentsSpeedList) {
-            agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available.</p>';
-        }
+        if (sampleBadge) sampleBadge.textContent = '0 orders'; if (kpiAvgTotal) kpiAvgTotal.textContent = '--'; if (kpiFastest) kpiFastest.textContent = '--'; if (kpiSlowest) kpiSlowest.textContent = '--';
+        if (distribution) { distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available for this period.</p>'; }
+        if (agentsSpeedList) { agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No data available.</p>'; }
         return;
     }
 
     let historyData = [];
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
-            const { data, error } = await supabaseClient
-                .from('status_history')
-                .select('*')
-                .in('request_id', requestIds)
-                .order('created_at', { ascending: true });
-
-            if (!error && data) {
-                historyData = data;
-            }
-        } catch (e) {
-            console.warn('[Processing Times] Fetch error:', e);
-        }
+            const { data, error } = await supabaseClient.from('status_history').select('*').in('request_id', requestIds).order('created_at', { ascending: true });
+            if (!error && data) { historyData = data; }
+        } catch (e) { console.warn('[Processing Times] Fetch error:', e); }
     }
 
-    // ═══ 2. Group history by request_id ═══
     const historyByRequest = {};
-    historyData.forEach(h => {
-        if (!historyByRequest[h.request_id]) historyByRequest[h.request_id] = [];
-        historyByRequest[h.request_id].push(h);
-    });
+    historyData.forEach(h => { if (!historyByRequest[h.request_id]) historyByRequest[h.request_id] = []; historyByRequest[h.request_id].push(h); });
 
-    // ═══ 3. Compute processing times ═══
-    const orderTimes = [];      // { requestId, agent, durationMs, order }
-    const agentTimes = {};      // { agentName: [durations] }
+    const orderTimes = []; const agentTimes = {};
 
     slips.forEach(slip => {
-        const requestId = String(slip.id);
-        const history = historyByRequest[requestId] || [];
-
-        // Need at least 2 events to compute duration
+        const requestId = String(slip.id); const history = historyByRequest[requestId] || [];
         if (history.length < 2) return;
-
-        // First event = start, last event = end
-        const start = new Date(history[0].created_at);
-        const end = new Date(history[history.length - 1].created_at);
-        const durationMs = end - start;
-
-        // Skip if negative or absurd (>7 days)
+        const start = new Date(history[0].created_at); const end = new Date(history[history.length - 1].created_at); const durationMs = end - start;
         if (durationMs < 0 || durationMs > 7 * 24 * 60 * 60 * 1000) return;
 
-        // Agent (from created_by)
         const createdBy = slip.created_by || 'pending';
         const isGuestOrder = ['pending', 'Guest App', 'guest app', 'Guest', 'Guest Portal', 'Staff Laundry OS'].includes(createdBy);
-
         let agentName = null;
-        if (!isGuestOrder) {
-            const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i);
-            agentName = match ? match[1].trim() : createdBy;
-        }
+        if (!isGuestOrder) { const match = createdBy.match(/staff\s*\(\s*(.+?)\s*\)/i); agentName = match ? match[1].trim() : createdBy; }
 
-        orderTimes.push({
-            requestId,
-            agent: agentName,
-            durationMs,
-            status: slip.status,
-            isSpa: slip.is_spa
-        });
-
-        if (agentName) {
-            if (!agentTimes[agentName]) agentTimes[agentName] = [];
-            agentTimes[agentName].push(durationMs);
-        }
+        orderTimes.push({ requestId, agent: agentName, durationMs, status: slip.status, isSpa: slip.is_spa });
+        if (agentName) { if (!agentTimes[agentName]) agentTimes[agentName] = []; agentTimes[agentName].push(durationMs); }
     });
 
-    // ═══ 4. If no data, show message ═══
     if (orderTimes.length === 0) {
-        if (sampleBadge) sampleBadge.textContent = '0 orders';
-        if (kpiAvgTotal) kpiAvgTotal.textContent = '--';
-        if (kpiFastest) kpiFastest.textContent = '--';
-        if (kpiSlowest) kpiSlowest.textContent = '--';
-        if (distribution) {
-            distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No processing data yet.<br><span class="text-[10px]">Status changes will start being tracked from now on.</span></p>';
-        }
-        if (agentsSpeedList) {
-            agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>';
-        }
+        if (sampleBadge) sampleBadge.textContent = '0 orders'; if (kpiAvgTotal) kpiAvgTotal.textContent = '--'; if (kpiFastest) kpiFastest.textContent = '--'; if (kpiSlowest) kpiSlowest.textContent = '--';
+        if (distribution) { distribution.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No processing data yet.<br><span class="text-[10px]">Status changes will start being tracked from now on.</span></p>'; }
+        if (agentsSpeedList) { agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>'; }
         return;
     }
 
-    // ═══ 5. Compute global stats ═══
-    const durations = orderTimes.map(o => o.durationMs);
-    const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length;
-    const minMs = Math.min(...durations);
-    const maxMs = Math.max(...durations);
+    const durations = orderTimes.map(o => o.durationMs); const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length; const minMs = Math.min(...durations); const maxMs = Math.max(...durations);
+    if (sampleBadge) { sampleBadge.textContent = `${orderTimes.length} order${orderTimes.length > 1 ? 's' : ''}`; }
+    if (kpiAvgTotal) kpiAvgTotal.textContent = formatDuration(avgMs); if (kpiFastest) kpiFastest.textContent = formatDuration(minMs); if (kpiSlowest) kpiSlowest.textContent = formatDuration(maxMs);
 
-    if (sampleBadge) {
-        sampleBadge.textContent = `${orderTimes.length} order${orderTimes.length > 1 ? 's' : ''}`;
-    }
-
-    if (kpiAvgTotal) kpiAvgTotal.textContent = formatDuration(avgMs);
-    if (kpiFastest) kpiFastest.textContent = formatDuration(minMs);
-    if (kpiSlowest) kpiSlowest.textContent = formatDuration(maxMs);
-
-    // ═══ 6. Distribution buckets ═══
-    const buckets = [
-        { label: '< 2h',  min: 0, max: 2 * 3600 * 1000, class: 'fast' },
-        { label: '2-6h',  min: 2 * 3600 * 1000, max: 6 * 3600 * 1000, class: 'medium' },
-        { label: '6-12h', min: 6 * 3600 * 1000, max: 12 * 3600 * 1000, class: 'slow' },
-        { label: '> 12h', min: 12 * 3600 * 1000, max: Infinity, class: 'very-slow' }
-    ];
-
-    const total = orderTimes.length;
-    const maxBucketCount = Math.max(...buckets.map(b => 
-        orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length
-    ), 1);
+    const buckets = [{ label: '< 2h', min: 0, max: 2 * 3600 * 1000, class: 'fast' }, { label: '2-6h', min: 2 * 3600 * 1000, max: 6 * 3600 * 1000, class: 'medium' }, { label: '6-12h', min: 6 * 3600 * 1000, max: 12 * 3600 * 1000, class: 'slow' }, { label: '> 12h', min: 12 * 3600 * 1000, max: Infinity, class: 'very-slow' }];
+    const total = orderTimes.length; const maxBucketCount = Math.max(...buckets.map(b => orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length), 1);
 
     if (distribution) {
         distribution.innerHTML = buckets.map(b => {
-            const count = orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length;
-            const percent = total > 0 ? ((count / total) * 100).toFixed(0) : 0;
-            const barWidth = (count / maxBucketCount) * 100;
-
-            return `
-                <div class="time-dist-row">
-                    <span class="time-dist-label">${b.label}</span>
-                    <div class="time-dist-bar-wrap">
-                        <div class="time-dist-bar ${b.class}" style="width: ${barWidth}%;"></div>
-                    </div>
-                    <div class="time-dist-count">
-                        ${count}
-                        <div class="time-dist-percent">${percent}%</div>
-                    </div>
-                </div>
-            `;
+            const count = orderTimes.filter(o => o.durationMs >= b.min && o.durationMs < b.max).length; const percent = total > 0 ? ((count / total) * 100).toFixed(0) : 0; const barWidth = (count / maxBucketCount) * 100;
+            return `<div class="time-dist-row"><span class="time-dist-label">${b.label}</span><div class="time-dist-bar-wrap"><div class="time-dist-bar ${b.class}" style="width: ${barWidth}%;"></div></div><div class="time-dist-count">${count}<div class="time-dist-percent">${percent}%</div></div></div>`;
         }).join('');
     }
 
-    // ═══ 7. Speed ranking by agent ═══
-    const agentsSpeed = Object.entries(agentTimes)
-        .map(([name, times]) => ({
-            name,
-            avgMs: times.reduce((a, b) => a + b, 0) / times.length,
-            count: times.length
-        }))
-        .filter(a => a.count >= 1)  // at least 1 order
-        .sort((a, b) => a.avgMs - b.avgMs);  // fastest first
-
+    const agentsSpeed = Object.entries(agentTimes).map(([name, times]) => ({ name, avgMs: times.reduce((a, b) => a + b, 0) / times.length, count: times.length })).filter(a => a.count >= 1).sort((a, b) => a.avgMs - b.avgMs);
     if (agentsSpeedList) {
-        if (agentsSpeed.length === 0) {
-            agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>';
-        } else {
-            const fastestMs = agentsSpeed[0].avgMs;
-            const slowestMs = agentsSpeed[agentsSpeed.length - 1].avgMs;
-            const range = slowestMs - fastestMs;
-
+        if (agentsSpeed.length === 0) { agentsSpeedList.innerHTML = '<p class="text-xs text-stone-500 text-center py-4">No agent data yet.</p>'; } else {
+            const fastestMs = agentsSpeed[0].avgMs; const slowestMs = agentsSpeed[agentsSpeed.length - 1].avgMs; const range = slowestMs - fastestMs;
             agentsSpeedList.innerHTML = agentsSpeed.slice(0, 5).map((a, i) => {
-                // Determine if "slow" (color red)
-                const isSlow = range > 0 && (a.avgMs - fastestMs) / range > 0.6;
-                const timeClass = isSlow ? 'slow' : '';
-
-                return `
-                    <div class="agent-speed-item">
-                        <div class="agent-speed-rank">${i + 1}</div>
-                        <div class="agent-speed-name">
-                            ${a.name}
-                            <span style="color: var(--text-muted); font-weight: 500; font-size: 10px;">
-                                · ${a.count} order${a.count > 1 ? 's' : ''}
-                            </span>
-                        </div>
-                        <div class="agent-speed-time ${timeClass}">
-                            ⚡ ${formatDuration(a.avgMs)}
-                        </div>
-                    </div>
-                `;
+                const isSlow = range > 0 && (a.avgMs - fastestMs) / range > 0.6; const timeClass = isSlow ? 'slow' : '';
+                return `<div class="agent-speed-item"><div class="agent-speed-rank">${i + 1}</div><div class="agent-speed-name">${a.name}<span style="color: var(--text-muted); font-weight: 500; font-size: 10px;">· ${a.count} order${a.count > 1 ? 's' : ''}</span></div><div class="agent-speed-time ${timeClass}">⚡ ${formatDuration(a.avgMs)}</div></div>`;
             }).join('');
         }
     }
-
     console.log(`✅ [Processing Times] ${orderTimes.length} orders analyzed · avg ${formatDuration(avgMs)}`);
 }
 
-/* ─── Helper: Check if element exists ─── */
-function container_exists(id) {
-    return !!document.getElementById(id);
-}
+function container_exists(id) { return !!document.getElementById(id); }
 
-/* ─── Helper: Format duration ms → "2h 45m" ─── */
 function formatDuration(ms) {
     if (!ms || ms < 0) return '--';
-    
-    const totalMinutes = Math.floor(ms / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    if (hours === 0) return `${minutes}m`;
-    if (minutes === 0) return `${hours}h`;
-    return `${hours}h ${minutes}m`;
+    const totalMinutes = Math.floor(ms / (1000 * 60)); const hours = Math.floor(totalMinutes / 60); const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}m`; if (minutes === 0) return `${hours}h`; return `${hours}h ${minutes}m`;
 }
 
 window.renderProcessingTimes = renderProcessingTimes;
