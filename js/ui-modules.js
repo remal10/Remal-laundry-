@@ -1664,25 +1664,31 @@ async function verifyStaffPin() {
         // 🔐 ON CRYPTE LE PIN TAPÉ
         const hashedPin = await hashPin(pin);
 
-        // On cherche dans la base le PIN crypté
+        // 🎯 FIX : On appelle la fonction RPC sécurisée au lieu de lire la table directement
         const { data, error } = await supabaseClient
-            .from('laundry_staff')
-            .select('*')
-            .or(`pin_hash.eq.${hashedPin},pin_code.eq.${pin}`) 
-            .eq('is_active', true)
-            .maybeSingle();
+            .rpc('verify_staff_pin', { p_pin: pin });
 
-        if (error || !data) {
+        if (error) {
+            console.error("Erreur RPC login:", error);
             if(errorMsg) errorMsg.classList.remove('hidden');
             if(pinInput) pinInput.value = '';
             return;
         }
 
+        // La RPC renvoie un tableau (même vide). On vérifie s'il y a un résultat.
+        if (!data || data.length === 0) {
+            if(errorMsg) errorMsg.classList.remove('hidden');
+            if(pinInput) pinInput.value = '';
+            return;
+        }
+
+        // On récupère le premier utilisateur trouvé
+        const staff = data[0];
+
         currentStaffUser = {
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            pin_code: data.pin_code
+            id: staff.id,
+            name: staff.name,
+            role: staff.role
         };
 
         saveAndUnlockSession();
