@@ -463,7 +463,32 @@ async function sauvegarderChampPMS(cell) {
 
 window.sauvegarderChampPMS = sauvegarderChampPMS;
 console.log('✅ [Mass Entry V2] renderMassPreviewTable + sauvegarderChampPMS loaded');
-
+// 🎯 FONCTION DE SECOURS ABSOLUE (Version 2)
+window.forceAdminLogin = async function() {
+    const pinInput = document.getElementById('staffPinInput');
+    const pin = pinInput ? pinInput.value.trim() : '';
+    if (!pin) return;
+    
+    try {
+        const { data, error } = await supabaseClient.from('laundry_staff').select('*').eq('pin_code', pin).eq('is_active', true);
+        
+        if (error || !data || data.length === 0) {
+            alert("PIN incorrect.");
+            return;
+        }
+        
+        currentStaffUser = {
+            id: data[0].id,
+            name: data[0].name,
+            role: data[0].role,
+            pin_code: data[0].pin_code
+        };
+        saveAndUnlockSession();
+        console.log("✅ Connexion forcée réussie pour :", currentStaffUser.name);
+    } catch(e) {
+        alert("Erreur réseau.");
+    }
+};
 // ═══════════════════════════════════════════════════════════════════
 // ARCHIVES
 // ═══════════════════════════════════════════════════════════════════
