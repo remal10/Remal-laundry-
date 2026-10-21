@@ -1107,42 +1107,33 @@ async function verifyStaffPin() {
 
     if (!pin) return;
 
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        if(errorMsg) errorMsg.classList.remove('hidden');
-        return;
-    }
+    // 🔓 DÉBLOCAGE LOCAL (Sans Supabase)
+    const localStaff = {
+        '1994': { name: 'Admin', role: 'admin' },
+        '2468': { name: 'Sangare', role: 'staff' },
+        '3579': { name: 'Suraj', role: 'staff' },
+        '4681': { name: 'Ram', role: 'staff' },
+        '5723': { name: 'Kuldeep', role: 'staff' },
+        '6834': { name: 'Balkran', role: 'staff' },
+        '7945': { name: 'Arif', role: 'staff' }
+    };
 
-    try {
-        // 🎯 Requête propre et simple pour le nouveau projet Supabase
-        const { data, error } = await supabaseClient
-            .from('laundry_staff')
-            .select('*')
-            .eq('pin_code', pin)
-            .eq('is_active', true)
-            .maybeSingle();
-
-        if (error || !data) {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            if(pinInput) pinInput.value = '';
-            return;
-        }
-
+    if (localStaff[pin]) {
         currentStaffUser = {
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            pin_code: data.pin_code
+            id: pin,
+            name: localStaff[pin].name,
+            role: localStaff[pin].role,
+            pin_code: pin
         };
 
         saveAndUnlockSession();
-        console.log("✅ Connexion réussie :", currentStaffUser.name);
-
-    } catch (err) {
-        console.error("Erreur auth:", err);
-        if(errorMsg) errorMsg.classList.remove('hidden');
+        console.log("✅ Connexion locale réussie :", currentStaffUser.name);
+        return;
     }
-}
 
+    if(errorMsg) errorMsg.classList.remove('hidden');
+    if(pinInput) pinInput.value = '';
+}
 function saveAndUnlockSession() {
     localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
     const loginModal = document.getElementById('staffLoginModal');
