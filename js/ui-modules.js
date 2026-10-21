@@ -1178,7 +1178,6 @@ function confirmLogout() {
 // ═══════════════════════════════════════════════════════════════════
 // 🧘 MODALE DÉTAILS SPA
 // ═══════════════════════════════════════════════════════════════════
-let currentSpaRecordId = null;
 
 async function ouvrirSpaDetailModal(recordId) {
     if (!recordId) return;
