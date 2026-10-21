@@ -1081,18 +1081,25 @@ function checkStaffSession() {
             currentStaffUser = JSON.parse(savedStaff);
             console.log("✅ Staff session restored:", currentStaffUser);
             if (loginModal) loginModal.classList.add('hidden');
-            updateStaffUIIndicator();
-            applyRoleVisibility();
-            return;
+            
+            // On cache l'écran de login immédiatement
+            if (typeof updateStaffUIIndicator === 'function') updateStaffUIIndicator();
+            if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
+            
+            return; // On s'arrête là, on ne touche à rien d'autre
         } catch (e) {
             console.error("❌ Error parsing saved staff:", e);
+            // Si le localStorage est corrompu, on le nettoie
+            localStorage.removeItem('remal_current_staff');
         }
     }
 
+    // Seulement si on n'a VRAIMENT pas de session, on affiche le login
     console.warn("⚠️ No staff session found - showing login");
-    if (loginModal) loginModal.classList.remove('hidden');
+    if (loginModal) {
+        loginModal.classList.remove('hidden');
+    }
 }
-
 async function verifyStaffPin() {
     const pinInput = document.getElementById('staffPinInput');
     const errorMsg = document.getElementById('loginErrorMsg');
