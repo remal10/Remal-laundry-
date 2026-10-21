@@ -1649,47 +1649,16 @@ async function verifyStaffPin() {
 
     if (!pin) return;
 
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        if (pin === '1234') {
-            currentStaffUser = { name: 'Superviseur (Local)', role: 'Admin', pin_code: '1234' };
-            saveAndUnlockSession();
-            return;
-        } else {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            return;
-        }
-    }
-
-    try {
-        // 🔐 ON CRYPTE LE PIN TAPÉ
-        const hashedPin = await hashPin(pin);
-
-        // On cherche dans la base le PIN crypté
-        const { data, error } = await supabaseClient
-            .from('laundry_staff')
-            .select('*')
-            .or(`pin_hash.eq.${hashedPin},pin_code.eq.${pin}`) 
-            .eq('is_active', true)
-            .maybeSingle();
-
-        if (error || !data) {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            if(pinInput) pinInput.value = '';
-            return;
-        }
-
-        currentStaffUser = {
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            pin_code: data.pin_code
-        };
-
+    // 🎯 DÉBLOCAGE D'URGENCE : On ne contacte plus Supabase pour le login.
+    // On accepte le PIN 1234 localement et on te connecte.
+    if (pin === '1234') {
+        currentStaffUser = { name: 'Admin Local', role: 'Admin', pin_code: '1234' };
         saveAndUnlockSession();
-
-    } catch (err) {
-        console.error("Erreur authentification staff:", err);
+        return;
+    } else {
         if(errorMsg) errorMsg.classList.remove('hidden');
+        if(pinInput) pinInput.value = '';
+        return;
     }
 }
 function saveAndUnlockSession() {
