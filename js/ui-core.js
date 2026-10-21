@@ -42,11 +42,10 @@ function activerSwipeNavigation() {
     const body = document.getElementById('bodyRoot') || document.body;
     if (!body.classList.contains('is-touch')) return;
     
-    // 🎯 FIX : Ajout de toutes les sections (incluant linenControl, checkout, stock...)
     const isAdminUser = (typeof isAdmin === 'function') ? isAdmin() : false;
     const sections = isAdminUser
     ? ['liveRecord', 'spa', 'checkout', 'stock', 'linenControl', 'lostfound', 'pdfList', 'massEntry', 'dashboard', 'adminChat']
-    : ['liveRecord', 'spa']; // Staff : uniquement Laundry + SPA
+    : ['liveRecord', 'spa'];
 
     let touchStartX = 0;
     let touchStartY = 0;
@@ -277,7 +276,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const spaDateEl = document.getElementById('spa-current-date');
     if(spaDateEl) spaDateEl.innerText = new Date().toLocaleDateString('fr-FR', options);
 
-    // Serial No — laissé VIDE par défaut (saisie manuelle)
     const serialEl = document.getElementById('spa-serial-no');
     if (serialEl && !serialEl.value) serialEl.value = '';
 
@@ -299,10 +297,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     checkStaffSession(); 
 
-    // PHASE E — Raccourcis & Auto-complétion
     if (typeof initPhaseE === 'function') initPhaseE();
 
-    // 🚨 Init badge Checkout Today
     setTimeout(() => {
         if (typeof updateCheckoutTodayBadge === 'function') {
             updateCheckoutTodayBadge();
@@ -434,8 +430,9 @@ async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
 
 window.logStatusChange = logStatusChange;
 console.log('✅ [Supervisor] logStatusChange loaded');
+
 // ═══════════════════════════════════════════════════════════════════
-// 🎯 LOGIN DE SECOURS ULTIME (Force le téléchargement)
+// 🎯 LOGIN DIRECT (Géré par ui-core.js)
 // ═══════════════════════════════════════════════════════════════════
 window.forceAdminLogin = async function() {
     const pinInput = document.getElementById('staffPinInput');
@@ -458,26 +455,14 @@ window.forceAdminLogin = async function() {
             return;
         }
 
-        currentStaffUser = {
+        localStorage.setItem('remal_current_staff', JSON.stringify({
             id: data.id,
             name: data.name,
             role: data.role,
             pin_code: data.pin_code
-        };
+        }));
 
-        // On utilise les fonctions de ui-modules.js
-        if (typeof saveAndUnlockSession === 'function') {
-            saveAndUnlockSession();
-        } else {
-            // Plan B : Si la fonction n'est pas trouvée, on la fait manuellement
-            localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
-            document.getElementById('staffLoginModal').classList.add('hidden');
-            if (typeof updateStaffUIIndicator === 'function') updateStaffUIIndicator();
-            if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
-            location.reload(); // On recharge pour être sûr que tout s'applique
-        }
-        
-        console.log("✅ Connexion réussie :", currentStaffUser.name);
+        window.location.reload();
 
     } catch (err) {
         console.error("Erreur auth:", err);
