@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Remal Hotel & Villas - Laundry OS</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#DCA773">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/premium-effects.css">
+
+    <style>
+        #bodyRoot header img[src*="remal-logo"] { height: 56px !important; width: auto !important; max-width: 200px !important; object-fit: contain !important; display: block !important; }
+        @media (min-width: 640px) { #bodyRoot header img[src*="remal-logo"] { height: 64px !important; max-width: 240px !important; } }
+        @media (min-width: 1024px) { #bodyRoot header img[src*="remal-logo"] { height: 80px !important; max-width: 300px !important; } }
+        #bodyRoot { overflow-x: hidden !important; }
+        body.role-staff [data-admin-only="true"] { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen pb-16 bg-[#12100e] text-stone-200" id="bodyRoot">
+
+<!-- HEADER -->
+<header class="laundry-header no-print">
+    <div class="laundry-header-inner">
+        <div class="laundry-brand" onclick="switchMainSection('liveRecord')">
+            <img src="assets/remal-logo.png" alt="Remal">
+            <div class="laundry-brand-text">
+                <span class="laundry-brand-title">Laundry OS</span>
+                <span class="laundry-brand-sub">Al Ruwais · Front Desk</span>
+            </div>
+        </div>
+        <div class="laundry-header-actions">
+            <div id="headerAdminContainer"></div>
+            <div id="roleBadgeHeader" class="role-badge">
+                <div class="role-badge-avatar" id="roleBadgeIcon">👤</div>
+                <div class="role-badge-info">
+                    <span class="role-badge-name" id="roleBadgeName">---</span>
+                    <span class="role-badge-role" id="roleBadgeRole">Staff</span>
+                </div>
+            </div>
+            <button onclick="toggleTheme()" class="header-action-btn" id="themeToggleBtn" title="Toggle theme"><i class="fas fa-moon" id="themeIcon"></i></button>
+            <select id="langSelect" onchange="setLang(this.value)" class="lang-select-premium"><option value="en">EN</option><option value="ar">AR</option><option value="hi">HI</option></select>
+            <button onclick="toggleStaffMobileMenu()" class="header-action-btn menu-trigger-btn" title="Menu"><i class="fas fa-ellipsis-vertical"></i></button>
+            <button onclick="confirmLogout()" class="header-action-btn danger" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </div>
+</header>
+
+<!-- NAV -->
+<nav id="mainNavContainer" class="laundry-nav no-print">
+    <div class="laundry-nav-inner">
+        <button onclick="switchMainSection('liveRecord')" id="navBtnLiveRecord" class="nav-tab-premium active"><i class="fas fa-bed"></i><span>Active Rooms</span></button>
+        <button onclick="switchMainSection('spa')" id="navBtnSpa" class="nav-tab-premium"><i class="fas fa-spa"></i><span>SPA</span></button>
+        <button onclick="switchMainSection('checkout')" id="navBtnCheckout" data-admin-only="true" class="nav-tab-premium"><i class="fas fa-suitcase-rolling"></i><span>Check-Out</span></button>
+        <button onclick="switchMainSection('stock')" id="navBtnStock" data-admin-only="true" class="nav-tab-premium"><i class="fas fa-boxes-stacked"></i><span>Stock</span></button>
+        <button onclick="switchMainSection('linenControl')" id="navBtnLinenControl" data-admin-only="true" class="nav-tab-premium"><i class="fas fa-layer-group"></i><span>Linen Control</span></button>
+        <button onclick="switchMainSection('lostfound')" id="navBtnLostfound" data-admin-only="true" class="nav-tab-premium"><i class="fas fa-box-open"></i><span>Lost & Found</span></button>
+        <button onclick="switchMainSection('pdfList')" id="navBtnPdfList" data-admin-only="true" class="nav-tab-premium"><i class="fas fa-archive"></i><span>Archives</span></button>
+        <button onclick="switchMainSection('dashboard')" id="navBtnDashboard" data-admin-only="true" class="nav-tab-premium"><i class="fas fa-chart-line"></i><span>Chart</span></button>
+        <button onclick="switchMainSection('adminChat')" id="navBtnAdminChat" data-admin-only="true" class="nav-tab-premium relative"><i class="fas fa-comments"></i><span>Chat</span><span id="navChatBadge" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg min-w-[18px] text-center">0</span></button>
+    </div>
+</nav>
+
+<!-- MAIN CONTAINER -->
+<div class="laundry-section space-y-6">
+    
+    <!-- SECTION: LIVE RECORD -->
+    <div id="sectionLiveRecord" class="space-y-4 no-print">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-stone-400 uppercase tracking-wider" id="lblActiveRoomsHeader">Active Rooms & SPA</span>
+                <span id="activeRoomsCountBadge" class="text-xs bg-[#181614] border border-[#2f2820] text-[#DCA773] font-bold px-3 py-1 rounded-full">0</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="ouvrirModalActiveRoomsList()" class="bg-[#181614] hover:bg-[#211e1a] text-stone-200 border border-[#2f2820] font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition"><i class="fas fa-list-ol text-[#DCA773]"></i><span>📋 Active Rooms List</span></button>
+                <button onclick="ouvrirCheckoutTodayModal()" id="checkoutTodayBanner" class="bg-stone-800/60 hover:bg-stone-700/80 text-stone-300 border border-stone-700 font-bold px-3 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 shadow transition"><i class="fas fa-check-circle text-emerald-400 text-sm" id="checkoutBannerIcon"></i><span class="checkout-banner-text">✓ 0 checkout</span></button>
+                <button onclick="imprimerToutesLesChambresDuJour()" id="btnBatchPrint" data-admin-only="true" class="bg-[#181614] hover:bg-[#211e1a] text-[#DCA773] border border-[#DCA773]/40 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition"><i class="fas fa-print text-sm"></i><span id="lblBatchPrintText">🖨️ Batch Print (0)</span></button>
+                <button onclick="telechargerToutesLesChambresDuJour()" id="btnBatchDownload" data-admin-only="true" class="bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition"><i class="fas fa-download text-sm"></i><span>📥 Download All (PDFs)</span></button>
+            </div>
+        </div>
+        <div id="liveOrdersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+            <p class="text-xs text-stone-500 text-center py-6 col-span-full">Loading active rooms...</p>
+        </div>
+    </div>
+
+    <!-- (Les autres sections sont gérées par JS, on garde les conteneurs vides) -->
+    <div id="sectionSpa" class="hidden"></div>
+    <div id="sectionCheckout" class="hidden"></div>
+    <div id="sectionStock" class="hidden"></div>
+    <div id="sectionLinenControl" class="hidden"></div>
+    <div id="sectionLostfound" class="hidden"></div>
+    <div id="sectionPdfList" class="hidden"></div>
+    <div id="sectionDashboard" class="hidden"></div>
+    <div id="sectionAdminChat" class="hidden"></div>
+
+</div>
+
+<!-- MODAL — STAFF LOGIN -->
+<div id="staffLoginModal" class="hidden fixed inset-0 z-[99999] bg-[#09090b]/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="remal-card w-full max-w-md p-8 rounded-3xl border border-[#2f2820] text-center space-y-6 shadow-2xl">
+        <div>
+            <div class="w-16 h-16 bg-[#DCA773]/10 border border-[#DCA773]/30 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">🔐</div>
+            <h2 class="font-serif-luxury text-2xl font-bold text-[#DCA773]">Staff Authentication</h2>
+            <p class="text-xs text-stone-400 mt-1">Enter your 4-digit PIN code to access Laundry OS.</p>
+        </div>
+        <div class="space-y-4">
+            <div><input type="password" id="staffPinInput" maxlength="6" placeholder="••••" class="w-full text-center tracking-[1em] text-2xl py-4 remal-input rounded-2xl font-bold outline-none border border-[#2f2820] focus:border-[#DCA773]"></div>
+            <div id="loginErrorMsg" class="text-xs text-rose-400 font-semibold hidden">Invalid PIN code. Please try again.</div>
+            <button onclick="verifyStaffPin()" class="w-full py-4 bg-[#DCA773] hover:bg-[#c89360] text-stone-950 font-bold rounded-2xl transition shadow-lg text-sm">Unlock Session</button>
+        </div>
+        <div class="pt-2 border-t border-[#2f2820] flex justify-between items-center text-[10px] text-stone-500">
+            <span>Remal Laundry OS v2.6</span>
+            <span id="currentLoggedStaff" class="text-stone-400">Locked</span>
+        </div>
+    </div>
+</div>
+
+<!-- LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- SCRIPTS -->
+<script src="js/config.js"></script>
+<script src="js/laundry.js"></script>
+<script src="js/realtime-listener.js"></script>
+<script src="js/ui-core.js"></script>
+<script src="js/ui-forms.js"></script>
+<script src="js/ui-live.js"></script>
+<script src="js/ui-modules.js"></script>
+<script src="js/batch-print.js"></script>
+<script src="js/checkout.js"></script>
+<script src="js/stock.js"></script>
+<script src="js/ui-shortcuts.js"></script>
+<script src="js/sound-alerts.js"></script>
+<script src="js/guesthub-integration.js"></script>
+<script src="js/chat-admin.js"></script>
+<script src="js/linen.js"></script>
+
+</body>
+</html>
