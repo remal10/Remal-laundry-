@@ -434,3 +434,53 @@ async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
 
 window.logStatusChange = logStatusChange;
 console.log('✅ [Supervisor] logStatusChange loaded');
+// ═══════════════════════════════════════════════════════════════════
+// 🎯 LOGIN DE SECOURS ULTIME (Force le téléchargement)
+// ═══════════════════════════════════════════════════════════════════
+window.forceAdminLogin = async function() {
+    const pinInput = document.getElementById('staffPinInput');
+    const errorMsg = document.getElementById('loginErrorMsg');
+    const pin = pinInput ? pinInput.value.trim() : '';
+
+    if (!pin) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('laundry_staff')
+            .select('*')
+            .eq('pin_code', pin)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (error || !data) {
+            if(errorMsg) errorMsg.classList.remove('hidden');
+            if(pinInput) pinInput.value = '';
+            return;
+        }
+
+        currentStaffUser = {
+            id: data.id,
+            name: data.name,
+            role: data.role,
+            pin_code: data.pin_code
+        };
+
+        // On utilise les fonctions de ui-modules.js
+        if (typeof saveAndUnlockSession === 'function') {
+            saveAndUnlockSession();
+        } else {
+            // Plan B : Si la fonction n'est pas trouvée, on la fait manuellement
+            localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
+            document.getElementById('staffLoginModal').classList.add('hidden');
+            if (typeof updateStaffUIIndicator === 'function') updateStaffUIIndicator();
+            if (typeof applyRoleVisibility === 'function') applyRoleVisibility();
+            location.reload(); // On recharge pour être sûr que tout s'applique
+        }
+        
+        console.log("✅ Connexion réussie :", currentStaffUser.name);
+
+    } catch (err) {
+        console.error("Erreur auth:", err);
+        if(errorMsg) errorMsg.classList.remove('hidden');
+    }
+};
