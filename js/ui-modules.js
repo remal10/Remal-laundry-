@@ -1661,12 +1661,11 @@ async function verifyStaffPin() {
     }
 
     try {
-        const hashedPin = await hashPin(pin);
-
+        // 🎯 FIX : On ne cherche QUE le pin_code en clair (celui qui est dans ta base)
         const { data, error } = await supabaseClient
             .from('laundry_staff')
             .select('*')
-            .or(`pin_hash.eq.${hashedPin},pin_code.eq.${pin}`) 
+            .eq('pin_code', pin)
             .eq('is_active', true)
             .maybeSingle();
 
