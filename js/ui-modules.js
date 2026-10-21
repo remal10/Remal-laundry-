@@ -1660,39 +1660,37 @@ async function verifyStaffPin() {
         }
     }
 
-   try {
-    // 🔐 ON CRYPTE LE PIN TAPÉ
-    const hashedPin = await hashPin(pin);
+    try {
+        // 🔐 ON CRYPTE LE PIN TAPÉ
+        const hashedPin = await hashPin(pin);
 
-    // 🎯 FIX : On cherche UNIQUEMENT par le hash
-    const { data, error } = await supabaseClient
-        .from('laundry_staff')
-        .select('*')
-        .eq('pin_hash', hashedPin)  // ⬅️ C'est ici qu'on change
-        .eq('is_active', true)
-        .maybeSingle();
+        // On cherche dans la base le PIN crypté
+        const { data, error } = await supabaseClient
+            .from('laundry_staff')
+            .select('*')
+            .or(`pin_hash.eq.${hashedPin},pin_code.eq.${pin}`) 
+            .eq('is_active', true)
+            .maybeSingle();
 
-    if (error) {
-        console.error("Erreur login Supabase:", error);
-    }
+        if (error || !data) {
+            if(errorMsg) errorMsg.classList.remove('hidden');
+            if(pinInput) pinInput.value = '';
+            return;
+        }
 
-    if (error || !data) {
+        currentStaffUser = {
+            id: data.id,
+            name: data.name,
+            role: data.role,
+            pin_code: data.pin_code
+        };
+
+        saveAndUnlockSession();
+
+    } catch (err) {
+        console.error("Erreur authentification staff:", err);
         if(errorMsg) errorMsg.classList.remove('hidden');
-        if(pinInput) pinInput.value = '';
-        return;
     }
-
-    currentStaffUser = {
-        id: data.id,
-        name: data.name,
-        role: data.role
-    };
-
-    saveAndUnlockSession();
-
-} catch (err) {
-    console.error("Erreur authentification staff:", err);
-    if(errorMsg) errorMsg.classList.remove('hidden');
 }
 function saveAndUnlockSession() {
     localStorage.setItem('remal_current_staff', JSON.stringify(currentStaffUser));
