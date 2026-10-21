@@ -1674,8 +1674,12 @@ async function verifyStaffPin() {
 
     if (!pin) return;
 
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        if(errorMsg) errorMsg.classList.remove('hidden');
+        return;
+    }
+
     try {
-        // Requête ultra simple, identique à celle qui a marché dans ta console
         const { data, error } = await supabaseClient
             .from('laundry_staff')
             .select('*')
