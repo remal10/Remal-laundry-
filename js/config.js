@@ -7,7 +7,7 @@ let globalDirHandle = null;
 
 // URL et Clé Anon Supabase (Nouveau Projet V2)
 const SUPABASE_URL = 'https://eykpakjmrpvsmknxjhlrc.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_elJ0qem6VsNtc3aHAW8pgQ_Y120UWjH';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5a3Bha2ptcnB2c21rbnhqbHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1Nzk2NTgsImV4cCI6MjEwODE1NTY1OH0.mkrfRPBGTxjdFv3EJLl7vrX97eDWzd_mbBuJrNfv1aE';
 
 let supabaseClient = null;
 try {
