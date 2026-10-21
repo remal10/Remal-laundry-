@@ -475,7 +475,7 @@ function validateRoomNumber() {
 // ═══════════════════════════════════════════════════════════════════
 function setLang(lang) {
     currentLang = lang;
-    const t = i18n[lang] || i18n.en;
+ const t = (typeof i18n !== 'undefined') ? (i18n[lang] || i18n.en) : {};
     
     const htmlRoot = document.getElementById('htmlRoot');
     if (htmlRoot) htmlRoot.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
