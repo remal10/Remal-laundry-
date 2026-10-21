@@ -1674,19 +1674,8 @@ async function verifyStaffPin() {
 
     if (!pin) return;
 
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        if (pin === '1234') {
-            currentStaffUser = { name: 'Superviseur (Local)', role: 'Admin', pin_code: '1234' };
-            saveAndUnlockSession();
-            return;
-        } else {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            return;
-        }
-    }
-
     try {
-        // 🎯 FIX : On ne cherche QUE le pin_code en clair (celui qui est dans ta base)
+        // Requête ultra simple, identique à celle qui a marché dans ta console
         const { data, error } = await supabaseClient
             .from('laundry_staff')
             .select('*')
@@ -1708,9 +1697,10 @@ async function verifyStaffPin() {
         };
 
         saveAndUnlockSession();
+        console.log("✅ Connexion réussie :", currentStaffUser.name);
 
     } catch (err) {
-        console.error("Erreur authentification staff:", err);
+        console.error("Erreur auth:", err);
         if(errorMsg) errorMsg.classList.remove('hidden');
     }
 }
