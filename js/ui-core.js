@@ -1,14 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // REMAL LAUNDRY OS — UI CORE
-// Setup, détection appareil, session staff, thème, initialisation
-// ⚠️ DOIT ÊTRE CHARGÉ EN PREMIER
 // ═══════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════
-// VARIABLES GLOBALES
-// ═══════════════════════════════════════════════════════════════════
-let currentStaffUser = null;
-let isLocalUpdating = false;
 
 // ═══════════════════════════════════════════════════════════════════
 // DÉTECTION APPAREIL
@@ -124,34 +116,10 @@ function centrerBoutonNavigation(btnId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HELPER : Restaure la session Staff
-// ═══════════════════════════════════════════════════════════════════
-function restaurerSessionStaff() {
-    if (currentStaffUser && currentStaffUser.name) return currentStaffUser;
-    
-    const saved = localStorage.getItem('remal_current_staff');
-    if (saved) {
-        try {
-            currentStaffUser = JSON.parse(saved);
-            return currentStaffUser;
-        } catch(e) {
-            console.error("❌ [Session] Erreur parsing:", e);
-        }
-    }
-    return null;
-}
-
-// ═══════════════════════════════════════════════════════════════════
 // HELPER : Formate l'affichage Agent
 // ═══════════════════════════════════════════════════════════════════
 function formatAgentDisplay(createdBy) {
-    if (!createdBy || 
-        createdBy === 'pending' || 
-        createdBy === 'Guest App' || 
-        createdBy === 'guest app' ||
-        createdBy === 'Guest' ||
-        createdBy === 'Guest Portal' ||
-        createdBy === 'Staff Laundry OS') {
+    if (!createdBy || createdBy === 'pending' || createdBy === 'Guest App' || createdBy === 'guest app' || createdBy === 'Guest' || createdBy === 'Guest Portal' || createdBy === 'Staff Laundry OS') {
         return 'Pending';
     }
     return createdBy;
@@ -203,50 +171,6 @@ function initTheme() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TIMER MINUIT
-// ═══════════════════════════════════════════════════════════════════
-function programmerTimerReinitialisationMinuit() {
-    function verifierFinDeJournee() {
-        const maintenant = new Date();
-        const minuit = new Date();
-        minuit.setHours(24, 0, 0, 0);
-
-        const diff = minuit.getTime() - maintenant.getTime();
-
-        if (diff <= 0) {
-            chargerLiveOrders();
-            return;
-        }
-
-        const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
-        const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
-
-        const timerEl = document.getElementById('midnightTimer');
-        if (timerEl) timerEl.innerText = `${hrs}:${mins}:${secs}`;
-    }
-
-    verifierFinDeJournee();
-    setInterval(verifierFinDeJournee, 1000);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PIN ADMIN
-// ═══════════════════════════════════════════════════════════════════
-function demanderConfirmationPinAdmin(actionCallback) {
-    const pinSaisi = prompt("🔒 Security Verification:\nPlease enter your 4-digit Staff PIN code:");
-    if (!pinSaisi) return;
-
-    const pinCorrect = (currentStaffUser && currentStaffUser.pin_code) ? currentStaffUser.pin_code : '1234';
-
-    if (pinSaisi.trim() === String(pinCorrect).trim() || pinSaisi.trim() === '1234') {
-        actionCallback();
-    } else {
-        alert("❌ Incorrect PIN code. Action cancelled.");
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════
 // INITIALISATION
 // ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
@@ -256,19 +180,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
 
-    switchMainSection('liveRecord');
-    setLang('en');
+    if (typeof switchMainSection === 'function') switchMainSection('liveRecord');
+    if (typeof setLang === 'function') setLang('en');
 
-    chargerPanierLocal();
-
-    selectCountType(currentCountType || 'hotel');
-    renderItems();
+    if (typeof chargerPanierLocal === 'function') chargerPanierLocal();
+    if (typeof selectCountType === 'function') selectCountType(currentCountType || 'hotel');
+    if (typeof renderItems === 'function') renderItems();
     if (typeof calculateGlobalTotals === 'function') calculateGlobalTotals();
 
-    chargerPmsLocalStorage();
-    await chargerDonneesEtAbonnementCloud();
+    if (typeof chargerPmsLocalStorage === 'function') chargerPmsLocalStorage();
+    if (typeof chargerDonneesEtAbonnementCloud === 'function') await chargerDonneesEtAbonnementCloud();
 
-    if (Object.keys(pmsDatabase).length > 0) {
+    if (Object.keys(pmsDatabase || {}).length > 0 && typeof renderMassPreviewTable === 'function') {
         renderMassPreviewTable();
     }
 
@@ -293,9 +216,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(delDate && !delDate.value) delDate.value = todayIso;
     if(delTime && !delTime.value) delTime.value = timeIso;
 
-    programmerTimerReinitialisationMinuit();
+    if (typeof programmerTimerReinitialisationMinuit === 'function') programmerTimerReinitialisationMinuit();
 
-    checkStaffSession(); 
+    if (typeof checkStaffSession === 'function') checkStaffSession(); 
 
     if (typeof initPhaseE === 'function') initPhaseE();
 
@@ -336,11 +259,8 @@ function closeStaffMobileMenu() {
 function updateStaffMobileMenuState() {
     const menuIcon = document.getElementById('menuThemeIcon');
     if (menuIcon) {
-        menuIcon.className = document.body.classList.contains('light-mode') 
-            ? 'fas fa-sun' 
-            : 'fas fa-moon';
+        menuIcon.className = document.body.classList.contains('light-mode') ? 'fas fa-sun' : 'fas fa-moon';
     }
-
     const langBadge = document.getElementById('menuLangBadge');
     if (langBadge) {
         const lang = (typeof currentLang !== 'undefined' && currentLang) ? currentLang.toUpperCase() : 'EN';
@@ -355,10 +275,8 @@ function cycleLanguage() {
     const next = langs[(idx + 1) % langs.length];
     
     if (typeof setLang === 'function') setLang(next);
-    
     const langBadge = document.getElementById('menuLangBadge');
     if (langBadge) langBadge.textContent = next.toUpperCase();
-    
     if (navigator.vibrate) navigator.vibrate(10);
 }
 
@@ -405,9 +323,7 @@ async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
     guest_name: entry.guest_name || null,
     old_status: oldStatus || null,
     new_status: newStatus,
-    changed_by: currentStaffUser?.name 
-      ? `staff ( ${currentStaffUser.name} )` 
-      : 'unknown',
+    changed_by: currentStaffUser?.name ? `staff ( ${currentStaffUser.name} )` : 'unknown',
     changed_role: currentStaffUser?.role || 'staff',
     source: entry.is_spa ? 'spa_os' : 'staff_os',
     notes: notes || null
@@ -415,13 +331,8 @@ async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
 
   if (typeof supabaseClient !== 'undefined' && supabaseClient) {
     try {
-      const { error } = await supabaseClient
-        .from('status_history')
-        .insert([payload]);
-
-      if (error) {
-        console.warn('[Status History] Insert error:', error.message);
-      }
+      const { error } = await supabaseClient.from('status_history').insert([payload]);
+      if (error) console.warn('[Status History] Insert error:', error.message);
     } catch (e) {
       console.warn('[Status History] Exception:', e);
     }
@@ -430,42 +341,3 @@ async function logStatusChange(requestId, oldStatus, newStatus, notes = '') {
 
 window.logStatusChange = logStatusChange;
 console.log('✅ [Supervisor] logStatusChange loaded');
-
-// ═══════════════════════════════════════════════════════════════════
-// 🎯 LOGIN DIRECT (Géré par ui-core.js)
-// ═══════════════════════════════════════════════════════════════════
-window.forceAdminLogin = async function() {
-    const pinInput = document.getElementById('staffPinInput');
-    const errorMsg = document.getElementById('loginErrorMsg');
-    const pin = pinInput ? pinInput.value.trim() : '';
-
-    if (!pin) return;
-
-    try {
-        const { data, error } = await supabaseClient
-            .from('laundry_staff')
-            .select('*')
-            .eq('pin_code', pin)
-            .eq('is_active', true)
-            .maybeSingle();
-
-        if (error || !data) {
-            if(errorMsg) errorMsg.classList.remove('hidden');
-            if(pinInput) pinInput.value = '';
-            return;
-        }
-
-        localStorage.setItem('remal_current_staff', JSON.stringify({
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            pin_code: data.pin_code
-        }));
-
-        window.location.reload();
-
-    } catch (err) {
-        console.error("Erreur auth:", err);
-        if(errorMsg) errorMsg.classList.remove('hidden');
-    }
-};
