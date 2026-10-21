@@ -5,23 +5,28 @@
 let deferredPrompt;
 let globalDirHandle = null;
 
-// URL et Clé Anon Supabase (Nouveau Projet V2)
+// URL et Clé Anon Supabase (Nouveau Projet V2 pour le login et les nouvelles données)
 const SUPABASE_URL = 'https://eykpakjmrpvsmknxjhlrc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5a3Bha2ptcnB2c21rbnhqbHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1Nzk2NTgsImV4cCI6MjEwODE1NTY1OH0.mkrfRPBGTxjdFv3EJLl7vrX97eDWzd_mbBuJrNfv1aE';
 
+// 🔥 ANCIEN PROJET (Uniquement pour lire le PMS)
+const OLD_SUPABASE_URL = 'https://kmtnkjhjbmsietrlebhs.supabase.co';
+const OLD_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdG5ramhqYm1zaWV0cmxlYmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjQ1MTMsImV4cCI6MjEwMTkwMDUxM30.fOMotE-gsxKkTtrgzbrk5qsC22qWdQmF__k89Xt-ErA';
+
 let supabaseClient = null;
+let supabasePmsClient = null; // Nouveau client pour le PMS
+
 try {
     if (typeof supabase !== 'undefined' && supabase.createClient) {
+        // Client principal (Login, Nouveaux enregistrements)
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            realtime: {
-                params: {
-                    eventsPerSecond: 10
-                }
-            }
+            realtime: { params: { eventsPerSecond: 10 } }
         });
-        console.log("✅ Client Supabase initialisé avec succès dans config.js.");
-    } else {
-        console.warn("⚠️ SDK Supabase non détecté au chargement de js/config.js.");
+        
+        // Client secondaire (Lecture seule du PMS sur l'ancien projet)
+        supabasePmsClient = supabase.createClient(OLD_SUPABASE_URL, OLD_SUPABASE_ANON_KEY);
+        
+        console.log("✅ Clients Supabase initialisés (Principal + PMS Legacy).");
     }
 } catch(err) { 
     console.warn("Supabase local mode fallback:", err); 
@@ -53,7 +58,6 @@ function obtenirReceiptId(order) {
     const rawId = String(order.id || '');
     if (!rawId) return '---';
     
-    // Traitement propre des UUID v4 de 36 caractères de Supabase
     const cleanId = rawId.replace(/-/g, '').toUpperCase();
     return `REC-${cleanId.slice(-6)}`;
 }
@@ -68,7 +72,7 @@ const companyKeywords = [
     'gulf', 'international', 'global', 'solutions', 'enterprises', 'hunter'
 ];
 
-// Traductions d'interface complètes avec gestion du statut Pending du Guest Portal
+// Traductions d'interface complètes
 const i18n = {
     en: {
         txtBtnNewRecord: "New Record", lblFormTitle: "New Record", lblRoomNum: "Room Number",
@@ -97,9 +101,7 @@ const i18n = {
         btnSaveRecord: "💾 حفظ السجل", lblArchiveTitle: "الأرشيف والبحث",
         lblLoadingRecords: "جاري تحميل السجلات...", lblRoomError: "رقم الغرفة غير صحيح!",
         lblActiveRoomsHeader: "الغرف النشطة والسبا",
-        pdfHotelName: "فندق وفيلا رمال",
-        pdfHotelSub: "مدينة الرويس، أبوظبي - الإمارات العربية المتحدة",
-        pdfLaundryService: "خدمة المغسلة",
+        pdfHotelName: "فندق وفيلا رمال", pdfHotelSub: "مدينة الرويس، أبوظبي - الإمارات العربية المتحدة", pdfLaundryService: "خدمة المغسلة",
         pdfRoom: "الغرفة:", pdfDate: "التاريخ:", pdfGuest: "اسم الضيف:", pdfRoomTyp: "نوع الغرفة:",
         pdfAgency: "الوكالة:", pdfQuota: "حصص المغسلة:", pdfAgent: "الموظف:", pdfPackaging: "التعبئة:",
         pdfItem: "الصنف", pdfQty: "الكمية", pdfTotal: "المجموع", pdfTotalPieces: "مجموع القطع:",
@@ -117,9 +119,7 @@ const i18n = {
         btnSaveRecord: "💾 रिकॉर्ड सुरक्षित करें", lblArchiveTitle: "अभिलेख और खोज",
         lblLoadingRecords: "रिकॉर्ड लोड हो रहे हैं...", lblRoomError: "अमान्य कमरा नंबर!",
         lblActiveRoomsHeader: "सक्रिय कमरे और स्पा",
-        pdfHotelName: "रेमल होटल एंड विला",
-        pdfHotelSub: "अल रुwais सिटी, अबू धाबी - यूएई",
-        pdfLaundryService: "लॉन्ड्रि सेवा",
+        pdfHotelName: "रेमल होटल एंड विला", pdfHotelSub: "अल रुwais सिटी, अबू धाबी - यूएई", pdfLaundryService: "लॉन्ड्रि सेवा",
         pdfRoom: "कमरा:", pdfDate: "दिनांक:", pdfGuest: "अतिथि का नाम:", pdfRoomTyp: "कमरे का प्रकार:",
         pdfAgency: "एजेंसी:", pdfQuota: "लॉन्ड्री कोटा:", pdfAgent: "कर्मचारी:", pdfPackaging: "पैकेजिंग:",
         pdfItem: "आइटम", pdfQty: "मात्रा", pdfTotal: "कुल", pdfTotalPieces: "कुल पीस:",
@@ -132,7 +132,7 @@ const i18n = {
     }
 };
 
-// Grille tarifaire de la blanchisserie (Strictement alignée avec la grille Guest Portal)
+// Grille tarifaire
 const database = {
     laundry: {
         "GENTLEMEN": [
