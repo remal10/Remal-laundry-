@@ -10,8 +10,6 @@
 // PHASE 2.3 — DATE FILTER STATE
 // ═══════════════════════════════════════════════════════════════════
 
-let currentStatusFilter = 'all';
-let currentDateFilter = null;
 
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 5 — ROLE MANAGEMENT (Admin / Staff)
@@ -1180,7 +1178,6 @@ function confirmLogout() {
 // ═══════════════════════════════════════════════════════════════════
 // 🧘 MODALE DÉTAILS SPA
 // ═══════════════════════════════════════════════════════════════════
-let currentSpaRecordId = null;
 
 async function ouvrirSpaDetailModal(recordId) {
     if (!recordId) return;
